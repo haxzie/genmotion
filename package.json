@@ -1,0 +1,22 @@
+{
+  "name": "genmotion",
+  "private": true,
+  "packageManager": "pnpm@11.2.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "db:push": "pnpm --filter @genmotion/db db:push",
+    "db:generate": "pnpm --filter @genmotion/db db:generate",
+    "db:migrate": "pnpm --filter @genmotion/db db:migrate"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.17",
+    "typescript": "^5.9.3"
+  }
+}

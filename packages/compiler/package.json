@@ -1,0 +1,31 @@
+{
+  "name": "@genmotion/compiler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts",
+    "./node": "./src/node.ts",
+    "./evaluate": "./src/evaluate.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genmotion/motion": "workspace:*",
+    "@genmotion/shared": "workspace:*",
+    "esbuild": "0.28.0",
+    "esbuild-wasm": "0.28.0",
+    "lucide-react": "^1.17.0"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@genmotion/config": "workspace:*",
+    "@types/react": "^19",
+    "react": "^19.2.7",
+    "typescript": "^5.9.3"
+  }
+}

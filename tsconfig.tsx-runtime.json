@@ -1,0 +1,11 @@
+{
+  "//": "Used by tsx (the Node runner) via --tsconfig so every workspace file — including @genmotion/motion's .tsx sources — gets the automatic JSX transform regardless of which package's tsconfig 'include' matches it.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}

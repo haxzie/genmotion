@@ -1,0 +1,35 @@
+{
+  "name": "@genmotion/ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.82",
+    "@ai-sdk/moonshotai": "^2.0.28",
+    "@ai-sdk/openai": "^3.0.69",
+    "@e2b/code-interpreter": "^2.6.1",
+    "@genmotion/compiler": "workspace:*",
+    "@genmotion/db": "workspace:*",
+    "@genmotion/motion": "workspace:^",
+    "@genmotion/shared": "workspace:*",
+    "@genmotion/storage": "workspace:^",
+    "ai": "^6.0.199",
+    "music-metadata": "^11.13.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@genmotion/config": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  }
+}

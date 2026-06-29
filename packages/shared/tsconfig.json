@@ -1,0 +1,4 @@
+{
+  "extends": "@genmotion/config/tsconfig/base.json",
+  "include": ["src"]
+}

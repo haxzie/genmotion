@@ -1,0 +1,32 @@
+{
+  "name": "@genmotion/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
+    "start": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx --env-file=../../.env scripts/seed-scenes.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.82",
+    "@genmotion/ai": "workspace:^",
+    "@genmotion/db": "workspace:^",
+    "@genmotion/shared": "workspace:*",
+    "@genmotion/storage": "workspace:^",
+    "@hono/node-server": "^1.14.0",
+    "@hono/zod-validator": "^0.8.0",
+    "ai": "^6.0.199",
+    "better-auth": "^1.6.15",
+    "hono": "^4.12.25",
+    "pg-boss": "^12.18.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@genmotion/config": "workspace:*",
+    "@types/node": "^22",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3"
+  }
+}

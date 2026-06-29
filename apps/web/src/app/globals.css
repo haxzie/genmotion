@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@source "../../node_modules/streamdown/dist/*.js";
+
+@theme {
+  /* Dark, monochrome: soft off-white on near-black — never pure #000 or #fff. */
+  --color-background: #08080a;
+  --color-surface: #0f0f12;
+  --color-surface-raised: #17171b;
+  --color-surface-hover: #1f1f24;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-text-primary: #ededef;
+  --color-text-secondary: #a0a0a6;
+  --color-text-tertiary: #6b6b71;
+  /* Roles: light CTAs (white-on-dark), green selection, blue interactive accents. */
+  --color-cta: #ededef;
+  --color-cta-hover: #ffffff;
+  --color-accent: #3b6ef6;
+  --color-accent-hover: #4f7df8;
+  --color-accent-muted: rgba(59, 110, 246, 0.14);
+  --color-green: #06c167;
+  --color-green-strong: #14d077;
+  --color-green-muted: rgba(6, 193, 103, 0.14);
+  --color-danger: #f1646c;
+  --color-success: #3fb96f;
+  --color-warning: #d6a849;
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-md: 8px;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html {
+  font-size: 14px;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(59, 110, 246, 0.3);
+}
+
+/* Thin, unobtrusive scrollbars, Linear-style */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Single full rotation, e.g. logo on hover */
+@keyframes spin-once {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Slow-drifting hue blobs (Create page). translateY ~50% keeps each circle
+   half-hidden below the viewport edge while it moves. */
+@keyframes blob-a {
+  0%,
+  100% {
+    transform: translate(-6%, 52%) scale(1);
+  }
+  50% {
+    transform: translate(12%, 42%) scale(1.12);
+  }
+}
+@keyframes blob-b {
+  0%,
+  100% {
+    transform: translate(8%, 50%) scale(1.06);
+  }
+  50% {
+    transform: translate(-10%, 58%) scale(0.94);
+  }
+}
+@keyframes blob-c {
+  0%,
+  100% {
+    transform: translate(0%, 56%) scale(1);
+  }
+  50% {
+    transform: translate(-14%, 44%) scale(1.14);
+  }
+}

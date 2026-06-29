@@ -1,0 +1,32 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  ffmpeg-static: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@next/env@16.2.9'
+  - '@next/swc-darwin-arm64@16.2.9'
+  - '@next/swc-darwin-x64@16.2.9'
+  - '@next/swc-linux-arm64-gnu@16.2.9'
+  - '@next/swc-linux-arm64-musl@16.2.9'
+  - '@next/swc-linux-x64-gnu@16.2.9'
+  - '@next/swc-linux-x64-musl@16.2.9'
+  - '@next/swc-win32-arm64-msvc@16.2.9'
+  - '@next/swc-win32-x64-msvc@16.2.9'
+  - '@turbo/darwin-64@2.9.17'
+  - '@turbo/darwin-arm64@2.9.17'
+  - '@turbo/linux-64@2.9.17'
+  - '@turbo/linux-arm64@2.9.17'
+  - '@turbo/windows-64@2.9.17'
+  - '@turbo/windows-arm64@2.9.17'
+  - next@16.2.9
+  - turbo@2.9.17
+  - '@ai-sdk/anthropic@3.0.82'
+  - '@ai-sdk/gateway@3.0.127'
+  - ai@6.0.199
+  - '@ai-sdk/moonshotai@2.0.28'
+  - '@ai-sdk/openai-compatible@2.0.53'
+  - '@ai-sdk/provider-utils@4.0.32'
+  - '@ai-sdk/provider@3.0.12'
