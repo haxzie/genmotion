@@ -23,9 +23,110 @@ function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 interface Project {
   id: string;
   name: string;
+}
+
+const ASPECT_RATIOS = [
+  { label: "16:9", width: 1920, height: 1080 },
+  { label: "9:16", width: 1080, height: 1920 },
+  { label: "1:1", width: 1080, height: 1080 },
+  { label: "4:5", width: 1080, height: 1350 },
+] as const;
+
+type AspectRatio = (typeof ASPECT_RATIOS)[number];
+
+/** Small rectangle drawn to the given proportions, fit inside a 16×16 box. */
+function RatioGlyph({
+  width,
+  height,
+  className,
+}: {
+  width: number;
+  height: number;
+  className?: string;
+}) {
+  const max = 13;
+  const rw = width >= height ? max : Math.round((width / height) * max);
+  const rh = height >= width ? max : Math.round((height / width) * max);
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.4">
+      <rect x={(16 - rw) / 2} y={(16 - rh) / 2} width={rw} height={rh} rx="1.5" />
+    </svg>
+  );
+}
+
+function AspectDropdown({
+  value,
+  onChange,
+}: {
+  value: AspectRatio;
+  onChange: (ratio: AspectRatio) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Aspect ratio"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-8 items-center gap-1.5 rounded-full border border-[#1f1f24] px-2.5 text-[0.857rem] text-text-secondary transition-colors duration-150 hover:border-[#2a2a31] hover:text-text-primary"
+      >
+        <RatioGlyph width={value.width} height={value.height} className="size-3.5 shrink-0" />
+        {value.label}
+        <ChevronDownIcon
+          className={cx("size-3 shrink-0 transition-transform duration-150", open && "rotate-180")}
+        />
+      </button>
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="menu"
+            className="absolute bottom-full right-0 z-50 mb-1.5 w-32 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+          >
+            {ASPECT_RATIOS.map((ratio) => (
+              <button
+                key={ratio.label}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onChange(ratio);
+                  setOpen(false);
+                }}
+                className={cx(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.857rem] transition-colors duration-150",
+                  value.label === ratio.label
+                    ? "text-text-primary"
+                    : "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
+                )}
+              >
+                <RatioGlyph width={ratio.width} height={ratio.height} className="size-3.5 shrink-0" />
+                {ratio.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 const USE_CASES = [
@@ -42,16 +143,17 @@ function HeroComposer({
   onSubmit,
   pending,
 }: {
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, dims: { width: number; height: number }) => void;
   pending: boolean;
 }) {
   const [input, setInput] = useState("");
+  const [aspect, setAspect] = useState<AspectRatio>(ASPECT_RATIOS[0]);
   const placeholder = useTypewriter(USE_CASES);
 
   function submit() {
     const prompt = input.trim();
     if (!prompt || pending) return;
-    onSubmit(prompt);
+    onSubmit(prompt, { width: aspect.width, height: aspect.height });
   }
 
   return (
@@ -84,20 +186,23 @@ function HeroComposer({
         >
           <PlusIcon className="size-[1.15rem]" />
         </button>
-        <button
-          type="submit"
-          aria-label="Create"
-          disabled={pending || !input.trim()}
-          className={cx(
-            "flex size-8 items-center justify-center rounded-full bg-cta text-background transition-all duration-150 hover:bg-cta-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent/40 outline-none",
-          )}
-        >
-          {pending ? (
-            <Spinner className="size-4 text-background" />
-          ) : (
-            <ArrowRightIcon className="size-[1.05rem]" />
-          )}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <AspectDropdown value={aspect} onChange={setAspect} />
+          <button
+            type="submit"
+            aria-label="Create"
+            disabled={pending || !input.trim()}
+            className={cx(
+              "flex size-8 items-center justify-center rounded-full bg-cta text-background transition-all duration-150 hover:bg-cta-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent/40 outline-none",
+            )}
+          >
+            {pending ? (
+              <Spinner className="size-4 text-background" />
+            ) : (
+              <ArrowRightIcon className="size-[1.05rem]" />
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -108,10 +213,13 @@ export default function CreatePage() {
   const queryClient = useQueryClient();
 
   const createWithPrompt = useMutation({
-    mutationFn: (_prompt: string) => api<Project>("/api/projects", { json: {} }),
-    onSuccess: (project, prompt) => {
+    mutationFn: (vars: { prompt: string; width: number; height: number }) =>
+      api<Project>("/api/projects", {
+        json: { width: vars.width, height: vars.height },
+      }),
+    onSuccess: (project, vars) => {
       // The editor chat picks this up and sends it as the first message.
-      sessionStorage.setItem(`gm-initial-prompt-${project.id}`, prompt);
+      sessionStorage.setItem(`gm-initial-prompt-${project.id}`, vars.prompt);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       router.push(`/p/${project.id}`);
     },
@@ -145,7 +253,7 @@ export default function CreatePage() {
       </div>
       <div className="relative w-full max-w-2xl">
         <HeroComposer
-          onSubmit={(prompt) => createWithPrompt.mutate(prompt)}
+          onSubmit={(prompt, dims) => createWithPrompt.mutate({ prompt, ...dims })}
           pending={createWithPrompt.isPending}
         />
       </div>
