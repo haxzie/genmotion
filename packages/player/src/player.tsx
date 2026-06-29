@@ -111,6 +111,10 @@ export function Player({
           transformOrigin: "center",
           flexShrink: 0,
           background: "#000",
+          // Round the preview canvas. Divide by scale so the on-screen radius
+          // stays ~12px regardless of how far the composition is scaled to fit.
+          borderRadius: scale ? 12 / scale : 0,
+          overflow: "hidden",
           visibility: scale === 0 ? "hidden" : "visible",
         }}
       >

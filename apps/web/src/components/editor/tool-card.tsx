@@ -303,14 +303,82 @@ function liveCode(scenes: SceneData[], sceneId?: string): string | undefined {
   return scenes.find((s) => s.id === sceneId)?.code;
 }
 
+/** One scene inside a createScenes call — its own accordion with live status. */
+function CreateSceneItem({
+  brief,
+  index,
+  scenes,
+  output,
+  live,
+}: {
+  brief: SceneBriefInput;
+  index: number;
+  scenes: SceneData[];
+  output: ToolPartLike["output"];
+  live: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const createdId = output?.created?.find((c) => c.name === brief.name)?.sceneId;
+  const code =
+    liveCode(scenes, createdId) ??
+    scenes.find((s) => s.name === brief.name)?.code;
+  const status: ToolStatus = code ? "done" : live ? "running" : "failed";
+  const canOpen = status !== "running" && Boolean(code || brief.brief);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => canOpen && setOpen((v) => !v)}
+        className={cx(
+          "group flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.786rem]",
+          status === "running" && "cursor-default",
+        )}
+      >
+        <StatusIcon status={status} />
+        <span
+          className={cx(
+            "truncate",
+            status === "failed" ? "text-warning" : "text-text-secondary",
+          )}
+        >
+          {brief.name ?? `Scene ${index + 1}`}
+        </span>
+        {typeof brief.durationInFrames === "number" && (
+          <span className="shrink-0 font-mono text-[0.714rem] text-text-tertiary">
+            {brief.durationInFrames}f
+          </span>
+        )}
+        {canOpen && (
+          <span className="ml-auto opacity-60 transition-opacity group-hover:opacity-100">
+            <Chevron open={open} />
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="border-t border-border">
+          {brief.brief && !code && (
+            <p className="px-3 py-2 text-[0.786rem] leading-relaxed text-text-tertiary">
+              {brief.brief}
+            </p>
+          )}
+          {code && <CodeBlock code={code} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExpandedBody({
   toolName,
   part,
   scenes,
+  live,
 }: {
   toolName: string;
   part: ToolPartLike;
   scenes: SceneData[];
+  live: boolean;
 }) {
   const { input, output } = part;
   const failed = part.state === "output-error" || output?.ok === false;
@@ -342,31 +410,16 @@ function ExpandedBody({
       )}
 
       {toolName === "createScenes" &&
-        (input?.scenes ?? []).map((brief, i) => {
-          const createdId = output?.created?.find(
-            (c) => c.name === brief.name,
-          )?.sceneId;
-          const code = liveCode(scenes, createdId);
-          return (
-            <div key={i}>
-              <MetaRow
-                items={[
-                  ["scene", brief.name ?? `#${i + 1}`],
-                  ...(brief.durationInFrames
-                    ? [["duration", `${brief.durationInFrames} frames`] as [string, string]]
-                    : []),
-                ]}
-              />
-              {code ? (
-                <CodeBlock code={code} />
-              ) : brief.brief ? (
-                <p className="px-3 pb-2 text-[0.786rem] leading-relaxed text-text-tertiary">
-                  {brief.brief}
-                </p>
-              ) : null}
-            </div>
-          );
-        })}
+        (input?.scenes ?? []).map((brief, i) => (
+          <CreateSceneItem
+            key={i}
+            brief={brief}
+            index={i}
+            scenes={scenes}
+            output={output}
+            live={live}
+          />
+        ))}
 
       {toolName === "getSceneCode" && output?.code && (
         <CodeBlock code={output.code} />
@@ -575,14 +628,21 @@ export function ToolCard({
       ? partSubject(parts[0]!, scenes)
       : parts.map((p) => partSubject(p, scenes)).filter(Boolean).join(", ");
 
+  // createScenes is expandable, and auto-shows its scene list, while running —
+  // so you can watch the scenes being written in parallel.
+  const isCreateScenes = toolName === "createScenes";
+  const running = status === "running";
+  const toggleable = !running || isCreateScenes;
+  const showBody = open || (isCreateScenes && running);
+
   return (
     <div className="w-full min-w-0 max-w-full">
       <button
         type="button"
-        onClick={() => status !== "running" && setOpen((v) => !v)}
+        onClick={() => toggleable && setOpen((v) => !v)}
         className={cx(
           "group flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-[0.857rem]",
-          status === "running" && "cursor-default",
+          !toggleable && "cursor-default",
         )}
       >
         <StatusIcon status={status} />
@@ -611,13 +671,13 @@ export function ToolCard({
             <span className="text-text-tertiary"> — interrupted</span>
           )}
         </span>
-        {status !== "running" && (
+        {toggleable && (
           <span className="ml-auto opacity-60 transition-opacity group-hover:opacity-100">
             <Chevron open={open} />
           </span>
         )}
       </button>
-      {open && (
+      {showBody && (
         <div
           className={cx(
             "mt-1 overflow-hidden rounded-md border",
@@ -625,7 +685,7 @@ export function ToolCard({
           )}
         >
           {count === 1 ? (
-            <ExpandedBody toolName={toolName} part={parts[0]!} scenes={scenes} />
+            <ExpandedBody toolName={toolName} part={parts[0]!} scenes={scenes} live={live} />
           ) : (
             parts.map((p, i) => (
               <div key={i} className={cx(i > 0 && "border-t border-border")}>
@@ -635,7 +695,7 @@ export function ToolCard({
                     {partSubject(p, scenes) || `#${i + 1}`}
                   </span>
                 </div>
-                <ExpandedBody toolName={toolName} part={p} scenes={scenes} />
+                <ExpandedBody toolName={toolName} part={p} scenes={scenes} live={live} />
               </div>
             ))
           )}

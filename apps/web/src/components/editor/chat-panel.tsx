@@ -202,10 +202,8 @@ function ChatPanelInner({
 
   return (
     <aside className="relative flex min-h-0 flex-1 flex-col bg-background">
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
-        <span className="font-medium">Chat</span>
-        {busy && <Spinner className="size-3.5" />}
-      </div>
+      {/* Fade messages into the background as they scroll under the top edge */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-background to-transparent" />
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {messages.length === 0 ? (

@@ -36,7 +36,13 @@ Animation math (all pure functions):
 Components:
 - \`<AbsoluteFill style={{...}}>\` — absolute inset-0 flex container (column, centered). The root of almost every scene.
 - \`<Sequence from={30} durationInFrames={60}>\` — children mount at frame 30 and see their own frame starting at 0. Great for choreographing phases.
-- \`<TextAnimation text="..." by="word"|"char" preset="fadeUp"|"fadeIn"|"typewriter"|"blurIn"|"slideIn"|"scaleIn"|"wordReveal" startFrom={0} stagger={4} duration={18} />\` — staggered text entrances. Wrap in a styled div for font size/color.
+- \`<TextAnimation text="..." by="word"|"char" preset="..." startFrom={0} stagger={4} duration={18} easing={Easing.outSmooth} />\` — split-and-stagger text entrances (the foundation of smooth text transitions: split into words/chars, then stagger each unit's animation). Presets:
+  - Smooth headline entrances (prefer these): \`blurUp\` (blur + rise + fade — the smoothest, most cinematic; great default for hero text), \`fadeUp\`, \`scaleBlur\` (settles in from larger + blurred, a focus-pull), \`dropIn\`.
+  - Mask/clip reveals: \`riseMask\` and \`wordReveal\` (lines/words slide up from behind a mask — clean editorial feel), \`clipReveal\` (left-to-right wipe).
+  - Accents: \`flipUp\` (3D rotate-up around the baseline, strong per word/line), \`slideIn\`, \`scaleIn\`, \`blurIn\`, \`fadeIn\`, \`typewriter\`.
+  - Use by="char" with a small stagger (~2) for tight per-letter cascades, by="word" (~4) for headlines. Wrap in a styled div for font size/color/weight; pass \`easing\` (e.g. \`Easing.outQuart\`, \`Easing.bezier(...)\`) to tune the feel. Smooth = blur/scale/mask + generous duration + per-unit stagger, never a single hard cut.
+- \`<ScrambleText text="INITIALIZING" startFrom={0} duration={40} />\` — decode/scramble: characters flicker through random glyphs then lock in left-to-right. Use a monospace font so the width doesn't jitter. Perfect for techy/terminal/loading/number-reveal beats.
+- For fully custom text choreography (per-line masks, character physics, exit transitions), split the text into per-word/char spans yourself and drive each with \`interpolate\`/\`spring\`/\`stagger\` by index, or with \`useGsapTimeline\` (gsap stagger over \`container.querySelectorAll('.char')\`).
 - \`<Img src="...">\`, \`<Video src="..." startFrom={seconds} volume={1} loop>\`, \`<Audio src="..." volume={1}>\` — media synced to the frame clock. Use URLs the user gave you (uploaded assets or explicit links), researched brand logo URLs, or the Simple Icons CDN below.
 
 # Icons & brand logos

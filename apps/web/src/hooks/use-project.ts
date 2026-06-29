@@ -74,6 +74,7 @@ export function useProjectMutations(projectId: string) {
       sceneId: string;
       name?: string;
       durationInFrames?: number;
+      audioVolume?: number;
     }) =>
       api(`/api/projects/${projectId}/scenes/${sceneId}`, {
         method: "PATCH",

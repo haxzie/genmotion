@@ -128,13 +128,13 @@ export function PreviewStage({
             </div>
           </div>
         ) : (
-          <div className="h-full overflow-hidden rounded-md border border-border bg-black shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+          <div className="h-full overflow-hidden rounded-xl border border-border bg-black shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
             <Player scenes={scenes} fps={fps} width={width} height={height} />
           </div>
         )}
       </div>
 
-      <div className="relative flex h-10 shrink-0 items-center justify-between border-t border-border bg-surface px-3">
+      <div className="relative flex h-10 shrink-0 items-center justify-between bg-surface px-3">
         <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
           {framesToTimecode(frame, fps)}{" "}
           <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>

@@ -1,7 +1,17 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, asc, desc, eq, inArray, db, schema } from "@genmotion/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  sql,
+  db,
+  schema,
+} from "@genmotion/db";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { enqueueThumbnail } from "../queue";
 
@@ -23,9 +33,17 @@ async function ownedProject(projectId: string, userId: string) {
 projectRoutes.get("/", async (c) => {
   const user = c.get("user");
   const projects = await db
-    .select()
+    .select({
+      ...getTableColumns(schema.projects),
+      sceneCount: sql<number>`count(${schema.scenes.id})`.mapWith(Number),
+      totalFrames: sql<number>`coalesce(sum(${schema.scenes.durationInFrames}), 0)`.mapWith(
+        Number,
+      ),
+    })
     .from(schema.projects)
+    .leftJoin(schema.scenes, eq(schema.scenes.projectId, schema.projects.id))
     .where(eq(schema.projects.userId, user.id))
+    .groupBy(schema.projects.id)
     .orderBy(desc(schema.projects.updatedAt));
   return c.json(projects);
 });
@@ -132,6 +150,7 @@ projectRoutes.patch(
 const updateSceneSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   durationInFrames: z.number().int().min(1).max(30 * 60 * 10).optional(),
+  audioVolume: z.number().min(0).max(1).optional(),
 });
 
 projectRoutes.patch(

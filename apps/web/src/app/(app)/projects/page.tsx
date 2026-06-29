@@ -13,6 +13,14 @@ interface Project {
   width: number;
   height: number;
   updatedAt: string;
+  sceneCount: number;
+  totalFrames: number;
+}
+
+function formatDuration(seconds: number): string {
+  const total = Math.round(seconds);
+  if (total < 60) return `${total}s`;
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 export default function ProjectsPage() {
@@ -24,14 +32,6 @@ export default function ProjectsPage() {
     queryFn: () => api<Project[]>("/api/projects"),
   });
 
-  const createProject = useMutation({
-    mutationFn: () => api<Project>("/api/projects", { json: {} }),
-    onSuccess: (project) => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      router.push(`/p/${project.id}`);
-    },
-  });
-
   const deleteProject = useMutation({
     mutationFn: (id: string) => api(`/api/projects/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
@@ -41,18 +41,16 @@ export default function ProjectsPage() {
     <div className="mx-auto max-w-5xl px-8 pb-20 pt-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-medium">Projects</h1>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => createProject.mutate()}
-          disabled={createProject.isPending}
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="inline-flex items-center gap-1.5 rounded-full bg-cta px-4 py-2 text-[0.857rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover"
         >
-          {createProject.isPending ? (
-            <Spinner className="text-background" />
-          ) : (
-            "Blank project"
-          )}
-        </Button>
+          <svg viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          New project
+        </button>
       </div>
 
       {isLoading ? (
@@ -64,10 +62,10 @@ export default function ProjectsPage() {
           {projects.map((project) => (
             <div
               key={project.id}
-              className="group cursor-pointer rounded-md border border-border bg-surface-raised p-4 transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
+              className="group cursor-pointer overflow-hidden rounded-md border border-border bg-surface-raised transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
               onClick={() => router.push(`/p/${project.id}`)}
             >
-              <div className="mb-6 flex aspect-video items-center justify-center overflow-hidden rounded bg-background text-text-tertiary">
+              <div className="flex aspect-video items-center justify-center overflow-hidden bg-background text-text-tertiary">
                 {project.thumbnailUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -81,11 +79,14 @@ export default function ProjectsPage() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3">
                 <div>
                   <p className="font-medium">{project.name}</p>
                   <p className="text-[0.857rem] text-text-tertiary">
-                    {new Date(project.updatedAt).toLocaleDateString()}
+                    {project.sceneCount}{" "}
+                    {project.sceneCount === 1 ? "scene" : "scenes"}
+                    {project.totalFrames > 0 &&
+                      ` · ${formatDuration(project.totalFrames / project.fps)}`}
                   </p>
                 </div>
                 <Button

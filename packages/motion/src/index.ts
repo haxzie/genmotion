@@ -17,7 +17,13 @@ export { stagger, timeline, progress, type StaggerOptions, type TimelineSegment 
 export { AbsoluteFill } from "./components/layout";
 export { Sequence, type SequenceProps } from "./components/sequence";
 export { Img, Video, Audio, type ImgProps, type VideoProps, type AudioProps } from "./components/media";
-export { TextAnimation, type TextAnimationProps, type TextAnimationPreset } from "./components/text-animation";
+export {
+  TextAnimation,
+  ScrambleText,
+  type TextAnimationProps,
+  type TextAnimationPreset,
+  type ScrambleTextProps,
+} from "./components/text-animation";
 export { useGsapTimeline, gsap } from "./gsap";
 export {
   MediaReadinessContext,

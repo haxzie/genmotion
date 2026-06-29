@@ -409,9 +409,14 @@ export function createEditorTools({
           }
           const occurrences = code.split(oldText).length - 1;
           if (occurrences === 0) {
+            // Show the model the actual current code so it stops guessing/looping
+            // — the snippet must be copied verbatim from THIS (note exact imports,
+            // indentation and whitespace).
+            const current =
+              code.length > 4000 ? `${code.slice(0, 4000)}\n…[truncated]` : code;
             return {
               ok: false as const,
-              error: `Edit ${i + 1}: oldText was not found. Re-read the scene with getSceneCode and copy the snippet exactly, including whitespace.`,
+              error: `Edit ${i + 1}: oldText was not found in the current scene code. Do not guess — copy the exact snippet from the current code below:\n\n\`\`\`tsx\n${current}\n\`\`\``,
             };
           }
           if (occurrences > 1 && !replaceAll) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { ReactGrab } from "@/components/react-grab";
 import "./globals.css";
 
 const geist = Geist({
@@ -27,6 +28,7 @@ export default function RootLayout({
       className={`${geist.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        <ReactGrab />
         <Providers>{children}</Providers>
       </body>
     </html>

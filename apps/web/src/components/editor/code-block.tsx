@@ -37,7 +37,7 @@ const chromeOverrides = EditorView.theme({
 export default function CodeBlock({ code, fill = false }: { code: string; fill?: boolean }) {
   return (
     <div
-      className={`w-full min-w-0 max-w-full overflow-auto ${fill ? "h-full" : "max-h-60"}`}
+      className={`w-full min-w-0 max-w-full overflow-auto ${fill ? "h-full overscroll-contain" : "max-h-60"}`}
     >
       <CodeMirror
         value={code}

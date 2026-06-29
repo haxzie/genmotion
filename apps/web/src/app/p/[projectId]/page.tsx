@@ -119,7 +119,7 @@ export default function EditorPage({
   }, [session, sessionPending, router]);
 
   const { data: project, isLoading, error } = useProject(projectId);
-  const { renameProject, reorderScenes, deleteScene } =
+  const { renameProject, reorderScenes, deleteScene, updateScene } =
     useProjectMutations(projectId);
 
   const { compiled, errors, initializing } = useCompiledScenes(project?.scenes);
@@ -206,7 +206,7 @@ export default function EditorPage({
               disabled={project.scenes.length === 0}
             />
           </div>
-          <div className="flex min-h-0 flex-1 flex-col pt-2">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-tl-lg border-l border-t border-border bg-surface">
               {tab === "assets" ? (
                 <AssetsView projectId={projectId} />
@@ -248,6 +248,9 @@ export default function EditorPage({
                     sceneErrors={errors}
                     onReorder={(ids) => reorderScenes.mutate(ids)}
                     onDeleteScenes={handleDeleteScenes}
+                    onToggleMute={(sceneId, muted) =>
+                      updateScene.mutate({ sceneId, audioVolume: muted ? 0 : 1 })
+                    }
                   />
                 </>
               )}

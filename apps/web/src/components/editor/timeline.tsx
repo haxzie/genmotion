@@ -26,11 +26,85 @@ import {
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { SceneIcon } from "./scene-icon";
+import { useWaveform } from "@/hooks/use-waveform";
 
 /** Fixed timeline scale: one second of video occupies exactly this many pixels. */
 const PX_PER_SECOND = 60;
 /** Breathing room at both ends of the track; every time→pixel mapping adds it. */
 const TRACK_PADDING = 12;
+
+function SpeakerIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 5 6 9H3v6h3l5 4z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12" />
+    </svg>
+  );
+}
+function SpeakerMutedIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 5 6 9H3v6h3l5 4z" />
+      <path d="M16 9.5l5 5M21 9.5l-5 5" />
+    </svg>
+  );
+}
+
+/** Voiceover amplitude strip shown at the bottom of a scene block. */
+function SceneWaveform({
+  url,
+  widthPx,
+  selected,
+  muted,
+  onToggleMute,
+}: {
+  url: string;
+  widthPx: number;
+  selected: boolean;
+  muted: boolean;
+  onToggleMute: () => void;
+}) {
+  // One line per ~2.5px of block width, so longer scenes show more detail.
+  const barCount = Math.max(8, Math.min(160, Math.floor((widthPx - 12) / 2.5)));
+  const peaks = useWaveform(url, barCount);
+  const bars = peaks ?? Array.from({ length: barCount }, () => 0.06);
+  return (
+    <div className="mt-auto flex h-7 shrink-0 items-stretch gap-1 overflow-hidden p-1.5">
+      <div className={cx("flex flex-1 items-stretch", muted && "opacity-40")}>
+        {bars.map((p, i) => (
+          <div key={i} className="flex flex-1 items-center justify-center">
+            <span
+              className={cx(
+                "w-px rounded-full",
+                selected ? "bg-green" : "bg-text-tertiary",
+              )}
+              style={{ height: `${Math.max(7, p * 100)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleMute();
+        }}
+        title={muted ? "Unmute voiceover" : "Mute voiceover"}
+        className={cx(
+          "flex shrink-0 items-center self-center text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
+          muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        )}
+      >
+        {muted ? (
+          <SpeakerMutedIcon className="size-3.5" />
+        ) : (
+          <SpeakerIcon className="size-3.5" />
+        )}
+      </button>
+    </div>
+  );
+}
 
 function SceneBlock({
   scene,
@@ -39,6 +113,7 @@ function SceneBlock({
   selected,
   hasError,
   onSelect,
+  onToggleMute,
 }: {
   scene: SceneData;
   widthPx: number;
@@ -46,9 +121,11 @@ function SceneBlock({
   selected: boolean;
   hasError: boolean;
   onSelect: (id: string, additive: boolean) => void;
+  onToggleMute: (sceneId: string, muted: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: scene.id });
+  const muted = (scene.audioVolume ?? 1) <= 0;
 
   return (
     <div
@@ -59,14 +136,14 @@ function SceneBlock({
         width: widthPx,
         flexShrink: 0,
       }}
-      className={cx("h-full py-1", isDragging && "z-10 opacity-80")}
+      className={cx("h-full", isDragging && "z-10 opacity-80")}
       onClick={(e) => onSelect(scene.id, e.shiftKey)}
       {...attributes}
       {...listeners}
     >
       <div
         className={cx(
-          "mx-px flex h-full cursor-grab select-none flex-col justify-between overflow-hidden rounded-md border p-2 transition-colors duration-150",
+          "group mx-px flex h-full cursor-grab select-none flex-col overflow-hidden rounded-md border transition-colors duration-150",
           selected
             ? "border-green bg-green-muted"
             : hasError
@@ -75,28 +152,34 @@ function SceneBlock({
           isDragging && "shadow-lg",
         )}
       >
-        <span
-          className={cx(
-            "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
-            selected ? "text-green" : "text-text-primary",
-          )}
-        >
-          <SceneIcon className="size-3.5 shrink-0" />
-          <span className="truncate">
-            {hasError && "⚠ "}
-            {scene.name}
+        {/* Title (left) + duration (top-right, aligned with the title) */}
+        <div className="flex items-center justify-between gap-2 px-2 pt-2">
+          <span
+            className={cx(
+              "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
+              selected ? "text-green" : "text-text-primary",
+            )}
+          >
+            <SceneIcon className="size-3.5 shrink-0" />
+            <span className="truncate">
+              {hasError && "⚠ "}
+              {scene.name}
+            </span>
           </span>
-        </span>
-        <span className="flex items-center gap-1 truncate font-mono text-[0.714rem] text-text-tertiary">
-          {(scene.durationInFrames / fps).toFixed(1)}s
-          {scene.audioUrl && (
-            <svg viewBox="0 0 16 16" className="size-3 shrink-0" fill="currentColor" aria-label="Has voiceover">
-              <path d="M8 2.5a.6.6 0 0 0-1 .45L4.8 5H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h1.8L7 13.05a.6.6 0 0 0 1-.45V2.5Z" />
-              <path d="M10.2 5.6a.55.55 0 0 1 .78 0 3.4 3.4 0 0 1 0 4.8.55.55 0 1 1-.78-.78 2.3 2.3 0 0 0 0-3.24.55.55 0 0 1 0-.78Z" />
-              <path d="M11.9 3.9a.55.55 0 0 1 .78 0 5.8 5.8 0 0 1 0 8.2.55.55 0 1 1-.78-.78 4.7 4.7 0 0 0 0-6.64.55.55 0 0 1 0-.78Z" />
-            </svg>
-          )}
-        </span>
+          <span className="shrink-0 font-mono text-[0.714rem] text-text-tertiary">
+            {(scene.durationInFrames / fps).toFixed(1)}s
+          </span>
+        </div>
+
+        {scene.audioUrl && (
+          <SceneWaveform
+            url={scene.audioUrl}
+            widthPx={widthPx}
+            selected={selected}
+            muted={muted}
+            onToggleMute={() => onToggleMute(scene.id, !muted)}
+          />
+        )}
       </div>
     </div>
   );
@@ -138,12 +221,14 @@ export function Timeline({
   sceneErrors,
   onReorder,
   onDeleteScenes,
+  onToggleMute,
 }: {
   scenes: SceneData[];
   fps: number;
   sceneErrors: Record<string, unknown>;
   onReorder: (orderedIds: string[]) => void;
   onDeleteScenes: (ids: string[]) => void;
+  onToggleMute: (sceneId: string, muted: boolean) => void;
 }) {
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectScene = useEditorStore((s) => s.selectScene);
@@ -256,7 +341,7 @@ export function Timeline({
         >
           {/* Time scale */}
           <div
-            className="relative h-[18px] shrink-0 cursor-col-resize border-b border-border"
+            className="relative h-[18px] shrink-0 cursor-col-resize"
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
               scrub(e.clientX);
@@ -291,7 +376,10 @@ export function Timeline({
                 >
                   <div
                     className="flex h-full"
-                    style={{ paddingLeft: TRACK_PADDING, paddingRight: TRACK_PADDING }}
+                    style={{ padding: TRACK_PADDING }}
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) clearSelection();
+                    }}
                   >
                     {scenes.map((scene) => (
                       <SceneBlock
@@ -302,6 +390,7 @@ export function Timeline({
                         selected={selectedSceneIds.includes(scene.id)}
                         hasError={scene.id in sceneErrors}
                         onSelect={handleSelect}
+                        onToggleMute={onToggleMute}
                       />
                     ))}
                   </div>
