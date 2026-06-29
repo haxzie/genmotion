@@ -31,6 +31,10 @@ const TOOL_LABELS: Record<string, { active: string; done: string }> = {
   generateVoiceover: { active: "Generating voiceover", done: "Generated voiceover" },
   workbench: { active: "Running workbench", done: "Ran workbench" },
   saveImageToProject: { active: "Saving image", done: "Saved image" },
+  compactConversation: {
+    active: "Compacting conversation",
+    done: "Compacted earlier conversation",
+  },
 };
 
 const RESEARCH_TOOLS = new Set([
@@ -126,6 +130,12 @@ const ImageIcon: Glyph = (p) => (
     <path d="M3 11.5l3.2-2.7 2.3 1.9 2.2-1.6 2.3 1.9" />
   </ToolGlyph>
 );
+const ArchiveIcon: Glyph = (p) => (
+  <ToolGlyph {...p}>
+    <rect x="2.5" y="3" width="11" height="3" rx="1" />
+    <path d="M3.5 6v6.5a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M6.5 9h3" />
+  </ToolGlyph>
+);
 const DotIcon: Glyph = (p) => (
   <ToolGlyph {...p}>
     <circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" />
@@ -148,6 +158,7 @@ const TOOL_ICONS: Record<string, Glyph> = {
   generateVoiceover: MicIcon,
   workbench: TerminalIcon,
   saveImageToProject: ImageIcon,
+  compactConversation: ArchiveIcon,
 };
 
 interface SceneBriefInput {
@@ -196,6 +207,8 @@ export interface ToolPartLike {
     // saveImageToProject
     url?: string;
     filename?: string;
+    // compactConversation
+    note?: string;
   };
 }
 
@@ -555,6 +568,12 @@ function ExpandedBody({
             </div>
           )}
         </>
+      )}
+
+      {toolName === "compactConversation" && output?.note && (
+        <p className="px-3 py-2 text-[0.786rem] leading-relaxed text-text-tertiary">
+          {output.note}
+        </p>
       )}
 
       {RESEARCH_TOOLS.has(toolName) && !failed && output && (

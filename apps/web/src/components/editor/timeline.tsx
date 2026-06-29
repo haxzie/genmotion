@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -215,6 +215,105 @@ function Ruler({ totalSeconds, fps }: { totalSeconds: number; fps: number }) {
   );
 }
 
+/**
+ * Playhead indicator. Updates imperatively (no React re-render per frame):
+ * while playing it runs its own rAF, deriving a CONTINUOUS sub-frame position
+ * from the playback clock and writing a GPU `translateX` — smooth at the
+ * display's refresh rate rather than stepping at the (lower) video fps. When
+ * paused it snaps to the store frame. Also keeps itself in view.
+ */
+function Playhead({
+  pxPerFrame,
+  fps,
+  totalFrames,
+  scrollRef,
+}: {
+  pxPerFrame: number;
+  fps: number;
+  totalFrames: number;
+  scrollRef: RefObject<HTMLDivElement | null>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const maxFrame = Math.max(0, totalFrames - 1);
+
+    const apply = (f: number, smoothScroll: boolean) => {
+      const x = TRACK_PADDING + f * pxPerFrame;
+      el.style.transform = `translateX(${x}px)`;
+      const scroller = scrollRef.current;
+      if (scroller) {
+        const margin = 80;
+        if (
+          x < scroller.scrollLeft + margin ||
+          x > scroller.scrollLeft + scroller.clientWidth - margin
+        ) {
+          scroller.scrollTo({
+            left: Math.max(0, x - margin),
+            behavior: smoothScroll ? "smooth" : "auto",
+          });
+        }
+      }
+    };
+
+    let raf = 0;
+    let anchor = 0;
+    let lastFrame = usePlaybackStore.getState().frame;
+    let playing = usePlaybackStore.getState().isPlaying;
+
+    const startLoop = () => {
+      anchor = performance.now() - (usePlaybackStore.getState().frame / fps) * 1000;
+      lastFrame = usePlaybackStore.getState().frame;
+      const tick = () => {
+        const s = usePlaybackStore.getState();
+        if (!s.isPlaying) return;
+        // Re-anchor if the frame was moved externally (seek/scrub mid-play).
+        if (s.frame !== lastFrame) {
+          anchor = performance.now() - (s.frame / fps) * 1000;
+          lastFrame = s.frame;
+        }
+        const continuous = Math.min(((performance.now() - anchor) / 1000) * fps, maxFrame);
+        apply(continuous, false);
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+
+    apply(usePlaybackStore.getState().frame, false);
+    if (playing) startLoop();
+
+    const unsubscribe = usePlaybackStore.subscribe((s) => {
+      if (s.isPlaying && !playing) {
+        playing = true;
+        startLoop();
+      } else if (!s.isPlaying && playing) {
+        playing = false;
+        cancelAnimationFrame(raf);
+        apply(s.frame, true);
+      } else if (!s.isPlaying) {
+        // Paused scrubbing / jumps.
+        apply(s.frame, true);
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      unsubscribe();
+    };
+  }, [pxPerFrame, fps, totalFrames, scrollRef]);
+
+  return (
+    <div
+      ref={ref}
+      className="pointer-events-none absolute left-0 top-0 z-10 h-full w-px bg-accent will-change-transform"
+    >
+      <div className="absolute -left-[5px] top-0 size-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-accent" />
+    </div>
+  );
+}
+
 export function Timeline({
   scenes,
   fps,
@@ -235,14 +334,11 @@ export function Timeline({
   const clearSelection = useEditorStore((s) => s.clearSelection);
   const pruneSelection = useEditorStore((s) => s.pruneSelection);
 
-  const frame = usePlaybackStore((s) => s.frame);
-  const isPlaying = usePlaybackStore((s) => s.isPlaying);
   const seek = usePlaybackStore((s) => s.seek);
   const totalFrames = totalDurationInFrames(scenes);
 
   const pxPerFrame = PX_PER_SECOND / fps;
   const trackWidth = Math.ceil(totalFrames * pxPerFrame) + TRACK_PADDING * 2;
-  const playheadX = TRACK_PADDING + frame * pxPerFrame;
 
   useEffect(() => {
     pruneSelection(scenes.map((s) => s.id));
@@ -309,24 +405,6 @@ export function Timeline({
     },
     [seek, totalFrames, pxPerFrame],
   );
-
-  // Keep the playhead in view: smooth-scroll on seeks/jumps, follow during playback.
-  useEffect(() => {
-    const scroller = scrollRef.current;
-    if (!scroller) return;
-    const margin = 80;
-    if (
-      playheadX < scroller.scrollLeft + margin ||
-      playheadX > scroller.scrollLeft + scroller.clientWidth - margin
-    ) {
-      scroller.scrollTo({
-        left: Math.max(0, playheadX - margin),
-        // Smooth for deliberate seeks; instant while following live playback
-        // (re-issuing smooth scrolls every frame would stutter).
-        behavior: isPlaying ? "auto" : "smooth",
-      });
-    }
-  }, [playheadX, isPlaying]);
 
   return (
     <div className="flex h-40 shrink-0 flex-col border-t border-border bg-surface">
@@ -399,14 +477,14 @@ export function Timeline({
             )}
           </div>
 
-          {/* Playhead */}
+          {/* Playhead — self-updating, no per-frame Timeline re-render. */}
           {totalFrames > 0 && (
-            <div
-              className="pointer-events-none absolute top-0 z-10 h-full w-px bg-accent"
-              style={{ left: playheadX }}
-            >
-              <div className="absolute -left-[5px] top-0 size-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-accent" />
-            </div>
+            <Playhead
+              pxPerFrame={pxPerFrame}
+              fps={fps}
+              totalFrames={totalFrames}
+              scrollRef={scrollRef}
+            />
           )}
         </div>
       </div>

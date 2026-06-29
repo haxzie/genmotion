@@ -203,6 +203,7 @@ export default function EditorPage({
             <ViewTabs />
             <ExportButton
               projectId={projectId}
+              project={project}
               disabled={project.scenes.length === 0}
             />
           </div>

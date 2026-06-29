@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Player, usePlaybackStore, type CompiledScene } from "@genmotion/player";
 import { framesToTimecode } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
+import { PreviewInspector } from "./preview-inspector";
 
 function PlayIcon({ playing }: { playing: boolean }) {
   return playing ? (
@@ -128,9 +129,9 @@ export function PreviewStage({
             </div>
           </div>
         ) : (
-          <div className="h-full overflow-hidden rounded-xl border border-border bg-black shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+          <PreviewInspector scenes={scenes} fps={fps}>
             <Player scenes={scenes} fps={fps} width={width} height={height} />
-          </div>
+          </PreviewInspector>
         )}
       </div>
 

@@ -7,6 +7,19 @@ export interface FixRequest {
   message: string;
 }
 
+/** An element the user picked from the preview inspector, as chat context. */
+export interface ElementContext {
+  id: string;
+  label: string;
+  tag: string;
+  text: string;
+  /** The DOM id of the targeted element (if the scene gave it one). */
+  elementId: string | null;
+  sceneId: string | null;
+  sceneName: string;
+  timecode: string;
+}
+
 interface EditorState {
   selectedSceneIds: string[];
   /** Assets the user picked as chat context (mirrors scene selection). */
@@ -27,6 +40,12 @@ interface EditorState {
   /** Click: select only this asset. Shift-click: toggle it in the selection. */
   selectAsset(id: string, additive?: boolean): void;
   deselectAsset(id: string): void;
+  clearAssetSelection(): void;
+  /** Elements picked from the preview inspector, attached as chat context. */
+  selectedElements: ElementContext[];
+  addElement(element: ElementContext): void;
+  removeElement(id: string): void;
+  clearElements(): void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -80,5 +99,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       selectedAssetIds: state.selectedAssetIds.filter((a) => a !== id),
     }));
+  },
+  clearAssetSelection() {
+    set({ selectedAssetIds: [] });
+  },
+  selectedElements: [],
+  addElement(element) {
+    set((state) => ({ selectedElements: [...state.selectedElements, element] }));
+  },
+  removeElement(id) {
+    set((state) => ({
+      selectedElements: state.selectedElements.filter((e) => e.id !== id),
+    }));
+  },
+  clearElements() {
+    set({ selectedElements: [] });
   },
 }));

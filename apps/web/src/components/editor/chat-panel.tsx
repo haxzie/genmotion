@@ -10,7 +10,13 @@ import { API_URL, api } from "@/lib/api";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
 import { useProjectAssets, useUploadAsset } from "@/hooks/use-assets";
-import { SceneChips, AssetChips } from "./scene-chip";
+import {
+  SceneChips,
+  AssetChips,
+  ElementChips,
+  MessageContextPills,
+  type MessageContextData,
+} from "./scene-chip";
 import { ToolCard, type ToolPartLike } from "./tool-card";
 import { Spinner, cx } from "@/components/ui";
 
@@ -30,6 +36,71 @@ function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
+/** Selection context that gets PREPENDED to the user's message (model input). */
+function buildContextNote(
+  scenes: { id: string; name: string }[],
+  assets: { filename: string; url: string; kind: string }[],
+  elements: {
+    elementId: string | null;
+    tag: string;
+    text: string;
+    sceneName: string;
+    timecode: string;
+  }[],
+): string | null {
+  const lines: string[] = [];
+  if (elements.length > 0) {
+    lines.push(
+      "Selected element(s) — my request is about these. Find each in its scene's code by id (else by tag + text) and change THAT element:",
+    );
+    for (const e of elements) {
+      const ref = e.elementId
+        ? `#${e.elementId}`
+        : `<${e.tag}>${e.text ? ` "${e.text}"` : ""}`;
+      lines.push(`  • ${ref} — in scene "${e.sceneName}" at ${e.timecode}`);
+    }
+  }
+  if (scenes.length > 0) {
+    lines.push(
+      `Selected scene(s): ${scenes.map((s) => `"${s.name}" [id: ${s.id}]`).join(", ")}`,
+    );
+  }
+  if (assets.length > 0) {
+    lines.push(
+      `Selected asset(s): ${assets.map((a) => `${a.kind} "${a.filename}" — ${a.url}`).join(", ")}`,
+    );
+  }
+  if (lines.length === 0) return null;
+  return `[Context attached to this message]\n${lines.join("\n")}`;
+}
+
+/** Lighter "Thinking…" indicator: soft shimmering word + animated ellipsis. */
+function ThinkingIndicator() {
+  return (
+    <div
+      className="mt-4 self-start pl-2 text-[0.95rem] font-medium text-text-tertiary"
+      role="status"
+    >
+      <span className="thinking-shimmer thinking-shimmer-soft">Thinking</span>
+      <span className="thinking-dots" aria-hidden="true">
+        <i>.</i>
+        <i>.</i>
+        <i>.</i>
+      </span>
+    </div>
+  );
+}
+
+/** Whether an assistant message ran the compaction tool to completion. */
+function didCompact(message: UIMessage | undefined): boolean {
+  if (!message || message.role !== "assistant") return false;
+  return message.parts.some(
+    (part) =>
+      part.type === "tool-compactConversation" &&
+      (part as { state?: string }).state === "output-available",
+  );
+}
+
 function MessageBubble({
   message,
   scenes,
@@ -43,13 +114,19 @@ function MessageBubble({
   spacing?: string;
 }) {
   if (message.role === "user") {
+    const ctxPart = message.parts.find((p) => p.type === "data-context") as
+      | { data?: MessageContextData }
+      | undefined;
+    // The user's text is the LAST text part; any earlier text part is the
+    // prepended context note (shown as pills instead, not raw text).
+    const textParts = message.parts.filter(
+      (p): p is { type: "text"; text: string } => p.type === "text",
+    );
+    const userText = textParts[textParts.length - 1]?.text ?? "";
     return (
       <div className={cx("ml-8 self-end rounded-2xl rounded-br-md bg-surface-raised px-3 py-2 text-text-primary", spacing)}>
-        {message.parts.map((part, i) =>
-          part.type === "text" ? (
-            <p key={i} className="whitespace-pre-wrap">{part.text}</p>
-          ) : null,
-        )}
+        {ctxPart?.data && <MessageContextPills ctx={ctxPart.data} />}
+        {userText && <p className="whitespace-pre-wrap">{userText}</p>}
       </div>
     );
   }
@@ -112,6 +189,7 @@ function ChatPanelInner({
   const uploadAsset = useUploadAsset(projectId);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
+  const selectedElements = useEditorStore((s) => s.selectedElements);
   const setAiBusy = useEditorStore((s) => s.setAiBusy);
   const fixRequest = useEditorStore((s) => s.fixRequest);
 
@@ -123,7 +201,7 @@ function ChatPanelInner({
       }),
   );
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     id: projectId,
     transport,
     messages: initialMessages,
@@ -138,6 +216,19 @@ function ChatPanelInner({
   });
 
   const busy = status === "submitted" || status === "streaming";
+
+  // Waiting states. Before the assistant produces anything (last message is
+  // still the user's) → shimmering "Thinking…". Once it's running tools but
+  // hasn't started its text yet → the orbit loader. Hidden once text streams.
+  const lastMessage = messages[messages.length - 1];
+  const lastPart = lastMessage?.parts[lastMessage.parts.length - 1];
+  const streamingText =
+    lastMessage?.role === "assistant" &&
+    lastPart?.type === "text" &&
+    lastPart.text.trim().length > 0;
+  const waitingToStart = busy && lastMessage?.role === "user";
+  const showOrbit = busy && !waitingToStart && !streamingText;
+
   useEffect(() => {
     setAiBusy(busy);
     if (!busy) {
@@ -145,6 +236,24 @@ function ChatPanelInner({
       queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
     }
   }, [busy, setAiBusy, queryClient, projectId]);
+
+  // When a turn compacts the conversation, drop the pre-compaction bubbles once
+  // it settles — keep only from the last user message (the new task) onward, to
+  // match the server, which now loads/sends only the post-compaction window.
+  // Fire only on the falling edge of `busy` (a live turn just finished) so a
+  // compaction already present in loaded history never re-triggers.
+  const prevBusy = useRef(busy);
+  const lastCompactedId = useRef<string | null>(null);
+  useEffect(() => {
+    const wasBusy = prevBusy.current;
+    prevBusy.current = busy;
+    if (!wasBusy || busy) return; // only when busy goes true → false
+    const last = messages[messages.length - 1];
+    if (!didCompact(last) || lastCompactedId.current === last!.id) return;
+    lastCompactedId.current = last!.id;
+    const lastUserIdx = messages.map((m) => m.role).lastIndexOf("user");
+    if (lastUserIdx > 0) setMessages(messages.slice(lastUserIdx));
+  }, [messages, busy, setMessages]);
 
   // Live updates mid-stream: whenever a new tool result lands, refetch scenes.
   const toolOutputCount = useRef(0);
@@ -197,7 +306,67 @@ function ChatPanelInner({
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
-    sendMessage({ text }, { body: { selectedSceneIds, selectedAssetIds } });
+
+    const selScenes = scenes.filter((s) => selectedSceneIds.includes(s.id));
+    const selAssets = (assets ?? []).filter((a) =>
+      selectedAssetIds.includes(a.id),
+    );
+
+    // Snapshot the attached context so it persists with (and renders inside) the message.
+    const ctx: MessageContextData = {
+      scenes: selScenes.map((s) => ({ name: s.name })),
+      assets: selAssets.map((a) => ({ filename: a.filename })),
+      elements: selectedElements.map((e) => ({
+        label: e.label,
+        sceneName: e.sceneName,
+        timecode: e.timecode,
+      })),
+    };
+    // The note prepended to the message (model input); pills (above) are display.
+    const note = buildContextNote(
+      selScenes.map((s) => ({ id: s.id, name: s.name })),
+      selAssets.map((a) => ({ filename: a.filename, url: a.url, kind: a.kind })),
+      selectedElements.map((e) => ({
+        elementId: e.elementId,
+        tag: e.tag,
+        text: e.text,
+        sceneName: e.sceneName,
+        timecode: e.timecode,
+      })),
+    );
+
+    sendMessage(
+      {
+        role: "user",
+        parts: [
+          // Prepend the context so the agent reads it before the request.
+          ...(note ? [{ type: "text" as const, text: note }] : []),
+          { type: "text", text },
+          ...(note ? [{ type: "data-context" as const, data: ctx }] : []),
+        ],
+      },
+      {
+        body: {
+          selectedSceneIds,
+          selectedAssetIds,
+          selectedElements: selectedElements.map(
+            ({ tag, text: elText, elementId, sceneId, sceneName, timecode }) => ({
+              tag,
+              text: elText,
+              elementId,
+              sceneId,
+              sceneName,
+              timecode,
+            }),
+          ),
+        },
+      },
+    );
+    // Context is now attached to the message — clear the pills.
+    const store = useEditorStore.getState();
+    store.clearSelection();
+    store.clearAssetSelection();
+    store.clearElements();
   }
 
   return (
@@ -230,8 +399,9 @@ function ChatPanelInner({
                 />
               );
             })}
+            {(waitingToStart || showOrbit) && <ThinkingIndicator />}
             {error && (
-              <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-[0.857rem] text-danger">
+              <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-[0.857rem] text-danger">
                 {error.message || "Something went wrong. Try again."}
               </p>
             )}
@@ -243,6 +413,7 @@ function ChatPanelInner({
         <div className="pointer-events-auto">
         <SceneChips scenes={scenes} />
         <AssetChips assets={assets ?? []} />
+        <ElementChips />
         <form
           onSubmit={(e) => {
             e.preventDefault();

@@ -57,6 +57,25 @@ export const chatMessages = pgTable(
   (t) => [index("chat_messages_project_created_idx").on(t.projectId, t.createdAt)],
 );
 
+/**
+ * Rolling conversation summaries. The agent calls the compactConversation tool
+ * when the user starts a new, unrelated task; the backend writes one row here.
+ * The latest row (max createdAt) is the active summary — chat context and the
+ * UI load only it plus messages created after it.
+ */
+export const chatCompactions = pgTable(
+  "chat_compactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    summary: text("summary").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("chat_compactions_project_created_idx").on(t.projectId, t.createdAt)],
+);
+
 export const assets = pgTable("assets", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")

@@ -92,6 +92,12 @@ fileRoutes.get("/:projectId/files/*", async (c) => {
     if (contentLength !== undefined) {
       headers["Content-Length"] = String(contentLength);
     }
+    // `?download` forces a save dialog (attachment) instead of inline playback —
+    // needed because the <a download> attribute is ignored cross-origin.
+    if (c.req.query("download") !== undefined) {
+      const filename = decoded.split("/").pop() || "download";
+      headers["Content-Disposition"] = `attachment; filename="${filename}"`;
+    }
     return new Response(webStream, { headers });
   } catch {
     return c.json({ error: "Not found" }, 404);

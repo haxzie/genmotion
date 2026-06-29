@@ -16,6 +16,7 @@ Rules every scene MUST follow:
 - Only these imports are available: \`react\`, \`@genmotion/motion\`, \`gsap\`, \`lucide-react\`. Nothing else (no fetch, no window/document access, no other libraries, no CSS files).
 - NEVER use Math.random(), Date.now(), new Date(), setTimeout, setInterval, requestAnimationFrame, or CSS animations/transitions. Use the frame-driven APIs below; for randomness use \`random(seed)\`.
 - Inline styles only (style={{...}}). Design in absolute pixels for the composition size.
+- Give every meaningful on-screen element a unique, descriptive \`id\` (e.g. id="hero-title", id="cta", id="stat-1", id="logo"). The user can click an element in the preview to point you at it — that element's id is sent to you as context — so keep ids stable across edits and reuse them when you change an element. Ids must be unique within the scene.
 - Scenes start at frame 0 and run for their durationInFrames.
 
 # @genmotion/motion API
@@ -284,6 +285,7 @@ The discipline behind the format matters more than the script itself:
 # Tools
 
 Use the provided tools to act on the project. Rules:
+- SELF-CONTAINED NEW TASK → compactConversation FIRST. Before acting, judge whether the user's latest message can be fully handled WITHOUT the earlier conversation. If it stands on its own — none of the prior messages, scenes, research, or decisions are needed to do it — call compactConversation ONCE as your very first action, then handle the request normally. If the request instead builds on, refines, references, or depends on the previous context in any way (a tweak, a fix, "make it faster", "now add…", anything about scenes/brands/choices already discussed), do NOT compact — just continue. When unsure whether the prior context is needed, assume it is and don't compact.
 - To create TWO OR MORE scenes, ALWAYS use createScenes (plural) with one rich brief per scene — the scenes are written in parallel by specialist scene-writers, which is much faster. Each brief must be self-contained: exact text content to display, color palette / background, layout, animation choreography, and mood. Briefs are the only context the writer gets, so include the project's theme in each one.
 - Use createScene (singular) only when creating exactly one scene.
 - To modify an existing scene, prefer editScene for TARGETED changes — read the code with getSceneCode, then send small find-and-replace edits (each oldText copied verbatim from the current code, with a few surrounding lines so it's unique). This is faster and cheaper than resending the whole file, and you can batch several edits in one call. Use updateScene (COMPLETE new code) only for large rewrites or when restructuring most of the scene. Prefer either over delete+create.
@@ -326,9 +328,8 @@ export function buildProjectContext(input: {
   }>;
   selectedScenes: Array<{ id: string; name: string; code: string }>;
   assets?: Array<{ id: string; url: string; kind: string; filename: string }>;
-  selectedAssets?: Array<{ url: string; kind: string; filename: string }>;
 }): string {
-  const { project, scenes, selectedScenes, assets, selectedAssets } = input;
+  const { project, scenes, selectedScenes, assets } = input;
   const lines: string[] = [
     `# Current project state`,
     ``,
@@ -352,18 +353,10 @@ export function buildProjectContext(input: {
     );
   }
 
-  if (selectedAssets && selectedAssets.length > 0) {
-    lines.push(
-      ``,
-      `The user has SELECTED these assets (their request refers to them — use them in the scenes):`,
-      ...selectedAssets.map((a) => `- ${a.kind} "${a.filename}": ${a.url}`),
-    );
-  }
-
   if (selectedScenes.length > 0) {
     lines.push(
       ``,
-      `The user has SELECTED these scenes (their edit request refers to them):`,
+      `Full code for the scene(s) relevant to this request (the message's attached context refers to these):`,
     );
     for (const scene of selectedScenes) {
       lines.push(

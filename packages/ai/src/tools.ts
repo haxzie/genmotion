@@ -13,6 +13,7 @@ import { compileSceneToJs } from "@genmotion/compiler/node";
 import { formatCompileError } from "@genmotion/compiler";
 import { evaluateScene } from "@genmotion/compiler/evaluate";
 import { writeScene } from "./scene-writer";
+import { runCompaction } from "./compaction";
 import { createWebTools } from "./web-tools";
 import { createVoiceoverTool } from "./voiceover";
 import { createSandboxTools } from "./sandbox-tools";
@@ -540,6 +541,30 @@ export function createEditorTools({
         }
         emit();
         return { ok: true as const };
+      },
+    }),
+
+    compactConversation: tool({
+      description:
+        "Compact the conversation history. Call this ONCE, BEFORE doing anything else, when the user's latest message is a SELF-CONTAINED new task that can be handled WITHOUT the earlier conversation — none of the prior messages, scenes, research, or decisions are needed to do it. It folds everything before this message into a cheap summary so the context stays small. Do NOT call it when the request builds on, refines, references, or depends on prior context (tweaks, fixes, 'now add…', anything about work already discussed). After it returns, proceed with the new request as normal.",
+      inputSchema: z.object({
+        reason: z
+          .string()
+          .optional()
+          .describe("Brief note on why this is a new, unrelated task"),
+      }),
+      execute: async () => {
+        const result = await runCompaction(projectId);
+        if (!result.created) {
+          return {
+            ok: true as const,
+            note: "Nothing earlier to compact; starting fresh.",
+          };
+        }
+        return {
+          ok: true as const,
+          note: "Compacted the earlier conversation. Continue with the new task.",
+        };
       },
     }),
 
