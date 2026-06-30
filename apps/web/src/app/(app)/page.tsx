@@ -164,20 +164,28 @@ function HeroComposer({
       }}
       className="w-full max-w-2xl rounded-2xl border border-[#1f1f24] bg-surface px-3 py-2.5 shadow-[0_12px_50px_rgba(0,0,0,0.35)] transition-colors duration-150 focus-within:border-[#2a2a31]"
     >
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submit();
-          }
-        }}
-        placeholder={placeholder}
-        rows={2}
-        autoFocus
-        className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
-      />
+      <div className="flex items-start gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.svg"
+          alt="GenMotion"
+          className="ml-1 mt-1.5 size-4 shrink-0 rounded-[4px]"
+        />
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={placeholder}
+          rows={2}
+          autoFocus
+          className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
+        />
+      </div>
       <div className="flex items-center justify-between gap-1.5 pt-1">
         <button
           type="button"
@@ -244,12 +252,9 @@ export default function CreatePage() {
         />
       </div>
       <div className="relative mb-8 text-center">
-        <h1 className="font-display text-5xl tracking-tight">
+        <h1 className="font-display text-3xl tracking-tight">
           What do you want to create?
         </h1>
-        <p className="mt-3 text-lg text-text-secondary">
-          Describe it. Watch it become a video.
-        </p>
       </div>
       <div className="relative w-full max-w-2xl">
         <HeroComposer

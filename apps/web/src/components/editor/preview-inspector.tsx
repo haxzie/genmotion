@@ -46,6 +46,21 @@ function contains(a: Box, b: Box): boolean {
 }
 
 /**
+ * Whether a box effectively covers the whole preview frame — i.e. the scene's
+ * root background (AbsoluteFill). We never want to select that, only the
+ * elements inside it.
+ */
+function isFullFrame(box: Box, frameW: number, frameH: number): boolean {
+  const margin = 8; // px slack for borders/rounding
+  return (
+    box.left <= margin &&
+    box.top <= margin &&
+    box.width >= frameW - margin * 2 &&
+    box.height >= frameH - margin * 2
+  );
+}
+
+/**
  * Wraps the preview and lets you inspect it like a browser: hover highlights
  * the element under the cursor; click attaches it (with its scene + timecode)
  * to the chat as context. Dragging a marquee box attaches EVERY id'd element
@@ -82,29 +97,40 @@ export function PreviewInspector({
     if (!(target instanceof HTMLElement) || !ref.current || target === ref.current) {
       return null;
     }
+    const container = ref.current.getBoundingClientRect();
+    const toBox = (n: HTMLElement): Box => {
+      const r = n.getBoundingClientRect();
+      return {
+        left: r.left - container.left,
+        top: r.top - container.top,
+        width: r.width,
+        height: r.height,
+      };
+    };
+
     // Prefer the nearest element that carries an id (the meaningful element the
-    // scene tagged), so hovering/clicking snaps to it rather than a deep span.
-    let el: HTMLElement = target;
+    // scene tagged), so hovering/clicking snaps to it rather than a deep span —
+    // but skip any full-frame element (the root background): only inner elements
+    // are selectable.
+    let el: HTMLElement | null = null;
     let node: HTMLElement | null = target;
     while (node && node !== ref.current) {
-      if (node.id) {
+      if (node.id && !isFullFrame(toBox(node), container.width, container.height)) {
         el = node;
         break;
       }
       node = node.parentElement;
     }
-    const container = ref.current.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) return null;
-    return {
-      el,
-      box: {
-        left: r.left - container.left,
-        top: r.top - container.top,
-        width: r.width,
-        height: r.height,
-      },
-    };
+    // No id'd inner element on the path; fall back to the raw target unless it
+    // (too) covers the whole frame — clicking empty background selects nothing.
+    if (!el) {
+      if (isFullFrame(toBox(target), container.width, container.height)) return null;
+      el = target;
+    }
+
+    const box = toBox(el);
+    if (box.width === 0 || box.height === 0) return null;
+    return { el, box };
   }
 
   /** Every id'd element whose box falls inside the marquee (deepest only). */
@@ -126,8 +152,10 @@ export function PreviewInspector({
         };
       })
       .filter(({ box }) => box.width > 0 && box.height > 0)
+      // Never grab the scene's root background, only inner elements.
+      .filter(({ box }) => !isFullFrame(box, c.width, c.height))
       .filter(({ box }) => intersects(box, area))
-      // Drop full-frame backgrounds / ancestors that merely wrap the drag area.
+      // Drop ancestors that merely wrap the whole drag area.
       .filter(({ box }) => !contains(box, area));
     // Keep only the deepest tagged elements (drop id'd ancestors of other hits).
     return hits.filter(({ el }) => !hits.some((o) => o.el !== el && el.contains(o.el)));
@@ -153,22 +181,26 @@ export function PreviewInspector({
     };
   }
 
-  /** Add `el` unless an element with the same id is already in context. */
+  /** Stable identity for a selected element — its id, or scene+tag+text when it
+   *  has none — so the same element never produces two pills. */
+  function contextKey(c: ElementContext): string {
+    return c.elementId
+      ? `#${c.elementId}`
+      : `${c.sceneId ?? ""}|${c.tag}|${c.text}`;
+  }
+
+  /** Add `el` unless an equivalent element is already in context. */
   function addUnique(el: HTMLElement, taken: Set<string>) {
-    const eid = el.id || null;
-    if (eid) {
-      if (taken.has(eid)) return;
-      taken.add(eid);
-    }
-    addElement(buildContext(el));
+    const ctx = buildContext(el);
+    const key = contextKey(ctx);
+    if (taken.has(key)) return;
+    taken.add(key);
+    addElement(ctx);
   }
 
   function takenIds(): Set<string> {
     return new Set(
-      useEditorStore
-        .getState()
-        .selectedElements.map((e) => e.elementId)
-        .filter((id): id is string => Boolean(id)),
+      useEditorStore.getState().selectedElements.map(contextKey),
     );
   }
 

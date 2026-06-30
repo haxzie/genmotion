@@ -15,8 +15,10 @@ import {
   createEditorTools,
   chatModel,
   loadLatestCompaction,
+  runCompaction,
   NAMING_PROMPT,
 } from "@genmotion/ai";
+import { COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { enqueueThumbnail } from "../queue";
 
@@ -238,13 +240,33 @@ chatRoutes.post("/:projectId", async (c) => {
     assets: assets.filter((a) => a.kind !== "export"),
   });
 
-  // The selection context is prepended to the user's message on the client
-  // (so it travels with the message); nothing to inject here.
-  const modelMessages = await convertToModelMessages(repairToolMessages(messages));
+  // Auto-compact: once the live window passes the message limit, fold the older
+  // turns into the rolling summary before this turn runs (so this turn already
+  // benefits). runCompaction summarizes everything before the just-persisted
+  // user message and dates the new summary just before it, leaving only that
+  // message in the live window. The agent's compactConversation tool does the
+  // same for explicit new-task switches; both share the chat_compactions table.
+  let didAutoCompact = false;
+  if (lastMessage?.role === "user" && messages.length > COMPACTION_MESSAGE_LIMIT) {
+    try {
+      const result = await runCompaction(project.id);
+      didAutoCompact = result.created;
+    } catch {
+      // Best-effort — fall through and run the turn with the full window.
+    }
+  }
 
-  // Rolling summary of everything before the active window (written by the
-  // compactConversation tool). Kept AFTER the stable system prompt so the big
-  // cached prefix isn't disturbed.
+  // After auto-compaction only the latest user message remains live; otherwise
+  // send the whole window. The selection context is prepended to the user's
+  // message on the client, so it travels with the message.
+  const windowMessages = didAutoCompact ? messages.slice(-1) : messages;
+  const modelMessages = await convertToModelMessages(
+    repairToolMessages(windowMessages),
+  );
+
+  // Rolling summary of everything before the active window (written by
+  // auto-compaction above or the compactConversation tool). Kept AFTER the
+  // stable system prompt so the big cached prefix isn't disturbed.
   const compaction = await loadLatestCompaction(project.id);
 
   // Set when the editor tools build their sandbox; torn down on stream finish.
@@ -253,6 +275,12 @@ chatRoutes.post("/:projectId", async (c) => {
   const stream = createUIMessageStream({
     originalMessages: messages,
     execute: async ({ writer }) => {
+      // Tell the client the earlier history was compacted, so it clears the now
+      // pre-summary bubbles (keeping only this user message) when the turn ends.
+      if (didAutoCompact) {
+        writer.write({ type: "data-compacted", data: {}, transient: true });
+      }
+
       // Auto-name the project off the first user message (non-blocking for the
       // main stream; the rename lands as a data part whenever Haiku finishes).
       const namingPromise =

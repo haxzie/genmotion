@@ -86,8 +86,8 @@ export function ElementChips() {
   const removeElement = useEditorStore((s) => s.removeElement);
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
-      <AnimatePresence>
+    <div className="relative flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
+      <AnimatePresence mode="popLayout">
         {elements.map((el) => (
           <motion.span
             key={el.id}
@@ -129,8 +129,8 @@ export function SceneChips({
   const selected = scenes.filter((s) => selectedSceneIds.includes(s.id));
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
-      <AnimatePresence>
+    <div className="relative flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
+      <AnimatePresence mode="popLayout">
         {selected.map((scene) => (
           <motion.span
             key={scene.id}
@@ -164,8 +164,8 @@ export function AssetChips({
   const selected = assets.filter((a) => selectedAssetIds.includes(a.id));
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
-      <AnimatePresence>
+    <div className="relative flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
+      <AnimatePresence mode="popLayout">
         {selected.map((asset) => (
           <motion.span
             key={asset.id}

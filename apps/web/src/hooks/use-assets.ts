@@ -61,6 +61,18 @@ export function useProjectAssets(projectId: string) {
   });
 }
 
+export function useDeleteAsset(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (assetId: string) =>
+      api(`/api/assets/${assetId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
+    },
+  });
+}
+
 export function useUploadAsset(projectId: string) {
   const queryClient = useQueryClient();
 

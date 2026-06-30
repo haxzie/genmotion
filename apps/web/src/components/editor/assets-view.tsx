@@ -2,7 +2,11 @@
 
 import { useRef, useState } from "react";
 import type { AssetData } from "@genmotion/shared";
-import { useProjectAssets, useUploadAsset } from "@/hooks/use-assets";
+import {
+  useDeleteAsset,
+  useProjectAssets,
+  useUploadAsset,
+} from "@/hooks/use-assets";
 import { useEditorStore } from "@/stores/editor-store";
 import { Spinner, cx } from "@/components/ui";
 
@@ -76,6 +80,14 @@ function DownloadIcon({ className }: IconProps) {
   );
 }
 
+function TrashIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
 function kindIcon(kind: AssetData["kind"]) {
   if (kind === "image") return ImageGlyph;
   if (kind === "video" || kind === "export") return VideoGlyph;
@@ -112,13 +124,21 @@ function AssetPreview({ asset }: { asset: AssetData }) {
 export function AssetsView({ projectId }: { projectId: string }) {
   const { data: assets, isLoading } = useProjectAssets(projectId);
   const uploadAsset = useUploadAsset(projectId);
+  const deleteAsset = useDeleteAsset(projectId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
   const selectAsset = useEditorStore((s) => s.selectAsset);
+  const deselectAsset = useEditorStore((s) => s.deselectAsset);
 
   const list = assets ?? [];
   const selected = list.find((a) => a.id === selectedId) ?? list[0] ?? null;
+
+  function handleDelete(asset: AssetData) {
+    if (selectedId === asset.id) setSelectedId(null);
+    deselectAsset(asset.id); // drop it from chat context if attached
+    deleteAsset.mutate(asset.id);
+  }
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -160,23 +180,37 @@ export function AssetsView({ projectId }: { projectId: string }) {
               const Glyph = kindIcon(asset.kind);
               const active = selectedAssetIds.includes(asset.id);
               return (
-                <button
-                  key={asset.id}
-                  type="button"
-                  onClick={(e) => {
-                    setSelectedId(asset.id);
-                    selectAsset(asset.id, e.shiftKey);
-                  }}
-                  className={cx(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[0.857rem] transition-colors",
-                    active
-                      ? "bg-accent-muted text-accent"
-                      : "text-text-secondary hover:bg-surface-raised/60 hover:text-text-primary",
-                  )}
-                >
-                  <Glyph className="size-4 shrink-0 text-text-tertiary" />
-                  <span className="truncate">{asset.filename}</span>
-                </button>
+                <div key={asset.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      setSelectedId(asset.id);
+                      selectAsset(asset.id, e.shiftKey);
+                    }}
+                    className={cx(
+                      "flex w-full items-center gap-2 rounded-md py-1.5 pl-2 pr-8 text-left text-[0.857rem] transition-colors",
+                      active
+                        ? "bg-accent-muted text-accent"
+                        : "text-text-secondary hover:bg-surface-raised/60 hover:text-text-primary",
+                    )}
+                  >
+                    <Glyph className="size-4 shrink-0 text-text-tertiary" />
+                    <span className="truncate">{asset.filename}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(asset);
+                    }}
+                    disabled={deleteAsset.isPending}
+                    title="Delete asset"
+                    aria-label={`Delete ${asset.filename}`}
+                    className="pointer-events-none absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-text-tertiary opacity-0 transition-opacity hover:bg-danger/15 hover:text-danger disabled:opacity-50 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                  >
+                    <TrashIcon className="size-4" />
+                  </button>
+                </div>
               );
             })
           )}

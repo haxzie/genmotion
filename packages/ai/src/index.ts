@@ -7,7 +7,7 @@ export {
 } from "./system-prompt";
 export { createEditorTools, SCENE_MUTATING_TOOLS, type EditorToolsContext } from "./tools";
 export { writeScene, type SceneBrief, type SceneWriteResult } from "./scene-writer";
-export { chatModel, CHAT_MODEL_ID, compactModel, COMPACT_MODEL_ID } from "./models";
+export { chatModel, CHAT_MODEL_ID } from "./models";
 export {
   runCompaction,
   loadLatestCompaction,

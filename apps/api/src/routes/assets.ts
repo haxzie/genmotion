@@ -2,7 +2,12 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, db, schema } from "@genmotion/db";
-import { presignUpload, projectFileKey, publicUrl } from "@genmotion/storage";
+import {
+  deleteObject,
+  presignUpload,
+  projectFileKey,
+  publicUrl,
+} from "@genmotion/storage";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
 export const assetRoutes = new Hono<AuthEnv>();
@@ -102,6 +107,35 @@ assetRoutes.post(
     return c.json(asset);
   },
 );
+
+assetRoutes.delete("/:id", async (c) => {
+  const user = c.get("user");
+  const [asset] = await db
+    .select()
+    .from(schema.assets)
+    .where(
+      and(
+        eq(schema.assets.id, c.req.param("id")),
+        eq(schema.assets.userId, user.id),
+      ),
+    );
+  if (!asset) return c.json({ error: "Not found" }, 404);
+
+  // Best-effort storage removal — drop the row regardless so it leaves the UI.
+  try {
+    await deleteObject(asset.storageKey);
+  } catch {
+    /* object may already be gone */
+  }
+  // An export's MP4 is referenced by its export_jobs row — clear the link first
+  // (the column is nullable) or the FK blocks the delete.
+  await db
+    .update(schema.exportJobs)
+    .set({ outputAssetId: null })
+    .where(eq(schema.exportJobs.outputAssetId, asset.id));
+  await db.delete(schema.assets).where(eq(schema.assets.id, asset.id));
+  return c.json({ ok: true });
+});
 
 assetRoutes.get("/", async (c) => {
   const user = c.get("user");

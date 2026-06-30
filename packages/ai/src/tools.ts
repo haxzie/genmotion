@@ -403,6 +403,8 @@ export function createEditorTools({
         }
 
         let code = scene.code;
+        let applied = 0;
+        let alreadyApplied = 0;
         for (let i = 0; i < edits.length; i++) {
           const { oldText, newText, replaceAll } = edits[i]!;
           if (oldText === newText) {
@@ -410,9 +412,17 @@ export function createEditorTools({
           }
           const occurrences = code.split(oldText).length - 1;
           if (occurrences === 0) {
-            // Show the model the actual current code so it stops guessing/looping
-            // — the snippet must be copied verbatim from THIS (note exact imports,
-            // indentation and whitespace).
+            // Idempotency: a very common failure is the model re-sending an edit
+            // that's ALREADY applied (e.g. adding `Img` to an import that now has
+            // it). If oldText is gone but newText is already present, there's
+            // nothing to do — treat it as a no-op instead of erroring, so the
+            // model stops looping on a stale edit.
+            if (newText.length > 0 && code.includes(newText)) {
+              alreadyApplied++;
+              continue;
+            }
+            // Genuine mismatch — show the actual current code so the model stops
+            // guessing (copy verbatim from THIS; note exact imports/whitespace).
             const current =
               code.length > 4000 ? `${code.slice(0, 4000)}\n…[truncated]` : code;
             return {
@@ -430,6 +440,18 @@ export function createEditorTools({
           code = replaceAll
             ? code.split(oldText).join(newText)
             : code.replace(oldText, () => newText);
+          applied++;
+        }
+
+        // Every edit was already applied — nothing changed, so skip the re-save.
+        if (applied === 0) {
+          return {
+            ok: true as const,
+            sceneId,
+            editsApplied: 0,
+            alreadyApplied,
+            note: "All edits were already applied — the scene is already in the requested state. Do not retry; re-read with getSceneCode if unsure.",
+          };
         }
 
         const error = await validateSceneCode(code, {
@@ -451,7 +473,8 @@ export function createEditorTools({
           ok: true as const,
           sceneId: updated.id,
           name: updated.name,
-          editsApplied: edits.length,
+          editsApplied: applied,
+          ...(alreadyApplied > 0 && { alreadyApplied }),
         };
       },
     }),

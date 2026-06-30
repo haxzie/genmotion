@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Streamdown } from "streamdown";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SceneData } from "@genmotion/shared";
+import { type SceneData, COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
 import { API_URL, api } from "@/lib/api";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
@@ -28,11 +28,57 @@ function PlusIcon({ className }: { className?: string }) {
   );
 }
 
-function ArrowRightIcon({ className }: { className?: string }) {
+function ArrowUpIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h13M13 6l6 6-6 6" />
+      <path d="M12 19V6M6 12l6-6 6 6" />
     </svg>
+  );
+}
+
+function RetryIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5" />
+    </svg>
+  );
+}
+
+/**
+ * Context-capacity ring left of the send button: fills as the live window
+ * approaches COMPACTION_MESSAGE_LIMIT. When full, the next message auto-compacts
+ * the earlier history (then it resets). Turns amber as it nears the limit.
+ */
+function CapacityRing({ count }: { count: number }) {
+  const limit = COMPACTION_MESSAGE_LIMIT;
+  const pct = Math.min(count / limit, 1);
+  const r = 8.5;
+  const circ = 2 * Math.PI * r;
+  const near = pct >= 0.8;
+  const stroke = near ? "var(--color-warning)" : "var(--color-accent)";
+  return (
+    <div
+      className="flex size-8 shrink-0 items-center justify-center"
+      title={`${count} / ${limit} messages in context — auto-compacts when full`}
+      aria-label={`Context capacity ${count} of ${limit} messages`}
+      role="img"
+    >
+      <svg viewBox="0 0 24 24" className="size-6 -rotate-90">
+        <circle cx="12" cy="12" r={r} fill="none" stroke="var(--color-border)" strokeWidth="2.5" />
+        <circle
+          cx="12"
+          cy="12"
+          r={r}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - pct)}
+          style={{ transition: "stroke-dashoffset 0.4s ease, stroke 0.3s ease" }}
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -132,20 +178,25 @@ function MessageBubble({
   }
 
   const elements: ReactNode[] = [];
-  const parts = message.parts;
+  // Keep only the parts this bubble actually renders — non-empty text and tool
+  // calls. Multi-step turns interleave invisible `step-start`/`reasoning` parts
+  // (and empty text) between tool calls; dropping them first means same-tool
+  // calls split only by those still count as consecutive and club together.
+  const parts = message.parts.filter((p) => {
+    if (p.type === "text") return Boolean(p.text.trim());
+    return p.type.startsWith("tool-") || p.type === "dynamic-tool";
+  });
   for (let i = 0; i < parts.length; ) {
     const part = parts[i]!;
     if (part.type === "text") {
-      if (part.text.trim()) {
-        elements.push(
-          <Streamdown
-            key={i}
-            className="space-y-2 text-text-primary [&_a]:text-accent [&_code]:rounded [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.857rem] [&_li]:ml-4 [&_ol]:list-decimal [&_strong]:font-semibold [&_ul]:list-disc"
-          >
-            {part.text}
-          </Streamdown>,
-        );
-      }
+      elements.push(
+        <Streamdown
+          key={i}
+          className="space-y-2 text-text-primary [&_a]:text-accent [&_code]:rounded [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.857rem] [&_li]:ml-4 [&_ol]:list-decimal [&_strong]:font-semibold [&_ul]:list-disc"
+        >
+          {part.text}
+        </Streamdown>,
+      );
       i++;
       continue;
     }
@@ -201,7 +252,7 @@ function ChatPanelInner({
       }),
   );
 
-  const { messages, sendMessage, status, error, setMessages } = useChat({
+  const { messages, sendMessage, status, error, setMessages, regenerate } = useChat({
     id: projectId,
     transport,
     messages: initialMessages,
@@ -212,8 +263,14 @@ function ChatPanelInner({
       ) {
         queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
       }
+      // Backend auto-compacted this turn — clear old bubbles once it settles.
+      if (dataPart.type === "data-compacted") {
+        pendingCompactionClear.current = true;
+      }
     },
   });
+  // Set when a turn compacts (tool or auto); consumed on the busy falling edge.
+  const pendingCompactionClear = useRef(false);
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -228,6 +285,9 @@ function ChatPanelInner({
     lastPart.text.trim().length > 0;
   const waitingToStart = busy && lastMessage?.role === "user";
   const showOrbit = busy && !waitingToStart && !streamingText;
+  // A trailing user message with nothing running means the assistant turn never
+  // landed (failed/interrupted) — offer to retry it.
+  const canRetry = !busy && lastMessage?.role === "user";
 
   useEffect(() => {
     setAiBusy(busy);
@@ -249,11 +309,36 @@ function ChatPanelInner({
     prevBusy.current = busy;
     if (!wasBusy || busy) return; // only when busy goes true → false
     const last = messages[messages.length - 1];
-    if (!didCompact(last) || lastCompactedId.current === last!.id) return;
-    lastCompactedId.current = last!.id;
+    if (!last) return;
+    // Compacted this turn via the agent tool or the backend auto-trigger.
+    const compacted = didCompact(last) || pendingCompactionClear.current;
+    pendingCompactionClear.current = false;
+    if (!compacted || lastCompactedId.current === last.id) return;
+    lastCompactedId.current = last.id;
     const lastUserIdx = messages.map((m) => m.role).lastIndexOf("user");
     if (lastUserIdx > 0) setMessages(messages.slice(lastUserIdx));
   }, [messages, busy, setMessages]);
+
+  // Escape clears all attached context pills (scenes, assets, elements) —
+  // unless a modal is open, where Escape should close that instead.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const s = useEditorStore.getState();
+      if (
+        s.selectedSceneIds.length ||
+        s.selectedAssetIds.length ||
+        s.selectedElements.length
+      ) {
+        s.clearSelection();
+        s.clearAssetSelection();
+        s.clearElements();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Live updates mid-stream: whenever a new tool result lands, refetch scenes.
   const toolOutputCount = useRef(0);
@@ -405,6 +490,18 @@ function ChatPanelInner({
                 {error.message || "Something went wrong. Try again."}
               </p>
             )}
+            {canRetry && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => regenerate()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-2.5 py-1 text-[0.786rem] text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
+                >
+                  <RetryIcon className="size-3.5" />
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -474,6 +571,7 @@ function ChatPanelInner({
                       ? `${assets.length} asset${assets.length > 1 ? "s" : ""} available`
                       : "⏎ to send"}
             </span>
+            {messages.length > 0 && <CapacityRing count={messages.length} />}
             <button
               type="submit"
               aria-label="Send"
@@ -483,7 +581,7 @@ function ChatPanelInner({
               {busy ? (
                 <Spinner className="size-4 text-background" />
               ) : (
-                <ArrowRightIcon className="size-[1.05rem]" />
+                <ArrowUpIcon className="size-[1.05rem]" />
               )}
             </button>
           </div>

@@ -24,6 +24,7 @@ export {
   type TextAnimationPreset,
   type ScrambleTextProps,
 } from "./components/text-animation";
+export { Confetti, type ConfettiProps } from "./components/confetti";
 export { useGsapTimeline, gsap } from "./gsap";
 export {
   MediaReadinessContext,

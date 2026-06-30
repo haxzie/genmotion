@@ -135,7 +135,7 @@ export function PreviewStage({
         )}
       </div>
 
-      <div className="relative flex h-10 shrink-0 items-center justify-between bg-surface px-3">
+      <div className="relative flex shrink-0 items-center justify-between bg-surface px-4 pt-1 pb-4">
         <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
           {framesToTimecode(frame, fps)}{" "}
           <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
