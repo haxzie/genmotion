@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { env } from "./env";
 import { auth } from "./auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
@@ -14,7 +15,7 @@ app.use(logger());
 app.use(
   "/api/*",
   cors({
-    origin: process.env.WEB_URL ?? "http://localhost:4000",
+    origin: env.WEB_URL,
     credentials: true,
   }),
 );

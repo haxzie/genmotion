@@ -78,14 +78,14 @@ function LogOutIcon({ className }: IconProps) {
 }
 
 const NAV = [
-  { label: "Create", href: "/", Icon: SparklesIcon },
+  { label: "Create", href: "/dashboard", Icon: SparklesIcon },
   { label: "Projects", href: "/projects", Icon: GridIcon },
   { label: "Brand Assets", href: "/brand-assets", Icon: PaletteIcon },
   { label: "Skills", href: "/skills", Icon: ZapIcon },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+  if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -168,7 +168,7 @@ function Sidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col bg-background">
       <div className="flex h-14 items-center justify-between px-3">
-        <Link href="/" className="group flex items-center px-2" aria-label="Home">
+        <Link href="/dashboard" className="group flex items-center px-2" aria-label="Home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.svg"

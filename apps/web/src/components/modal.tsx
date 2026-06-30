@@ -41,24 +41,26 @@ export function Modal({
       {open && (
         <motion.div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
         >
-          <div
+          <motion.div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => dismissible && onClose()}
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
           />
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}
             className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
-            transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+            variants={{
+              hidden: { opacity: 0, scale: 0.96, y: 12 },
+              visible: { opacity: 1, scale: 1, y: 0 },
+            }}
+            transition={{ duration: 0.28, ease: [0.25, 1, 0.5, 1], delay: 0.04 }}
           >
             {children}
           </motion.div>

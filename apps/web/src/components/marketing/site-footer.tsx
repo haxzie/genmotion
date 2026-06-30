@@ -1,0 +1,76 @@
+import Link from "next/link";
+import { Container } from "@/components/marketing/primitives";
+
+const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
+  {
+    heading: "Product",
+    links: [
+      { label: "Features", href: "/features" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Free Tools", href: "/tools" },
+      { label: "Dashboard", href: "/dashboard" },
+    ],
+  },
+  {
+    heading: "Resources",
+    links: [
+      { label: "Blog", href: "/blog" },
+      { label: "Glossary", href: "/glossary" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Log in", href: "/login" },
+      { label: "Start free", href: "/signup" },
+    ],
+  },
+];
+
+export function SiteFooter() {
+  return (
+    <footer className="border-t border-border">
+      <Container className="py-14">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+          <div>
+            <Link href="/" className="flex items-center gap-2" aria-label="GenMotion home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="" className="size-6 rounded-[5px]" />
+              <span className="font-display text-[1.05rem] font-semibold tracking-tight">
+                GenMotion
+              </span>
+            </Link>
+            <p className="mt-3 max-w-[14rem] text-[0.9rem] text-text-tertiary">
+              The AI motion-video studio. Describe it, preview it frame-accurately,
+              export a pixel-perfect MP4.
+            </p>
+          </div>
+          {COLUMNS.map((col) => (
+            <div key={col.heading}>
+              <h3 className="text-[0.786rem] font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                {col.heading}
+              </h3>
+              <ul className="mt-4 flex flex-col gap-2.5">
+                {col.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-[0.95rem] text-text-secondary transition-colors duration-150 hover:text-text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-[0.857rem] text-text-tertiary sm:flex-row sm:items-center">
+          <span>© {new Date().getFullYear()} GenMotion. All rights reserved.</span>
+          <span className="font-mono text-text-tertiary">Made with motion.</span>
+        </div>
+      </Container>
+    </footer>
+  );
+}

@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { env } from "./env";
 
 export const RENDER_QUEUE = "render-mp4";
 export const THUMBNAIL_QUEUE = "render-thumbnail";
@@ -9,10 +10,7 @@ let bossPromise: Promise<PgBoss> | null = null;
 export function getBoss(): Promise<PgBoss> {
   if (!bossPromise) {
     bossPromise = (async () => {
-      const boss = new PgBoss(
-        process.env.DATABASE_URL ??
-          "postgres://genmotion:genmotion@localhost:5433/genmotion",
-      );
+      const boss = new PgBoss(env.DATABASE_URL);
       boss.on("error", (err: Error) => console.error("[pg-boss]", err));
       await boss.start();
       await boss.createQueue(RENDER_QUEUE);

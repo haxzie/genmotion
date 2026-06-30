@@ -1,10 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+import { cx } from "@/lib/cx";
 
 export { cx };
 

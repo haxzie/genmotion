@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Button, Spinner } from "@/components/ui";
+import { Spinner } from "@/components/ui";
 
 interface Project {
   id: string;
@@ -43,7 +43,7 @@ export default function ProjectsPage() {
         <h1 className="text-2xl font-medium">Projects</h1>
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")}
           className="inline-flex items-center gap-1.5 rounded-full bg-cta px-4 py-2 text-[0.857rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover"
         >
           <svg viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,10 +89,11 @@ export default function ProjectsPage() {
                       ` · ${formatDuration(project.totalFrames / project.fps)}`}
                   </p>
                 </div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                <button
+                  type="button"
+                  aria-label={`Delete ${project.name}`}
+                  title="Delete project"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-text-tertiary opacity-0 transition-all duration-150 hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (confirm(`Delete "${project.name}"?`)) {
@@ -100,8 +101,13 @@ export default function ProjectsPage() {
                     }
                   }}
                 >
-                  Delete
-                </Button>
+                  <svg viewBox="0 0 24 24" className="size-[1.05rem]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 7h16" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+                    <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </button>
               </div>
             </div>
           ))}

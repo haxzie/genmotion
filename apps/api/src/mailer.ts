@@ -1,4 +1,5 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+import { env } from "./env";
 
 /**
  * Transactional email via Amazon SES (SESv2). Uses its OWN credentials/region,
@@ -6,9 +7,9 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
  * AWS_REGION=auto, which SES would reject). Falls back to the default AWS
  * credential chain when the SES_* vars aren't set.
  */
-const region = process.env.SES_REGION ?? "us-east-1";
-const accessKeyId = process.env.SES_ACCESS_KEY_ID;
-const secretAccessKey = process.env.SES_SECRET_ACCESS_KEY;
+const region = env.AWS_SES_REGION ?? env.SES_REGION ?? "us-east-1";
+const accessKeyId = env.AWS_SES_ACCESS_KEY_ID ?? env.SES_ACCESS_KEY_ID;
+const secretAccessKey = env.AWS_SES_ACCESS_KEY ?? env.SES_SECRET_ACCESS_KEY;
 
 const ses = new SESv2Client({
   region,
@@ -25,10 +26,10 @@ export interface SendEmailInput {
 }
 
 /** True when SES is configured enough to actually send (a verified From). */
-export const emailEnabled = Boolean(process.env.EMAIL_FROM);
+export const emailEnabled = Boolean(env.EMAIL_FROM);
 
 export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
-  const from = process.env.EMAIL_FROM;
+  const from = env.EMAIL_FROM;
   if (!from) throw new Error("EMAIL_FROM is not set — cannot send email.");
 
   await ses.send(

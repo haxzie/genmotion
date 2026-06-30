@@ -30,7 +30,7 @@ export function Topbar({
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 bg-background px-5">
-      <Link href="/" className="group flex items-center" aria-label="Home">
+      <Link href="/dashboard" className="group flex items-center" aria-label="Home">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.svg"

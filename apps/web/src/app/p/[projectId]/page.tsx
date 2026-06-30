@@ -148,7 +148,7 @@ export default function EditorPage({
     return (
       <main className="flex h-screen flex-col items-center justify-center gap-4">
         <p className="text-text-secondary">Project not found.</p>
-        <Button onClick={() => router.push("/")}>Back to dashboard</Button>
+        <Button onClick={() => router.push("/dashboard")}>Back to dashboard</Button>
       </main>
     );
   }
