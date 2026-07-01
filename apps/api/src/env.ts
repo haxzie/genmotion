@@ -60,7 +60,7 @@ const schema = z.object({
   MOONSHOT_API_KEY: z.string().min(1).optional(),
   FIRECRAWL_API_KEY: z.string().min(1).optional(),
   E2B_API_KEY: z.string().min(1).optional(),
-  CHAT_MODEL: z.string().min(1).default("kimi-k2.6"),
+  CHAT_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
 
   // ── Web (Next.js public) ────────────────────────────────────────────
   NEXT_PUBLIC_API_URL: z.url().optional(),

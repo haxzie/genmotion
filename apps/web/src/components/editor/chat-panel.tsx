@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Streamdown } from "streamdown";
@@ -9,7 +9,7 @@ import { type SceneData, COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
 import { API_URL, api } from "@/lib/api";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
-import { useProjectAssets, useUploadAsset } from "@/hooks/use-assets";
+import { useProjectAssets } from "@/hooks/use-assets";
 import {
   SceneChips,
   AssetChips,
@@ -18,6 +18,7 @@ import {
   type MessageContextData,
 } from "./scene-chip";
 import { ToolCard, type ToolPartLike } from "./tool-card";
+import { UploadModal } from "./upload-modal";
 import { Spinner, cx } from "@/components/ui";
 
 function PlusIcon({ className }: { className?: string }) {
@@ -121,18 +122,96 @@ function buildContextNote(
 }
 
 /** Lighter "Thinking…" indicator: soft shimmering word + animated ellipsis. */
-function ThinkingIndicator() {
+function ThinkingIndicator({ label }: { label?: string }) {
   return (
     <div
       className="mt-4 self-start pl-2 text-[0.95rem] font-medium text-text-tertiary"
       role="status"
     >
-      <span className="thinking-shimmer thinking-shimmer-soft">Thinking</span>
-      <span className="thinking-dots" aria-hidden="true">
-        <i>.</i>
-        <i>.</i>
-        <i>.</i>
+      <span className="thinking-shimmer thinking-shimmer-soft">
+        {label ?? "Thinking"}
       </span>
+      {!label && (
+        <span className="thinking-dots" aria-hidden="true">
+          <i>.</i>
+          <i>.</i>
+          <i>.</i>
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The model's reasoning ("thinking") stream. While it's still streaming it's
+ * shown live (auto-expanded, muted); once done it collapses to a toggle so the
+ * long thought process doesn't dominate the transcript.
+ */
+function ReasoningBlock({ text, streaming }: { text: string; streaming: boolean }) {
+  const [open, setOpen] = useState(false);
+  const show = streaming || open;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Keep the newest reasoning in view — pin to the bottom as it streams (and
+  // when first opened). Batch into a rAF and cancel any pending one so rapid
+  // token updates coalesce to a single scroll per frame (no layout thrash).
+  useEffect(() => {
+    if (!show) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [text, show]);
+
+  return (
+    <div className="min-w-0 max-w-full self-start">
+      <button
+        type="button"
+        onClick={() => !streaming && setOpen((o) => !o)}
+        className={cx(
+          "flex items-center gap-1 text-[0.857rem] text-text-tertiary transition-colors",
+          !streaming && "hover:text-text-secondary",
+        )}
+      >
+        {streaming ? (
+          <span className="thinking-shimmer thinking-shimmer-soft">Thinking</span>
+        ) : (
+          <>
+            <svg
+              viewBox="0 0 16 16"
+              className={cx("size-3 transition-transform duration-150", open && "rotate-90")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M6 3.5L10.5 8 6 12.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Thought process
+          </>
+        )}
+      </button>
+      {show && (
+        <div className="relative mt-1.5 min-w-0 max-w-full">
+          {/* Top fade so scrolled-past reasoning dissolves seamlessly. */}
+          <div
+            ref={scrollRef}
+            className="max-h-64 min-w-0 max-w-full overflow-y-auto overflow-x-hidden border-l-2 border-border pl-3 [mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,#000_2rem)]"
+          >
+            {/* While streaming, render cheap plain text — running the growing
+                reasoning through the markdown pipeline on every token is what
+                made it jittery. Format with Streamdown once it's complete. */}
+            {streaming ? (
+              <div className="whitespace-pre-wrap text-[0.857rem] leading-relaxed text-text-tertiary [overflow-wrap:anywhere]">
+                {text}
+              </div>
+            ) : (
+              <ChatMarkdown muted>{text}</ChatMarkdown>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -144,6 +223,49 @@ function didCompact(message: UIMessage | undefined): boolean {
     (part) =>
       part.type === "tool-compactConversation" &&
       (part as { state?: string }).state === "output-available",
+  );
+}
+
+// Shared prose styling for chat markdown. Streamdown wraps code blocks and
+// tables in its own bordered, padded "card" (rounded-xl border bg-sidebar p-2)
+// and adds copy/download buttons — we don't want either here, so `controls` is
+// off and the wrappers are flattened. `:has()` targets those wrapper divs; the
+// inline-code rule excludes block code (code inside <pre>).
+const MD_BASE = cx(
+  "min-w-0 max-w-full space-y-2 break-words [overflow-wrap:anywhere]",
+  "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-surface-raised [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.857rem]",
+  "[&_a]:text-accent [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4",
+  // Flatten Streamdown's bordered/padded card around code blocks.
+  "[&_div:has(pre)]:!m-0 [&_div:has(pre)]:!gap-0 [&_div:has(pre)]:!rounded-none [&_div:has(pre)]:!border-0 [&_div:has(pre)]:!bg-transparent [&_div:has(pre)]:!p-0",
+  "[&_pre]:!my-1 [&_pre]:!overflow-x-auto [&_pre]:!rounded-md [&_pre]:!p-3",
+  // Same for tables.
+  "[&_div:has(table)]:!m-0 [&_div:has(table)]:!gap-0 [&_div:has(table)]:!border-0 [&_div:has(table)]:!bg-transparent [&_div:has(table)]:!p-0",
+  "[&_table]:!my-2 [&_th]:border-border [&_td]:border-border",
+);
+
+/**
+ * Chat markdown (assistant text and reasoning) — Streamdown with the built-in
+ * code/table cards flattened and the copy/download controls removed.
+ */
+function ChatMarkdown({
+  children,
+  muted,
+}: {
+  children: string;
+  muted?: boolean;
+}) {
+  return (
+    <Streamdown
+      controls={false}
+      className={cx(
+        MD_BASE,
+        muted
+          ? "text-[0.857rem] leading-relaxed text-text-tertiary [&_strong]:font-medium [&_strong]:text-text-secondary"
+          : "text-text-primary [&_strong]:font-semibold",
+      )}
+    >
+      {children}
+    </Streamdown>
   );
 }
 
@@ -178,25 +300,31 @@ function MessageBubble({
   }
 
   const elements: ReactNode[] = [];
-  // Keep only the parts this bubble actually renders — non-empty text and tool
-  // calls. Multi-step turns interleave invisible `step-start`/`reasoning` parts
-  // (and empty text) between tool calls; dropping them first means same-tool
-  // calls split only by those still count as consecutive and club together.
+  // Keep only the parts this bubble actually renders — reasoning, non-empty
+  // text, and tool calls. Multi-step turns interleave invisible `step-start`
+  // parts (and empty text) between tool calls; dropping them first means
+  // same-tool calls split only by those still count as consecutive and club.
   const parts = message.parts.filter((p) => {
     if (p.type === "text") return Boolean(p.text.trim());
+    if (p.type === "reasoning") return Boolean((p as { text?: string }).text?.trim());
     return p.type.startsWith("tool-") || p.type === "dynamic-tool";
   });
   for (let i = 0; i < parts.length; ) {
     const part = parts[i]!;
-    if (part.type === "text") {
+    if (part.type === "reasoning") {
+      const isLast = i === parts.length - 1;
       elements.push(
-        <Streamdown
+        <ReasoningBlock
           key={i}
-          className="space-y-2 text-text-primary [&_a]:text-accent [&_code]:rounded [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.857rem] [&_li]:ml-4 [&_ol]:list-decimal [&_strong]:font-semibold [&_ul]:list-disc"
-        >
-          {part.text}
-        </Streamdown>,
+          text={(part as { text?: string }).text ?? ""}
+          streaming={live && isLast}
+        />,
       );
+      i++;
+      continue;
+    }
+    if (part.type === "text") {
+      elements.push(<ChatMarkdown key={i}>{part.text}</ChatMarkdown>);
       i++;
       continue;
     }
@@ -224,6 +352,11 @@ function MessageBubble({
   );
 }
 
+// Only the currently-streaming message changes each token; memoizing keeps the
+// rest of the transcript from re-rendering (and re-parsing markdown) on every
+// reasoning/text delta, which is what made streaming jittery.
+const MemoMessageBubble = memo(MessageBubble);
+
 function ChatPanelInner({
   projectId,
   scenes,
@@ -235,14 +368,49 @@ function ChatPanelInner({
 }) {
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: assets } = useProjectAssets(projectId);
-  const uploadAsset = useUploadAsset(projectId);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
   const selectedElements = useEditorStore((s) => s.selectedElements);
   const setAiBusy = useEditorStore((s) => s.setAiBusy);
   const fixRequest = useEditorStore((s) => s.fixRequest);
+
+  // When a selection is made in the studio (scene, asset, or a preview element)
+  // and its context chip appears, jump focus to the chat input so the user can
+  // start typing right away.
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const selectionCount =
+    selectedSceneIds.length + selectedAssetIds.length + selectedElements.length;
+  const prevSelectionCount = useRef(selectionCount);
+  useEffect(() => {
+    if (selectionCount > prevSelectionCount.current) {
+      inputRef.current?.focus();
+    }
+    prevSelectionCount.current = selectionCount;
+  }, [selectionCount]);
+
+  // Dragging a file anywhere into the window opens the upload modal so the user
+  // can drop it there. Also swallow drops outside the drop zone so the browser
+  // doesn't navigate to / open the file.
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) =>
+      Boolean(e.dataTransfer?.types?.includes("Files"));
+    const onDragEnter = (e: DragEvent) => {
+      if (hasFiles(e)) setUploadOpen(true);
+    };
+    const prevent = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+    };
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
+  }, []);
 
   const [transport] = useState(
     () =>
@@ -256,12 +424,21 @@ function ChatPanelInner({
     id: projectId,
     transport,
     messages: initialMessages,
+    // Coalesce token updates so React commits ~every 60ms instead of on every
+    // delta — keeps streaming from saturating the main thread and starving the
+    // player's animation frames.
+    experimental_throttle: 60,
     onData: (dataPart) => {
       if (
         dataPart.type === "data-project-renamed" ||
         dataPart.type === "data-scenes-updated"
       ) {
         queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
+      }
+      // Live progress from a long-running tool (e.g. each parallel scene).
+      if (dataPart.type === "data-status") {
+        const text = (dataPart as { data?: { text?: string } }).data?.text;
+        if (text) setLiveStatus(text);
       }
       // Backend auto-compacted this turn — clear old bubbles once it settles.
       if (dataPart.type === "data-compacted") {
@@ -271,18 +448,40 @@ function ChatPanelInner({
   });
   // Set when a turn compacts (tool or auto); consumed on the busy falling edge.
   const pendingCompactionClear = useRef(false);
+  // Latest live progress line streamed from a long-running tool this turn.
+  const [liveStatus, setLiveStatus] = useState<string | null>(null);
+  // Messages typed while a turn is streaming — sent one at a time as the stream
+  // frees up. Each carries a `send` closure snapshotting its context.
+  const [queue, setQueue] = useState<
+    { id: string; text: string; send: () => void }[]
+  >([]);
 
   const busy = status === "submitted" || status === "streaming";
+
+  // Flush the next queued message on the falling edge of `busy` (a turn just
+  // finished). One per transition, so each queued message runs in its own turn.
+  const prevBusyForQueue = useRef(busy);
+  useEffect(() => {
+    const wasBusy = prevBusyForQueue.current;
+    prevBusyForQueue.current = busy;
+    if (wasBusy && !busy && queue.length > 0) {
+      const [next, ...rest] = queue;
+      setQueue(rest);
+      next!.send();
+    }
+  }, [busy, queue]);
 
   // Waiting states. Before the assistant produces anything (last message is
   // still the user's) → shimmering "Thinking…". Once it's running tools but
   // hasn't started its text yet → the orbit loader. Hidden once text streams.
   const lastMessage = messages[messages.length - 1];
   const lastPart = lastMessage?.parts[lastMessage.parts.length - 1];
+  // Either streamed text or streamed reasoning counts as visible activity, so
+  // the orbit/"Thinking" loader gives way to the real content.
   const streamingText =
     lastMessage?.role === "assistant" &&
-    lastPart?.type === "text" &&
-    lastPart.text.trim().length > 0;
+    (lastPart?.type === "text" || lastPart?.type === "reasoning") &&
+    Boolean((lastPart as { text?: string }).text?.trim());
   const waitingToStart = busy && lastMessage?.role === "user";
   const showOrbit = busy && !waitingToStart && !streamingText;
   // A trailing user message with nothing running means the assistant turn never
@@ -294,6 +493,7 @@ function ChatPanelInner({
     if (!busy) {
       // Final settle: make sure the editor reflects every tool mutation.
       queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
+      setLiveStatus(null);
     }
   }, [busy, setAiBusy, queryClient, projectId]);
 
@@ -380,18 +580,38 @@ function ChatPanelInner({
     }
   }, [fixRequest, busy, sendMessage]);
 
-  // Pin to bottom as messages stream in.
+  // Pin to bottom as messages stream in — but only while the user is already at
+  // the bottom, and batched into a rAF so a burst of tokens coalesces to one
+  // scroll per frame instead of a synchronous reflow on every token.
   const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  const stickToBottom = useRef(true);
+  const scrollRaf = useRef<number | null>(null);
+
+  const handleMessagesScroll = () => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
+  useEffect(() => {
+    if (!stickToBottom.current) return;
+    if (scrollRaf.current != null) cancelAnimationFrame(scrollRaf.current);
+    scrollRaf.current = requestAnimationFrame(() => {
+      scrollRaf.current = null;
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => {
+      if (scrollRaf.current != null) {
+        cancelAnimationFrame(scrollRaf.current);
+        scrollRaf.current = null;
+      }
+    };
   }, [messages]);
 
-  function submit() {
-    const text = input.trim();
-    if (!text || busy) return;
-    setInput("");
-
+  // Build the exact (message, options) args for sendMessage from the current
+  // input + attached context. Returned as a closure so a queued message replays
+  // precisely what would have been sent at the moment it was typed.
+  function buildSendPayload(text: string): () => void {
     const selScenes = scenes.filter((s) => selectedSceneIds.includes(s.id));
     const selAssets = (assets ?? []).filter((a) =>
       selectedAssetIds.includes(a.id),
@@ -420,38 +640,60 @@ function ChatPanelInner({
       })),
     );
 
-    sendMessage(
-      {
-        role: "user",
-        parts: [
-          // Prepend the context so the agent reads it before the request.
-          ...(note ? [{ type: "text" as const, text: note }] : []),
-          { type: "text", text },
-          ...(note ? [{ type: "data-context" as const, data: ctx }] : []),
-        ],
-      },
-      {
-        body: {
-          selectedSceneIds,
-          selectedAssetIds,
-          selectedElements: selectedElements.map(
-            ({ tag, text: elText, elementId, sceneId, sceneName, timecode }) => ({
-              tag,
-              text: elText,
-              elementId,
-              sceneId,
-              sceneName,
-              timecode,
-            }),
-          ),
-        },
-      },
+    const snapshotSceneIds = [...selectedSceneIds];
+    const snapshotAssetIds = [...selectedAssetIds];
+    const snapshotElements = selectedElements.map(
+      ({ tag, text: elText, elementId, sceneId, sceneName, timecode }) => ({
+        tag,
+        text: elText,
+        elementId,
+        sceneId,
+        sceneName,
+        timecode,
+      }),
     );
-    // Context is now attached to the message — clear the pills.
+
+    return () =>
+      sendMessage(
+        {
+          role: "user",
+          parts: [
+            // Prepend the context so the agent reads it before the request.
+            ...(note ? [{ type: "text" as const, text: note }] : []),
+            { type: "text", text },
+            ...(note ? [{ type: "data-context" as const, data: ctx }] : []),
+          ],
+        },
+        {
+          body: {
+            selectedSceneIds: snapshotSceneIds,
+            selectedAssetIds: snapshotAssetIds,
+            selectedElements: snapshotElements,
+          },
+        },
+      );
+  }
+
+  function submit() {
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+
+    const send = buildSendPayload(text);
+
+    // Context is consumed by this message (queued or sent) — clear the pills.
     const store = useEditorStore.getState();
     store.clearSelection();
     store.clearAssetSelection();
     store.clearElements();
+
+    if (busy) {
+      // A turn is in flight — queue this message and flush it when the stream
+      // frees up (see the falling-edge effect above).
+      setQueue((q) => [...q, { id: crypto.randomUUID(), text, send }]);
+    } else {
+      send();
+    }
   }
 
   return (
@@ -459,7 +701,11 @@ function ChatPanelInner({
       {/* Fade messages into the background as they scroll under the top edge */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-background to-transparent" />
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        onScroll={handleMessagesScroll}
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-text-tertiary">
             <p className="font-display text-xl text-text-secondary">
@@ -475,7 +721,7 @@ function ChatPanelInner({
             {messages.map((message, index) => {
               const grouped = messages[index - 1]?.role === message.role;
               return (
-                <MessageBubble
+                <MemoMessageBubble
                   key={message.id}
                   message={message}
                   scenes={scenes}
@@ -484,13 +730,38 @@ function ChatPanelInner({
                 />
               );
             })}
-            {(waitingToStart || showOrbit) && <ThinkingIndicator />}
-            {error && (
-              <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-[0.857rem] text-danger">
-                {error.message || "Something went wrong. Try again."}
-              </p>
+            {(waitingToStart || showOrbit) && (
+              <ThinkingIndicator label={liveStatus ?? undefined} />
             )}
-            {canRetry && (
+            {error && (
+              <div className="mt-4 flex items-center gap-2.5 rounded-md border border-danger/30 bg-danger/10 px-3 py-2.5">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="size-4 shrink-0 text-danger"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v4.5M12 16h.01" />
+                </svg>
+                <p className="min-w-0 flex-1 text-[0.857rem] text-danger">
+                  {error.message || "Something went wrong. Try again."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => regenerate()}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-danger/40 px-2.5 py-1 text-[0.786rem] font-medium text-danger transition-colors hover:bg-danger/15"
+                >
+                  <RetryIcon className="size-3.5" />
+                  Retry
+                </button>
+              </div>
+            )}
+            {!error && canRetry && (
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
@@ -508,6 +779,33 @@ function ChatPanelInner({
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-60% to-transparent px-3 pb-3 pt-12">
         <div className="pointer-events-auto">
+        {queue.length > 0 && (
+          <div className="mb-2 flex flex-col gap-1.5">
+            {queue.map((q) => (
+              <div
+                key={q.id}
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface-raised px-3 py-2 text-[0.857rem] text-text-secondary"
+              >
+                <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-text-tertiary" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="8" cy="8" r="5.5" />
+                  <path d="M8 5v3l2 1.3" />
+                </svg>
+                <span className="min-w-0 flex-1 truncate">{q.text}</span>
+                <span className="shrink-0 text-[0.714rem] text-text-tertiary">Queued</span>
+                <button
+                  type="button"
+                  aria-label="Discard queued message"
+                  onClick={() => setQueue((qs) => qs.filter((x) => x.id !== q.id))}
+                  className="flex size-5 shrink-0 items-center justify-center rounded text-text-tertiary transition-colors hover:bg-surface-hover hover:text-text-primary"
+                >
+                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                    <path d="M4 4l8 8M12 4l-8 8" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <SceneChips scenes={scenes} />
         <AssetChips assets={assets ?? []} />
         <ElementChips />
@@ -519,6 +817,7 @@ function ChatPanelInner({
           className="rounded-2xl border border-[#1f1f24] bg-surface px-3 py-2.5 transition-colors focus-within:border-[#2a2a31]"
         >
           <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -535,50 +834,32 @@ function ChatPanelInner({
             rows={2}
             className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
           />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*,audio/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadAsset.mutate(file);
-              e.target.value = "";
-            }}
-          />
           <div className="flex items-center justify-between gap-2 pt-1">
             <button
               type="button"
               title="Attach image, video, or audio"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadAsset.isPending}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
+              onClick={() => setUploadOpen(true)}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
             >
-              {uploadAsset.isPending ? (
-                <Spinner className="size-4" />
-              ) : (
-                <PlusIcon className="size-[1.15rem]" />
-              )}
+              <PlusIcon className="size-[1.15rem]" />
             </button>
             <span className="min-w-0 flex-1 truncate text-center text-[0.786rem] text-text-tertiary">
-              {uploadAsset.isPending
-                ? "Uploading…"
-                : uploadAsset.isError
-                  ? "Upload failed"
-                  : selectedSceneIds.length > 0
-                    ? `${selectedSceneIds.length} scene${selectedSceneIds.length > 1 ? "s" : ""} in context`
-                    : assets && assets.length > 0
-                      ? `${assets.length} asset${assets.length > 1 ? "s" : ""} available`
-                      : "⏎ to send"}
+              {selectedSceneIds.length > 0
+                ? `${selectedSceneIds.length} scene${selectedSceneIds.length > 1 ? "s" : ""} in context`
+                : assets && assets.length > 0
+                  ? `${assets.length} asset${assets.length > 1 ? "s" : ""} available`
+                  : busy
+                    ? "⏎ to queue"
+                    : "⏎ to send"}
             </span>
             {messages.length > 0 && <CapacityRing count={messages.length} />}
             <button
               type="submit"
-              aria-label="Send"
-              disabled={busy || !input.trim()}
+              aria-label={busy ? "Queue message" : "Send"}
+              disabled={!input.trim()}
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-cta text-background outline-none transition-all hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {busy ? (
+              {busy && !input.trim() ? (
                 <Spinner className="size-4 text-background" />
               ) : (
                 <ArrowUpIcon className="size-[1.05rem]" />
@@ -588,6 +869,12 @@ function ChatPanelInner({
         </form>
         </div>
       </div>
+
+      <UploadModal
+        projectId={projectId}
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
     </aside>
   );
 }

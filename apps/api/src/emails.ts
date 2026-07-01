@@ -41,3 +41,56 @@ Didn't request this? You can safely ignore this email.`;
 
   return { subject, html, text };
 }
+
+/** Builds the organization invitation email (subject + html + text). */
+export function inviteEmail({
+  orgName,
+  inviterName,
+  url,
+}: {
+  orgName: string;
+  inviterName: string;
+  url: string;
+}) {
+  const subject = `You've been invited to join ${orgName} on GenMotion`;
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#0a0a0c;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0c;padding:40px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#141417;border:1px solid #1f1f24;border-radius:16px;padding:32px;">
+            <tr><td style="font-size:20px;font-weight:600;color:#ededef;padding-bottom:8px;">GenMotion</td></tr>
+            <tr><td style="font-size:15px;color:#8a8a93;line-height:1.6;padding-bottom:24px;">
+              <strong style="color:#ededef;">${inviterName}</strong> invited you to join
+              <strong style="color:#ededef;">${orgName}</strong> on GenMotion.
+            </td></tr>
+            <tr><td style="padding-bottom:24px;">
+              <a href="${url}" style="display:inline-block;background:#ededef;color:#0a0a0c;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:10px;">
+                Accept invitation
+              </a>
+            </td></tr>
+            <tr><td style="font-size:13px;color:#5a5a63;line-height:1.6;">
+              If the button doesn't work, copy and paste this URL:<br/>
+              <a href="${url}" style="color:#8a8a93;word-break:break-all;">${url}</a>
+            </td></tr>
+            <tr><td style="font-size:13px;color:#5a5a63;padding-top:24px;border-top:1px solid #1f1f24;margin-top:24px;">
+              Didn't expect this? You can safely ignore this email.
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  const text = `${inviterName} invited you to join ${orgName} on GenMotion.
+
+Accept the invitation:
+${url}
+
+Didn't expect this? You can safely ignore this email.`;
+
+  return { subject, html, text };
+}

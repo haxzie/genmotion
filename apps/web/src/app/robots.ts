@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Keep the authenticated app and project editor out of the index.
-      disallow: ["/dashboard", "/projects", "/skills", "/brand-assets", "/p/", "/login", "/signup"],
+      disallow: ["/dashboard", "/projects", "/skills", "/settings", "/onboarding", "/p/", "/login", "/signup"],
     },
     sitemap: `${BASE}/sitemap.xml`,
   };

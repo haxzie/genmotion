@@ -7,6 +7,7 @@
     "dev": "tsx watch --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
     "start": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "seed": "tsx --env-file=../../.env scripts/seed-scenes.ts"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@genmotion/config": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
   }
 }

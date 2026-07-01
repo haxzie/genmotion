@@ -189,6 +189,12 @@ export interface EditorToolsContext {
   project: { fps: number; width: number; height: number };
   /** Called after each persisted mutation so the UI can refetch mid-stream. */
   onMutation?: () => void;
+  /**
+   * Human-readable progress from a long-running tool (e.g. each parallel scene
+   * as it lands), streamed to the chat so the turn never looks stuck while
+   * subagents work invisibly.
+   */
+  onProgress?: (text: string) => void;
 }
 
 /**
@@ -200,8 +206,10 @@ export function createEditorTools({
   userId,
   project,
   onMutation,
+  onProgress,
 }: EditorToolsContext) {
   const emit = () => onMutation?.();
+  const progress = (text: string) => onProgress?.(text);
   const sandbox = createSandboxTools({ projectId, userId, onMutation });
 
   const tools = {
@@ -245,6 +253,10 @@ export function createEditorTools({
           briefs.length,
           insertAfterSceneId,
         );
+        progress(
+          `Writing ${briefs.length} scene${briefs.length === 1 ? "" : "s"} in parallel…`,
+        );
+        let done = 0;
         const results = await Promise.all(
           briefs.map(async (brief, index) => {
             try {
@@ -255,6 +267,7 @@ export function createEditorTools({
                 }),
               );
               if (!written.ok) {
+                progress(`✗ “${brief.name}” failed (${++done}/${briefs.length})`);
                 return { name: brief.name, ok: false as const, error: written.error };
               }
               const [scene] = await db
@@ -268,10 +281,12 @@ export function createEditorTools({
                 })
                 .returning({ id: schema.scenes.id });
               emit();
+              progress(`✓ Wrote “${brief.name}” (${++done}/${briefs.length})`);
               return { name: brief.name, ok: true as const, sceneId: scene!.id };
             } catch (err) {
               // Never let one brief reject the whole tool call — that would
               // leave the tool call without a result in the message history.
+              progress(`✗ “${brief.name}” failed (${++done}/${briefs.length})`);
               return {
                 name: brief.name,
                 ok: false as const,

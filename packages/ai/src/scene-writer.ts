@@ -4,6 +4,15 @@ import { SCENE_WRITER_PROMPT } from "./system-prompt";
 
 const MAX_ATTEMPTS = 3;
 
+/**
+ * Hard cap per model attempt. These subagents run several-at-a-time via
+ * Promise.all in the createScenes tool; without a timeout a single stalled
+ * Moonshot request (rate-limit/latency) would hang the whole tool call — and
+ * therefore the entire chat stream — indefinitely. On timeout the attempt is
+ * counted as a failure and retried, then surfaced as a normal tool error.
+ */
+const WRITE_TIMEOUT_MS = Number(process.env.SCENE_WRITE_TIMEOUT_MS ?? 90_000);
+
 export interface SceneBrief {
   name: string;
   durationInFrames: number;
@@ -51,24 +60,42 @@ export async function writeScene(
 
   let lastError = "unknown error";
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const startedAt = Date.now();
+    console.log(
+      `[scene-writer] "${request.name}" attempt ${attempt + 1}/${MAX_ATTEMPTS} start`,
+    );
     let text: string;
     try {
       ({ text } = await generateText({
         model: chatModel(),
         system: SCENE_WRITER_PROMPT,
         messages,
+        // Backstop so a stalled request can't hang the stream forever.
+        abortSignal: AbortSignal.timeout(WRITE_TIMEOUT_MS),
       }));
     } catch (err) {
-      // Model/API error (rate limit, timeout, etc.): count it as a failed
+      // Model/API error (rate limit, timeout/abort, etc.): count it as a failed
       // attempt and retry rather than throwing out of the tool.
       lastError = `model request failed: ${err instanceof Error ? err.message : String(err)}`;
+      console.error(
+        `[scene-writer] "${request.name}" attempt ${attempt + 1} failed after ${Date.now() - startedAt}ms: ${lastError}`,
+      );
       continue;
     }
+    console.log(
+      `[scene-writer] "${request.name}" attempt ${attempt + 1} model returned in ${Date.now() - startedAt}ms (${text.length} chars)`,
+    );
 
     const code = extractCode(text);
     const error = await validate(code);
-    if (!error) return { ok: true, code };
+    if (!error) {
+      console.log(`[scene-writer] "${request.name}" ok on attempt ${attempt + 1}`);
+      return { ok: true, code };
+    }
 
+    console.warn(
+      `[scene-writer] "${request.name}" attempt ${attempt + 1} failed validation, retrying`,
+    );
     lastError = error;
     messages.push(
       { role: "assistant", content: text },

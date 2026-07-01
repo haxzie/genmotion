@@ -52,12 +52,12 @@ export function Topbar({
               setEditing(false);
             }
           }}
-          className="h-7 min-w-0 flex-1 rounded-md border border-accent/50 bg-background px-2 font-medium outline-none ring-2 ring-accent/20"
+          className="h-7 w-40 shrink-0 rounded-md border border-accent/50 bg-background px-2 font-medium outline-none ring-2 ring-accent/20"
         />
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="h-7 min-w-0 flex-1 cursor-text truncate rounded-md px-2 text-left font-medium text-text-primary transition-colors hover:bg-surface-raised"
+          className="h-7 w-40 shrink-0 cursor-text truncate rounded-md px-2 text-left font-medium text-text-primary transition-colors hover:bg-surface-raised"
           title="Rename project"
         >
           {projectName}

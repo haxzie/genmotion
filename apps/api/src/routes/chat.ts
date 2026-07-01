@@ -178,6 +178,18 @@ chatRoutes.post("/:projectId", async (c) => {
   const project = await loadOwnedProject(c.req.param("projectId"), user.id);
   if (!project) return c.json({ error: "Not found" }, 404);
 
+  // Scoped structured logging for the whole streaming turn. Every line is
+  // prefixed with the project id so a single chat can be grepped end to end.
+  const log = (msg: string, extra?: unknown) =>
+    console.log(`[chat ${project.id}] ${msg}`, extra ?? "");
+  const logError = (msg: string, err: unknown) =>
+    console.error(
+      `[chat ${project.id}] ${msg}:`,
+      err instanceof Error
+        ? `${err.name}: ${err.message}\n${err.stack ?? ""}`
+        : err,
+    );
+
   const body = await c.req.json<{
     messages: UIMessage[];
     selectedSceneIds?: string[];
@@ -196,6 +208,22 @@ chatRoutes.post("/:projectId", async (c) => {
   const selectedAssetIds = body.selectedAssetIds ?? [];
   const selectedElements = body.selectedElements ?? [];
   const lastMessage = messages[messages.length - 1];
+
+  log("POST received", {
+    messages: messages.length,
+    lastRole: lastMessage?.role,
+    selectedScenes: selectedSceneIds.length,
+    selectedAssets: selectedAssetIds.length,
+    selectedElements: selectedElements.length,
+  });
+
+  // Client disconnects (tab closed, navigation, or a dropped stream showing up
+  // as ERR_INCOMPLETE_CHUNKED_ENCODING) abort this signal. Log it and thread it
+  // into the model call so we stop generating instead of doing orphaned work.
+  const requestSignal = c.req.raw.signal;
+  requestSignal.addEventListener("abort", () =>
+    log("client disconnected — request aborted mid-stream"),
+  );
 
   if (lastMessage?.role === "user") {
     await persistMessage(project.id, lastMessage);
@@ -249,9 +277,12 @@ chatRoutes.post("/:projectId", async (c) => {
   let didAutoCompact = false;
   if (lastMessage?.role === "user" && messages.length > COMPACTION_MESSAGE_LIMIT) {
     try {
+      log("auto-compaction start", { windowMessages: messages.length });
       const result = await runCompaction(project.id);
       didAutoCompact = result.created;
-    } catch {
+      log("auto-compaction done", { created: result.created });
+    } catch (err) {
+      logError("auto-compaction failed", err);
       // Best-effort — fall through and run the turn with the full window.
     }
   }
@@ -274,7 +305,16 @@ chatRoutes.post("/:projectId", async (c) => {
 
   const stream = createUIMessageStream({
     originalMessages: messages,
+    // Without this, createUIMessageStream swallows the real error and emits a
+    // generic "An error occurred." Log it and surface the actual message.
+    onError: (error) => {
+      logError("UI message stream error", error);
+      return error instanceof Error
+        ? error.message
+        : "An error occurred while generating the response.";
+    },
     execute: async ({ writer }) => {
+      log("stream execute start", { modelMessages: modelMessages.length });
       // Tell the client the earlier history was compacted, so it clears the now
       // pre-summary bubbles (keeping only this user message) when the turn ends.
       if (didAutoCompact) {
@@ -291,6 +331,8 @@ chatRoutes.post("/:projectId", async (c) => {
                   model: chatModel(),
                   system: NAMING_PROMPT,
                   prompt: extractText(lastMessage).slice(0, 2000),
+                  // Don't let a slow naming call linger behind the stream.
+                  abortSignal: AbortSignal.timeout(8000),
                 });
                 const name = text.trim().slice(0, 80);
                 if (!name) return;
@@ -302,8 +344,8 @@ chatRoutes.post("/:projectId", async (c) => {
                   type: "data-project-renamed",
                   data: { name },
                 });
-              } catch {
-                // Naming is best-effort; the user can rename manually.
+              } catch (err) {
+                logError("project naming failed", err);
               }
             })()
           : Promise.resolve();
@@ -319,6 +361,12 @@ chatRoutes.post("/:projectId", async (c) => {
         onMutation: () => {
           // Nudge the client to refetch scenes as each parallel write lands.
           writer.write({ type: "data-scenes-updated", data: {}, transient: true });
+        },
+        onProgress: (text) => {
+          // Live status (e.g. each parallel scene) so the long tool phase shows
+          // continuous progress in the chat instead of a silent spinner.
+          log("progress", text);
+          writer.write({ type: "data-status", data: { text }, transient: true });
         },
       });
       disposeSandbox = editor.dispose;
@@ -345,21 +393,67 @@ chatRoutes.post("/:projectId", async (c) => {
         ],
         tools: editor.tools,
         stopWhen: stepCountIs(12),
+        abortSignal: requestSignal,
+        onError: ({ error }) => {
+          // Fires on model/tool/transport errors mid-stream — the usual cause
+          // of a turn that "hangs" without producing output.
+          logError("streamText error", error);
+        },
+        onStepFinish: ({ toolCalls, toolResults, finishReason }) => {
+          // One line per agent step — shows exactly which tool ran and whether
+          // its result came back, so a hang can be pinned to a specific tool.
+          log("step finished", {
+            finishReason,
+            toolCalls: toolCalls?.map((t) => t.toolName),
+            toolResults: toolResults?.length ?? 0,
+          });
+        },
+        onFinish: ({ finishReason, usage, steps }) => {
+          log("streamText finished", {
+            finishReason,
+            steps: steps?.length,
+            usage,
+          });
+        },
       });
 
-      writer.merge(result.toUIMessageStream());
-      await namingPromise;
+      log("merging model stream");
+      // Kimi is a reasoning model — forward its thinking tokens so the UI shows
+      // live progress instead of a frozen spinner during long reasoning phases.
+      writer.merge(result.toUIMessageStream({ sendReasoning: true }));
+
+      // Naming is best-effort and must NOT hold the stream open. Awaiting a hung
+      // naming call here would keep the response streaming forever, so cap it.
+      await Promise.race([
+        namingPromise,
+        new Promise<void>((resolve) =>
+          setTimeout(() => {
+            log("naming wait timed out (8s) — not blocking stream close");
+            resolve();
+          }, 8000),
+        ),
+      ]);
+      log("stream execute end");
     },
     onFinish: async ({ responseMessage }) => {
-      // Tear down the workbench sandbox now that the turn is done.
-      await disposeSandbox?.();
-      if (responseMessage) {
-        await persistMessage(project.id, responseMessage);
+      log("stream finished", {
+        hasResponse: Boolean(responseMessage),
+        parts: responseMessage?.parts.length,
+      });
+      try {
+        // Tear down the workbench sandbox now that the turn is done.
+        await disposeSandbox?.();
+        if (responseMessage) {
+          await persistMessage(project.id, responseMessage);
+        }
+        // Scenes likely changed this turn — refresh the project thumbnail.
+        await enqueueThumbnail(project.id);
+      } catch (err) {
+        logError("stream onFinish cleanup failed", err);
       }
-      // Scenes likely changed this turn — refresh the project thumbnail.
-      await enqueueThumbnail(project.id);
     },
   });
 
+  log("responding with stream");
   return createUIMessageStreamResponse({ stream });
 });

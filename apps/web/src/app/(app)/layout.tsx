@@ -13,12 +13,18 @@ export default function AppLayout({
 }) {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const onboarded = session?.user.onboardingCompleted ?? false;
 
   useEffect(() => {
-    if (!isPending && !session) router.replace("/login");
-  }, [session, isPending, router]);
+    if (isPending) return;
+    if (!session) {
+      router.replace("/login");
+    } else if (!onboarded) {
+      router.replace("/onboarding");
+    }
+  }, [session, isPending, onboarded, router]);
 
-  if (isPending || !session) {
+  if (isPending || !session || !onboarded) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Spinner />

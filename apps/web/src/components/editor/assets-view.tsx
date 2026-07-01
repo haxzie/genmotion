@@ -163,9 +163,21 @@ export function AssetsView({ projectId }: { projectId: string }) {
             disabled={uploadAsset.isPending}
             className="text-[0.786rem] text-text-secondary transition-colors hover:text-text-primary disabled:opacity-50"
           >
-            {uploadAsset.isPending ? "Uploading…" : "Upload"}
+            {uploadAsset.isPending
+              ? `Uploading… ${uploadAsset.progress ?? 0}%`
+              : uploadAsset.isError
+                ? "Upload failed — retry"
+                : "Upload"}
           </button>
         </div>
+        {uploadAsset.isPending && (
+          <div className="h-0.5 w-full bg-surface-raised">
+            <div
+              className="h-full bg-accent transition-[width] duration-150"
+              style={{ width: `${uploadAsset.progress ?? 0}%` }}
+            />
+          </div>
+        )}
         <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
           {isLoading ? (
             <div className="flex justify-center py-8">

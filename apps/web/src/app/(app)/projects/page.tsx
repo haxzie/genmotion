@@ -2,8 +2,37 @@
 
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "motion/react";
 import { api } from "@/lib/api";
-import { Spinner } from "@/components/ui";
+
+const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
+
+// Staggered entrance for the project cards.
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: [0.25, 1, 0.5, 1] as const },
+  },
+};
+
+/** Placeholder card shown while the project list loads. */
+function SkeletonCard() {
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-surface-raised">
+      <div className="aspect-video animate-pulse bg-surface-hover" />
+      <div className="p-3">
+        <div className="h-3.5 w-2/5 animate-pulse rounded bg-surface-hover" />
+        <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-surface-hover" />
+      </div>
+    </div>
+  );
+}
 
 interface Project {
   id: string;
@@ -54,14 +83,22 @@ export default function ProjectsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
+        <div className={GRID}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       ) : projects && projects.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          className={GRID}
+          variants={listVariants}
+          initial="hidden"
+          animate="show"
+        >
           {projects.map((project) => (
-            <div
+            <motion.div
               key={project.id}
+              variants={cardVariants}
               className="group cursor-pointer overflow-hidden rounded-md border border-border bg-surface-raised transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
               onClick={() => router.push(`/p/${project.id}`)}
             >
@@ -109,9 +146,9 @@ export default function ProjectsPage() {
                   </svg>
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
         <div className="rounded-md border border-dashed border-border py-14 text-center text-text-tertiary">
           No projects yet — head to Create to start one.

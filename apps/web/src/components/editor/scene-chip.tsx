@@ -1,9 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import type { AssetData } from "@genmotion/shared";
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { SceneIcon } from "./scene-icon";
+import { AssetIcon } from "./asset-icon";
 
 /** Slide-up on add, slide-down on remove; siblings reflow via layout. */
 const CHIP_ANIM = {
@@ -156,7 +158,7 @@ export function SceneChips({
 export function AssetChips({
   assets,
 }: {
-  assets: { id: string; filename: string }[];
+  assets: { id: string; filename: string; kind: AssetData["kind"] }[];
 }) {
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
   const deselectAsset = useEditorStore((s) => s.deselectAsset);
@@ -172,9 +174,7 @@ export function AssetChips({
             {...CHIP_ANIM}
             className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent-muted py-0.5 pl-2 pr-1 text-[0.857rem] text-accent backdrop-blur-md"
           >
-            <svg viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 8.5 12.3 17.2a4 4 0 0 1-5.6-5.6l8.1-8.1a2.5 2.5 0 0 1 3.5 3.5l-8.1 8.1a1 1 0 0 1-1.4-1.4l7.4-7.4" />
-            </svg>
+            <AssetIcon kind={asset.kind} className="size-3.5 shrink-0" />
             <span className="max-w-[140px] truncate">{asset.filename}</span>
             <button
               onClick={() => deselectAsset(asset.id)}

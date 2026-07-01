@@ -7,6 +7,7 @@ import {
   presignUpload,
   projectFileKey,
   publicUrl,
+  putObject,
 } from "@genmotion/storage";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
@@ -80,6 +81,84 @@ assetRoutes.post("/presign", zValidator("json", presignSchema), async (c) => {
 
   const uploadUrl = await presignUpload(storageKey, contentType);
   return c.json({ uploadUrl, asset });
+});
+
+const uploadQuerySchema = z.object({
+  filename: z.string().min(1).max(255),
+  projectId: z.string().uuid().optional(),
+  width: z.coerce.number().int().positive().optional(),
+  height: z.coerce.number().int().positive().optional(),
+  durationSeconds: z.coerce.number().positive().optional(),
+});
+
+/**
+ * Proxied upload: the browser POSTs the file body here and the API streams it to
+ * R2, then records the asset as ready. This avoids browser→R2 CORS (R2 buckets
+ * have no CORS policy by default) and lets the client track upload progress via
+ * XHR against our own origin. Metadata is probed client-side and passed as query
+ * params. The file is the raw request body; Content-Type is the file's MIME type.
+ */
+assetRoutes.post("/upload", zValidator("query", uploadQuerySchema), async (c) => {
+  const user = c.get("user");
+  const { filename, projectId, width, height, durationSeconds } =
+    c.req.valid("query");
+  const contentType = c.req.header("content-type") ?? "";
+
+  const kind = KIND_BY_PREFIX.find(([prefix]) =>
+    contentType.startsWith(prefix),
+  )?.[1];
+  if (!kind) {
+    return c.json(
+      { error: "Only image, video, and audio uploads are supported" },
+      400,
+    );
+  }
+
+  if (projectId) {
+    const [project] = await db
+      .select({ id: schema.projects.id })
+      .from(schema.projects)
+      .where(
+        and(
+          eq(schema.projects.id, projectId),
+          eq(schema.projects.userId, user.id),
+        ),
+      );
+    if (!project) return c.json({ error: "Project not found" }, 404);
+  }
+
+  const body = Buffer.from(await c.req.arrayBuffer());
+  if (body.byteLength === 0) return c.json({ error: "Empty upload" }, 400);
+  if (body.byteLength > MAX_UPLOAD_BYTES) {
+    return c.json({ error: "File too large" }, 413);
+  }
+
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storageKey = projectId
+    ? projectFileKey(projectId, safeName)
+    : `uploads/${user.id}/${crypto.randomUUID()}/${safeName}`;
+
+  await putObject(storageKey, body, contentType);
+
+  const [asset] = await db
+    .insert(schema.assets)
+    .values({
+      userId: user.id,
+      projectId: projectId ?? null,
+      storageKey,
+      url: publicUrl(storageKey),
+      kind,
+      filename,
+      mimeType: contentType,
+      sizeBytes: body.byteLength,
+      status: "ready",
+      ...(width ? { width } : {}),
+      ...(height ? { height } : {}),
+      ...(durationSeconds ? { durationSeconds } : {}),
+    })
+    .returning();
+
+  return c.json(asset);
 });
 
 const completeSchema = z.object({

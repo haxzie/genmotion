@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut, useSession } from "@/lib/auth-client";
+import { signOut, useSession, organization } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
+
+function slugify(input: string): string {
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "team"
+  );
+}
 
 type IconProps = { className?: string };
 
-function SparklesIcon({ className }: IconProps) {
+function PlusIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.4 2.4M15.3 15.3l2.4 2.4M17.7 6.3l-2.4 2.4M8.7 15.3l-2.4 2.4" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
@@ -22,16 +32,6 @@ function GridIcon({ className }: IconProps) {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
-    </svg>
-  );
-}
-function PaletteIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.1 0-.9.8-1.6 1.7-1.6H16a5 5 0 0 0 5-5c0-3.9-4-7.4-9-7.4Z" />
-      <circle cx="7.5" cy="10.5" r="1" />
-      <circle cx="12" cy="7.5" r="1" />
-      <circle cx="16.5" cy="10.5" r="1" />
     </svg>
   );
 }
@@ -78,15 +78,131 @@ function LogOutIcon({ className }: IconProps) {
 }
 
 const NAV = [
-  { label: "Create", href: "/dashboard", Icon: SparklesIcon },
+  { label: "Create", href: "/dashboard", Icon: PlusIcon },
   { label: "Projects", href: "/projects", Icon: GridIcon },
-  { label: "Brand Assets", href: "/brand-assets", Icon: PaletteIcon },
   { label: "Skills", href: "/skills", Icon: ZapIcon },
+  { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function CheckIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function OrgPicker() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const activeOrgId = session?.session.activeOrganizationId ?? null;
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  const [open, setOpen] = useState(false);
+
+  const load = useCallback(async () => {
+    const res = await organization.list();
+    setOrgs((res.data as { id: string; name: string }[] | undefined) ?? []);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const active = orgs.find((o) => o.id === activeOrgId) ?? orgs[0] ?? null;
+
+  async function switchOrg(id: string) {
+    setOpen(false);
+    if (id === activeOrgId) return;
+    await organization.setActive({ organizationId: id });
+    router.refresh();
+  }
+
+  async function createTeam() {
+    setOpen(false);
+    const name = window.prompt("Team name")?.trim();
+    if (!name) return;
+    const res = await organization.create({
+      name,
+      slug: `${slugify(name)}-${crypto.randomUUID().slice(0, 8)}`,
+    });
+    if (res.data) {
+      await organization.setActive({ organizationId: res.data.id });
+      await load();
+      router.refresh();
+    }
+  }
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cx(
+          "flex w-full items-center gap-1 rounded-md px-2 py-1 transition-colors duration-150",
+          open
+            ? "bg-surface-raised text-text-primary"
+            : "text-text-secondary hover:bg-surface-raised hover:text-text-primary",
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate text-left text-[0.95rem] font-medium">
+          {active?.name ?? "…"}
+        </span>
+        <ChevronDownIcon
+          className={cx("size-3.5 shrink-0 transition-transform duration-150", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="menu"
+            className="absolute left-0 top-9 z-50 w-56 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+          >
+            <div className="px-3 pb-1 pt-1.5 text-[0.714rem] font-medium uppercase tracking-wide text-text-tertiary">
+              Organizations
+            </div>
+            {orgs.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                role="menuitem"
+                onClick={() => switchOrg(o.id)}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.95rem] text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
+              >
+                <span className="min-w-0 flex-1 truncate">{o.name}</span>
+                {o.id === activeOrgId && (
+                  <CheckIcon className="size-4 shrink-0 text-text-primary" />
+                )}
+              </button>
+            ))}
+            <div className="my-1 h-px bg-border" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={createTeam}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[0.95rem] text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
+            >
+              <PlusIcon className="size-4 shrink-0" />
+              Create Team
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function UserMenu() {
@@ -103,15 +219,20 @@ function UserMenu() {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={cx(
-          "flex h-8 items-center gap-0.5 rounded-md px-1.5 transition-colors duration-150",
+          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-150",
           open
             ? "bg-surface-raised text-text-primary"
             : "text-text-secondary hover:bg-surface-raised hover:text-text-primary",
         )}
       >
-        <UserIcon className="size-[1.15rem]" />
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-raised ring-1 ring-border">
+          <UserIcon className="size-[1.05rem]" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-left text-[0.857rem]">
+          {session?.user.name?.trim() || session?.user.email || "Account"}
+        </span>
         <ChevronDownIcon
-          className={cx("size-3.5 transition-transform duration-150", open && "rotate-180")}
+          className={cx("size-3.5 shrink-0 transition-transform duration-150", open && "rotate-180")}
         />
       </button>
 
@@ -126,22 +247,22 @@ function UserMenu() {
           />
           <div
             role="menu"
-            className="absolute right-0 top-9 z-50 w-52 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+            className="absolute bottom-full left-0 z-50 mb-1 w-56 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
           >
             {session?.user.email && (
               <div className="truncate border-b border-border px-3 py-2 text-[0.857rem] text-text-tertiary">
                 {session.user.email}
               </div>
             )}
-            <button
-              type="button"
+            <Link
+              href="/settings"
               role="menuitem"
               onClick={() => setOpen(false)}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[0.95rem] text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
             >
               <SettingsIcon className="size-[1.05rem] shrink-0" />
               Settings
-            </button>
+            </Link>
             <button
               type="button"
               role="menuitem"
@@ -167,8 +288,8 @@ function Sidebar() {
 
   return (
     <aside className="flex w-64 shrink-0 flex-col bg-background">
-      <div className="flex h-14 items-center justify-between px-3">
-        <Link href="/dashboard" className="group flex items-center px-2" aria-label="Home">
+      <div className="flex h-14 items-center gap-1 px-3">
+        <Link href="/dashboard" className="group flex shrink-0 items-center px-1" aria-label="Home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.svg"
@@ -176,7 +297,7 @@ function Sidebar() {
             className="size-6 rounded-[5px] group-hover:animate-[spin-once_0.6s_ease-in-out]"
           />
         </Link>
-        <UserMenu />
+        <OrgPicker />
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
@@ -199,6 +320,10 @@ function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="border-t border-border p-2">
+        <UserMenu />
+      </div>
     </aside>
   );
 }
