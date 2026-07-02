@@ -8,6 +8,13 @@
       "when": 1782745987375,
       "tag": "0000_far_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783004597915,
+      "tag": "0001_free_madripoor",
+      "breakpoints": true
     }
   ]
 }

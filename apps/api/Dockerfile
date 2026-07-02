@@ -23,4 +23,7 @@ RUN pnpm install --frozen-lockfile --filter @genmotion/api...
 
 EXPOSE 4001
 WORKDIR /repo/apps/api
-CMD ["pnpm", "run", "start:docker"]
+# Apply pending DB migrations, then start the server. Migrations are tracked, so
+# re-runs on restart are no-ops. (For zero-downtime/multi-replica setups, run
+# `pnpm run migrate:docker` as a one-off release step instead and drop it here.)
+CMD ["sh", "-c", "pnpm run migrate:docker && pnpm run start:docker"]
