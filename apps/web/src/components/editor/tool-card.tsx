@@ -29,6 +29,7 @@ const TOOL_LABELS: Record<string, { active: string; done: string }> = {
   readWebsite: { active: "Reading website", done: "Read website" },
   searchWeb: { active: "Searching the web", done: "Searched the web" },
   generateVoiceover: { active: "Generating voiceover", done: "Generated voiceover" },
+  generateImage: { active: "Generating image", done: "Generated image" },
   workbench: { active: "Running workbench", done: "Ran workbench" },
   saveImageToProject: { active: "Saving image", done: "Saved image" },
   compactConversation: {
@@ -156,6 +157,7 @@ const TOOL_ICONS: Record<string, Glyph> = {
   readWebsite: GlobeIcon,
   searchWeb: SearchIcon,
   generateVoiceover: MicIcon,
+  generateImage: ImageIcon,
   workbench: TerminalIcon,
   saveImageToProject: ImageIcon,
   compactConversation: ArchiveIcon,
@@ -187,6 +189,8 @@ export interface ToolPartLike {
     language?: string;
     // saveImageToProject
     filename?: string;
+    // generateImage
+    prompt?: string;
   };
   output?: {
     ok?: boolean;
@@ -564,6 +568,26 @@ function ExpandedBody({
                 src={output?.url ?? input?.url}
                 alt={output?.filename ?? "saved image"}
                 className="max-h-44 rounded border border-border bg-[#0b0b0d] object-contain"
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {toolName === "generateImage" && (
+        <>
+          {input?.prompt && (
+            <p className="px-3 py-2 text-[0.786rem] leading-relaxed text-text-secondary">
+              {input.prompt}
+            </p>
+          )}
+          {output?.url && (
+            <div className="px-3 py-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={output.url}
+                alt={output.filename ?? "generated image"}
+                className="max-h-52 rounded border border-border bg-[#0b0b0d] object-contain"
               />
             </div>
           )}

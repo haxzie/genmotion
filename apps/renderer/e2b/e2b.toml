@@ -1,0 +1,13 @@
+# E2B template config for the GenMotion renderer sandbox.
+# Build with:  e2b template build   (run from this directory, context = repo root)
+# After building, set RENDER_PROVIDER=e2b and E2B_RENDER_TEMPLATE=<template name>.
+
+template_name = "genmotion-renderer"
+dockerfile = "e2b.Dockerfile"
+
+# Keep the microVM alive so the provider can exec the render CLI into it.
+start_cmd = "sleep infinity"
+
+# Chromium is memory-hungry — give the sandbox real resources.
+cpu_count = 2
+memory_mb = 4096

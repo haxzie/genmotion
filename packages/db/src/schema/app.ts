@@ -101,6 +101,37 @@ export const assets = pgTable("assets", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/**
+ * Project-level audio placed on the timeline, independent of scenes (background
+ * music, ambience, sound effects that span multiple scenes). Up to
+ * MAX_AUDIO_TRACKS lanes (`track` 0-3). A clip plays `url` starting at global
+ * `startFrame` for `durationInFrames`, seeking `startFrom` seconds into the
+ * source (move = change startFrame; resize/trim = change duration + startFrom).
+ * Scene voiceover stays on the scenes table; this is separate.
+ */
+export const audioClips = pgTable(
+  "audio_clips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    assetId: uuid("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    track: integer("track").notNull().default(0),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    startFrame: integer("start_frame").notNull().default(0),
+    durationInFrames: integer("duration_in_frames").notNull(),
+    startFrom: real("start_from").notNull().default(0),
+    volume: real("volume").notNull().default(1),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("audio_clips_project_idx").on(t.projectId)],
+);
+
 export const exportJobs = pgTable("export_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   projectId: uuid("project_id")
@@ -116,6 +147,8 @@ export const exportJobs = pgTable("export_jobs", {
     .default("queued"),
   progress: integer("progress").notNull().default(0),
   totalFrames: integer("total_frames").notNull().default(0),
+  /** Export quality 0-100 (drives the encoder CRF + capture quality). */
+  quality: integer("quality").notNull().default(80),
   outputAssetId: uuid("output_asset_id").references(() => assets.id),
   error: text("error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -194,6 +194,14 @@ export interface AudioProps extends MediaSyncOptions {
 /** Frame-synced audio. Audible in preview; exports are silent in v1. */
 export function Audio({ src, ...options }: AudioProps) {
   const ref = useRef<HTMLAudioElement>(null);
+  const mode = useRenderMode();
   useMediaSync(ref, options);
+  // In render mode the audio is muted and not captured, but mounting the element
+  // makes every frame block on its seek-readiness check (up to 1.5s/frame when a
+  // muted element never reaches readyState >= 2) — which can turn a seconds-long
+  // render into minutes. Skip mounting it; with a null ref the readiness check
+  // returns immediately. (Capturing embedded audio into the export is a separate
+  // feature — see the audio-track mux path.)
+  if (mode === "render") return null;
   return <audio ref={ref} src={src} preload="auto" crossOrigin="anonymous" />;
 }

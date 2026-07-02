@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { totalDurationInFrames } from "@genmotion/shared";
+import { totalDurationInFrames, type AudioClipData } from "@genmotion/shared";
 import type { CompiledScene } from "./types";
 import { Composition } from "./composition";
 import { usePlaybackStore } from "./store";
@@ -13,6 +13,7 @@ export interface PlayerProps {
   width: number;
   height: number;
   className?: string;
+  audioClips?: AudioClipData[];
   onSceneError?: (error: SceneRuntimeError) => void;
 }
 
@@ -27,6 +28,7 @@ export function Player({
   width,
   height,
   className,
+  audioClips,
   onSceneError,
 }: PlayerProps) {
   const frame = usePlaybackStore((s) => s.frame);
@@ -126,6 +128,7 @@ export function Player({
           height={height}
           mode="preview"
           playing={isPlaying}
+          audioClips={audioClips}
           onSceneError={onSceneError}
         />
       </div>

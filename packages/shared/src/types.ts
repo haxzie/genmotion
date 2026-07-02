@@ -16,6 +16,24 @@ export interface SceneData {
   audioVolume?: number;
 }
 
+/**
+ * Project-level audio placed on the timeline, independent of scenes (music,
+ * ambience, sfx). `track` is the lane (0..MAX_AUDIO_TRACKS-1). The clip plays
+ * `url` from global `startFrame` for `durationInFrames`, seeking `startFrom`
+ * seconds into the source.
+ */
+export interface AudioClipData {
+  id: string;
+  track: number;
+  assetId?: string | null;
+  url: string;
+  name: string;
+  startFrame: number;
+  durationInFrames: number;
+  startFrom: number;
+  volume: number;
+}
+
 export interface ProjectData {
   id: string;
   name: string;
@@ -23,6 +41,7 @@ export interface ProjectData {
   width: number;
   height: number;
   scenes: SceneData[];
+  audioClips: AudioClipData[];
 }
 
 export type AssetKind = "image" | "video" | "audio" | "export";

@@ -12,6 +12,11 @@ import {
   db,
   schema,
 } from "@genmotion/db";
+import {
+  resolveAudioTrack,
+  clipsOverlap,
+  MAX_AUDIO_TRACKS,
+} from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { enqueueThumbnail } from "../queue";
 
@@ -76,7 +81,13 @@ projectRoutes.get("/:id", async (c) => {
     .where(eq(schema.scenes.projectId, project.id))
     .orderBy(asc(schema.scenes.order));
 
-  return c.json({ ...project, scenes });
+  const audioClips = await db
+    .select()
+    .from(schema.audioClips)
+    .where(eq(schema.audioClips.projectId, project.id))
+    .orderBy(asc(schema.audioClips.track), asc(schema.audioClips.startFrame));
+
+  return c.json({ ...project, scenes, audioClips });
 });
 
 const updateProjectSchema = createProjectSchema;
@@ -192,5 +203,157 @@ projectRoutes.delete("/:id/scenes/:sceneId", async (c) => {
     .returning({ id: schema.scenes.id });
   if (deleted.length === 0) return c.json({ error: "Scene not found" }, 404);
   await enqueueThumbnail(project.id);
+  return c.json({ ok: true });
+});
+
+// ── Project-level audio clips (timeline music/ambience/sfx) ────────────────
+
+/** Placements for a project's clips, optionally excluding one (when moving it). */
+async function clipPlacements(projectId: string, excludeId?: string) {
+  const rows = await db
+    .select({
+      id: schema.audioClips.id,
+      track: schema.audioClips.track,
+      startFrame: schema.audioClips.startFrame,
+      durationInFrames: schema.audioClips.durationInFrames,
+    })
+    .from(schema.audioClips)
+    .where(eq(schema.audioClips.projectId, projectId));
+  return excludeId ? rows.filter((r) => r.id !== excludeId) : rows;
+}
+
+const MAX_CLIP_FRAMES = 30 * 60 * 60; // 1h at 30fps — generous upper bound
+
+const createAudioClipSchema = z.object({
+  url: z.string().min(1),
+  assetId: z.string().uuid().optional(),
+  name: z.string().min(1).max(200).optional(),
+  startFrame: z.number().int().min(0).optional(),
+  durationInFrames: z.number().int().min(1).max(MAX_CLIP_FRAMES).optional(),
+  startFrom: z.number().min(0).optional(),
+  volume: z.number().min(0).max(1).optional(),
+  track: z.number().int().min(0).max(MAX_AUDIO_TRACKS - 1).optional(),
+});
+
+projectRoutes.post(
+  "/:id/audio-clips",
+  zValidator("json", createAudioClipSchema),
+  async (c) => {
+    const user = c.get("user");
+    const project = await ownedProject(c.req.param("id"), user.id);
+    if (!project) return c.json({ error: "Not found" }, 404);
+    const body = c.req.valid("json");
+
+    const startFrame = body.startFrame ?? 0;
+    let durationInFrames = body.durationInFrames;
+    if (!durationInFrames && body.assetId) {
+      const [asset] = await db
+        .select({ durationSeconds: schema.assets.durationSeconds })
+        .from(schema.assets)
+        .where(eq(schema.assets.id, body.assetId));
+      if (asset?.durationSeconds) {
+        durationInFrames = Math.max(1, Math.round(asset.durationSeconds * project.fps));
+      }
+    }
+    durationInFrames = durationInFrames ?? project.fps * 5;
+
+    const existing = await clipPlacements(project.id);
+    const track = resolveAudioTrack(existing, startFrame, durationInFrames, body.track);
+    if (track === null) {
+      return c.json(
+        { error: `No free audio track at this position (max ${MAX_AUDIO_TRACKS}).` },
+        409,
+      );
+    }
+
+    const [clip] = await db
+      .insert(schema.audioClips)
+      .values({
+        projectId: project.id,
+        assetId: body.assetId ?? null,
+        url: body.url,
+        name: body.name ?? "Audio",
+        startFrame,
+        durationInFrames,
+        startFrom: body.startFrom ?? 0,
+        volume: body.volume ?? 1,
+        track,
+      })
+      .returning();
+    return c.json(clip, 201);
+  },
+);
+
+const updateAudioClipSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  startFrame: z.number().int().min(0).optional(),
+  durationInFrames: z.number().int().min(1).max(MAX_CLIP_FRAMES).optional(),
+  startFrom: z.number().min(0).optional(),
+  volume: z.number().min(0).max(1).optional(),
+  track: z.number().int().min(0).max(MAX_AUDIO_TRACKS - 1).optional(),
+});
+
+projectRoutes.patch(
+  "/:id/audio-clips/:clipId",
+  zValidator("json", updateAudioClipSchema),
+  async (c) => {
+    const user = c.get("user");
+    const project = await ownedProject(c.req.param("id"), user.id);
+    if (!project) return c.json({ error: "Not found" }, 404);
+    const body = c.req.valid("json");
+
+    const [current] = await db
+      .select()
+      .from(schema.audioClips)
+      .where(
+        and(
+          eq(schema.audioClips.id, c.req.param("clipId")),
+          eq(schema.audioClips.projectId, project.id),
+        ),
+      );
+    if (!current) return c.json({ error: "Audio clip not found" }, 404);
+
+    // A deliberate placement (move/resize/lane change) must not collide.
+    const nextTrack = body.track ?? current.track;
+    const nextStart = body.startFrame ?? current.startFrame;
+    const nextDuration = body.durationInFrames ?? current.durationInFrames;
+    const others = await clipPlacements(project.id, current.id);
+    const collides = others.some(
+      (o) =>
+        o.track === nextTrack &&
+        clipsOverlap(o, {
+          track: nextTrack,
+          startFrame: nextStart,
+          durationInFrames: nextDuration,
+        }),
+    );
+    if (collides) {
+      return c.json({ error: "Overlaps another clip on that track." }, 409);
+    }
+
+    const [updated] = await db
+      .update(schema.audioClips)
+      .set({ ...body, updatedAt: new Date() })
+      .where(eq(schema.audioClips.id, current.id))
+      .returning();
+    return c.json(updated);
+  },
+);
+
+projectRoutes.delete("/:id/audio-clips/:clipId", async (c) => {
+  const user = c.get("user");
+  const project = await ownedProject(c.req.param("id"), user.id);
+  if (!project) return c.json({ error: "Not found" }, 404);
+
+  const deleted = await db
+    .delete(schema.audioClips)
+    .where(
+      and(
+        eq(schema.audioClips.id, c.req.param("clipId")),
+        eq(schema.audioClips.projectId, project.id),
+      ),
+    )
+    .returning({ id: schema.audioClips.id });
+  if (deleted.length === 0) return c.json({ error: "Audio clip not found" }, 404);
   return c.json({ ok: true });
 });

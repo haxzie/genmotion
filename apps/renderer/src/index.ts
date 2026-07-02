@@ -1,21 +1,15 @@
-import { chromium, type Browser } from "playwright";
 import { PgBoss } from "pg-boss";
-import { runRenderJob, runThumbnailJob } from "./render-job";
-import { buildRenderHostBundle } from "./build-host";
+import { createRenderProvider, resolveProviderKind } from "./providers";
 
 const RENDER_QUEUE = "render-mp4";
 const THUMBNAIL_QUEUE = "render-thumbnail";
 
 async function main() {
-  // Fail fast on missing pieces, warm the bundle cache.
-  await buildRenderHostBundle();
-  console.log("Render-host bundle built.");
-
-  const browser: Browser = await chromium.launch({
-    headless: true,
-    args: ["--force-color-profile=srgb", "--font-render-hinting=none"],
-  });
-  console.log("Headless Chromium ready.");
+  // The provider decides WHERE renders run (in-process vs an E2B sandbox);
+  // switch it with RENDER_PROVIDER. The worker's queue plumbing is identical.
+  const provider = createRenderProvider();
+  console.log(`Renderer worker using the "${resolveProviderKind()}" provider.`);
+  await provider.warmup?.();
 
   const boss = new PgBoss(
     process.env.DATABASE_URL ??
@@ -32,7 +26,7 @@ async function main() {
     async (jobs: Array<{ data: { exportJobId: string } }>) => {
       for (const job of jobs) {
         console.log(`[render] picked up job ${job.data.exportJobId}`);
-        await runRenderJob(browser, job.data.exportJobId);
+        await provider.renderJob(job.data.exportJobId);
       }
     },
   );
@@ -42,7 +36,7 @@ async function main() {
     { batchSize: 1 },
     async (jobs: Array<{ data: { projectId: string } }>) => {
       for (const job of jobs) {
-        await runThumbnailJob(browser, job.data.projectId);
+        await provider.renderThumbnail(job.data.projectId);
       }
     },
   );
@@ -51,7 +45,7 @@ async function main() {
 
   const shutdown = async () => {
     await boss.stop();
-    await browser.close();
+    await provider.dispose();
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

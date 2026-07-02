@@ -7,7 +7,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2b:build": "npx -y @e2b/cli template build --config e2b/e2b.toml --dockerfile e2b/e2b.Dockerfile --path e2b",
+    "e2b:publish": "npx -y @e2b/cli template publish --config e2b/e2b.toml --yes"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.82",

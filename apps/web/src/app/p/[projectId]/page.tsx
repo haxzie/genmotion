@@ -119,8 +119,15 @@ export default function EditorPage({
   }, [session, sessionPending, router]);
 
   const { data: project, isLoading, error } = useProject(projectId);
-  const { renameProject, reorderScenes, deleteScene, updateScene } =
-    useProjectMutations(projectId);
+  const {
+    renameProject,
+    reorderScenes,
+    deleteScene,
+    updateScene,
+    addAudioClip,
+    updateAudioClip,
+    deleteAudioClip,
+  } = useProjectMutations(projectId);
 
   const { compiled, errors, initializing } = useCompiledScenes(project?.scenes);
   const requestFix = useEditorStore((s) => s.requestFix);
@@ -186,7 +193,11 @@ export default function EditorPage({
             projectName={project.name}
             onRename={(name) => renameProject.mutate(name)}
           />
-          <ChatPanel projectId={projectId} scenes={project.scenes} />
+          <ChatPanel
+            projectId={projectId}
+            scenes={project.scenes}
+            audioClips={project.audioClips ?? []}
+          />
           <div
             onPointerDown={startResize}
             role="separator"
@@ -241,17 +252,23 @@ export default function EditorPage({
                     fps={project.fps}
                     width={project.width}
                     height={project.height}
+                    audioClips={project.audioClips}
                     initializing={initializing && project.scenes.length > 0}
                   />
                   <Timeline
+                    projectId={projectId}
                     scenes={project.scenes}
                     fps={project.fps}
                     sceneErrors={errors}
+                    audioClips={project.audioClips ?? []}
                     onReorder={(ids) => reorderScenes.mutate(ids)}
                     onDeleteScenes={handleDeleteScenes}
                     onToggleMute={(sceneId, muted) =>
                       updateScene.mutate({ sceneId, audioVolume: muted ? 0 : 1 })
                     }
+                    onAddClip={(input) => addAudioClip.mutate(input)}
+                    onUpdateClip={(input) => updateAudioClip.mutate(input)}
+                    onDeleteClip={(clipId) => deleteAudioClip.mutate(clipId)}
                   />
                 </>
               )}

@@ -35,10 +35,12 @@ function GridIcon({ className }: IconProps) {
     </svg>
   );
 }
-function ZapIcon({ className }: IconProps) {
+function Layers2Icon({ className }: IconProps) {
+  // lucide: layers-2
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2 4.5 13.5H11l-1 8.5L18.5 10.5H12l1-8.5Z" />
+      <path d="m16.02 12 5.48 3.13a1 1 0 0 1 0 1.74L13 21.74a2 2 0 0 1-2 0l-8.5-4.87a1 1 0 0 1 0-1.74L7.98 12" />
+      <path d="M13 13.74a2 2 0 0 1-2 0L2.5 8.87a1 1 0 0 1 0-1.74L11 2.26a2 2 0 0 1 2 0l8.5 4.87a1 1 0 0 1 0 1.74Z" />
     </svg>
   );
 }
@@ -80,7 +82,7 @@ function LogOutIcon({ className }: IconProps) {
 const NAV = [
   { label: "Create", href: "/dashboard", Icon: PlusIcon },
   { label: "Projects", href: "/projects", Icon: GridIcon },
-  { label: "Skills", href: "/skills", Icon: ZapIcon },
+  { label: "Templates", href: "/templates", Icon: Layers2Icon },
   { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ] as const;
 

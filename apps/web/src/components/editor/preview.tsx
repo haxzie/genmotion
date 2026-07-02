@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { Player, usePlaybackStore, type CompiledScene } from "@genmotion/player";
-import { framesToTimecode } from "@genmotion/shared";
+import { framesToTimecode, type AudioClipData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { PreviewInspector } from "./preview-inspector";
 
@@ -73,12 +73,14 @@ export function PreviewStage({
   fps,
   width,
   height,
+  audioClips,
   initializing,
 }: {
   scenes: CompiledScene[];
   fps: number;
   width: number;
   height: number;
+  audioClips?: AudioClipData[];
   initializing: boolean;
 }) {
   const frame = usePlaybackStore((s) => s.frame);
@@ -130,7 +132,13 @@ export function PreviewStage({
           </div>
         ) : (
           <PreviewInspector scenes={scenes} fps={fps}>
-            <Player scenes={scenes} fps={fps} width={width} height={height} />
+            <Player
+              scenes={scenes}
+              fps={fps}
+              width={width}
+              height={height}
+              audioClips={audioClips}
+            />
           </PreviewInspector>
         )}
       </div>

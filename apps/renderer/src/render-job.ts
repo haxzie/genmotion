@@ -47,28 +47,40 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-interface SceneAudio {
+interface AudioTrackInput {
   path: string;
   /** Milliseconds into the composition where this track starts. */
   delayMs: number;
   volume: number;
+  /** Seconds into the source to start from (clips only; trims the head). */
+  startFromSec?: number;
+  /** Length in seconds to play from the source (clips only; trims the tail). */
+  durationSec?: number;
 }
 
 /**
- * Mux scene audio tracks into the silent render: each track is delayed to its
- * scene's start, volume-adjusted, mixed, and trimmed to the video's length.
+ * Mux audio tracks into the silent render: each track is optionally trimmed to
+ * its source window, delayed to its start on the timeline, volume-adjusted,
+ * mixed, and trimmed to the video's length. Handles both scene voiceovers
+ * (whole source, delayed to the scene start) and project audio clips (trimmed
+ * to [startFrom, startFrom+duration], delayed to the clip's start frame).
  */
 async function mixAudio(
   videoPath: string,
-  tracks: SceneAudio[],
+  tracks: AudioTrackInput[],
   durationSeconds: number,
   outputPath: string,
 ): Promise<void> {
   const inputs = tracks.flatMap((t) => ["-i", t.path]);
-  const delayed = tracks.map(
-    (t, i) =>
-      `[${i + 1}:a]adelay=${Math.round(t.delayMs)}:all=1,volume=${t.volume}[a${i}]`,
-  );
+  const delayed = tracks.map((t, i) => {
+    const trim =
+      t.startFromSec || t.durationSec
+        ? `atrim=start=${(t.startFromSec ?? 0).toFixed(3)}` +
+          `${t.durationSec ? `:duration=${t.durationSec.toFixed(3)}` : ""}` +
+          `,asetpts=PTS-STARTPTS,`
+        : "";
+    return `[${i + 1}:a]${trim}adelay=${Math.round(t.delayMs)}:all=1,volume=${t.volume}[a${i}]`;
+  });
   const labels = tracks.map((_, i) => `[a${i}]`).join("");
   const mix =
     tracks.length === 1
@@ -282,6 +294,15 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
     .where(eq(schema.scenes.projectId, project.id))
     .orderBy(asc(schema.scenes.order));
 
+  // Quality 0-100 → x264 CRF (16 best … 32 draft) + JPEG capture quality
+  // (higher quality captures frames with less intermediate loss).
+  const quality = Math.min(100, Math.max(0, job.quality ?? 80));
+  const crf = Math.round(32 - (quality / 100) * 16);
+  const jpegQuality = Math.round(72 + (quality / 100) * 26);
+  console.log(
+    `[render ${exportJobId}] quality ${quality} → crf ${crf}, jpeg q${jpegQuality}`,
+  );
+
   await updateJob(exportJobId, { status: "rendering", startedAt: new Date(), progress: 0 });
 
   let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
@@ -306,8 +327,8 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
       "-framerate", String(project.fps),
       "-i", "-",
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "18",
+      "-preset", "veryfast",
+      "-crf", String(crf),
       "-pix_fmt", "yuv420p",
       "-movflags", "+faststart",
       outputPath,
@@ -327,22 +348,37 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
     });
 
     const cdp: CDPSession = await context.newCDPSession(page);
+    const loopStart = Date.now();
+    let setFrameMs = 0;
+    let shotMs = 0;
     for (let frame = 0; frame < totalFrames; frame++) {
+      const a = Date.now();
       await page.evaluate((f) => window.__gm!.setFrame(f), frame);
+      const b = Date.now();
       const shot = await cdp.send("Page.captureScreenshot", {
         format: "jpeg",
-        quality: 95,
+        quality: jpegQuality,
       });
+      const c = Date.now();
+      setFrameMs += b - a;
+      shotMs += c - b;
+
       const buffer = Buffer.from(shot.data, "base64");
       if (!ffmpeg.stdin.write(buffer)) {
         await new Promise((resolve) => ffmpeg.stdin.once("drain", resolve));
       }
       if (frame % 15 === 0) {
-        await updateJob(exportJobId, {
+        // Fire-and-forget: a slow DB write must never stall the frame loop.
+        void updateJob(exportJobId, {
           progress: Math.round((frame / totalFrames) * 90),
-        });
+        }).catch(() => {});
       }
     }
+    const loopMs = Date.now() - loopStart;
+    console.log(
+      `[render ${exportJobId}] frame loop: ${totalFrames} frames in ${loopMs}ms ` +
+        `(${(loopMs / totalFrames).toFixed(1)}ms/frame) — setFrame ${setFrameMs}ms, screenshot ${shotMs}ms`,
+    );
 
     await updateJob(exportJobId, { status: "encoding", progress: 92 });
     ffmpeg.stdin.end();
@@ -352,36 +388,60 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
       console.warn(`[render ${exportJobId}] page errors:`, pageErrors.slice(0, 3));
     }
 
-    // 4. Mix scene voiceovers/audio tracks into the video.
+    // 4. Mix scene voiceovers + project audio clips into the video.
     let finalPath = outputPath;
-    const scenesWithAudio = scenes.filter((s) => s.audioUrl);
-    if (scenesWithAudio.length > 0) {
-      const tracks: SceneAudio[] = [];
-      let startFrame = 0;
-      for (const scene of scenes) {
-        if (scene.audioUrl) {
-          const res = await fetch(scene.audioUrl);
-          if (res.ok) {
-            const audioPath = join(workDir, `audio-${tracks.length}.mp3`);
-            writeFileSync(audioPath, Buffer.from(await res.arrayBuffer()));
-            tracks.push({
-              path: audioPath,
-              delayMs: (startFrame / project.fps) * 1000,
-              volume: scene.audioVolume ?? 1,
-            });
-          } else {
-            console.warn(
-              `[render ${exportJobId}] audio fetch failed (${res.status}) for scene "${scene.name}" — exporting without it`,
-            );
-          }
+    const tracks: AudioTrackInput[] = [];
+
+    // 4a. Scene voiceovers: whole source, delayed to the scene's start.
+    let startFrame = 0;
+    for (const scene of scenes) {
+      if (scene.audioUrl) {
+        const res = await fetch(scene.audioUrl);
+        if (res.ok) {
+          const audioPath = join(workDir, `voiceover-${tracks.length}`);
+          writeFileSync(audioPath, Buffer.from(await res.arrayBuffer()));
+          tracks.push({
+            path: audioPath,
+            delayMs: (startFrame / project.fps) * 1000,
+            volume: scene.audioVolume ?? 1,
+          });
+        } else {
+          console.warn(
+            `[render ${exportJobId}] audio fetch failed (${res.status}) for scene "${scene.name}" — exporting without it`,
+          );
         }
-        startFrame += scene.durationInFrames;
       }
-      if (tracks.length > 0) {
-        const mixedPath = join(workDir, "out-audio.mp4");
-        await mixAudio(outputPath, tracks, totalFrames / project.fps, mixedPath);
-        finalPath = mixedPath;
+      startFrame += scene.durationInFrames;
+    }
+
+    // 4b. Project audio clips: trimmed to their window, delayed to their start.
+    const audioClips = await db
+      .select()
+      .from(schema.audioClips)
+      .where(eq(schema.audioClips.projectId, project.id));
+    for (const clip of audioClips) {
+      const res = await fetch(clip.url);
+      if (res.ok) {
+        const clipPath = join(workDir, `clip-${tracks.length}`);
+        writeFileSync(clipPath, Buffer.from(await res.arrayBuffer()));
+        tracks.push({
+          path: clipPath,
+          delayMs: (clip.startFrame / project.fps) * 1000,
+          volume: clip.volume,
+          startFromSec: clip.startFrom,
+          durationSec: clip.durationInFrames / project.fps,
+        });
+      } else {
+        console.warn(
+          `[render ${exportJobId}] audio clip fetch failed (${res.status}) for "${clip.name}" — exporting without it`,
+        );
       }
+    }
+
+    if (tracks.length > 0) {
+      const mixedPath = join(workDir, "out-audio.mp4");
+      await mixAudio(outputPath, tracks, totalFrames / project.fps, mixedPath);
+      finalPath = mixedPath;
     }
 
     // 5. Upload + asset row.

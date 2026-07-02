@@ -10,11 +10,14 @@ export const exportRoutes = new Hono<AuthEnv>();
 
 exportRoutes.use(requireAuth);
 
-const createSchema = z.object({ projectId: z.string().uuid() });
+const createSchema = z.object({
+  projectId: z.string().uuid(),
+  quality: z.number().int().min(0).max(100).optional(),
+});
 
 exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
-  const { projectId } = c.req.valid("json");
+  const { projectId, quality } = c.req.valid("json");
 
   const [project] = await db
     .select()
@@ -47,7 +50,12 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
 
   const [job] = await db
     .insert(schema.exportJobs)
-    .values({ projectId, userId: user.id, totalFrames })
+    .values({
+      projectId,
+      userId: user.id,
+      totalFrames,
+      ...(quality !== undefined && { quality }),
+    })
     .returning();
 
   const boss = await getBoss();

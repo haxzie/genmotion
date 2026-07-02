@@ -6,6 +6,7 @@ export {
   NAMING_PROMPT,
 } from "./system-prompt";
 export { createEditorTools, SCENE_MUTATING_TOOLS, type EditorToolsContext } from "./tools";
+export { loadAudioClipsForContext } from "./audio-clip-tools";
 export { writeScene, type SceneBrief, type SceneWriteResult } from "./scene-writer";
 export { chatModel, CHAT_MODEL_ID } from "./models";
 export {

@@ -18,6 +18,8 @@ import { createWebTools } from "./web-tools";
 import { createVoiceoverTool } from "./voiceover";
 import { createSandboxTools } from "./sandbox-tools";
 import { createAssetTools } from "./asset-tools";
+import { createImageTools } from "./image-tools";
+import { createAudioClipTools } from "./audio-clip-tools";
 
 const MAX_DURATION = 30 * 60 * 10; // 10 minutes at 30fps
 
@@ -216,6 +218,8 @@ export function createEditorTools({
     ...createWebTools(),
     ...sandbox.tools,
     ...createAssetTools({ projectId, userId, onMutation }),
+    ...createImageTools({ projectId, userId, onMutation }),
+    ...createAudioClipTools({ projectId, userId, fps: project.fps, onMutation }),
     generateVoiceover: createVoiceoverTool({
       projectId,
       userId,
@@ -632,4 +636,7 @@ export const SCENE_MUTATING_TOOLS = new Set([
   "updateSceneDuration",
   "deleteScene",
   "reorderScenes",
+  "addAudio",
+  "updateAudio",
+  "removeAudio",
 ]);

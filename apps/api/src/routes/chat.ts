@@ -14,6 +14,7 @@ import {
   buildProjectContext,
   createEditorTools,
   chatModel,
+  loadAudioClipsForContext,
   loadLatestCompaction,
   runCompaction,
   NAMING_PROMPT,
@@ -261,11 +262,14 @@ chatRoutes.post("/:projectId", async (c) => {
       .filter((id): id is string => Boolean(id)),
   ]);
 
+  const audioClips = await loadAudioClipsForContext(project.id);
+
   const projectContext = buildProjectContext({
     project,
     scenes: scenes.map(({ code: _code, ...rest }) => rest),
     selectedScenes: scenes.filter((s) => focusSceneIds.has(s.id)),
     assets: assets.filter((a) => a.kind !== "export"),
+    audioClips,
   });
 
   // Auto-compact: once the live window passes the message limit, fold the older

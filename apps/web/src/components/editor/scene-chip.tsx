@@ -34,12 +34,20 @@ function RemoveX() {
 export interface MessageContextData {
   scenes?: { name: string }[];
   assets?: { filename: string }[];
+  audioClips?: { name: string }[];
   elements?: { label: string; sceneName: string; timecode: string }[];
 }
 
 const ClipGlyph = () => (
   <svg viewBox="0 0 24 24" className="size-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 8.5 12.3 17.2a4 4 0 0 1-5.6-5.6l8.1-8.1a2.5 2.5 0 0 1 3.5 3.5l-8.1 8.1a1 1 0 0 1-1.4-1.4l7.4-7.4" />
+  </svg>
+);
+const MusicGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className ?? "size-3 shrink-0"} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
   </svg>
 );
 const CursorGlyph = () => (
@@ -52,8 +60,10 @@ const CursorGlyph = () => (
 export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
   const scenes = ctx.scenes ?? [];
   const assets = ctx.assets ?? [];
+  const audioClips = ctx.audioClips ?? [];
   const elements = ctx.elements ?? [];
-  if (!scenes.length && !assets.length && !elements.length) return null;
+  if (!scenes.length && !assets.length && !audioClips.length && !elements.length)
+    return null;
 
   const pill = "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.75rem]";
   return (
@@ -68,6 +78,12 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
         <span key={`a${i}`} className={cx(pill, "border-accent/40 bg-accent-muted text-accent")}>
           <ClipGlyph />
           <span className="max-w-[140px] truncate">{a.filename}</span>
+        </span>
+      ))}
+      {audioClips.map((a, i) => (
+        <span key={`m${i}`} className={cx(pill, "border-orange/40 bg-orange-muted text-orange")}>
+          <MusicGlyph />
+          <span className="max-w-[140px] truncate">{a.name}</span>
         </span>
       ))}
       {elements.map((e, i) => (
@@ -144,6 +160,41 @@ export function SceneChips({
             <button
               onClick={() => deselectScene(scene.id)}
               className={cx(removeButton, "hover:bg-green/25")}
+              title="Remove from context"
+            >
+              <RemoveX />
+            </button>
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function AudioClipChips({
+  clips,
+}: {
+  clips: { id: string; name: string }[];
+}) {
+  const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
+  const deselectAudioClip = useEditorStore((s) => s.deselectAudioClip);
+
+  const selected = clips.filter((c) => selectedAudioClipIds.includes(c.id));
+
+  return (
+    <div className="relative flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
+      <AnimatePresence mode="popLayout">
+        {selected.map((clip) => (
+          <motion.span
+            key={clip.id}
+            {...CHIP_ANIM}
+            className="inline-flex items-center gap-1 rounded-full border border-orange/40 bg-orange-muted py-0.5 pl-2 pr-1 text-[0.857rem] text-orange backdrop-blur-md"
+          >
+            <MusicGlyph className="size-3.5 shrink-0" />
+            <span className="max-w-[140px] truncate">{clip.name}</span>
+            <button
+              onClick={() => deselectAudioClip(clip.id)}
+              className={cx(removeButton, "hover:bg-orange/25")}
               title="Remove from context"
             >
               <RemoveX />

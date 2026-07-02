@@ -60,7 +60,18 @@ const schema = z.object({
   MOONSHOT_API_KEY: z.string().min(1).optional(),
   FIRECRAWL_API_KEY: z.string().min(1).optional(),
   E2B_API_KEY: z.string().min(1).optional(),
+  // Custom E2B template (ffmpeg + A/V python) for the chat workbench tool.
+  E2B_WORKBENCH_TEMPLATE: z.string().min(1).optional(),
+  // Google Gemini "Nano Banana" image generation (generateImage tool).
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_IMAGE_MODEL: z.string().min(1).default("gemini-2.5-flash-image"),
   CHAT_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
+
+  // ── Renderer worker (apps/renderer) — where video exports run ───────
+  RENDER_PROVIDER: z.enum(["local", "e2b"]).default("local"),
+  E2B_RENDER_TEMPLATE: z.string().min(1).optional(),
+  E2B_RENDER_CMD: z.string().min(1).optional(),
+  RENDER_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
 
   // ── Web (Next.js public) ────────────────────────────────────────────
   NEXT_PUBLIC_API_URL: z.url().optional(),

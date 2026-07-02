@@ -248,7 +248,16 @@ Rules:
 
 # Workbench (file sandbox)
 
-You have a \`workbench\` tool: a Linux sandbox (bash or python) with the project's uploaded files mounted at /home/user/project. Use it to process or generate real file assets the scenes need — e.g. resize/crop/convert an uploaded image, extract a frame or transcode video with ffmpeg, generate a chart or texture with Pillow/matplotlib, or download and clean up an asset. Any file you create or modify is uploaded back to the project automatically; for images/video/audio the tool returns a URL you can drop straight into a scene via <Img>/<Video>/<Audio>. Prefer real, processed assets over faking them in TSX when the user gave you files or asks for image/media manipulation. Don't use it for things TSX already does well (layout, animation, vector shapes).
+You have a \`workbench\` tool: a Linux sandbox (bash or python) with the project's uploaded files mounted at /home/user/project. Use it to process or generate real file assets the scenes need — e.g. resize/crop/convert an uploaded image, extract a frame or transcode video with ffmpeg, generate a chart or texture with Pillow/matplotlib, or download and clean up an asset. It also has a full audio toolchain (ffmpeg/ffprobe, pydub, librosa, soundfile, numpy/scipy) — use it to BUILD audio the timeline needs: mix or layer tracks, trim/fade/loop a bed, normalize levels, duck music under a voiceover, stitch sound effects, or synthesize tones/risers. Any file you create is uploaded back to the project automatically and registered as an asset; for images/video/audio the tool returns a URL. Prefer real, processed assets over faking them in TSX when the user gave you files or asks for image/media manipulation. Don't use it for things TSX already does well (layout, animation, vector shapes).
+
+# Timeline audio (music, ambience, sound effects)
+
+Separate from per-scene narration (generateVoiceover), the project has up to 4 project-level audio LANES that run across scenes — for background music, ambience, and sound effects. Place audio on them with \`addAudio\` (a project audio URL + optional startFrame/durationInFrames/volume); the system auto-assigns a free lane, so you never manage lane numbers yourself. Move, trim, re-lane, rename, or set volume with \`updateAudio\`; delete with \`removeAudio\`. Existing clips are listed in the project context with their ids.
+
+- Get the audio URL first: from an uploaded asset, from \`saveAudioToProject\` (a hosted/royalty-free URL), or — for anything custom — from the workbench.
+- FOR COMPLEX AUDIO, USE THE WORKBENCH. When the composition needs layered or precisely-timed sound (a music bed mixed with sfx, a track ducked under narration, loops, fades, stingers hitting specific beats, synthesized sound design), generate the finished audio file in the workbench (ffmpeg/pydub/librosa), let it save to the project's assets, then \`addAudio\` with the returned URL. Don't try to approximate complex mixing by stacking many raw clips on the timeline — bake it into one asset in the workbench and place that.
+- Keep music UNDER narration: set a low volume (~0.15–0.35) on music clips when scenes have voiceover, or duck it in the workbench.
+- Timeline audio is muxed into exports (and audible in preview) — same pipeline as scene voiceover.
 
 # Creative process — ALWAYS work in this order
 
@@ -299,6 +308,7 @@ Use the provided tools to act on the project. Rules:
 - If a tool returns a compile error, fix the code and retry the same tool immediately. Do not apologize at length; just fix it.
 - Set sensible durationInFrames when creating scenes. Use reorderScenes/deleteScene/updateSceneDuration when asked to restructure.
 - renameProject: give the project a short title (2–5 words) when it becomes clear what the video is about.
+- generateImage: create a bespoke image (illustration, background, texture, product shot, icon) with a precise prompt when a scene needs a custom visual that TSX/vector shapes and brand logos can't provide. It saves into the project and returns a stable \`url\` for <Img>. Prefer real logos (Simple Icons / researched URLs) for brands, and TSX for layout/vector work — reach for generateImage for pictorial/illustrative content. Specify a transparent or solid background when the image will be composited into a scene.
 - Voiceover (generateVoiceover): narration is ON BY DEFAULT — every scene you create gets its voiceover in the same turn (see Creative process). Only skip it when the user explicitly wants a silent video. Rules:
   - Speech runs ~2.5 words/second. A 150-frame scene at 30fps holds ~12 words. The tool auto-extends scenes that are shorter than the narration and tells you — re-check pacing afterward.
   - Use ONE voice for the whole project (default "nova"; pick by tone: "onyx" deep/authoritative, "coral" warm, "echo" crisp/technical). Use the instructions field for delivery ("confident product narrator, measured pace").
@@ -333,8 +343,16 @@ export function buildProjectContext(input: {
   }>;
   selectedScenes: Array<{ id: string; name: string; code: string }>;
   assets?: Array<{ id: string; url: string; kind: string; filename: string }>;
+  audioClips?: Array<{
+    id: string;
+    name: string;
+    track: number;
+    startFrame: number;
+    durationInFrames: number;
+    volume: number;
+  }>;
 }): string {
-  const { project, scenes, selectedScenes, assets } = input;
+  const { project, scenes, selectedScenes, assets, audioClips } = input;
   const lines: string[] = [
     `# Current project state`,
     ``,
@@ -355,6 +373,17 @@ export function buildProjectContext(input: {
       ``,
       `Uploaded assets you may use in scenes:`,
       ...assets.map((a) => `- ${a.kind} "${a.filename}": ${a.url}`),
+    );
+  }
+
+  if (audioClips && audioClips.length > 0) {
+    lines.push(
+      ``,
+      `Timeline audio clips (project-level music/sfx; update/remove by id):`,
+      ...audioClips.map(
+        (a) =>
+          `- [id: ${a.id}] "${a.name}" — lane ${a.track}, frames ${a.startFrame}–${a.startFrame + a.durationInFrames}, volume ${a.volume}`,
+      ),
     );
   }
 

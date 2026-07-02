@@ -14,6 +14,11 @@ import {
 const WORKDIR = "/home/user/project";
 /** Sandbox auto-expires after this idle window (backstop for dispose()). */
 const SANDBOX_TIMEOUT_MS = 5 * 60_000;
+/**
+ * Custom E2B template with ffmpeg/ffprobe + A/V Python packages baked in (see
+ * packages/ai/e2b). When unset, falls back to the E2B code-interpreter base.
+ */
+const WORKBENCH_TEMPLATE = process.env.E2B_WORKBENCH_TEMPLATE;
 const OUTPUT_LIMIT = 4_000;
 
 const MEDIA_KIND: Record<string, "image" | "video" | "audio"> = {
@@ -63,6 +68,38 @@ const extOf = (name: string) => name.split(".").pop()?.toLowerCase() ?? "";
 const truncate = (s: string) =>
   s.length > OUTPUT_LIMIT ? `${s.slice(0, OUTPUT_LIMIT)}\n…[truncated]` : s;
 
+/**
+ * Models occasionally emit "smart punctuation" (em-dashes, curly quotes,
+ * non-breaking spaces) in generated code — an em-dash where a minus sign
+ * belongs is a real failure we saw in the wild: Python rejects it with
+ * `SyntaxError: invalid character '—' (U+2014)` before running a line. These
+ * characters are virtually never intended in a throwaway processing script, so
+ * we normalize the confusable ones to their ASCII equivalents before executing.
+ */
+const PUNCT_MAP: Record<string, string> = {
+  // Dashes / minus → hyphen-minus
+  "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-",
+  "―": "-", "−": "-",
+  // Double quotes → straight
+  "“": '"', "”": '"', "„": '"', "″": '"',
+  // Single quotes / apostrophes → straight
+  "‘": "'", "’": "'", "‚": "'", "′": "'", "ʼ": "'",
+  // Non-breaking / exotic spaces → normal space
+  " ": " ", " ": " ", " ": " ", " ": " ",
+  // Zero-width / BOM → removed
+  "​": "", "‌": "", "‍": "", "﻿": "",
+};
+const PUNCT_RE = new RegExp(`[${Object.keys(PUNCT_MAP).join("")}]`, "g");
+
+function sanitizeSource(code: string): { code: string; replaced: number } {
+  let replaced = 0;
+  const out = code.replace(PUNCT_RE, (ch) => {
+    replaced++;
+    return PUNCT_MAP[ch] ?? ch;
+  });
+  return { code: out, replaced };
+}
+
 /** Node Buffer -> ArrayBuffer slice the E2B filesystem API accepts. */
 function toArrayBuffer(buf: Buffer): ArrayBuffer {
   return buf.buffer.slice(
@@ -96,7 +133,24 @@ export function createSandboxTools({
   const manifest = new Map<string, number>();
 
   async function boot(): Promise<Sandbox> {
-    const sandbox = await Sandbox.create({ timeoutMs: SANDBOX_TIMEOUT_MS });
+    let sandbox: Sandbox;
+    if (WORKBENCH_TEMPLATE) {
+      try {
+        sandbox = await Sandbox.create(WORKBENCH_TEMPLATE, {
+          timeoutMs: SANDBOX_TIMEOUT_MS,
+        });
+      } catch (err) {
+        // The custom template isn't built/published yet (or is misnamed).
+        // Degrade to the base code-interpreter image so the workbench still
+        // works — just without the bundled ffmpeg/A-V toolchain.
+        console.warn(
+          `[workbench] template "${WORKBENCH_TEMPLATE}" unavailable (${err instanceof Error ? err.message : String(err)}); falling back to the base image — ffmpeg/ffprobe will be missing. Build & publish it (see packages/ai/e2b) to enable media tools.`,
+        );
+        sandbox = await Sandbox.create({ timeoutMs: SANDBOX_TIMEOUT_MS });
+      }
+    } else {
+      sandbox = await Sandbox.create({ timeoutMs: SANDBOX_TIMEOUT_MS });
+    }
     await sandbox.commands.run(`mkdir -p ${WORKDIR}`);
 
     const prefix = projectFilesPrefix(projectId);
@@ -175,7 +229,7 @@ export function createSandboxTools({
 
   const workbench = tool({
     description:
-      "Run a script in the project's sandbox (the 'workbench'). The project's uploaded files are mounted at /home/user/project — read, transform, or generate files there (resize/convert images, run ffmpeg, generate charts with Pillow/matplotlib, parse data, fetch and process assets, etc.). Any file you create or modify is automatically uploaded to the project and, if it's an image/video/audio, becomes usable in scenes via the returned URL. Choose `bash` for shell tools (ffmpeg, imagemagick, curl, file ops) or `python` for scripting.",
+      "Run a script in the project's sandbox (the 'workbench'). The project's uploaded files are mounted at /home/user/project — read, transform, or generate files there. It has a full audio/video/image toolchain: ffmpeg + ffprobe on the CLI, and Python libraries moviepy, pydub, imageio/imageio-ffmpeg, soundfile, librosa, opencv, Pillow, numpy/scipy, and matplotlib. Use it to transcode/trim/concat video, extract frames or thumbnails, probe media (ffprobe) for duration/dimensions/streams, edit or analyze audio, resize/convert images, or generate charts/textures. Any file you create or modify is automatically uploaded to the project and, if it's an image/video/audio, becomes usable in scenes via the returned URL. Choose `bash` for shell tools (ffmpeg, ffprobe, imagemagick, curl, file ops) or `python` for scripting. Write plain ASCII source — use straight quotes and a hyphen-minus (-), never smart punctuation like em-dashes (—) or curly quotes, which cause parse errors.",
     inputSchema: z.object({
       language: z.enum(["bash", "python"]),
       code: z
@@ -183,8 +237,11 @@ export function createSandboxTools({
         .min(1)
         .describe("The command/script to run from /home/user/project"),
     }),
-    execute: async ({ language, code }) => {
+    execute: async ({ language, code: rawCode }) => {
       try {
+        // Normalize smart punctuation (em-dashes, curly quotes, NBSP) that
+        // silently breaks parsing, and tell the model when we did.
+        const { code, replaced } = sanitizeSource(rawCode);
         const sandbox = await getSandbox();
         let stdout = "";
         let stderr = "";
@@ -211,10 +268,14 @@ export function createSandboxTools({
         }
 
         const files = await syncBack(sandbox);
+        const note =
+          replaced > 0
+            ? `[workbench] auto-normalized ${replaced} smart-punctuation character(s) (em-dash/curly-quote/NBSP) to ASCII before running — prefer plain ASCII in code.`
+            : "";
         return {
           ok: exitCode === 0,
           exitCode,
-          stdout: truncate(stdout),
+          stdout: truncate(note ? `${note}\n${stdout}` : stdout),
           stderr: truncate(stderr),
           // New/changed files now saved to the project, with usable URLs.
           files,

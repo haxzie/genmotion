@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "tsx watch --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
     "start": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "render": "tsx --tsconfig ../../tsconfig.tsx-runtime.json src/render-cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2b:build": "npx -y @e2b/cli template build --config e2b/e2b.toml --dockerfile e2b/e2b.Dockerfile --path ../..",
+    "e2b:publish": "npx -y @e2b/cli template publish --config e2b/e2b.toml --yes"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^2.6.1",
     "@genmotion/compiler": "workspace:^",
     "@genmotion/db": "workspace:^",
     "@genmotion/motion": "workspace:^",
@@ -26,6 +31,7 @@
     "@genmotion/config": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
   }
 }

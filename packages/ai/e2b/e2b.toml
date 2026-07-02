@@ -1,0 +1,9 @@
+# E2B template config for the AI-chat workbench sandbox.
+# Build with:  e2b template build   (run from this directory)
+# Then set E2B_WORKBENCH_TEMPLATE=<template name> so the workbench tool uses it.
+
+template_name = "genmotion-workbench"
+dockerfile = "e2b.Dockerfile"
+
+# moviepy/opencv can be memory-hungry; give it a little headroom.
+memory_mb = 2048

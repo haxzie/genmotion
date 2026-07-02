@@ -5,7 +5,11 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Streamdown } from "streamdown";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type SceneData, COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
+import {
+  type AudioClipData,
+  type SceneData,
+  COMPACTION_MESSAGE_LIMIT,
+} from "@genmotion/shared";
 import { API_URL, api } from "@/lib/api";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
@@ -13,6 +17,7 @@ import { useProjectAssets } from "@/hooks/use-assets";
 import {
   SceneChips,
   AssetChips,
+  AudioClipChips,
   ElementChips,
   MessageContextPills,
   type MessageContextData,
@@ -87,6 +92,7 @@ function CapacityRing({ count }: { count: number }) {
 function buildContextNote(
   scenes: { id: string; name: string }[],
   assets: { filename: string; url: string; kind: string }[],
+  audioClips: { id: string; name: string }[],
   elements: {
     elementId: string | null;
     tag: string;
@@ -117,12 +123,48 @@ function buildContextNote(
       `Selected asset(s): ${assets.map((a) => `${a.kind} "${a.filename}" — ${a.url}`).join(", ")}`,
     );
   }
+  if (audioClips.length > 0) {
+    lines.push(
+      `Selected timeline audio clip(s) — my request is about these; update or remove them with updateAudio/removeAudio: ${audioClips
+        .map((c) => `"${c.name}" [id: ${c.id}]`)
+        .join(", ")}`,
+    );
+  }
   if (lines.length === 0) return null;
   return `[Context attached to this message]\n${lines.join("\n")}`;
 }
 
-/** Lighter "Thinking…" indicator: soft shimmering word + animated ellipsis. */
-function ThinkingIndicator({ label }: { label?: string }) {
+// Playful working-status lines rotated while the agent runs tools (in place of
+// a static "Thinking…").
+const WORKING_PHRASES = [
+  "Cooking up frames",
+  "Choreographing motion",
+  "Sketching the scene",
+  "Composing the shot",
+  "Wiring the timeline",
+  "Animating pixels",
+  "Directing the sequence",
+  "Tuning the easing",
+  "Rendering ideas",
+  "Setting the stage",
+  "Storyboarding",
+  "Making it move",
+  "Finding the rhythm",
+  "Polishing the motion",
+];
+
+function randomPhrase(): string {
+  return WORKING_PHRASES[Math.floor(Math.random() * WORKING_PHRASES.length)]!;
+}
+
+/** Soft shimmering status word + animated ellipsis. */
+function ThinkingIndicator({
+  label,
+  dots = true,
+}: {
+  label?: string;
+  dots?: boolean;
+}) {
   return (
     <div
       className="mt-4 self-start pl-2 text-[0.95rem] font-medium text-text-tertiary"
@@ -131,7 +173,7 @@ function ThinkingIndicator({ label }: { label?: string }) {
       <span className="thinking-shimmer thinking-shimmer-soft">
         {label ?? "Thinking"}
       </span>
-      {!label && (
+      {dots && (
         <span className="thinking-dots" aria-hidden="true">
           <i>.</i>
           <i>.</i>
@@ -360,10 +402,12 @@ const MemoMessageBubble = memo(MessageBubble);
 function ChatPanelInner({
   projectId,
   scenes,
+  audioClips,
   initialMessages,
 }: {
   projectId: string;
   scenes: SceneData[];
+  audioClips: AudioClipData[];
   initialMessages: UIMessage[];
 }) {
   const [input, setInput] = useState("");
@@ -372,6 +416,7 @@ function ChatPanelInner({
   const [uploadOpen, setUploadOpen] = useState(false);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
+  const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
   const selectedElements = useEditorStore((s) => s.selectedElements);
   const setAiBusy = useEditorStore((s) => s.setAiBusy);
   const fixRequest = useEditorStore((s) => s.fixRequest);
@@ -381,7 +426,10 @@ function ChatPanelInner({
   // start typing right away.
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const selectionCount =
-    selectedSceneIds.length + selectedAssetIds.length + selectedElements.length;
+    selectedSceneIds.length +
+    selectedAssetIds.length +
+    selectedAudioClipIds.length +
+    selectedElements.length;
   const prevSelectionCount = useRef(selectionCount);
   useEffect(() => {
     if (selectionCount > prevSelectionCount.current) {
@@ -484,9 +532,20 @@ function ChatPanelInner({
     Boolean((lastPart as { text?: string }).text?.trim());
   const waitingToStart = busy && lastMessage?.role === "user";
   const showOrbit = busy && !waitingToStart && !streamingText;
+  const showIndicator = waitingToStart || showOrbit;
   // A trailing user message with nothing running means the assistant turn never
   // landed (failed/interrupted) — offer to retry it.
   const canRetry = !busy && lastMessage?.role === "user";
+
+  // Rotate a randomized working phrase while the loader is up (unless a concrete
+  // live status like scene-writing progress is streaming).
+  const [workingPhrase, setWorkingPhrase] = useState(WORKING_PHRASES[0]!);
+  useEffect(() => {
+    if (!showIndicator || liveStatus) return;
+    setWorkingPhrase(randomPhrase());
+    const id = setInterval(() => setWorkingPhrase(randomPhrase()), 2600);
+    return () => clearInterval(id);
+  }, [showIndicator, liveStatus]);
 
   useEffect(() => {
     setAiBusy(busy);
@@ -529,10 +588,12 @@ function ChatPanelInner({
       if (
         s.selectedSceneIds.length ||
         s.selectedAssetIds.length ||
+        s.selectedAudioClipIds.length ||
         s.selectedElements.length
       ) {
         s.clearSelection();
         s.clearAssetSelection();
+        s.clearAudioClipSelection();
         s.clearElements();
       }
     };
@@ -555,6 +616,34 @@ function ChatPanelInner({
       queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
     }
   }, [messages, queryClient, projectId]);
+
+  // Shimmer scenes the AI is actively editing: scene-targeting tool calls in the
+  // live turn that carry a sceneId but haven't produced output yet.
+  useEffect(() => {
+    const setEditing = useEditorStore.getState().setEditingSceneIds;
+    if (!busy) {
+      setEditing([]);
+      return;
+    }
+    const EDIT_TOOLS = new Set([
+      "tool-updateScene",
+      "tool-editScene",
+      "tool-updateSceneDuration",
+      "tool-generateVoiceover",
+    ]);
+    const editing = new Set<string>();
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant") {
+      for (const part of last.parts) {
+        if (!EDIT_TOOLS.has(part.type)) continue;
+        const state = (part as { state?: string }).state;
+        if (state === "output-available" || state === "output-error") continue;
+        const sceneId = (part as { input?: { sceneId?: string } }).input?.sceneId;
+        if (sceneId) editing.add(sceneId);
+      }
+    }
+    setEditing([...editing]);
+  }, [messages, busy]);
 
   // Auto-send the prompt the user typed on the home page (new-project flow).
   useEffect(() => {
@@ -616,11 +705,15 @@ function ChatPanelInner({
     const selAssets = (assets ?? []).filter((a) =>
       selectedAssetIds.includes(a.id),
     );
+    const selClips = audioClips.filter((c) =>
+      selectedAudioClipIds.includes(c.id),
+    );
 
     // Snapshot the attached context so it persists with (and renders inside) the message.
     const ctx: MessageContextData = {
       scenes: selScenes.map((s) => ({ name: s.name })),
       assets: selAssets.map((a) => ({ filename: a.filename })),
+      audioClips: selClips.map((c) => ({ name: c.name })),
       elements: selectedElements.map((e) => ({
         label: e.label,
         sceneName: e.sceneName,
@@ -631,6 +724,7 @@ function ChatPanelInner({
     const note = buildContextNote(
       selScenes.map((s) => ({ id: s.id, name: s.name })),
       selAssets.map((a) => ({ filename: a.filename, url: a.url, kind: a.kind })),
+      selClips.map((c) => ({ id: c.id, name: c.name })),
       selectedElements.map((e) => ({
         elementId: e.elementId,
         tag: e.tag,
@@ -642,6 +736,7 @@ function ChatPanelInner({
 
     const snapshotSceneIds = [...selectedSceneIds];
     const snapshotAssetIds = [...selectedAssetIds];
+    const snapshotAudioClipIds = [...selectedAudioClipIds];
     const snapshotElements = selectedElements.map(
       ({ tag, text: elText, elementId, sceneId, sceneName, timecode }) => ({
         tag,
@@ -668,6 +763,7 @@ function ChatPanelInner({
           body: {
             selectedSceneIds: snapshotSceneIds,
             selectedAssetIds: snapshotAssetIds,
+            selectedAudioClipIds: snapshotAudioClipIds,
             selectedElements: snapshotElements,
           },
         },
@@ -685,6 +781,7 @@ function ChatPanelInner({
     const store = useEditorStore.getState();
     store.clearSelection();
     store.clearAssetSelection();
+    store.clearAudioClipSelection();
     store.clearElements();
 
     if (busy) {
@@ -730,9 +827,12 @@ function ChatPanelInner({
                 />
               );
             })}
-            {(waitingToStart || showOrbit) && (
-              <ThinkingIndicator label={liveStatus ?? undefined} />
-            )}
+            {showIndicator &&
+              (liveStatus ? (
+                <ThinkingIndicator label={liveStatus} dots={false} />
+              ) : (
+                <ThinkingIndicator label={workingPhrase} />
+              ))}
             {error && (
               <div className="mt-4 flex items-center gap-2.5 rounded-md border border-danger/30 bg-danger/10 px-3 py-2.5">
                 <svg
@@ -808,6 +908,7 @@ function ChatPanelInner({
         )}
         <SceneChips scenes={scenes} />
         <AssetChips assets={assets ?? []} />
+        <AudioClipChips clips={audioClips} />
         <ElementChips />
         <form
           onSubmit={(e) => {
@@ -882,9 +983,11 @@ function ChatPanelInner({
 export function ChatPanel({
   projectId,
   scenes,
+  audioClips,
 }: {
   projectId: string;
   scenes: SceneData[];
+  audioClips: AudioClipData[];
 }) {
   const { data: history, isLoading } = useQuery({
     queryKey: ["chat", projectId],
@@ -905,6 +1008,7 @@ export function ChatPanel({
     <ChatPanelInner
       projectId={projectId}
       scenes={scenes}
+      audioClips={audioClips}
       initialMessages={history ?? []}
     />
   );

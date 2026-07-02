@@ -21,6 +21,9 @@
   --color-green: #06c167;
   --color-green-strong: #14d077;
   --color-green-muted: rgba(6, 193, 103, 0.14);
+  /* Orange: highlights a selected audio clip on the timeline (+ its chips). */
+  --color-orange: #fb923c;
+  --color-orange-muted: rgba(251, 146, 60, 0.16);
   --color-danger: #f1646c;
   --color-success: #3fb96f;
   --color-warning: #d6a849;
@@ -195,6 +198,31 @@ body {
   }
   100% {
     background-position: -100% 0;
+  }
+}
+
+/* Timeline scene card "being edited by the AI" — a soft light sweep across it.
+   The host element must be position:relative + overflow:hidden. */
+.gm-card-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.13) 50%,
+    transparent 75%
+  );
+  transform: translateX(-100%);
+  animation: gm-card-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes gm-card-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }
 
