@@ -17,6 +17,23 @@ assetRoutes.use(requireAuth);
 
 const MAX_UPLOAD_BYTES = 200 * 1024 * 1024; // 200MB
 
+/** True when the project exists and belongs to the caller's active org. */
+async function projectInOrg(
+  projectId: string,
+  organizationId: string,
+): Promise<boolean> {
+  const [p] = await db
+    .select({ id: schema.projects.id })
+    .from(schema.projects)
+    .where(
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
+    );
+  return Boolean(p);
+}
+
 const KIND_BY_PREFIX: Array<[string, "image" | "video" | "audio"]> = [
   ["image/", "image"],
   ["video/", "video"],
@@ -44,17 +61,8 @@ assetRoutes.post("/presign", zValidator("json", presignSchema), async (c) => {
     );
   }
 
-  if (projectId) {
-    const [project] = await db
-      .select({ id: schema.projects.id })
-      .from(schema.projects)
-      .where(
-        and(
-          eq(schema.projects.id, projectId),
-          eq(schema.projects.userId, user.id),
-        ),
-      );
-    if (!project) return c.json({ error: "Project not found" }, 404);
+  if (projectId && !(await projectInOrg(projectId, c.get("organizationId")))) {
+    return c.json({ error: "Project not found" }, 404);
   }
 
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -114,17 +122,8 @@ assetRoutes.post("/upload", zValidator("query", uploadQuerySchema), async (c) =>
     );
   }
 
-  if (projectId) {
-    const [project] = await db
-      .select({ id: schema.projects.id })
-      .from(schema.projects)
-      .where(
-        and(
-          eq(schema.projects.id, projectId),
-          eq(schema.projects.userId, user.id),
-        ),
-      );
-    if (!project) return c.json({ error: "Project not found" }, 404);
+  if (projectId && !(await projectInOrg(projectId, c.get("organizationId")))) {
+    return c.json({ error: "Project not found" }, 404);
   }
 
   const body = Buffer.from(await c.req.arrayBuffer());
@@ -192,13 +191,15 @@ assetRoutes.delete("/:id", async (c) => {
   const [asset] = await db
     .select()
     .from(schema.assets)
-    .where(
-      and(
-        eq(schema.assets.id, c.req.param("id")),
-        eq(schema.assets.userId, user.id),
-      ),
-    );
+    .where(eq(schema.assets.id, c.req.param("id")));
   if (!asset) return c.json({ error: "Not found" }, 404);
+  // The uploader, or any member of the org the asset's project belongs to.
+  const allowed =
+    asset.userId === user.id ||
+    (asset.projectId
+      ? await projectInOrg(asset.projectId, c.get("organizationId"))
+      : false);
+  if (!allowed) return c.json({ error: "Not found" }, 404);
 
   // Best-effort storage removal — drop the row regardless so it leaves the UI.
   try {
@@ -219,15 +220,35 @@ assetRoutes.delete("/:id", async (c) => {
 assetRoutes.get("/", async (c) => {
   const user = c.get("user");
   const projectId = c.req.query("projectId");
-  const conditions = [
-    eq(schema.assets.userId, user.id),
-    eq(schema.assets.status, "ready" as const),
-  ];
-  if (projectId) conditions.push(eq(schema.assets.projectId, projectId));
+
+  // Project assets are shared across the org (any member's uploads show up);
+  // library assets with no project stay scoped to the individual user.
+  if (projectId) {
+    if (!(await projectInOrg(projectId, c.get("organizationId")))) {
+      return c.json([]);
+    }
+    const rows = await db
+      .select()
+      .from(schema.assets)
+      .where(
+        and(
+          eq(schema.assets.projectId, projectId),
+          eq(schema.assets.status, "ready" as const),
+        ),
+      )
+      .orderBy(desc(schema.assets.createdAt));
+    return c.json(rows);
+  }
+
   const rows = await db
     .select()
     .from(schema.assets)
-    .where(and(...conditions))
+    .where(
+      and(
+        eq(schema.assets.userId, user.id),
+        eq(schema.assets.status, "ready" as const),
+      ),
+    )
     .orderBy(desc(schema.assets.createdAt));
   return c.json(rows);
 });

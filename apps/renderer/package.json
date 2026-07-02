@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
     "start": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env src/index.ts",
+    "start:docker": "tsx --tsconfig ../../tsconfig.tsx-runtime.json src/index.ts",
     "render": "tsx --tsconfig ../../tsconfig.tsx-runtime.json src/render-cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

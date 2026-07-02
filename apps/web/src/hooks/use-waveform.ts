@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** Buckets decoded per file — high enough to downsample to any render width. */
 const RESOLUTION = 240;
 
-// Decoded peaks are cached per URL so re-renders and multiple scene blocks
+export interface WaveformData {
+  /** Normalized (0–1) amplitude peaks across the whole source (RESOLUTION long). */
+  peaks: number[] | null;
+  /** Source length in seconds (null while loading / on failure). */
+  duration: number | null;
+}
+
+const EMPTY: WaveformData = { peaks: null, duration: null };
+
+// Decoded peaks + duration are cached per URL so re-renders and multiple blocks
 // don't re-fetch/re-decode the same audio.
-const cache = new Map<string, number[]>();
+const cache = new Map<string, WaveformData>();
 let sharedCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -23,45 +32,25 @@ function getAudioContext(): AudioContext | null {
   return sharedCtx;
 }
 
-/** Reduce a high-res peak array down to `target` bars (peak per bucket). */
-function downsample(peaks: number[], target: number): number[] {
-  if (target >= peaks.length) return peaks;
-  const out: number[] = [];
-  const block = peaks.length / target;
-  for (let i = 0; i < target; i++) {
-    const start = Math.floor(i * block);
-    const end = Math.max(start + 1, Math.floor((i + 1) * block));
-    let peak = 0;
-    for (let j = start; j < end; j++) {
-      const v = peaks[j] ?? 0;
-      if (v > peak) peak = v;
-    }
-    out.push(peak);
-  }
-  return out;
-}
-
 /**
- * Fetch + decode an audio file into normalized (0–1) amplitude peaks, then
- * downsample to `bars` columns. Decoding happens once per URL (cached);
- * changing `bars` only re-downsamples. Returns null while loading / on failure.
+ * Fetch + decode an audio file into normalized (0–1) amplitude peaks plus its
+ * duration. Decoding happens once per URL (cached). Returns nulls while loading
+ * or on failure. Callers map the peaks onto their own pixel width with
+ * `sampleBars`, so the waveform stays time-accurate.
  */
-export function useWaveform(
-  url: string | null | undefined,
-  bars: number,
-): number[] | null {
-  const [raw, setRaw] = useState<number[] | null>(() =>
-    url ? cache.get(url) ?? null : null,
+export function useWaveform(url: string | null | undefined): WaveformData {
+  const [data, setData] = useState<WaveformData>(() =>
+    url ? cache.get(url) ?? EMPTY : EMPTY,
   );
 
   useEffect(() => {
     if (!url) {
-      setRaw(null);
+      setData(EMPTY);
       return;
     }
     const cached = cache.get(url);
     if (cached) {
-      setRaw(cached);
+      setData(cached);
       return;
     }
 
@@ -73,8 +62,8 @@ export function useWaveform(
         const res = await fetch(url);
         const arrayBuffer = await res.arrayBuffer();
         const audio = await ctx.decodeAudioData(arrayBuffer);
-        const data = audio.getChannelData(0);
-        const block = Math.floor(data.length / RESOLUTION) || 1;
+        const channel = audio.getChannelData(0);
+        const block = Math.floor(channel.length / RESOLUTION) || 1;
 
         const result: number[] = [];
         let max = 0;
@@ -82,17 +71,18 @@ export function useWaveform(
           let peak = 0;
           const start = i * block;
           for (let j = 0; j < block; j++) {
-            const v = Math.abs(data[start + j] ?? 0);
+            const v = Math.abs(channel[start + j] ?? 0);
             if (v > peak) peak = v;
           }
           result.push(peak);
           if (peak > max) max = peak;
         }
-        const normalized = max > 0 ? result.map((p) => p / max) : result;
-        cache.set(url, normalized);
-        if (!cancelled) setRaw(normalized);
+        const peaks = max > 0 ? result.map((p) => p / max) : result;
+        const value: WaveformData = { peaks, duration: audio.duration };
+        cache.set(url, value);
+        if (!cancelled) setData(value);
       } catch {
-        if (!cancelled) setRaw(null);
+        if (!cancelled) setData(EMPTY);
       }
     })();
 
@@ -101,8 +91,37 @@ export function useWaveform(
     };
   }, [url]);
 
-  return useMemo(
-    () => (raw ? downsample(raw, Math.max(1, bars)) : null),
-    [raw, bars],
-  );
+  return data;
+}
+
+/**
+ * Build `barCount` amplitude values across a card's FULL width, sampling the
+ * source only where audio actually plays. Each bar maps to the card time
+ * `startSec + (bar/barCount) * windowSec`; bars past the source `duration`
+ * (i.e. the card is longer than the audio) come back as 0 — a flat baseline —
+ * so the waveform is time-accurate instead of stretched to fill the card.
+ *
+ * @param startSec  Seconds into the source where the card begins (0 for scenes;
+ *                  the clip's `startFrom` for audio clips).
+ * @param windowSec The card's own duration in seconds.
+ */
+export function sampleBars(
+  data: WaveformData,
+  barCount: number,
+  startSec: number,
+  windowSec: number,
+): number[] {
+  const { peaks, duration } = data;
+  const bars: number[] = new Array(barCount).fill(0);
+  if (!peaks || !duration || windowSec <= 0) return bars;
+  for (let i = 0; i < barCount; i++) {
+    const sourceTime = startSec + ((i + 0.5) / barCount) * windowSec;
+    if (sourceTime >= duration) continue; // past the audio → flat baseline
+    const idx = Math.min(
+      peaks.length - 1,
+      Math.max(0, Math.floor((sourceTime / duration) * peaks.length)),
+    );
+    bars[i] = peaks[idx] ?? 0;
+  }
+  return bars;
 }

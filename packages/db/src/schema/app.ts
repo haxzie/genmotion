@@ -8,21 +8,31 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { organization, user } from "./auth";
 
-export const projects = pgTable("projects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  name: text("name").notNull().default("Untitled"),
-  thumbnailUrl: text("thumbnail_url"),
-  fps: integer("fps").notNull().default(30),
-  width: integer("width").notNull().default(1920),
-  height: integer("height").notNull().default(1080),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // The creator. Access is scoped by organizationId (team-shared), not this.
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // The organization that owns the project — every request filters by the
+    // caller's active org, so switching orgs switches the visible projects.
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull().default("Untitled"),
+    thumbnailUrl: text("thumbnail_url"),
+    fps: integer("fps").notNull().default(30),
+    width: integer("width").notNull().default(1920),
+    height: integer("height").notNull().default(1080),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("projects_org_idx").on(t.organizationId)],
+);
 
 export const scenes = pgTable(
   "scenes",

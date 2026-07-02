@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { RedirectIfAuthed } from "@/components/marketing/redirect-if-authed";
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/server-session";
 import { HomeComposer } from "@/components/marketing/home-composer";
 import {
   Container,
@@ -74,13 +75,16 @@ const FAQS: Faq[] = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Server-side gate: authed visitors go straight to the app, so the marketing
+  // HTML is never sent to them (no client-side redirect flash).
+  const session = await getServerSession();
+  if (session) redirect("/dashboard");
+
   const latestPost = getAllPosts()[0];
 
   return (
     <>
-      <RedirectIfAuthed />
-
       {/* Hero */}
       <div className="relative overflow-hidden">
         <GradientBlobs />

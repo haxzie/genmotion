@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { signOut, useSession, organization } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
 
@@ -25,13 +26,11 @@ function PlusIcon({ className }: IconProps) {
     </svg>
   );
 }
-function GridIcon({ className }: IconProps) {
+// lucide: play
+function PlayIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <polygon points="6 3 20 12 6 21 6 3" />
     </svg>
   );
 }
@@ -81,7 +80,7 @@ function LogOutIcon({ className }: IconProps) {
 
 const NAV = [
   { label: "Create", href: "/dashboard", Icon: PlusIcon },
-  { label: "Projects", href: "/projects", Icon: GridIcon },
+  { label: "Projects", href: "/projects", Icon: PlayIcon },
   { label: "Templates", href: "/templates", Icon: Layers2Icon },
   { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ] as const;
@@ -101,6 +100,7 @@ function CheckIcon({ className }: IconProps) {
 
 function OrgPicker() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: session } = useSession();
   const activeOrgId = session?.session.activeOrganizationId ?? null;
   const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
@@ -120,6 +120,10 @@ function OrgPicker() {
     setOpen(false);
     if (id === activeOrgId) return;
     await organization.setActive({ organizationId: id });
+    // The active org lives in the session; every project/asset request now
+    // scopes to it, so drop the cached data to refetch for the new org.
+    await queryClient.invalidateQueries();
+    router.push("/dashboard");
     router.refresh();
   }
 
@@ -134,6 +138,8 @@ function OrgPicker() {
     if (res.data) {
       await organization.setActive({ organizationId: res.data.id });
       await load();
+      await queryClient.invalidateQueries();
+      router.push("/dashboard");
       router.refresh();
     }
   }

@@ -11,16 +11,16 @@ const WEB_URL = env.WEB_URL;
 // Only enable a provider once its credentials exist, so the API still boots in
 // dev without OAuth secrets. Add GOOGLE_/GITHUB_ client id+secret to light them up.
 const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {};
-if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+if (env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET) {
   socialProviders.google = {
-    clientId: env.GOOGLE_CLIENT_ID,
-    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+    clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
   };
 }
-if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
+if (env.GITHUB_OAUTH_CLIENT_ID && env.GITHUB_OAUTH_CLIENT_SECRET) {
   socialProviders.github = {
-    clientId: env.GITHUB_CLIENT_ID,
-    clientSecret: env.GITHUB_CLIENT_SECRET,
+    clientId: env.GITHUB_OAUTH_CLIENT_ID,
+    clientSecret: env.GITHUB_OAUTH_CLIENT_SECRET,
   };
 }
 
@@ -35,6 +35,20 @@ function slugify(input: string): string {
 }
 
 /**
+ * Short, URL-friendly random id (base62). At size 12 that's 62^12 ≈ 3×10^21
+ * possibilities — collision-safe for our scale, and far shorter than a UUID.
+ * Optionally namespaced (e.g. shortId("org") → "org_a1B2c3D4e5F6").
+ */
+const ID_ALPHABET =
+  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function shortId(prefix?: string, size = 12): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(size));
+  let out = "";
+  for (let i = 0; i < size; i++) out += ID_ALPHABET[bytes[i]! % ID_ALPHABET.length];
+  return prefix ? `${prefix}_${out}` : out;
+}
+
+/**
  * Give every new user a personal organization (named from their name/email) and
  * make them its owner, so they always have an active org. Onboarding lets them
  * rename it. Inserts directly via drizzle to avoid depending on the auth API
@@ -43,14 +57,14 @@ function slugify(input: string): string {
 async function createDefaultOrg(u: { id: string; name: string; email: string }) {
   const base = (u.name?.trim() || u.email.split("@")[0] || "My").trim();
   const orgName = /s$/i.test(base) ? `${base}' Team` : `${base}'s Team`;
-  const orgId = crypto.randomUUID();
+  const orgId = shortId("org");
   await db.insert(schema.organization).values({
     id: orgId,
     name: orgName,
-    slug: `${slugify(base)}-${crypto.randomUUID().slice(0, 8)}`,
+    slug: `${slugify(base)}-${shortId(undefined, 6)}`,
   });
   await db.insert(schema.member).values({
-    id: crypto.randomUUID(),
+    id: shortId("mem"),
     organizationId: orgId,
     userId: u.id,
     role: "owner",

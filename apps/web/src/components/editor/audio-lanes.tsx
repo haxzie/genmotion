@@ -9,7 +9,7 @@ import {
 } from "@genmotion/shared";
 import { cx } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
-import { useWaveform } from "@/hooks/use-waveform";
+import { useWaveform, sampleBars } from "@/hooks/use-waveform";
 
 export interface AudioAssetOption {
   id: string;
@@ -71,18 +71,24 @@ interface Draft {
 function ClipWaveform({
   url,
   widthPx,
+  startSec,
+  durationSec,
   muted,
   selected,
 }: {
   url: string;
   widthPx: number;
+  /** Seconds into the source where the clip starts (its trim/startFrom). */
+  startSec: number;
+  /** Clip length in seconds — waveform maps to real time, flat past the audio. */
+  durationSec: number;
   muted: boolean;
   selected: boolean;
 }) {
   // ~one bar per 2.5px of clip width, so wider clips show more detail.
   const barCount = Math.max(6, Math.min(220, Math.floor((widthPx - 12) / 2.5)));
-  const peaks = useWaveform(url, barCount);
-  const bars = peaks ?? Array.from({ length: barCount }, () => 0.05);
+  const data = useWaveform(url);
+  const bars = sampleBars(data, barCount, startSec, durationSec);
   return (
     <div
       className={cx(
@@ -368,6 +374,7 @@ export function AudioLanes({
         const d = draft && draft.id === clip.id ? draft : null;
         const startFrame = d ? d.startFrame : clip.startFrame;
         const duration = d ? d.durationInFrames : clip.durationInFrames;
+        const startFrom = d ? d.startFrom : clip.startFrom;
         const track = d ? d.track : clip.track;
         const muted = clip.volume <= 0;
         const selected = selectedIds.includes(clip.id);
@@ -417,6 +424,8 @@ export function AudioLanes({
             <ClipWaveform
               url={clip.url}
               widthPx={width}
+              startSec={startFrom}
+              durationSec={duration / fps}
               muted={muted}
               selected={selected}
             />

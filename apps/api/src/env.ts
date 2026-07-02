@@ -28,10 +28,10 @@ const schema = z.object({
   BETTER_AUTH_URL: z.url().default("http://localhost:4001"),
 
   // OAuth providers — optional; a provider turns on once both halves are set.
-  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-  GITHUB_CLIENT_ID: z.string().min(1).optional(),
-  GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  GITHUB_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GITHUB_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 
   // ── Email (Amazon SES) — optional ───────────────────────────────────
   EMAIL_FROM: z.email().optional(),

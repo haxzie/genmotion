@@ -109,20 +109,25 @@ export const chatRoutes = new Hono<AuthEnv>();
 
 chatRoutes.use(requireAuth);
 
-async function loadOwnedProject(projectId: string, userId: string) {
+async function loadOwnedProject(projectId: string, organizationId: string) {
   const [project] = await db
     .select()
     .from(schema.projects)
     .where(
-      and(eq(schema.projects.id, projectId), eq(schema.projects.userId, userId)),
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
     );
   return project ?? null;
 }
 
 /** GET /:projectId — persisted chat history as UIMessage[]. */
 chatRoutes.get("/:projectId", async (c) => {
-  const user = c.get("user");
-  const project = await loadOwnedProject(c.req.param("projectId"), user.id);
+  const project = await loadOwnedProject(
+    c.req.param("projectId"),
+    c.get("organizationId"),
+  );
   if (!project) return c.json({ error: "Not found" }, 404);
 
   // Load only messages after the latest compaction — older turns are folded
@@ -176,7 +181,10 @@ function extractText(message: UIMessage | undefined): string {
 /** POST /:projectId — streaming editor agent. */
 chatRoutes.post("/:projectId", async (c) => {
   const user = c.get("user");
-  const project = await loadOwnedProject(c.req.param("projectId"), user.id);
+  const project = await loadOwnedProject(
+    c.req.param("projectId"),
+    c.get("organizationId"),
+  );
   if (!project) return c.json({ error: "Not found" }, 404);
 
   // Scoped structured logging for the whole streaming turn. Every line is

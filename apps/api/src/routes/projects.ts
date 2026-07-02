@@ -24,19 +24,22 @@ export const projectRoutes = new Hono<AuthEnv>();
 
 projectRoutes.use(requireAuth);
 
-/** Loads a project owned by the current user, or null. */
-async function ownedProject(projectId: string, userId: string) {
+/** Loads a project in the caller's active organization, or null. */
+async function ownedProject(projectId: string, organizationId: string) {
   const [project] = await db
     .select()
     .from(schema.projects)
     .where(
-      and(eq(schema.projects.id, projectId), eq(schema.projects.userId, userId)),
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
     );
   return project ?? null;
 }
 
 projectRoutes.get("/", async (c) => {
-  const user = c.get("user");
+  const organizationId = c.get("organizationId");
   const projects = await db
     .select({
       ...getTableColumns(schema.projects),
@@ -47,7 +50,7 @@ projectRoutes.get("/", async (c) => {
     })
     .from(schema.projects)
     .leftJoin(schema.scenes, eq(schema.scenes.projectId, schema.projects.id))
-    .where(eq(schema.projects.userId, user.id))
+    .where(eq(schema.projects.organizationId, organizationId))
     .groupBy(schema.projects.id)
     .orderBy(desc(schema.projects.updatedAt));
   return c.json(projects);
@@ -62,17 +65,17 @@ const createProjectSchema = z.object({
 
 projectRoutes.post("/", zValidator("json", createProjectSchema), async (c) => {
   const user = c.get("user");
+  const organizationId = c.get("organizationId");
   const body = c.req.valid("json");
   const [project] = await db
     .insert(schema.projects)
-    .values({ userId: user.id, ...body })
+    .values({ userId: user.id, organizationId, ...body })
     .returning();
   return c.json(project, 201);
 });
 
 projectRoutes.get("/:id", async (c) => {
-  const user = c.get("user");
-  const project = await ownedProject(c.req.param("id"), user.id);
+  const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
   if (!project) return c.json({ error: "Not found" }, 404);
 
   const scenes = await db
@@ -96,8 +99,7 @@ projectRoutes.patch(
   "/:id",
   zValidator("json", updateProjectSchema),
   async (c) => {
-    const user = c.get("user");
-    const project = await ownedProject(c.req.param("id"), user.id);
+    const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
     if (!project) return c.json({ error: "Not found" }, 404);
 
     const [updated] = await db
@@ -110,8 +112,7 @@ projectRoutes.patch(
 );
 
 projectRoutes.delete("/:id", async (c) => {
-  const user = c.get("user");
-  const project = await ownedProject(c.req.param("id"), user.id);
+  const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
   if (!project) return c.json({ error: "Not found" }, 404);
 
   await db.delete(schema.projects).where(eq(schema.projects.id, project.id));
@@ -126,8 +127,7 @@ projectRoutes.patch(
   "/:id/scenes/reorder",
   zValidator("json", reorderSchema),
   async (c) => {
-    const user = c.get("user");
-    const project = await ownedProject(c.req.param("id"), user.id);
+    const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
     if (!project) return c.json({ error: "Not found" }, 404);
 
     const { orderedSceneIds } = c.req.valid("json");
@@ -168,8 +168,7 @@ projectRoutes.patch(
   "/:id/scenes/:sceneId",
   zValidator("json", updateSceneSchema),
   async (c) => {
-    const user = c.get("user");
-    const project = await ownedProject(c.req.param("id"), user.id);
+    const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
     if (!project) return c.json({ error: "Not found" }, 404);
 
     const [updated] = await db
@@ -188,8 +187,7 @@ projectRoutes.patch(
 );
 
 projectRoutes.delete("/:id/scenes/:sceneId", async (c) => {
-  const user = c.get("user");
-  const project = await ownedProject(c.req.param("id"), user.id);
+  const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
   if (!project) return c.json({ error: "Not found" }, 404);
 
   const deleted = await db
@@ -239,8 +237,7 @@ projectRoutes.post(
   "/:id/audio-clips",
   zValidator("json", createAudioClipSchema),
   async (c) => {
-    const user = c.get("user");
-    const project = await ownedProject(c.req.param("id"), user.id);
+    const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
     if (!project) return c.json({ error: "Not found" }, 404);
     const body = c.req.valid("json");
 
@@ -297,8 +294,7 @@ projectRoutes.patch(
   "/:id/audio-clips/:clipId",
   zValidator("json", updateAudioClipSchema),
   async (c) => {
-    const user = c.get("user");
-    const project = await ownedProject(c.req.param("id"), user.id);
+    const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
     if (!project) return c.json({ error: "Not found" }, 404);
     const body = c.req.valid("json");
 
@@ -341,8 +337,7 @@ projectRoutes.patch(
 );
 
 projectRoutes.delete("/:id/audio-clips/:clipId", async (c) => {
-  const user = c.get("user");
-  const project = await ownedProject(c.req.param("id"), user.id);
+  const project = await ownedProject(c.req.param("id"), c.get("organizationId"));
   if (!project) return c.json({ error: "Not found" }, 404);
 
   const deleted = await db

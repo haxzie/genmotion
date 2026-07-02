@@ -28,7 +28,7 @@ import {
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { SceneIcon } from "./scene-icon";
-import { useWaveform } from "@/hooks/use-waveform";
+import { useWaveform, sampleBars } from "@/hooks/use-waveform";
 import { useProjectAssets } from "@/hooks/use-assets";
 import { AudioLanes, AUDIO_LANE_HEIGHT } from "./audio-lanes";
 
@@ -95,20 +95,25 @@ function TrackHeaders({ audioHeight }: { audioHeight: number }) {
 function SceneWaveform({
   url,
   widthPx,
+  durationSec,
   selected,
   muted,
   onToggleMute,
 }: {
   url: string;
   widthPx: number;
+  /** Scene length in seconds — the waveform maps to real time within this. */
+  durationSec: number;
   selected: boolean;
   muted: boolean;
   onToggleMute: () => void;
 }) {
   // One line per ~2.5px of block width, so longer scenes show more detail.
   const barCount = Math.max(8, Math.min(160, Math.floor((widthPx - 12) / 2.5)));
-  const peaks = useWaveform(url, barCount);
-  const bars = peaks ?? Array.from({ length: barCount }, () => 0.06);
+  const data = useWaveform(url);
+  // Voiceover starts at the scene's first frame; time-accurate, flat past the
+  // audio's end if the scene runs longer.
+  const bars = sampleBars(data, barCount, 0, durationSec);
   return (
     <div className="mt-auto flex h-7 shrink-0 items-stretch gap-1 overflow-hidden p-1.5">
       <div className={cx("flex flex-1 items-stretch", muted && "opacity-40")}>
@@ -219,6 +224,7 @@ function SceneBlock({
           <SceneWaveform
             url={scene.audioUrl}
             widthPx={widthPx}
+            durationSec={scene.durationInFrames / fps}
             selected={selected}
             muted={muted}
             onToggleMute={() => onToggleMute(scene.id, !muted)}
@@ -451,18 +457,20 @@ export function Timeline({
     pruneAudioClipSelection(audioClips.map((c) => c.id));
   }, [audioClips, pruneAudioClipSelection]);
 
-  // Delete/Backspace removes selected scenes and/or audio clips (when not typing).
+  // Delete/Backspace removes selected scenes and/or audio clips. Only bail when
+  // the user is actively editing text — selecting a clip focuses the (empty)
+  // chat input, and that shouldn't swallow the delete shortcut.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
       if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const target = e.target as HTMLElement;
+      const isTextField =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      const editing =
+        target.isContentEditable ||
+        (isTextField &&
+          (target as HTMLInputElement | HTMLTextAreaElement).value.length > 0);
+      if (editing) return;
       if (selectedAudioClipIds.length > 0) {
         e.preventDefault();
         for (const id of selectedAudioClipIds) onDeleteClip(id);

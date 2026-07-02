@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, db, schema } from "@genmotion/db";
+import { and, desc, eq, getTableColumns, db, schema } from "@genmotion/db";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { getBoss, RENDER_QUEUE } from "../queue";
 
@@ -17,13 +17,17 @@ const createSchema = z.object({
 
 exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
+  const organizationId = c.get("organizationId");
   const { projectId, quality } = c.req.valid("json");
 
   const [project] = await db
     .select()
     .from(schema.projects)
     .where(
-      and(eq(schema.projects.id, projectId), eq(schema.projects.userId, user.id)),
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
     );
   if (!project) return c.json({ error: "Project not found" }, 404);
 
@@ -65,29 +69,44 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
 });
 
 exportRoutes.get("/latest", async (c) => {
-  const user = c.get("user");
+  const organizationId = c.get("organizationId");
   const projectId = c.req.query("projectId");
   if (!projectId) return c.json({ error: "projectId required" }, 400);
+  // Only expose exports for a project in the caller's active org (team-shared,
+  // so the latest export is per-project, not per-user).
+  const [project] = await db
+    .select({ id: schema.projects.id })
+    .from(schema.projects)
+    .where(
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
+    );
+  if (!project) return c.json(null);
   const [job] = await db
     .select()
     .from(schema.exportJobs)
-    .where(
-      and(
-        eq(schema.exportJobs.projectId, projectId),
-        eq(schema.exportJobs.userId, user.id),
-      ),
-    )
+    .where(eq(schema.exportJobs.projectId, projectId))
     .orderBy(desc(schema.exportJobs.createdAt))
     .limit(1);
   return c.json(job ?? null);
 });
 
-async function loadJob(jobId: string, userId: string) {
+/** Load an export job whose project is in the caller's active organization. */
+async function loadJob(jobId: string, organizationId: string) {
   const [job] = await db
-    .select()
+    .select(getTableColumns(schema.exportJobs))
     .from(schema.exportJobs)
+    .innerJoin(
+      schema.projects,
+      eq(schema.projects.id, schema.exportJobs.projectId),
+    )
     .where(
-      and(eq(schema.exportJobs.id, jobId), eq(schema.exportJobs.userId, userId)),
+      and(
+        eq(schema.exportJobs.id, jobId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
     );
   return job ?? null;
 }
@@ -105,23 +124,22 @@ async function jobWithOutput(job: NonNullable<Awaited<ReturnType<typeof loadJob>
 }
 
 exportRoutes.get("/:id", async (c) => {
-  const user = c.get("user");
-  const job = await loadJob(c.req.param("id"), user.id);
+  const job = await loadJob(c.req.param("id"), c.get("organizationId"));
   if (!job) return c.json({ error: "Not found" }, 404);
   return c.json(await jobWithOutput(job));
 });
 
 /** SSE progress stream: pushes {status, progress, outputUrl} deltas until terminal. */
 exportRoutes.get("/:id/events", async (c) => {
-  const user = c.get("user");
+  const organizationId = c.get("organizationId");
   const jobId = c.req.param("id");
-  const initial = await loadJob(jobId, user.id);
+  const initial = await loadJob(jobId, organizationId);
   if (!initial) return c.json({ error: "Not found" }, 404);
 
   return streamSSE(c, async (stream) => {
     let lastPayload = "";
     for (let i = 0; i < 60 * 30; i++) {
-      const job = await loadJob(jobId, user.id);
+      const job = await loadJob(jobId, organizationId);
       if (!job) break;
       const payload = JSON.stringify(await jobWithOutput(job));
       if (payload !== lastPayload) {

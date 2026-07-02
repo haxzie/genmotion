@@ -8,12 +8,12 @@ import { PreviewInspector } from "./preview-inspector";
 
 function PlayIcon({ playing }: { playing: boolean }) {
   return playing ? (
-    <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" className="size-5" fill="currentColor">
       <rect x="3" y="2" width="4" height="12" rx="1" />
       <rect x="9" y="2" width="4" height="12" rx="1" />
     </svg>
   ) : (
-    <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" className="size-5" fill="currentColor">
       <path d="M4.5 2.7a1 1 0 0 1 1.53-.85l8 5.3a1 1 0 0 1 0 1.7l-8 5.3a1 1 0 0 1-1.53-.85V2.7Z" />
     </svg>
   );
@@ -21,7 +21,7 @@ function PlayIcon({ playing }: { playing: boolean }) {
 
 function SkipStartIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" className="size-4" fill="currentColor">
       <rect x="2.5" y="2.5" width="1.8" height="11" rx="0.9" />
       <path d="M13.5 3.6a1 1 0 0 0-1.55-.83l-6.3 4.4a1 1 0 0 0 0 1.66l6.3 4.4a1 1 0 0 0 1.55-.83V3.6Z" />
     </svg>
@@ -30,7 +30,7 @@ function SkipStartIcon() {
 
 function SkipEndIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" className="size-4" fill="currentColor">
       <rect x="11.7" y="2.5" width="1.8" height="11" rx="0.9" />
       <path d="M2.5 3.6a1 1 0 0 1 1.55-.83l6.3 4.4a1 1 0 0 1 0 1.66l-6.3 4.4a1 1 0 0 1-1.55-.83V3.6Z" />
     </svg>
@@ -58,7 +58,7 @@ function TransportButton({
       disabled={disabled}
       className={cx(
         "flex items-center justify-center text-text-primary transition-colors hover:bg-surface-hover disabled:opacity-40",
-        primary ? "size-8 rounded-full bg-surface-raised" : "size-7 rounded-md",
+        primary ? "size-11 rounded-full bg-surface-raised" : "size-9 rounded-md",
         active && "bg-accent-muted text-accent",
       )}
       title={title}
@@ -148,7 +148,7 @@ export function PreviewStage({
           {framesToTimecode(frame, fps)}{" "}
           <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
         </span>
-        <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1">
+        <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
           <TransportButton
             title="Jump to start"
             onClick={() => seek(0)}

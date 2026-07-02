@@ -53,15 +53,17 @@ export function projectFileKey(projectId: string, name: string): string {
 
 /**
  * URL a browser/renderer can fetch an object from. Project-scoped keys
- * (`projects/<id>/<rest>`) are routed through the API file proxy; anything
- * else falls back to the raw endpoint (dev/MinIO).
+ * (`projects/<id>/<rest>`) are routed through the API file proxy under the
+ * `assets` namespace; anything else falls back to the raw endpoint (dev/MinIO).
+ * Note `<rest>` typically starts with the `files/` folder, so a project upload
+ * resolves to `/api/projects/<id>/assets/files/<name>`.
  */
 export function publicUrl(key: string): string {
   const match = key.match(/^projects\/([^/]+)\/(.+)$/);
   if (match) {
     const [, projectId, rest] = match;
     const encoded = rest!.split("/").map(encodeURIComponent).join("/");
-    return `${API_URL}/api/projects/${projectId}/files/${encoded}`;
+    return `${API_URL}/api/projects/${projectId}/assets/${encoded}`;
   }
   const endpoint = (process.env.S3_ENDPOINT ?? "http://localhost:9000").replace(
     /\/$/,

@@ -1,0 +1,25 @@
+# Dependencies & build output — reinstalled/rebuilt inside the image.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/build
+**/coverage
+**/playwright-report
+**/test-results
+
+# Secrets & local env — never bake into an image (pass at runtime instead).
+.env
+.env.*
+!.env.example
+
+# VCS, editor, OS cruft.
+.git
+.gitignore
+**/.DS_Store
+**/*.log
+
+# Docker/CI files themselves.
+.github
+**/Dockerfile
+.dockerignore

@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { Readable } from "node:stream";
 import { and, eq, db, schema } from "@genmotion/db";
 import {
@@ -12,12 +12,18 @@ import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
 export const fileRoutes = new Hono<AuthEnv>();
 
-async function ownsProject(projectId: string, userId: string): Promise<boolean> {
+async function ownsProject(
+  projectId: string,
+  organizationId: string,
+): Promise<boolean> {
   const [project] = await db
     .select({ id: schema.projects.id })
     .from(schema.projects)
     .where(
-      and(eq(schema.projects.id, projectId), eq(schema.projects.userId, userId)),
+      and(
+        eq(schema.projects.id, projectId),
+        eq(schema.projects.organizationId, organizationId),
+      ),
     );
   return Boolean(project);
 }
@@ -42,11 +48,25 @@ const CONTENT_TYPE: Record<string, string> = {
   pdf: "application/pdf",
 };
 
-/** GET /:projectId/files — list a project's files (authed, owner only). */
-fileRoutes.get("/:projectId/files", requireAuth, async (c) => {
-  const user = c.get("user");
-  const projectId = c.req.param("projectId");
-  if (!(await ownsProject(projectId, user.id))) {
+/**
+ * Resolve the storage key from a proxy URL path. The URL namespace is `assets`
+ * (canonical) or `files` (legacy — kept so previously-stored URLs still
+ * resolve). Either way the object lives at `projects/<id>/<rest>`, where <rest>
+ * is the path AFTER the namespace segment (e.g. `files/logo.png`,
+ * `voiceovers/x.mp3`). Returns null for a missing/unsafe path.
+ */
+function objectKeyFromPath(path: string, projectId: string): string | null {
+  const after = path.split(`/${projectId}/`)[1];
+  if (after === undefined) return null;
+  const rest = decodeURIComponent(after.replace(/^(assets|files)\//, ""));
+  if (!rest || rest.includes("..")) return null;
+  return `projects/${projectId}/${rest}`;
+}
+
+/** GET /:projectId/assets — list a project's files (authed, owner only). */
+async function listFiles(c: Context<AuthEnv>) {
+  const projectId = c.req.param("projectId")!;
+  if (!(await ownsProject(projectId, c.get("organizationId")))) {
     return c.json({ error: "Not found" }, 404);
   }
 
@@ -65,22 +85,17 @@ fileRoutes.get("/:projectId/files", requireAuth, async (c) => {
       };
     });
   return c.json(files);
-});
+}
 
 /**
- * GET /:projectId/files/* — stream a file through the API (public, so <Img>/
- * <Audio>/<Video> tags and the renderer can load it by URL). The wildcard is
- * the object path relative to `projects/<id>/`.
+ * GET /:projectId/assets/* — stream a file through the API (public, so <Img>/
+ * <Audio>/<Video> tags and the renderer can load it by URL).
  */
-fileRoutes.get("/:projectId/files/*", async (c) => {
-  const projectId = c.req.param("projectId");
-  const rel = c.req.path.split(`/${projectId}/files/`)[1] ?? "";
-  const decoded = decodeURIComponent(rel);
-  if (!decoded || decoded.includes("..")) {
-    return c.json({ error: "Invalid path" }, 400);
-  }
-
-  const key = `projects/${projectId}/${decoded}`;
+async function streamFile(c: Context<AuthEnv>) {
+  const projectId = c.req.param("projectId")!;
+  const key = objectKeyFromPath(c.req.path, projectId);
+  if (!key) return c.json({ error: "Invalid path" }, 400);
+  const decoded = key.slice(`projects/${projectId}/`.length);
   try {
     const { body, contentType, contentLength } = await getObject(key);
     const webStream = Readable.toWeb(body) as ReadableStream;
@@ -102,25 +117,27 @@ fileRoutes.get("/:projectId/files/*", async (c) => {
   } catch {
     return c.json({ error: "Not found" }, 404);
   }
-});
+}
 
-/** DELETE /:projectId/files/* — delete a file (authed, owner only). */
-fileRoutes.delete("/:projectId/files/*", requireAuth, async (c) => {
-  const user = c.get("user");
-  const projectId = c.req.param("projectId");
-  if (!(await ownsProject(projectId, user.id))) {
+/** DELETE /:projectId/assets/* — delete a file (authed, owner only). */
+async function deleteFile(c: Context<AuthEnv>) {
+  const projectId = c.req.param("projectId")!;
+  if (!(await ownsProject(projectId, c.get("organizationId")))) {
     return c.json({ error: "Not found" }, 404);
   }
-
-  const rel = c.req.path.split(`/${projectId}/files/`)[1] ?? "";
-  const decoded = decodeURIComponent(rel);
-  if (!decoded || decoded.includes("..")) {
-    return c.json({ error: "Invalid path" }, 400);
-  }
-
-  const key = `projects/${projectId}/files/${decoded}`;
+  const key = objectKeyFromPath(c.req.path, projectId);
+  if (!key) return c.json({ error: "Invalid path" }, 400);
   await deleteObject(key);
   // Drop any asset row backed by this object.
   await db.delete(schema.assets).where(eq(schema.assets.storageKey, key));
   return c.json({ ok: true });
-});
+}
+
+// `assets` is canonical; `files` is a legacy alias kept so URLs stored before
+// the rename (…/files/files/…) keep resolving.
+fileRoutes.get("/:projectId/assets", requireAuth, listFiles);
+fileRoutes.get("/:projectId/files", requireAuth, listFiles);
+fileRoutes.get("/:projectId/assets/*", streamFile);
+fileRoutes.get("/:projectId/files/*", streamFile);
+fileRoutes.delete("/:projectId/assets/*", requireAuth, deleteFile);
+fileRoutes.delete("/:projectId/files/*", requireAuth, deleteFile);
