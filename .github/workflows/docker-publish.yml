@@ -97,3 +97,20 @@ jobs:
           curl --fail --silent --show-error --request GET \
             "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_API_UUID}&force=true" \
             --header "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+
+      # Same, for the renderer image (its own Coolify resource UUID).
+      - name: Trigger Coolify redeploy (renderer)
+        if: matrix.name == 'renderer' && github.event_name != 'pull_request'
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_RENDERER_UUID: ${{ secrets.COOLIFY_RENDERER_UUID }}
+        run: |
+          if [ -z "$COOLIFY_URL" ] || [ -z "$COOLIFY_API_TOKEN" ] || [ -z "$COOLIFY_RENDERER_UUID" ]; then
+            echo "Coolify secrets not set — skipping redeploy."
+            exit 0
+          fi
+          echo "Triggering Coolify redeploy for uuid=$COOLIFY_RENDERER_UUID …"
+          curl --fail --silent --show-error --request GET \
+            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_RENDERER_UUID}&force=true" \
+            --header "Authorization: Bearer ${COOLIFY_API_TOKEN}"
