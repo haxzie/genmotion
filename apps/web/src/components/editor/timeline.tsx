@@ -98,7 +98,6 @@ function SceneWaveform({
   durationSec,
   selected,
   muted,
-  onToggleMute,
 }: {
   url: string;
   widthPx: number;
@@ -106,43 +105,18 @@ function SceneWaveform({
   durationSec: number;
   selected: boolean;
   muted: boolean;
-  onToggleMute: () => void;
 }) {
+  // Full-width strip pinned to the card's bottom; the mute button lives at the
+  // card's top-right (rendered by SceneBlock), mirroring the audio clips.
   return (
-    // Relative wrapper with an absolute mute button (same as audio clips) so the
-    // waveform spans the FULL card width instead of being squeezed by an inline
-    // button — keeping it pixel-identical to the audio-lane waveform.
-    <div className="relative mt-auto shrink-0">
-      {/* Voiceover starts at the scene's first frame; time-accurate, flat past
-          the audio's end if the scene runs longer. */}
-      <Waveform
-        url={url}
-        widthPx={widthPx}
-        durationSec={durationSec}
-        selected={selected}
-        selectedClassName="bg-green"
-        className={cx("pointer-events-none", muted && "opacity-40")}
-      />
-      <button
-        type="button"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleMute();
-        }}
-        title={muted ? "Unmute voiceover" : "Mute voiceover"}
-        className={cx(
-          "absolute bottom-1 right-1 z-10 flex items-center rounded text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
-          muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-        )}
-      >
-        {muted ? (
-          <SpeakerMutedIcon className="size-3.5" />
-        ) : (
-          <SpeakerIcon className="size-3.5" />
-        )}
-      </button>
-    </div>
+    <Waveform
+      url={url}
+      widthPx={widthPx}
+      durationSec={durationSec}
+      selected={selected}
+      selectedClassName="bg-green"
+      className={cx("pointer-events-none mt-auto shrink-0", muted && "opacity-40")}
+    />
   );
 }
 
@@ -185,14 +159,14 @@ function SceneBlock({
     >
       <div
         className={cx(
-          "group mx-px flex h-full cursor-grab select-none flex-col overflow-hidden rounded-md border transition-colors duration-150",
+          "group relative mx-px flex h-full cursor-grab select-none flex-col overflow-hidden rounded-md border transition-colors duration-150",
           selected
             ? "border-green bg-green-muted"
             : hasError
               ? "border-danger/50 bg-danger/10 hover:border-danger"
               : "border-border bg-surface-raised hover:border-border-strong hover:bg-surface-hover",
           isDragging && "shadow-lg",
-          editing && "relative gm-card-shimmer border-accent/60",
+          editing && "gm-card-shimmer border-accent/60",
         )}
       >
         {/* Title (left) + duration (top-right, aligned with the title) */}
@@ -209,20 +183,47 @@ function SceneBlock({
               {scene.name}
             </span>
           </span>
-          <span className="shrink-0 font-mono text-[0.714rem] text-text-tertiary">
+          <span
+            className={cx(
+              "shrink-0 font-mono text-[0.714rem] text-text-tertiary transition-opacity duration-150",
+              // Fade the duration out when the mute button takes its corner.
+              scene.audioUrl && (muted ? "opacity-0" : "group-hover:opacity-0"),
+            )}
+          >
             {(scene.durationInFrames / fps).toFixed(1)}s
           </span>
         </div>
 
         {scene.audioUrl && (
-          <SceneWaveform
-            url={scene.audioUrl}
-            widthPx={widthPx}
-            durationSec={scene.durationInFrames / fps}
-            selected={selected}
-            muted={muted}
-            onToggleMute={() => onToggleMute(scene.id, !muted)}
-          />
+          <>
+            {/* Mute toggle at the top-right corner, same as audio clips. */}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleMute(scene.id, !muted);
+              }}
+              title={muted ? "Unmute voiceover" : "Mute voiceover"}
+              className={cx(
+                "absolute right-2 top-2 z-10 flex items-center rounded text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
+                muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+              )}
+            >
+              {muted ? (
+                <SpeakerMutedIcon className="size-3.5" />
+              ) : (
+                <SpeakerIcon className="size-3.5" />
+              )}
+            </button>
+            <SceneWaveform
+              url={scene.audioUrl}
+              widthPx={widthPx}
+              durationSec={scene.durationInFrames / fps}
+              selected={selected}
+              muted={muted}
+            />
+          </>
         )}
       </div>
     </div>
