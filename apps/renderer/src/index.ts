@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { eq, db, schema } from "@genmotion/db";
 import { createRenderProvider, resolveProviderKind } from "./providers";
 
 const RENDER_QUEUE = "render-mp4";
@@ -36,8 +37,20 @@ async function main() {
     jobs: Array<{ data: { exportJobId: string } }>,
   ) => {
     for (const job of jobs) {
-      console.log(`[render] picked up job ${job.data.exportJobId}`);
-      await provider.renderJob(job.data.exportJobId);
+      const id = job.data.exportJobId;
+      // Skip if the user cancelled it after it was enqueued. The API removes the
+      // job from the queue on cancel, but a worker may have already dequeued it,
+      // so re-check status here. (Retries still work: a "failed" job re-runs.)
+      const [row] = await db
+        .select({ status: schema.exportJobs.status })
+        .from(schema.exportJobs)
+        .where(eq(schema.exportJobs.id, id));
+      if (!row || row.status === "cancelled") {
+        console.log(`[render] skipping job ${id} — cancelled`);
+        continue;
+      }
+      console.log(`[render] picked up job ${id}`);
+      await provider.renderJob(id);
     }
   };
   for (let i = 0; i < concurrency; i++) {

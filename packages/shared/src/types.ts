@@ -64,7 +64,8 @@ export type ExportStatus =
   | "encoding"
   | "uploading"
   | "done"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export interface ExportJobData {
   id: string;

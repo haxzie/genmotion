@@ -65,9 +65,17 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
     .returning();
 
   const boss = await getBoss();
-  await boss.send(RENDER_QUEUE, { exportJobId: job!.id });
+  const queueJobId = await boss.send(RENDER_QUEUE, { exportJobId: job!.id });
+  // Remember the pg-boss job id so a still-queued export can be pulled from the
+  // queue if the user cancels before it starts rendering.
+  if (queueJobId) {
+    await db
+      .update(schema.exportJobs)
+      .set({ queueJobId })
+      .where(eq(schema.exportJobs.id, job!.id));
+  }
 
-  return c.json(job, 201);
+  return c.json({ ...job, queueJobId: queueJobId ?? null }, 201);
 });
 
 exportRoutes.get("/latest", async (c) => {
@@ -131,6 +139,50 @@ exportRoutes.get("/:id", async (c) => {
   return c.json(await jobWithOutput(job));
 });
 
+/**
+ * Cancel a still-queued export: mark it cancelled and pull it from the render
+ * queue so no worker picks it up. Only works while the job is "queued" — once
+ * a worker has started rendering it's too late (409).
+ */
+exportRoutes.post("/:id/cancel", async (c) => {
+  const organizationId = c.get("organizationId");
+  const jobId = c.req.param("id");
+  const job = await loadJob(jobId, organizationId);
+  if (!job) return c.json({ error: "Not found" }, 404);
+
+  // Atomic guard: only flips a job that is STILL queued, so we never cancel one
+  // that just started rendering in a race.
+  const [cancelled] = await db
+    .update(schema.exportJobs)
+    .set({ status: "cancelled", completedAt: new Date() })
+    .where(
+      and(
+        eq(schema.exportJobs.id, jobId),
+        eq(schema.exportJobs.status, "queued"),
+      ),
+    )
+    .returning(getTableColumns(schema.exportJobs));
+  if (!cancelled) {
+    return c.json(
+      { error: "This export has already started rendering and can't be cancelled." },
+      409,
+    );
+  }
+
+  // Best-effort: remove it from the queue so a worker never even dequeues it.
+  // The worker also re-checks status before rendering, so this is belt-and-braces.
+  if (job.queueJobId) {
+    try {
+      const boss = await getBoss();
+      await boss.deleteJob(RENDER_QUEUE, job.queueJobId);
+    } catch (err) {
+      console.warn(`[export ${jobId}] queue removal failed:`, err);
+    }
+  }
+
+  return c.json(await jobWithOutput(cancelled));
+});
+
 /** SSE progress stream: pushes {status, progress, outputUrl} deltas until terminal. */
 exportRoutes.get("/:id/events", async (c) => {
   const organizationId = c.get("organizationId");
@@ -148,7 +200,13 @@ exportRoutes.get("/:id/events", async (c) => {
         lastPayload = payload;
         await stream.writeSSE({ event: "progress", data: payload });
       }
-      if (job.status === "done" || job.status === "failed") break;
+      if (
+        job.status === "done" ||
+        job.status === "failed" ||
+        job.status === "cancelled"
+      ) {
+        break;
+      }
       await stream.sleep(1000);
     }
   });

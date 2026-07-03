@@ -151,10 +151,20 @@ export const exportJobs = pgTable("export_jobs", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   status: text("status", {
-    enum: ["queued", "rendering", "encoding", "uploading", "done", "failed"],
+    enum: [
+      "queued",
+      "rendering",
+      "encoding",
+      "uploading",
+      "done",
+      "failed",
+      "cancelled",
+    ],
   })
     .notNull()
     .default("queued"),
+  /** pg-boss job id, so a still-queued export can be removed from the queue. */
+  queueJobId: text("queue_job_id"),
   progress: integer("progress").notNull().default(0),
   totalFrames: integer("total_frames").notNull().default(0),
   /** Export quality 0-100 (drives the encoder CRF + capture quality). */
