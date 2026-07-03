@@ -28,7 +28,7 @@ const TOOL_LABELS: Record<string, { active: string; done: string }> = {
   analyzeWebsiteBranding: { active: "Analyzing brand", done: "Analyzed brand" },
   readWebsite: { active: "Reading website", done: "Read website" },
   searchWeb: { active: "Searching the web", done: "Searched the web" },
-  generateVoiceover: { active: "Generating voiceover", done: "Generated voiceover" },
+  CreateVoiceOverAudio: { active: "Generating voiceover", done: "Generated voiceover" },
   generateImage: { active: "Generating image", done: "Generated image" },
   workbench: { active: "Running workbench", done: "Ran workbench" },
   saveImageToProject: { active: "Saving image", done: "Saved image" },
@@ -156,7 +156,7 @@ const TOOL_ICONS: Record<string, Glyph> = {
   analyzeWebsiteBranding: PaletteGlyphIcon,
   readWebsite: GlobeIcon,
   searchWeb: SearchIcon,
-  generateVoiceover: MicIcon,
+  CreateVoiceOverAudio: MicIcon,
   generateImage: ImageIcon,
   workbench: TerminalIcon,
   saveImageToProject: ImageIcon,
@@ -182,6 +182,7 @@ export interface ToolPartLike {
     url?: string;
     query?: string;
     script?: string;
+    text?: string;
     voice?: string;
     // editScene
     edits?: Array<{ oldText?: string; newText?: string; replaceAll?: boolean }>;
@@ -245,11 +246,10 @@ function inferStaleStatus(
     case "deleteScene":
       if (!input?.sceneId) return "interrupted";
       return scenes.some((s) => s.id === input.sceneId) ? "failed" : "done";
-    case "generateVoiceover":
-      if (!input?.sceneId) return "interrupted";
-      return scenes.find((s) => s.id === input.sceneId)?.audioUrl
-        ? "done"
-        : "failed";
+    case "CreateVoiceOverAudio":
+      // No timeline side-effect to probe (the audio lands as an asset), so an
+      // interrupted call with no output can't be confirmed either way.
+      return "interrupted";
     case "getSceneCode":
     case "analyzeWebsiteBranding":
     case "readWebsite":
@@ -460,27 +460,25 @@ function ExpandedBody({
         />
       )}
 
-      {toolName === "generateVoiceover" && (
+      {toolName === "CreateVoiceOverAudio" && (
         <>
           <MetaRow
             items={[
-              ...(input?.sceneId
-                ? [["scene", scenes.find((s) => s.id === input.sceneId)?.name ?? "?"] as [string, string]]
-                : []),
               ...(input?.voice ? [["voice", input.voice] as [string, string]] : []),
+              ...(output?.filename ? [["file", output.filename] as [string, string]] : []),
               ...(output?.durationSeconds
                 ? [["duration", `${output.durationSeconds.toFixed(1)}s`] as [string, string]]
                 : []),
             ]}
           />
-          {input?.script && (
+          {input?.text && (
             <p className="px-3 py-2 text-[0.786rem] leading-relaxed text-text-secondary">
-              “{input.script}”
+              “{input.text}”
             </p>
           )}
-          {output?.audioUrl && (
+          {output?.url && (
             <div className="px-3 py-2">
-              <audio controls src={output.audioUrl} className="h-8 w-full" />
+              <audio controls src={output.url} className="h-8 w-full" />
             </div>
           )}
         </>

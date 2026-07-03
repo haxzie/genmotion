@@ -629,7 +629,6 @@ function ChatPanelInner({
       "tool-updateScene",
       "tool-editScene",
       "tool-updateSceneDuration",
-      "tool-generateVoiceover",
     ]);
     const editing = new Set<string>();
     const last = messages[messages.length - 1];

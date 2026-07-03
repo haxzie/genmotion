@@ -2,51 +2,12 @@ import { experimental_generateSpeech as generateSpeech, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { parseBuffer } from "music-metadata";
 import { z } from "zod";
-import { and, eq, db, schema } from "@genmotion/db";
-import { putObject } from "@genmotion/storage";
+import { eq, db, schema } from "@genmotion/db";
+import { projectFileKey, putObject } from "@genmotion/storage";
+
+const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "_");
 
 const TTS_MODEL = "gpt-4o-mini-tts";
-
-export interface NarrationBeat {
-  sentence: string;
-  startSeconds: number;
-  startFrame: number;
-}
-
-/**
- * Estimate when each sentence of the script is spoken by allocating the
- * measured audio duration proportionally to word counts. Not word-perfect,
- * but accurate enough to anchor <Sequence> phases to narration beats.
- */
-export function estimateBeats(
-  script: string,
-  durationSeconds: number,
-  fps: number,
-): NarrationBeat[] {
-  const sentences = script
-    .split(/(?<=[.!?…])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (sentences.length === 0) return [];
-
-  const wordCounts = sentences.map(
-    (s) => s.split(/\s+/).filter(Boolean).length,
-  );
-  const totalWords = wordCounts.reduce((a, b) => a + b, 0) || 1;
-
-  const beats: NarrationBeat[] = [];
-  let elapsedWords = 0;
-  for (let i = 0; i < sentences.length; i++) {
-    const startSeconds = (elapsedWords / totalWords) * durationSeconds;
-    beats.push({
-      sentence: sentences[i]!,
-      startSeconds: Number(startSeconds.toFixed(2)),
-      startFrame: Math.round(startSeconds * fps),
-    });
-    elapsedWords += wordCounts[i]!;
-  }
-  return beats;
-}
 
 export const VOICES = [
   "alloy",
@@ -61,31 +22,33 @@ export const VOICES = [
   "shimmer",
 ] as const;
 
-export interface VoiceoverToolContext {
+export interface VoiceOverAudioToolContext {
   projectId: string;
   userId: string;
-  fps: number;
   onMutation?: () => void;
 }
 
-/** Generate a TTS voiceover for a scene, store it, and attach it to the scene. */
-export function createVoiceoverTool({
+/**
+ * Generate spoken narration (TTS) from a script and save it into the project's
+ * assets as a reusable audio file. It's not tied to any scene — the agent places
+ * it on the timeline with addAudio, layers/processes it in the workbench, or
+ * reuses it wherever narration is needed.
+ */
+export function createVoiceOverAudioTool({
   projectId,
   userId,
-  fps,
   onMutation,
-}: VoiceoverToolContext) {
+}: VoiceOverAudioToolContext) {
   return tool({
     description:
-      "Generate a spoken voiceover (TTS) for a scene and attach it; it plays from the scene's first frame in preview and export. Returns the audio duration — the scene is auto-extended if it's shorter than the narration. Use the SAME voice for every scene of a project.",
+      "Generate a spoken voiceover (TTS) from a script and save it into the project's ASSETS, returning a stable project audio URL + duration. This is how you create narration/voice audio: pick a voice, write the script, and get back an audio asset you then place on the timeline with addAudio (or mix in the workbench). Not tied to a scene — position it in time with addAudio's startFrame. Use the SAME voice across a project. Speech runs ~2.5 words/second, so size the script to the time you need to cover.",
     inputSchema: z.object({
-      sceneId: z.string(),
-      script: z
+      text: z
         .string()
         .min(3)
         .max(2000)
         .describe(
-          "The narration text. Speech runs ~2.5 words/second — size it to the scene duration.",
+          "The voiceover script to speak. Speech runs ~2.5 words/second — size it to how long you need the audio.",
         ),
       voice: z.enum(VOICES).optional().describe("Voice (default: nova)"),
       instructions: z
@@ -95,9 +58,13 @@ export function createVoiceoverTool({
         .describe(
           'Plain-language delivery direction, e.g. "warm, confident product narrator, measured pace"',
         ),
-      volume: z.number().min(0).max(1).optional(),
+      filename: z
+        .string()
+        .max(120)
+        .optional()
+        .describe("Optional name for the saved asset, e.g. 'intro-narration.mp3'"),
     }),
-    execute: async ({ sceneId, script, voice = "nova", instructions, volume }) => {
+    execute: async ({ text, voice = "nova", instructions, filename }) => {
       if (!process.env.OPENAI_API_KEY) {
         return {
           ok: false as const,
@@ -106,23 +73,10 @@ export function createVoiceoverTool({
         };
       }
 
-      const [scene] = await db
-        .select({
-          id: schema.scenes.id,
-          name: schema.scenes.name,
-          durationInFrames: schema.scenes.durationInFrames,
-          projectId: schema.scenes.projectId,
-        })
-        .from(schema.scenes)
-        .where(
-          and(eq(schema.scenes.id, sceneId), eq(schema.scenes.projectId, projectId)),
-        );
-      if (!scene) return { ok: false as const, error: `Scene ${sceneId} not found.` };
-
       try {
         const { audio } = await generateSpeech({
           model: openai.speech(TTS_MODEL),
-          text: script,
+          text,
           voice,
           outputFormat: "mp3",
           ...(instructions && {
@@ -134,52 +88,51 @@ export function createVoiceoverTool({
         const metadata = await parseBuffer(buffer, "audio/mpeg").catch(() => null);
         const durationSeconds = metadata?.format.duration ?? null;
 
-        const storageKey = `projects/${projectId}/voiceovers/${sceneId}/${crypto.randomUUID()}.mp3`;
-        const url = await putObject(storageKey, buffer, "audio/mpeg");
+        const base = filename
+          ? safe(filename).replace(/\.[a-zA-Z0-9]+$/, "")
+          : `narration-${crypto.randomUUID().slice(0, 8)}`;
+        const name = `${base}.mp3`;
+        const key = projectFileKey(projectId, name);
+        const url = await putObject(key, buffer, "audio/mpeg");
 
-        // Keep the scene at least as long as the narration (plus a beat to settle).
-        const audioFrames = durationSeconds
-          ? Math.ceil((durationSeconds + 0.4) * fps)
-          : null;
-        const extended = audioFrames !== null && audioFrames > scene.durationInFrames;
-
-        await db
-          .update(schema.scenes)
-          .set({
-            audioUrl: url,
-            ...(volume !== undefined && { audioVolume: volume }),
-            ...(extended && { durationInFrames: audioFrames }),
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.scenes.id, sceneId));
-
-        await db.insert(schema.assets).values({
-          userId,
-          projectId,
-          storageKey,
-          url,
-          kind: "audio",
-          filename: `${scene.name.replace(/[^a-zA-Z0-9._-]/g, "_")}-voiceover.mp3`,
-          mimeType: "audio/mpeg",
-          sizeBytes: buffer.byteLength,
-          durationSeconds,
-          status: "ready",
-        });
+        // Dedupe on the storage key so re-running with the same filename updates
+        // the asset in place rather than orphaning the old row.
+        const [existing] = await db
+          .select({ id: schema.assets.id })
+          .from(schema.assets)
+          .where(eq(schema.assets.storageKey, key));
+        if (existing) {
+          await db
+            .update(schema.assets)
+            .set({
+              url,
+              sizeBytes: buffer.byteLength,
+              durationSeconds,
+              status: "ready",
+            })
+            .where(eq(schema.assets.id, existing.id));
+        } else {
+          await db.insert(schema.assets).values({
+            userId,
+            projectId,
+            storageKey: key,
+            url,
+            kind: "audio",
+            filename: name,
+            mimeType: "audio/mpeg",
+            sizeBytes: buffer.byteLength,
+            durationSeconds,
+            status: "ready",
+          });
+        }
 
         onMutation?.();
         return {
           ok: true as const,
-          sceneId,
-          audioUrl: url,
+          url,
+          filename: name,
           durationSeconds,
-          // Estimated narration beats — use these startFrame values to anchor
-          // the scene's animation phases (<Sequence from={...}>) to the voice.
-          beats: durationSeconds
-            ? estimateBeats(script, durationSeconds, fps)
-            : [],
-          ...(extended && {
-            note: `Scene was extended to ${audioFrames} frames to fit the narration. Re-choreograph the scene so its animation spans the full duration using the beats above.`,
-          }),
+          voice,
         };
       } catch (err) {
         return {

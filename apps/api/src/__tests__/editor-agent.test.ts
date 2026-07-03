@@ -111,7 +111,7 @@ async function runEditorTurn(prompt: string, abortMs: number): Promise<TurnResul
         role: "system",
         content:
           "TEST MODE: create the scene(s) for this request only. Do NOT call " +
-          "generateVoiceover or any research/web tools.",
+          "CreateVoiceOverAudio or any research/web tools.",
       },
       { role: "user", content: prompt },
     ];

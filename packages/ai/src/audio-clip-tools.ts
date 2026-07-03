@@ -48,10 +48,10 @@ async function loadPlacements(projectId: string, excludeId?: string) {
 
 /**
  * Tools for project-level audio on the timeline — background music, ambience,
- * and sound effects that span scenes. Distinct from generateVoiceover, which
- * attaches per-scene narration. The agent supplies an audio URL (from the
- * workbench, generateImage's audio sibling, an uploaded asset, or
- * saveAudioToProject); a resolver assigns it to a free lane (up to 4).
+ * and sound effects that span scenes — plus voiceover generated with
+ * CreateVoiceOverAudio. The agent supplies an audio URL (from CreateVoiceOverAudio,
+ * the workbench, an uploaded asset, or saveAudioToProject); a resolver assigns it
+ * to a free lane (up to 4).
  */
 export function createAudioClipTools({
   projectId,
@@ -148,7 +148,7 @@ export function createAudioClipTools({
       description:
         "Place an audio file on the project timeline (background music, ambience, sound effects) as a movable clip. The system auto-assigns it to a free audio lane (up to " +
         `${MAX_AUDIO_TRACKS}` +
-        "); it does NOT need to belong to any scene. Use this for audio that spans scenes or sits under the whole video — for per-scene narration use generateVoiceover instead. Pass a project audio URL (from the workbench, an uploaded asset, or saveAudioToProject). Omit durationInFrames to use the asset's full length.",
+        "); it does NOT need to belong to any scene. Use it for background music, ambience, sound effects, AND voiceover narration — place the audio URL from CreateVoiceOverAudio here (with a startFrame to time it), or from the workbench, an uploaded asset, or saveAudioToProject. Omit durationInFrames to use the asset's full length.",
       inputSchema: z.object({
         url: z
           .string()

@@ -15,7 +15,7 @@ import { evaluateScene } from "@genmotion/compiler/evaluate";
 import { writeScene } from "./scene-writer";
 import { runCompaction } from "./compaction";
 import { createWebTools } from "./web-tools";
-import { createVoiceoverTool } from "./voiceover";
+import { createVoiceOverAudioTool } from "./voiceover";
 import { createSandboxTools } from "./sandbox-tools";
 import { createAssetTools } from "./asset-tools";
 import { createImageTools } from "./image-tools";
@@ -220,10 +220,9 @@ export function createEditorTools({
     ...createAssetTools({ projectId, userId, onMutation }),
     ...createImageTools({ projectId, userId, onMutation }),
     ...createAudioClipTools({ projectId, userId, fps: project.fps, onMutation }),
-    generateVoiceover: createVoiceoverTool({
+    CreateVoiceOverAudio: createVoiceOverAudioTool({
       projectId,
       userId,
-      fps: project.fps,
       onMutation,
     }),
     createScenes: tool({
@@ -630,7 +629,6 @@ export function createEditorTools({
 export const SCENE_MUTATING_TOOLS = new Set([
   "createScene",
   "createScenes",
-  "generateVoiceover",
   "updateScene",
   "editScene",
   "updateSceneDuration",
