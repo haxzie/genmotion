@@ -40,6 +40,8 @@ interface EditorState {
   selectScene(id: string, additive?: boolean): void;
   deselectScene(id: string): void;
   clearSelection(): void;
+  /** Clear BOTH scene and audio-clip selection (empty-area click on the track). */
+  clearAllSelection(): void;
   /** Drop selections that no longer exist after scenes change. */
   pruneSelection(existingIds: string[]): void;
   /** Click: select only this asset. Shift-click: toggle it in the selection. */
@@ -110,6 +112,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   clearSelection() {
     set({ selectedSceneIds: [] });
+  },
+  clearAllSelection() {
+    set({ selectedSceneIds: [], selectedAudioClipIds: [] });
   },
   pruneSelection(existingIds) {
     set((state) => ({

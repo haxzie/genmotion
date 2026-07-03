@@ -121,7 +121,8 @@ function SceneWaveform({
       widthPx={widthPx}
       durationSec={durationSec}
       selected={selected}
-      selectedClassName="bg-green"
+      selectedClassName="bg-purple"
+      inactiveClassName="bg-purple/60"
       className={cx("pointer-events-none mt-auto shrink-0", muted && "opacity-40")}
     />
   );
@@ -214,7 +215,7 @@ function SceneBlock({
         className={cx(
           "group relative mx-px flex h-full cursor-grab select-none flex-col overflow-hidden rounded-md border transition-colors duration-150",
           selected
-            ? "border-green bg-green-muted"
+            ? "border-purple bg-purple-muted"
             : hasError
               ? "border-danger/50 bg-danger/10 hover:border-danger"
               : "border-purple/25 bg-purple/[0.06] hover:border-purple/45 hover:bg-purple/12",
@@ -227,7 +228,7 @@ function SceneBlock({
           <span
             className={cx(
               "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
-              selected ? "text-green" : "text-text-primary",
+              selected ? "text-purple" : "text-purple/80",
             )}
           >
             <SceneIcon className="size-3.5 shrink-0" />
@@ -286,7 +287,7 @@ function SceneBlock({
           title="Drag to change scene length"
           className={cx(
             "absolute inset-y-0 right-0 z-20 w-1.5 cursor-ew-resize transition-colors",
-            draftFrames !== null ? "bg-green" : "hover:bg-green/60",
+            draftFrames !== null ? "bg-purple" : "hover:bg-purple/60",
           )}
         />
       </div>
@@ -466,7 +467,7 @@ export function Timeline({
 }) {
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectScene = useEditorStore((s) => s.selectScene);
-  const clearSelection = useEditorStore((s) => s.clearSelection);
+  const clearAllSelection = useEditorStore((s) => s.clearAllSelection);
   const pruneSelection = useEditorStore((s) => s.pruneSelection);
   const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
   const pruneAudioClipSelection = useEditorStore(
@@ -601,12 +602,12 @@ export function Timeline({
           className="relative isolate flex h-full min-w-full flex-col"
           style={{ width: trackWidth || undefined }}
         >
-          {/* Selected-scene highlight: one persistent green band spanning the
+          {/* Selected-scene highlight: one persistent purple band spanning the
               scene's time range across every track (sits behind the rows via
               -z-10). It animates left/width so selecting a different card slides
               the backdrop over instead of jumping. */}
           <div
-            className="pointer-events-none absolute inset-y-0 -z-10 bg-green/10 transition-[left,width,opacity] duration-300 ease-out"
+            className="pointer-events-none absolute inset-y-0 -z-10 bg-purple/10 transition-[left,width,opacity] duration-300 ease-out"
             style={{
               left: primaryBand?.left ?? 0,
               width: primaryBand?.width ?? 0,
@@ -617,7 +618,7 @@ export function Timeline({
           {selectedRanges.slice(1).map((r) => (
             <div
               key={`hl-${r.id}`}
-              className="pointer-events-none absolute inset-y-0 -z-10 bg-green/10"
+              className="pointer-events-none absolute inset-y-0 -z-10 bg-purple/10"
               style={{ left: r.left, width: r.width }}
             />
           ))}
@@ -642,7 +643,7 @@ export function Timeline({
             className="shrink-0 px-0"
             style={{ height: SCENE_TRACK_HEIGHT }}
             onClick={(e) => {
-              if (e.target === e.currentTarget) clearSelection();
+              if (e.target === e.currentTarget) clearAllSelection();
             }}
           >
             {scenes.length === 0 ? (
@@ -668,7 +669,7 @@ export function Timeline({
                       paddingBottom: SCENE_TRACK_PAD_BOTTOM,
                     }}
                     onClick={(e) => {
-                      if (e.target === e.currentTarget) clearSelection();
+                      if (e.target === e.currentTarget) clearAllSelection();
                     }}
                   >
                     {scenes.map((scene) => (

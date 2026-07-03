@@ -93,6 +93,7 @@ function ClipWaveform({
       durationSec={durationSec}
       selected={selected}
       selectedClassName="bg-orange"
+      inactiveClassName="bg-orange/55"
       className={cx(
         "pointer-events-none mt-auto shrink-0",
         muted && "opacity-40",
@@ -150,7 +151,7 @@ export function AudioLanes({
 
   const selectedIds = useEditorStore((s) => s.selectedAudioClipIds);
   const selectClip = useEditorStore((s) => s.selectAudioClip);
-  const clearClipSelection = useEditorStore((s) => s.clearAudioClipSelection);
+  const clearAllSelection = useEditorStore((s) => s.clearAllSelection);
 
   const clampFrame = (f: number) => Math.max(0, Math.round(f));
 
@@ -338,7 +339,7 @@ export function AudioLanes({
           style={{ height: AUDIO_LANE_HEIGHT }}
           onPointerDown={(e) => {
             // Clicking empty lane space clears the clip selection.
-            if (e.target === e.currentTarget) clearClipSelection();
+            if (e.target === e.currentTarget) clearAllSelection();
           }}
           onDragOver={(e) => {
             if (e.dataTransfer.types.includes("application/x-gm-audio")) {
@@ -391,7 +392,7 @@ export function AudioLanes({
                     ? "text-text-tertiary"
                     : selected
                       ? "text-orange"
-                      : "text-text-secondary",
+                      : "text-orange/80",
                 )}
               />
               <span
@@ -401,7 +402,7 @@ export function AudioLanes({
                     ? "text-text-tertiary"
                     : selected
                       ? "text-orange"
-                      : "text-text-primary",
+                      : "text-orange/80",
                 )}
               >
                 {clip.name}

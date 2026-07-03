@@ -69,7 +69,7 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
   return (
     <div className="mb-1.5 flex flex-wrap gap-1">
       {scenes.map((s, i) => (
-        <span key={`s${i}`} className={cx(pill, "border-green/40 bg-green-muted text-green")}>
+        <span key={`s${i}`} className={cx(pill, "border-purple/40 bg-purple-muted text-purple")}>
           <SceneIcon className="size-3 shrink-0" />
           <span className="max-w-[140px] truncate">{s.name}</span>
         </span>
@@ -153,13 +153,13 @@ export function SceneChips({
           <motion.span
             key={scene.id}
             {...CHIP_ANIM}
-            className="inline-flex items-center gap-1 rounded-full border border-green/40 bg-green-muted py-0.5 pl-2 pr-1 text-[0.857rem] text-green backdrop-blur-md"
+            className="inline-flex items-center gap-1 rounded-full border border-purple/40 bg-purple-muted py-0.5 pl-2 pr-1 text-[0.857rem] text-purple backdrop-blur-md"
           >
             <SceneIcon className="size-3.5 shrink-0" />
             {scene.name}
             <button
               onClick={() => deselectScene(scene.id)}
-              className={cx(removeButton, "hover:bg-green/25")}
+              className={cx(removeButton, "hover:bg-purple/25")}
               title="Remove from context"
             >
               <RemoveX />

@@ -7,7 +7,7 @@ import { useWaveform, sampleBars } from "@/hooks/use-waveform";
  * One shared amplitude-bar strip so every waveform in the editor — scene
  * voiceovers and project audio clips alike — renders with identical geometry
  * (bar width, gap, density, min height). Only the selection tint differs per
- * context (green for scenes, orange for audio), passed via `selectedClassName`.
+ * context (purple for scenes, orange for audio), passed via `selectedClassName`.
  *
  * Callers own the surrounding container (its height, padding, mute button); this
  * component fills it with `flex-1` bars mapped to real time via `sampleBars`.
@@ -19,6 +19,7 @@ export function Waveform({
   durationSec,
   selected,
   selectedClassName,
+  inactiveClassName = "bg-text-tertiary",
   className,
 }: {
   url: string;
@@ -31,6 +32,8 @@ export function Waveform({
   selected: boolean;
   /** Bar color when selected (e.g. "bg-green" / "bg-orange"). */
   selectedClassName: string;
+  /** Bar color when NOT selected — tints the waveform to the card's theme. */
+  inactiveClassName?: string;
   /** Extra container classes (flex sizing, muted opacity). */
   className?: string;
 }) {
@@ -49,7 +52,7 @@ export function Waveform({
           <span
             className={cx(
               "w-full max-w-[2px] rounded-full",
-              selected ? selectedClassName : "bg-text-tertiary",
+              selected ? selectedClassName : inactiveClassName,
             )}
             style={{ height: `${Math.max(8, p * 100)}%` }}
           />
