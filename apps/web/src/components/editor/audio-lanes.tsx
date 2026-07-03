@@ -9,7 +9,7 @@ import {
 } from "@genmotion/shared";
 import { cx } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
-import { useWaveform, sampleBars } from "@/hooks/use-waveform";
+import { Waveform } from "./waveform";
 
 export interface AudioAssetOption {
   id: string;
@@ -85,32 +85,19 @@ function ClipWaveform({
   muted: boolean;
   selected: boolean;
 }) {
-  // ~one bar per 2.5px of clip width, so wider clips show more detail.
-  const barCount = Math.max(6, Math.min(220, Math.floor((widthPx - 12) / 2.5)));
-  const data = useWaveform(url);
-  const bars = sampleBars(data, barCount, startSec, durationSec);
   return (
-    <div
+    <Waveform
+      url={url}
+      widthPx={widthPx}
+      startSec={startSec}
+      durationSec={durationSec}
+      selected={selected}
+      selectedClassName="bg-orange"
       className={cx(
-        // items-stretch is essential: it gives each bar wrapper the strip's full
-        // height so the spans' percentage heights resolve (items-center would
-        // collapse them to zero — an invisible waveform).
-        "pointer-events-none mt-auto flex h-[18px] shrink-0 items-stretch gap-px px-1.5 pb-1",
-        muted && "opacity-30",
+        "pointer-events-none mt-auto h-[18px] shrink-0 px-1.5 pb-1",
+        muted && "opacity-40",
       )}
-    >
-      {bars.map((p, i) => (
-        <div key={i} className="flex flex-1 items-center justify-center">
-          <span
-            className={cx(
-              "w-full max-w-[2px] rounded-full",
-              selected ? "bg-orange" : "bg-text-tertiary",
-            )}
-            style={{ height: `${Math.max(8, p * 100)}%` }}
-          />
-        </div>
-      ))}
-    </div>
+    />
   );
 }
 

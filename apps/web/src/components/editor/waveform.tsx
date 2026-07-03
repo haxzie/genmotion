@@ -1,0 +1,59 @@
+"use client";
+
+import { cx } from "@/components/ui";
+import { useWaveform, sampleBars } from "@/hooks/use-waveform";
+
+/**
+ * One shared amplitude-bar strip so every waveform in the editor — scene
+ * voiceovers and project audio clips alike — renders with identical geometry
+ * (bar width, gap, density, min height). Only the selection tint differs per
+ * context (green for scenes, orange for audio), passed via `selectedClassName`.
+ *
+ * Callers own the surrounding container (its height, padding, mute button); this
+ * component fills it with `flex-1` bars mapped to real time via `sampleBars`.
+ */
+export function Waveform({
+  url,
+  widthPx,
+  startSec = 0,
+  durationSec,
+  selected,
+  selectedClassName,
+  className,
+}: {
+  url: string;
+  /** Card width in px — drives bar count so wider cards show more detail. */
+  widthPx: number;
+  /** Seconds into the source where the card begins (0 for scenes; clip trim). */
+  startSec?: number;
+  /** Card length in seconds — waveform maps to real time, flat past the audio. */
+  durationSec: number;
+  selected: boolean;
+  /** Bar color when selected (e.g. "bg-green" / "bg-orange"). */
+  selectedClassName: string;
+  /** Extra container classes (flex sizing, muted opacity). */
+  className?: string;
+}) {
+  // ~one bar per 2.5px of card width (minus the 12px of horizontal padding).
+  const barCount = Math.max(8, Math.min(200, Math.floor((widthPx - 12) / 2.5)));
+  const data = useWaveform(url);
+  const bars = sampleBars(data, barCount, startSec, durationSec);
+  return (
+    // items-stretch is essential: it gives each bar wrapper the strip's full
+    // height so the spans' percentage heights resolve (items-center would
+    // collapse them to zero — an invisible waveform).
+    <div className={cx("flex items-stretch gap-px", className)}>
+      {bars.map((p, i) => (
+        <div key={i} className="flex flex-1 items-center justify-center">
+          <span
+            className={cx(
+              "w-full max-w-[2px] rounded-full",
+              selected ? selectedClassName : "bg-text-tertiary",
+            )}
+            style={{ height: `${Math.max(8, p * 100)}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}

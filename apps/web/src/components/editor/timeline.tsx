@@ -28,7 +28,7 @@ import {
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { SceneIcon } from "./scene-icon";
-import { useWaveform, sampleBars } from "@/hooks/use-waveform";
+import { Waveform } from "./waveform";
 import { useProjectAssets } from "@/hooks/use-assets";
 import { AudioLanes, AUDIO_LANE_HEIGHT } from "./audio-lanes";
 
@@ -108,27 +108,18 @@ function SceneWaveform({
   muted: boolean;
   onToggleMute: () => void;
 }) {
-  // One line per ~2.5px of block width, so longer scenes show more detail.
-  const barCount = Math.max(8, Math.min(160, Math.floor((widthPx - 12) / 2.5)));
-  const data = useWaveform(url);
-  // Voiceover starts at the scene's first frame; time-accurate, flat past the
-  // audio's end if the scene runs longer.
-  const bars = sampleBars(data, barCount, 0, durationSec);
   return (
     <div className="mt-auto flex h-7 shrink-0 items-stretch gap-1 overflow-hidden p-1.5">
-      <div className={cx("flex flex-1 items-stretch", muted && "opacity-40")}>
-        {bars.map((p, i) => (
-          <div key={i} className="flex flex-1 items-center justify-center">
-            <span
-              className={cx(
-                "w-px rounded-full",
-                selected ? "bg-green" : "bg-text-tertiary",
-              )}
-              style={{ height: `${Math.max(7, p * 100)}%` }}
-            />
-          </div>
-        ))}
-      </div>
+      {/* Voiceover starts at the scene's first frame; time-accurate, flat past
+          the audio's end if the scene runs longer. */}
+      <Waveform
+        url={url}
+        widthPx={widthPx}
+        durationSec={durationSec}
+        selected={selected}
+        selectedClassName="bg-green"
+        className={cx("flex-1", muted && "opacity-40")}
+      />
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
