@@ -7,10 +7,11 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
-# pnpm via corepack (match packageManager in the root package.json).
-# CI=true so pnpm auto-confirms a modules purge in this non-interactive build.
-ENV CI=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN corepack enable && corepack prepare pnpm@11.2.2 --activate
+# pnpm installed globally so the sandbox's `user` can run it at runtime without
+# corepack re-downloading pnpm on every job. CI=true keeps pnpm non-interactive
+# during the build. Keep the version in sync with the root packageManager.
+ENV CI=true
+RUN npm install -g pnpm@11.2.2
 
 WORKDIR /app
 
