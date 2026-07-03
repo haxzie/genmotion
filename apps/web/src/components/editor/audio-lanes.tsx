@@ -94,7 +94,7 @@ function ClipWaveform({
       selected={selected}
       selectedClassName="bg-orange"
       className={cx(
-        "pointer-events-none mt-auto h-[18px] shrink-0 px-1.5 pb-1",
+        "pointer-events-none mt-auto shrink-0",
         muted && "opacity-40",
       )}
     />

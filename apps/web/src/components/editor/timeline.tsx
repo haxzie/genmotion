@@ -109,7 +109,10 @@ function SceneWaveform({
   onToggleMute: () => void;
 }) {
   return (
-    <div className="mt-auto flex h-7 shrink-0 items-stretch gap-1 overflow-hidden p-1.5">
+    // Relative wrapper with an absolute mute button (same as audio clips) so the
+    // waveform spans the FULL card width instead of being squeezed by an inline
+    // button — keeping it pixel-identical to the audio-lane waveform.
+    <div className="relative mt-auto shrink-0">
       {/* Voiceover starts at the scene's first frame; time-accurate, flat past
           the audio's end if the scene runs longer. */}
       <Waveform
@@ -118,7 +121,7 @@ function SceneWaveform({
         durationSec={durationSec}
         selected={selected}
         selectedClassName="bg-green"
-        className={cx("flex-1", muted && "opacity-40")}
+        className={cx("pointer-events-none", muted && "opacity-40")}
       />
       <button
         type="button"
@@ -129,7 +132,7 @@ function SceneWaveform({
         }}
         title={muted ? "Unmute voiceover" : "Mute voiceover"}
         className={cx(
-          "flex shrink-0 items-center self-center text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
+          "absolute bottom-1 right-1 z-10 flex items-center rounded text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
           muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
         )}
       >

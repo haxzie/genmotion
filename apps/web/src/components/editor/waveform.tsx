@@ -39,10 +39,11 @@ export function Waveform({
   const data = useWaveform(url);
   const bars = sampleBars(data, barCount, startSec, durationSec);
   return (
-    // items-stretch is essential: it gives each bar wrapper the strip's full
-    // height so the spans' percentage heights resolve (items-center would
-    // collapse them to zero — an invisible waveform).
-    <div className={cx("flex items-stretch gap-px", className)}>
+    // Fixed height + padding live HERE (not the callers) so every waveform —
+    // scene or audio — is the exact same strip. items-stretch is essential: it
+    // gives each bar wrapper the strip's full height so the spans' percentage
+    // heights resolve (items-center would collapse them to zero — invisible).
+    <div className={cx("flex h-[18px] items-stretch gap-px px-1.5 pb-1", className)}>
       {bars.map((p, i) => (
         <div key={i} className="flex flex-1 items-center justify-center">
           <span
