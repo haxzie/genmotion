@@ -101,6 +101,12 @@ export function useWaveform(url: string | null | undefined): WaveformData {
  * (i.e. the card is longer than the audio) come back as 0 — a flat baseline —
  * so the waveform is time-accurate instead of stretched to fill the card.
  *
+ * The bars are normalized to the loudest peak WITHIN THIS WINDOW — so the
+ * waveform shows the highs and lows of just the audio in hand, using the full
+ * height, independent of the rest of the file or any other clip. A trimmed clip
+ * over a quiet passage no longer looks flat just because the file peaks louder
+ * somewhere off-screen.
+ *
  * @param startSec  Seconds into the source where the card begins (0 for scenes;
  *                  the clip's `startFrom` for audio clips).
  * @param windowSec The card's own duration in seconds.
@@ -114,6 +120,7 @@ export function sampleBars(
   const { peaks, duration } = data;
   const bars: number[] = new Array(barCount).fill(0);
   if (!peaks || !duration || windowSec <= 0) return bars;
+  let windowMax = 0;
   for (let i = 0; i < barCount; i++) {
     const sourceTime = startSec + ((i + 0.5) / barCount) * windowSec;
     if (sourceTime >= duration) continue; // past the audio → flat baseline
@@ -121,7 +128,14 @@ export function sampleBars(
       peaks.length - 1,
       Math.max(0, Math.floor((sourceTime / duration) * peaks.length)),
     );
-    bars[i] = peaks[idx] ?? 0;
+    const v = peaks[idx] ?? 0;
+    bars[i] = v;
+    if (v > windowMax) windowMax = v;
+  }
+  // Scale to this window's own peak so it spans the full height. Bars past the
+  // audio stay 0 (flat baseline) since they never enter windowMax.
+  if (windowMax > 0) {
+    for (let i = 0; i < barCount; i++) bars[i] = (bars[i] ?? 0) / windowMax;
   }
   return bars;
 }
