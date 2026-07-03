@@ -1,23 +1,100 @@
 import { PgBoss } from "pg-boss";
-import { eq, db, schema } from "@genmotion/db";
+import { count, eq, sql, db, schema } from "@genmotion/db";
 import { createRenderProvider, resolveProviderKind } from "./providers";
 
 const RENDER_QUEUE = "render-mp4";
 const THUMBNAIL_QUEUE = "render-thumbnail";
+const LOCAL_DB_FALLBACK = "postgres://genmotion:genmotion@localhost:5433/genmotion";
+
+/** host:port/db from a connection string, with credentials stripped. */
+function describeDb(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.hostname}:${u.port || "5432"}${u.pathname}`;
+  } catch {
+    return "(unparseable DATABASE_URL)";
+  }
+}
+
+/** Verify the app DB (used by the cancel guard + local provider) is reachable. */
+async function pingAppDb(): Promise<boolean> {
+  try {
+    await db.execute(sql`select 1`);
+    return true;
+  } catch (err) {
+    console.error(
+      "[db] app connection FAILED:",
+      err instanceof Error ? err.message : err,
+    );
+    return false;
+  }
+}
+
+/** Log the current backlog: pg-boss queue depth + export_jobs status breakdown. */
+async function logBacklog(boss: PgBoss, label: string): Promise<void> {
+  try {
+    const [render, thumb] = await Promise.all([
+      boss.getQueueStats(RENDER_QUEUE),
+      boss.getQueueStats(THUMBNAIL_QUEUE),
+    ]);
+    console.log(
+      `[${label}] queues — ${RENDER_QUEUE}: ${render.queuedCount} queued, ${render.activeCount} active` +
+        ` | ${THUMBNAIL_QUEUE}: ${thumb.queuedCount} queued, ${thumb.activeCount} active`,
+    );
+  } catch (err) {
+    console.warn(
+      `[${label}] could not read queue stats:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+  try {
+    const rows = await db
+      .select({ status: schema.exportJobs.status, n: count() })
+      .from(schema.exportJobs)
+      .groupBy(schema.exportJobs.status);
+    const summary = rows.length
+      ? rows.map((r) => `${r.status}=${r.n}`).join(", ")
+      : "none";
+    console.log(`[${label}] export_jobs by status: ${summary}`);
+  } catch (err) {
+    console.warn(
+      `[${label}] could not read export_jobs:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
 
 async function main() {
-  // The provider decides WHERE renders run (in-process vs an E2B sandbox);
-  // switch it with RENDER_PROVIDER. The worker's queue plumbing is identical.
-  const provider = createRenderProvider();
-  console.log(`Renderer worker using the "${resolveProviderKind()}" provider.`);
-  await provider.warmup?.();
-
-  const boss = new PgBoss(
-    process.env.DATABASE_URL ??
-      "postgres://genmotion:genmotion@localhost:5433/genmotion",
+  const kind = resolveProviderKind();
+  console.log(
+    `[startup] GenMotion renderer worker — provider="${kind}", node ${process.version}`,
   );
+
+  // Resolve the DB target and make a missing DATABASE_URL loud (the silent
+  // localhost fallback in prod is a classic "worker polls the wrong/empty DB").
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    console.log(`[db] target: ${describeDb(databaseUrl)}`);
+  } else {
+    console.warn(
+      `[db] DATABASE_URL is NOT set — falling back to ${describeDb(LOCAL_DB_FALLBACK)}. ` +
+        "In production this MUST be the same Postgres the API enqueues into, " +
+        "or the worker will never see any jobs.",
+    );
+  }
+
+  // App DB reachability (needed by the cancel guard on every pickup, and by the
+  // local provider's DB reads). e2b/docker renders otherwise go via the API.
+  console.log(`[db] app connection: ${(await pingAppDb()) ? "OK" : "UNAVAILABLE"}`);
+
+  const provider = createRenderProvider();
+  await provider.warmup?.();
+  console.log(`[startup] provider ready ("${kind}").`);
+
+  const boss = new PgBoss(databaseUrl ?? LOCAL_DB_FALLBACK);
   boss.on("error", (err: Error) => console.error("[pg-boss]", err));
   await boss.start();
+  console.log("[pg-boss] connected + started.");
   await boss.createQueue(RENDER_QUEUE);
   await boss.createQueue(THUMBNAIL_QUEUE);
 
@@ -30,9 +107,11 @@ async function main() {
     32,
     Math.max(1, Math.floor(Number(process.env.RENDER_CONCURRENCY) || 1)),
   );
-  console.log(
-    `Render concurrency: ${concurrency} (${resolveProviderKind()} provider).`,
-  );
+  console.log(`[startup] render concurrency: ${concurrency} (${kind} provider).`);
+
+  // Show what's already waiting so a backlog is visible the moment we boot.
+  await logBacklog(boss, "startup");
+
   const renderHandler = async (
     jobs: Array<{ data: { exportJobId: string } }>,
   ) => {
@@ -45,12 +124,30 @@ async function main() {
         .select({ status: schema.exportJobs.status })
         .from(schema.exportJobs)
         .where(eq(schema.exportJobs.id, id));
-      if (!row || row.status === "cancelled") {
+      if (!row) {
+        console.warn(`[render] job ${id} has no export_jobs row — skipping`);
+        continue;
+      }
+      if (row.status === "cancelled") {
         console.log(`[render] skipping job ${id} — cancelled`);
         continue;
       }
-      console.log(`[render] picked up job ${id}`);
-      await provider.renderJob(id);
+
+      console.log(`[render] picked up job ${id} (status=${row.status})`);
+      const startedAt = Date.now();
+      try {
+        await provider.renderJob(id);
+        console.log(
+          `[render] finished job ${id} in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
+        );
+      } catch (err) {
+        // Re-throw so pg-boss records the failure and retries per its policy.
+        console.error(
+          `[render] job ${id} FAILED after ${((Date.now() - startedAt) / 1000).toFixed(1)}s:`,
+          err instanceof Error ? err.message : err,
+        );
+        throw err;
+      }
     }
   };
   for (let i = 0; i < concurrency; i++) {
@@ -66,14 +163,38 @@ async function main() {
     { batchSize: 1 },
     async (jobs: Array<{ data: { projectId: string } }>) => {
       for (const job of jobs) {
-        await provider.renderThumbnail(job.data.projectId);
+        try {
+          await provider.renderThumbnail(job.data.projectId);
+        } catch (err) {
+          console.error(
+            `[thumbnail] project ${job.data.projectId} failed:`,
+            err instanceof Error ? err.message : err,
+          );
+          throw err;
+        }
       }
     },
   );
 
-  console.log("GenMotion renderer worker listening for jobs.");
+  console.log(
+    `[startup] listening for jobs — ${RENDER_QUEUE} (x${concurrency}) + ${THUMBNAIL_QUEUE}.`,
+  );
+
+  // Periodic heartbeat so a stuck/idle worker is obvious in the logs and you can
+  // watch the backlog drain. Off by default cadence of 60s; tune with
+  // RENDER_HEARTBEAT_SECONDS=0 to disable.
+  const heartbeatSeconds = Math.max(
+    0,
+    Math.floor(Number(process.env.RENDER_HEARTBEAT_SECONDS ?? 60)),
+  );
+  const heartbeat =
+    heartbeatSeconds > 0
+      ? setInterval(() => void logBacklog(boss, "heartbeat"), heartbeatSeconds * 1000)
+      : null;
+  heartbeat?.unref?.();
 
   const shutdown = async () => {
+    if (heartbeat) clearInterval(heartbeat);
     await boss.stop();
     await provider.dispose();
     process.exit(0);
