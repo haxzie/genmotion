@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllTerms } from "@/lib/marketing/content";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
 const FAQS: Faq[] = [
@@ -29,6 +31,19 @@ export const metadata: Metadata = {
 export default function GlossaryIndexPage() {
   const terms = getAllTerms();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    name: `${SITE_NAME} Glossary`,
+    url: `${SITE_URL}/glossary`,
+    hasDefinedTerm: terms.map((t) => ({
+      "@type": "DefinedTerm",
+      name: t.term,
+      description: t.description,
+      url: `${SITE_URL}/glossary/${t.slug}`,
+    })),
+  };
+
   // Group alphabetically by first letter for a clean index.
   const groups = new Map<string, typeof terms>();
   for (const term of terms) {
@@ -40,6 +55,7 @@ export default function GlossaryIndexPage() {
 
   return (
     <>
+    <JsonLd data={jsonLd} />
     <Section>
       <Container>
         <div className="max-w-2xl">

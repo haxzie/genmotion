@@ -10,7 +10,7 @@ date: "2026-07-03"
 aspectRatio: "16:9"
 category: "Feature Launch"
 tags: ["feature-launch", "voice", "product-launch"]
-featured: false
+featured: true
 ---
 
 A feature-launch style announcement for xAI voice agents, built as a fast, high-energy motion piece: kinetic typography, a single clear hero moment for the new capability, and pacing tuned to hold attention from the first frame.

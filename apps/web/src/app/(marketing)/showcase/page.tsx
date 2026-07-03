@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { ShowcaseBrowser } from "@/components/marketing/showcase-browser";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllShowcaseVideos } from "@/lib/marketing/content";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
 const FAQS: Faq[] = [
@@ -35,8 +37,29 @@ export const metadata: Metadata = {
 export default function ShowcaseIndexPage() {
   const videos = getAllShowcaseVideos();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE_NAME} Showcase`,
+    url: `${SITE_URL}/showcase`,
+    itemListElement: videos.map((v, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "VideoObject",
+        name: v.title,
+        description: v.description,
+        thumbnailUrl: v.poster || undefined,
+        uploadDate: v.date || undefined,
+        contentUrl: v.videoUrl,
+        url: `${SITE_URL}/showcase/${v.slug}`,
+      },
+    })),
+  };
+
   return (
     <>
+      <JsonLd data={jsonLd} />
       <Section>
         <Container>
           <div className="max-w-2xl">

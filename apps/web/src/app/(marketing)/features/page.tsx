@@ -9,7 +9,22 @@ import {
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES } from "@/lib/marketing/features";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
+
+const featuresJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "GenMotion Features",
+  url: `${SITE_URL}/features`,
+  itemListElement: FEATURES.map((f, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: f.name,
+    url: `${SITE_URL}/features/${f.slug}`,
+  })),
+};
 
 const FAQS: Faq[] = [
   {
@@ -35,6 +50,7 @@ export const metadata: Metadata = {
 export default function FeaturesIndexPage() {
   return (
     <>
+      <JsonLd data={featuresJsonLd} />
       <Section className="pb-10">
         <Container>
           <div className="mx-auto max-w-2xl text-center">

@@ -7,7 +7,22 @@ import {
   Card,
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
+
+const aboutJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: `About ${SITE_NAME}`,
+  url: `${SITE_URL}/about`,
+  mainEntity: {
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.svg`,
+  },
+};
 
 const FAQS: Faq[] = [
   {
@@ -56,6 +71,7 @@ const VALUES = [
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={aboutJsonLd} />
       <Section>
         <Container>
           <div className="mx-auto max-w-3xl">

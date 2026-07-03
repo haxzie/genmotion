@@ -10,7 +10,7 @@ date: "2026-07-03"
 aspectRatio: "16:9"
 category: "Data Story"
 tags: ["Single"]
-featured: false
+featured: true
 ---
 
 A single-scene data story that counts up Firecrawl's GitHub star count — the number animates, the milestone lands, and the whole thing is built to celebrate traction in one clean sweep.

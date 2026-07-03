@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllPosts } from "@/lib/marketing/content";
 import { formatDate } from "@/lib/marketing/format";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
 const FAQS: Faq[] = [
@@ -30,8 +32,24 @@ export const metadata: Metadata = {
 export default function BlogIndexPage() {
   const posts = getAllPosts();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: `${SITE_NAME} Blog`,
+    url: `${SITE_URL}/blog`,
+    blogPost: posts.map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      description: p.description,
+      datePublished: p.date || undefined,
+      author: { "@type": "Person", name: p.author },
+      url: `${SITE_URL}/blog/${p.slug}`,
+    })),
+  };
+
   return (
     <>
+    <JsonLd data={jsonLd} />
     <Section>
       <Container>
         <div className="max-w-2xl">

@@ -129,15 +129,18 @@ export default async function ShowcaseVideoPage({ params }: Params) {
             />
           </div>
 
-          {video.body && (
-            <div className="mt-10 border-t border-border pt-10">
-              <Prose>{video.body}</Prose>
-            </div>
-          )}
+          {/* Narrower reading column for the write-up below the video. */}
+          <div className="mx-auto max-w-2xl">
+            {video.body && (
+              <div className="mt-10 border-t border-border pt-10">
+                <Prose>{video.body}</Prose>
+              </div>
+            )}
 
-          <div className="mt-16 flex items-center justify-between gap-4 border-t border-border pt-10">
-            <p className="text-text-secondary">Ready to make your own?</p>
-            <LinkButton href="/signup">Start free</LinkButton>
+            <div className="mt-16 flex items-center justify-between gap-4 border-t border-border pt-10">
+              <p className="text-text-secondary">Ready to make your own?</p>
+              <LinkButton href="/signup">Start free</LinkButton>
+            </div>
           </div>
         </Container>
       </Section>

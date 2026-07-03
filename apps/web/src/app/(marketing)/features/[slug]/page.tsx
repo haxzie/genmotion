@@ -11,6 +11,8 @@ import {
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES, getFeature } from "@/lib/marketing/features";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -40,8 +42,19 @@ export default async function FeaturePage({ params }: Params) {
 
   const others = FEATURES.filter((f) => f.slug !== feature.slug).slice(0, 3);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Features", item: `${SITE_URL}/features` },
+      { "@type": "ListItem", position: 3, name: feature.name, item: `${SITE_URL}/features/${feature.slug}` },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={jsonLd} />
       {/* Hero */}
       <div className="relative overflow-hidden border-b border-border">
         <GradientBlobs />

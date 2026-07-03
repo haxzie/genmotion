@@ -17,6 +17,20 @@ import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getAllPosts, getAllShowcaseVideos } from "@/lib/marketing/content";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
+
+const homeJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: SITE_NAME,
+  description:
+    "The AI motion-video studio — describe a video and an agent animates it, then export a pixel-identical MP4.",
+  url: SITE_URL,
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
 
 export const metadata: Metadata = {
   title: "GenMotion — The AI Motion-Video Studio",
@@ -83,10 +97,15 @@ export default async function HomePage() {
   if (session) redirect("/dashboard");
 
   const latestPost = getAllPosts()[0];
-  const showcaseVideos = getAllShowcaseVideos().slice(0, 6);
+  // Home shows only videos flagged `featured` in their frontmatter — latest 6
+  // (getAllShowcaseVideos is already sorted newest-first).
+  const showcaseVideos = getAllShowcaseVideos()
+    .filter((v) => v.featured)
+    .slice(0, 6);
 
   return (
     <>
+      <JsonLd data={homeJsonLd} />
       {/* Hero */}
       <div className="relative overflow-hidden">
         <GradientBlobs />

@@ -6,6 +6,8 @@ import {
   LinkButton,
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 import { cx } from "@/lib/cx";
 
@@ -74,6 +76,22 @@ const TIERS: Tier[] = [
   },
 ];
 
+const pricingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: SITE_NAME,
+  description:
+    "GenMotion turns a plain-language description into an animated, pixel-identical MP4 video.",
+  url: `${SITE_URL}/pricing`,
+  offers: TIERS.map((t) => ({
+    "@type": "Offer",
+    name: t.name,
+    price: t.price.replace(/[^0-9.]/g, "") || "0",
+    priceCurrency: "USD",
+    url: `${SITE_URL}${t.cta.href}`,
+  })),
+};
+
 const FAQ: Faq[] = [
   {
     q: "How do AI credits work?",
@@ -108,6 +126,7 @@ function CheckIcon({ className }: { className?: string }) {
 export default function PricingPage() {
   return (
     <>
+      <JsonLd data={pricingJsonLd} />
       <Section className="pb-10">
         <Container>
           <div className="mx-auto max-w-2xl text-center">

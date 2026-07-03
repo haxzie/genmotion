@@ -5,9 +5,22 @@ import { ToolShell, Field } from "@/components/marketing/tool-shell";
 import { Card } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { getTool } from "@/lib/marketing/tools";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_URL } from "@/lib/marketing/site";
 import { cx } from "@/components/ui";
 
-const FAQS = getTool("aspect-ratio-calculator")!.faqs;
+const TOOL = getTool("aspect-ratio-calculator")!;
+const FAQS = TOOL.faqs;
+const toolJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: TOOL.name,
+  description: TOOL.description,
+  url: `${SITE_URL}/tools/${TOOL.slug}`,
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
 
 const PRESETS = [
   { label: "16:9", w: 16, h: 9 },
@@ -33,6 +46,7 @@ export default function AspectRatioCalculator() {
 
   return (
     <>
+    <JsonLd data={toolJsonLd} />
     <ToolShell
       title="Aspect Ratio Calculator"
       description="Pick a ratio, enter one dimension, and get the exact pixel size for the other."

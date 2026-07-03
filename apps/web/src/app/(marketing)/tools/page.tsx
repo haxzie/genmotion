@@ -3,8 +3,30 @@ import Link from "next/link";
 import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { TOOLS } from "@/lib/marketing/tools";
+import { SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
+
+const toolsJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Free Tools for Video Creators",
+  url: `${SITE_URL}/tools`,
+  itemListElement: TOOLS.map((t, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "SoftwareApplication",
+      name: t.name,
+      description: t.description,
+      url: `${SITE_URL}/tools/${t.slug}`,
+      applicationCategory: "MultimediaApplication",
+      operatingSystem: "Web",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    },
+  })),
+};
 
 const FAQS: Faq[] = [
   {
@@ -30,6 +52,7 @@ export const metadata: Metadata = {
 export default function ToolsIndexPage() {
   return (
     <>
+      <JsonLd data={toolsJsonLd} />
       <Section>
       <Container>
         <div className="max-w-2xl">

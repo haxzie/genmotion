@@ -4,9 +4,22 @@ import { useState } from "react";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { FaqSection } from "@/components/marketing/faq";
 import { getTool } from "@/lib/marketing/tools";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { SITE_URL } from "@/lib/marketing/site";
 import { cx } from "@/components/ui";
 
-const FAQS = getTool("social-video-size-guide")!.faqs;
+const TOOL = getTool("social-video-size-guide")!;
+const FAQS = TOOL.faqs;
+const toolJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: TOOL.name,
+  description: TOOL.description,
+  url: `${SITE_URL}/tools/${TOOL.slug}`,
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
 
 type Spec = {
   platform: string;
@@ -38,6 +51,7 @@ export default function SocialVideoSizeGuide() {
 
   return (
     <>
+    <JsonLd data={toolJsonLd} />
     <ToolShell
       title="Social Video Size Guide"
       description="Recommended video dimensions and aspect ratios for every major platform."
