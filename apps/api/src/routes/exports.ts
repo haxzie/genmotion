@@ -13,12 +13,13 @@ exportRoutes.use(requireAuth);
 const createSchema = z.object({
   projectId: z.string().uuid(),
   quality: z.number().int().min(0).max(100).optional(),
+  format: z.enum(["mp4", "webm", "gif"]).optional(),
 });
 
 exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
-  const { projectId, quality } = c.req.valid("json");
+  const { projectId, quality, format } = c.req.valid("json");
 
   const [project] = await db
     .select()
@@ -58,7 +59,8 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
       projectId,
       userId: user.id,
       totalFrames,
-      ...(quality !== undefined && { quality }),
+      quality: quality ?? 95,
+      ...(format && { format }),
     })
     .returning();
 

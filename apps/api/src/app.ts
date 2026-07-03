@@ -8,6 +8,7 @@ import { chatRoutes } from "./routes/chat";
 import { assetRoutes } from "./routes/assets";
 import { exportRoutes } from "./routes/exports";
 import { fileRoutes } from "./routes/files";
+import { renderRoutes } from "./routes/render";
 
 export const app = new Hono();
 
@@ -31,3 +32,5 @@ app.route("/api/projects", projectRoutes);
 app.route("/api/chat", chatRoutes);
 app.route("/api/assets", assetRoutes);
 app.route("/api/exports", exportRoutes);
+// Render control-plane — token-authed (not requireAuth); used by remote renderers.
+app.route("/api/render", renderRoutes);

@@ -8,15 +8,17 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # pnpm via corepack (match packageManager in the root package.json).
+# CI=true so pnpm auto-confirms a modules purge in this non-interactive build.
+ENV CI=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare pnpm@11.2.2 --activate
 
 WORKDIR /app
 
-# Copy the whole monorepo so workspace deps resolve.
+# Copy the monorepo source (node_modules etc. excluded via .e2bignore).
 COPY . /app
 
-# Install and make sure Chromium is present for the renderer.
-RUN pnpm install --frozen-lockfile \
+# Install only the renderer's workspace subtree, then ensure Chromium is present.
+RUN pnpm install --frozen-lockfile --filter @genmotion/renderer... \
   && pnpm --filter @genmotion/renderer exec playwright install chromium
 
 # The E2B provider invokes the render CLI per job via `commands.run`, e.g.:

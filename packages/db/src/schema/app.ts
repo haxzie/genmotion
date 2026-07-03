@@ -158,7 +158,11 @@ export const exportJobs = pgTable("export_jobs", {
   progress: integer("progress").notNull().default(0),
   totalFrames: integer("total_frames").notNull().default(0),
   /** Export quality 0-100 (drives the encoder CRF + capture quality). */
-  quality: integer("quality").notNull().default(80),
+  quality: integer("quality").notNull().default(95),
+  /** Output container/codec: mp4 (H.264), webm (VP9), or gif. */
+  format: text("format", { enum: ["mp4", "webm", "gif"] })
+    .notNull()
+    .default("mp4"),
   outputAssetId: uuid("output_asset_id").references(() => assets.id),
   error: text("error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

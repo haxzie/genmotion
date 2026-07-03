@@ -1,5 +1,6 @@
 import { SiteNav } from "@/components/marketing/site-nav";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { CtaSection } from "@/components/marketing/cta-section";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 
@@ -30,6 +31,7 @@ export default function MarketingLayout({
       <JsonLd data={[ORG_JSONLD, WEBSITE_JSONLD]} />
       <SiteNav />
       <main className="flex-1">{children}</main>
+      <CtaSection />
       <SiteFooter />
     </div>
   );

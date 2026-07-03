@@ -1,0 +1,16 @@
+# Keep the E2B build context small — deps and build caches are rebuilt inside
+# the template (the Dockerfile runs pnpm install + playwright install).
+**/node_modules
+node_modules
+**/.next
+**/.turbo
+.turbo
+**/dist
+**/build
+**/coverage
+**/playwright-report
+**/test-results
+.git
+**/*.log
+.env
+.env.*

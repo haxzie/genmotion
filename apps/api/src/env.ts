@@ -68,10 +68,15 @@ const schema = z.object({
   CHAT_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
 
   // ── Renderer worker (apps/renderer) — where video exports run ───────
-  RENDER_PROVIDER: z.enum(["local", "e2b"]).default("local"),
+  RENDER_PROVIDER: z.enum(["local", "e2b", "docker"]).default("local"),
   E2B_RENDER_TEMPLATE: z.string().min(1).optional(),
   E2B_RENDER_CMD: z.string().min(1).optional(),
   RENDER_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+  // How many renders the worker runs in parallel (one E2B/docker sandbox each).
+  RENDER_CONCURRENCY: z.coerce.number().int().positive().optional(),
+  // Shared secret for the short-lived per-job render tokens. Falls back to
+  // BETTER_AUTH_SECRET when unset; must match on the API and the renderer.
+  RENDER_JWT_SECRET: z.string().min(1).optional(),
 
   // ── Web (Next.js public) ────────────────────────────────────────────
   NEXT_PUBLIC_API_URL: z.url().optional(),

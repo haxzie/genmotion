@@ -63,6 +63,11 @@ export function publicUrl(key: string): string {
   if (match) {
     const [, projectId, rest] = match;
     const encoded = rest!.split("/").map(encodeURIComponent).join("/");
+    // Rendered exports get their own /exports/ route; other project files
+    // (uploads, generated media) go through the /assets/ proxy namespace.
+    if (rest!.startsWith("exports/")) {
+      return `${API_URL}/api/projects/${projectId}/${encoded}`;
+    }
     return `${API_URL}/api/projects/${projectId}/assets/${encoded}`;
   }
   const endpoint = (process.env.S3_ENDPOINT ?? "http://localhost:9000").replace(

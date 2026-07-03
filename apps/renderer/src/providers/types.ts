@@ -21,7 +21,7 @@ export interface RenderProvider {
   dispose(): Promise<void>;
 }
 
-export type RenderProviderKind = "local" | "e2b";
+export type RenderProviderKind = "local" | "e2b" | "docker";
 
 /** Resolve which provider to use from the environment (default: "local"). */
 export function resolveProviderKind(
@@ -29,9 +29,9 @@ export function resolveProviderKind(
 ): RenderProviderKind {
   const raw = (env.RENDER_PROVIDER ?? "").trim().toLowerCase();
   if (raw === "") return "local";
-  if (raw === "local" || raw === "e2b") return raw;
+  if (raw === "local" || raw === "e2b" || raw === "docker") return raw;
   throw new Error(
-    `Invalid RENDER_PROVIDER "${raw}" — expected "local" or "e2b".`,
+    `Invalid RENDER_PROVIDER "${raw}" — expected "local", "e2b", or "docker".`,
   );
 }
 

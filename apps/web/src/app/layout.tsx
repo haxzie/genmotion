@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, JetBrains_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono, Jaro } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ReactGrab } from "@/components/react-grab";
 import "./globals.css";
@@ -14,6 +14,12 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 });
 
+// Display face for the GenMotion logo wordmark.
+const jaro = Jaro({
+  subsets: ["latin"],
+  variable: "--font-jaro",
+});
+
 export const metadata: Metadata = {
   title: "GenMotion",
   description: "AI-powered motion video studio",
@@ -25,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${jetbrainsMono.variable}`}
+      className={`${geist.variable} ${jetbrainsMono.variable} ${jaro.variable}`}
     >
       <body>
         <ReactGrab />

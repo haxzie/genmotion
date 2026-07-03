@@ -141,3 +141,9 @@ fileRoutes.get("/:projectId/assets/*", streamFile);
 fileRoutes.get("/:projectId/files/*", streamFile);
 fileRoutes.delete("/:projectId/assets/*", requireAuth, deleteFile);
 fileRoutes.delete("/:projectId/files/*", requireAuth, deleteFile);
+
+// Rendered exports live at projects/<id>/exports/… and are served from their own
+// route (objectKeyFromPath keeps the `exports/` folder in the key). The old
+// /assets/exports/… URLs still resolve too, so previously-stored exports work.
+fileRoutes.get("/:projectId/exports/*", streamFile);
+fileRoutes.delete("/:projectId/exports/*", requireAuth, deleteFile);

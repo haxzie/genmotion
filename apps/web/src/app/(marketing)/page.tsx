@@ -13,9 +13,10 @@ import {
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
+import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
-import { getAllPosts } from "@/lib/marketing/content";
+import { getAllPosts, getAllShowcaseVideos } from "@/lib/marketing/content";
 
 export const metadata: Metadata = {
   title: "GenMotion — The AI Motion-Video Studio",
@@ -82,6 +83,7 @@ export default async function HomePage() {
   if (session) redirect("/dashboard");
 
   const latestPost = getAllPosts()[0];
+  const showcaseVideos = getAllShowcaseVideos().slice(0, 6);
 
   return (
     <>
@@ -131,6 +133,41 @@ export default async function HomePage() {
           </div>
         </Container>
       </div>
+
+      {/* Showcase gallery */}
+      {showcaseVideos.length > 0 && (
+        <Section className="border-t border-border">
+          <Container>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <Eyebrow className="mb-4">Showcase</Eyebrow>
+                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Made with GenMotion
+                </h2>
+                <p className="mt-4 text-text-secondary">
+                  Real motion videos — teasers, explainers, data stories, and
+                  more — each one generated from a description.
+                </p>
+              </div>
+              <Link
+                href="/showcase"
+                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-text-primary"
+              >
+                View all
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </Link>
+            </div>
+            <ShowcaseGrid videos={showcaseVideos} className="mt-14" />
+            <div className="mt-12 flex justify-center">
+              <LinkButton href="/showcase" variant="secondary" size="lg">
+                View more videos
+              </LinkButton>
+            </div>
+          </Container>
+        </Section>
+      )}
 
       {/* How it works */}
       <Section>
@@ -206,28 +243,7 @@ export default async function HomePage() {
       {/* FAQ */}
       <FaqSection items={FAQS} />
 
-      {/* Closing CTA */}
-      <Section className="border-t border-border">
-        <Container>
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-surface px-6 py-16 text-center">
-            <GradientBlobs />
-            <div className="relative">
-              <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                Make your first video today
-              </h2>
-              <p className="mx-auto mt-4 max-w-lg text-text-secondary">
-                Start free — describe an idea and watch the agent animate it in
-                minutes.
-              </p>
-              <div className="mt-8 flex justify-center">
-                <LinkButton href="/signup" size="lg">
-                  Start creating free
-                </LinkButton>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
+      {/* Closing CTA is provided globally by the marketing layout. */}
     </>
   );
 }

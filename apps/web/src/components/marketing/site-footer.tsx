@@ -14,6 +14,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "Resources",
     links: [
+      { label: "Showcase", href: "/showcase" },
       { label: "Blog", href: "/blog" },
       { label: "Glossary", href: "/glossary" },
     ],
@@ -65,6 +66,15 @@ export function SiteFooter() {
               </ul>
             </div>
           ))}
+        </div>
+        <div className="mt-12">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/footer-wordmark.svg"
+            alt="GenMotion"
+            className="h-auto w-full select-none"
+            draggable={false}
+          />
         </div>
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-[0.857rem] text-text-tertiary sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} GenMotion. All rights reserved.</span>

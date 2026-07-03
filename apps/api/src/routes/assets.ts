@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, db, schema } from "@genmotion/db";
+import { and, desc, eq, ne, db, schema } from "@genmotion/db";
 import {
   deleteObject,
   presignUpload,
@@ -234,6 +234,8 @@ assetRoutes.get("/", async (c) => {
         and(
           eq(schema.assets.projectId, projectId),
           eq(schema.assets.status, "ready" as const),
+          // Rendered exports live under a separate area, not the assets panel.
+          ne(schema.assets.kind, "export"),
         ),
       )
       .orderBy(desc(schema.assets.createdAt));
@@ -247,6 +249,7 @@ assetRoutes.get("/", async (c) => {
       and(
         eq(schema.assets.userId, user.id),
         eq(schema.assets.status, "ready" as const),
+        ne(schema.assets.kind, "export"),
       ),
     )
     .orderBy(desc(schema.assets.createdAt));

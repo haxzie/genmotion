@@ -78,6 +78,48 @@ export function GradientBlobs({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Livelier cousin of GradientBlobs: brighter, roaming blobs spread across the
+ * whole surface (not pinned to the bottom) with a soft radial vignette on top.
+ * Used behind the closing CTA to give it more energy. Decorative only.
+ */
+export function VividGradientBlobs({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cx(
+        "pointer-events-none absolute inset-0 overflow-hidden",
+        className,
+      )}
+    >
+      <div
+        className="absolute left-[-6%] top-[-20%] size-[38vw] max-w-[520px] rounded-full blur-[110px] animate-[drift-1_14s_ease-in-out_infinite]"
+        style={{ background: "#C6F91E", opacity: 0.4 }}
+      />
+      <div
+        className="absolute right-[-4%] top-[10%] size-[40vw] max-w-[560px] rounded-full blur-[120px] animate-[drift-2_18s_ease-in-out_infinite]"
+        style={{ background: "#16F5BD", opacity: 0.36 }}
+      />
+      <div
+        className="absolute bottom-[-24%] left-[34%] size-[34vw] max-w-[480px] rounded-full blur-[110px] animate-[drift-3_16s_ease-in-out_infinite]"
+        style={{ background: "#FFD60A", opacity: 0.3 }}
+      />
+      <div
+        className="absolute right-[22%] top-[-16%] size-[24vw] max-w-[340px] rounded-full blur-[110px] animate-[drift-1_20s_ease-in-out_infinite]"
+        style={{ background: "#3b6ef6", opacity: 0.3 }}
+      />
+      {/* Vignette so text stays legible over the brighter blobs. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 120% at 50% 50%, transparent 30%, var(--color-surface) 100%)",
+        }}
+      />
+    </div>
+  );
+}
+
 type LinkButtonProps = {
   href: string;
   variant?: "primary" | "secondary" | "ghost";

@@ -24,6 +24,24 @@ export type GlossaryTerm = {
   body: string;
 };
 
+export type ShowcaseVideo = {
+  slug: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  poster: string;
+  author: string;
+  authorRole: string;
+  date: string; // ISO yyyy-mm-dd
+  duration: string;
+  aspectRatio: string;
+  category: string;
+  tags: string[];
+  featured: boolean;
+  faqs: Faq[];
+  body: string;
+};
+
 function readDir(sub: string): { slug: string; raw: string }[] {
   const dir = path.join(CONTENT_DIR, sub);
   if (!fs.existsSync(dir)) return [];
@@ -75,4 +93,35 @@ export function getAllTerms(): GlossaryTerm[] {
 
 export function getTermBySlug(slug: string): GlossaryTerm | undefined {
   return getAllTerms().find((t) => t.slug === slug);
+}
+
+export function getAllShowcaseVideos(): ShowcaseVideo[] {
+  return readDir("showcase")
+    .map(({ slug, raw }) => {
+      const { data, content } = matter(raw);
+      return {
+        slug,
+        title: String(data.title ?? slug),
+        description: String(data.description ?? ""),
+        videoUrl: String(data.videoUrl ?? ""),
+        poster: String(data.poster ?? ""),
+        author: String(data.author ?? "GenMotion"),
+        authorRole: String(data.authorRole ?? ""),
+        date: String(data.date ?? ""),
+        duration: String(data.duration ?? ""),
+        aspectRatio: String(data.aspectRatio ?? "16:9"),
+        category: String(data.category ?? "Other"),
+        tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+        featured: Boolean(data.featured),
+        faqs: parseFaqs(data.faqs),
+        body: content.trim(),
+      };
+    })
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+export function getShowcaseVideoBySlug(
+  slug: string,
+): ShowcaseVideo | undefined {
+  return getAllShowcaseVideos().find((v) => v.slug === slug);
 }

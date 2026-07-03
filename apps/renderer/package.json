@@ -10,8 +10,9 @@
     "render": "tsx --tsconfig ../../tsconfig.tsx-runtime.json src/render-cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2b:build": "npx -y @e2b/cli template build --config e2b/e2b.toml --dockerfile e2b/e2b.Dockerfile --path ../..",
-    "e2b:publish": "npx -y @e2b/cli template publish --config e2b/e2b.toml --yes"
+    "e2b:build": "npx -y @e2b/cli template create genmotion-renderer --path ../.. --dockerfile apps/renderer/e2b/e2b.Dockerfile --cpu-count 2 --memory-mb 4096",
+    "e2b:publish": "npx -y @e2b/cli template publish genmotion-renderer",
+    "docker:sandbox": "docker build -f e2b/e2b.Dockerfile -t genmotion-render-sandbox ../.."
   },
   "dependencies": {
     "@e2b/code-interpreter": "^2.6.1",

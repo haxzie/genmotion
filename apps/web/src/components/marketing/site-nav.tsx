@@ -8,6 +8,7 @@ import { cx } from "@/components/ui";
 
 const LINKS = [
   { label: "Features", href: "/features" },
+  { label: "Showcase", href: "/showcase" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
@@ -73,7 +74,7 @@ export function SiteNav() {
               alt=""
               className="size-6 rounded-[5px] group-hover:animate-[spin-once_0.6s_ease-in-out]"
             />
-            <span className="font-display text-[1.05rem] font-semibold tracking-tight">
+            <span className="font-logo text-[1.2rem] tracking-tight">
               GenMotion
             </span>
           </Link>

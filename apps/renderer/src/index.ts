@@ -20,16 +20,33 @@ async function main() {
   await boss.createQueue(RENDER_QUEUE);
   await boss.createQueue(THUMBNAIL_QUEUE);
 
-  await boss.work<{ exportJobId: string }>(
-    RENDER_QUEUE,
-    { batchSize: 1 },
-    async (jobs: Array<{ data: { exportJobId: string } }>) => {
-      for (const job of jobs) {
-        console.log(`[render] picked up job ${job.data.exportJobId}`);
-        await provider.renderJob(job.data.exportJobId);
-      }
-    },
+  // Run up to RENDER_CONCURRENCY renders at once. Each worker pulls one job at a
+  // time (Postgres SKIP LOCKED prevents double-processing), so N registrations
+  // means up to N renders in parallel — for the e2b/docker providers that's N
+  // isolated sandboxes (one per render). The local provider shares a single
+  // browser, so keep concurrency at 1 there unless the box is beefy.
+  const concurrency = Math.min(
+    32,
+    Math.max(1, Math.floor(Number(process.env.RENDER_CONCURRENCY) || 1)),
   );
+  console.log(
+    `Render concurrency: ${concurrency} (${resolveProviderKind()} provider).`,
+  );
+  const renderHandler = async (
+    jobs: Array<{ data: { exportJobId: string } }>,
+  ) => {
+    for (const job of jobs) {
+      console.log(`[render] picked up job ${job.data.exportJobId}`);
+      await provider.renderJob(job.data.exportJobId);
+    }
+  };
+  for (let i = 0; i < concurrency; i++) {
+    await boss.work<{ exportJobId: string }>(
+      RENDER_QUEUE,
+      { batchSize: 1 },
+      renderHandler,
+    );
+  }
 
   await boss.work<{ projectId: string }>(
     THUMBNAIL_QUEUE,

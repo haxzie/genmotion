@@ -10,6 +10,7 @@
  */
 import { launchBrowser } from "./browser";
 import { runRenderJob, runThumbnailJob } from "./render-job";
+import { runRenderJobViaApi } from "./render-remote";
 
 async function main() {
   const [command, id] = process.argv.slice(2);
@@ -18,10 +19,21 @@ async function main() {
     process.exit(2);
   }
 
+  // API mode: a per-job token means we talk to the render control-plane over
+  // HTTP (no DB/R2 creds) — how a remote sandbox runs. Otherwise render against
+  // the DB directly (the trusted local worker).
+  const token = process.env.RENDER_JOB_TOKEN;
+  const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+
   const browser = await launchBrowser();
   try {
     if (command === "render") {
-      await runRenderJob(browser, id);
+      if (token) {
+        if (!apiUrl) throw new Error("API_URL is required in render token mode");
+        await runRenderJobViaApi(browser, id, { apiUrl, token });
+      } else {
+        await runRenderJob(browser, id);
+      }
     } else if (command === "thumbnail") {
       await runThumbnailJob(browser, id);
     } else {

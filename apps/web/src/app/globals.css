@@ -31,6 +31,7 @@
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
   --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-logo: var(--font-jaro), var(--font-geist), ui-sans-serif, sans-serif;
 
   --radius-md: 8px;
 
@@ -105,6 +106,36 @@ body {
   }
   50% {
     transform: translate(-14%, 44%) scale(1.14);
+  }
+}
+
+/* Livelier blobs that drift across a whole surface (used by the closing CTA).
+   Unlike blob-a/b/c these aren't pinned to the bottom — they roam the box. */
+@keyframes drift-1 {
+  0%,
+  100% {
+    transform: translate(-8%, -6%) scale(1);
+  }
+  50% {
+    transform: translate(10%, 8%) scale(1.18);
+  }
+}
+@keyframes drift-2 {
+  0%,
+  100% {
+    transform: translate(6%, 4%) scale(1.1);
+  }
+  50% {
+    transform: translate(-12%, -8%) scale(0.9);
+  }
+}
+@keyframes drift-3 {
+  0%,
+  100% {
+    transform: translate(2%, 8%) scale(0.96);
+  }
+  50% {
+    transform: translate(-6%, -10%) scale(1.16);
   }
 }
 

@@ -8,6 +8,11 @@ import { asc, eq, db, schema } from "@genmotion/db";
 import { compileSceneToJs } from "@genmotion/compiler/node";
 import { formatCompileError } from "@genmotion/compiler";
 import { putObject } from "@genmotion/storage";
+import {
+  buildRenderAudioSources,
+  exportFormatMeta,
+  type RenderJobPayload,
+} from "@genmotion/shared";
 import { buildRenderHostBundle } from "./build-host";
 
 const require = createRequire(import.meta.url);
@@ -70,6 +75,7 @@ async function mixAudio(
   tracks: AudioTrackInput[],
   durationSeconds: number,
   outputPath: string,
+  audioCodec = "aac",
 ): Promise<void> {
   const inputs = tracks.flatMap((t) => ["-i", t.path]);
   const delayed = tracks.map((t, i) => {
@@ -95,7 +101,7 @@ async function mixAudio(
     "-map", "0:v",
     "-map", "[aout]",
     "-c:v", "copy",
-    "-c:a", "aac",
+    "-c:a", audioCodec,
     "-b:a", "192k",
     "-t", durationSeconds.toFixed(3),
     outputPath,
@@ -272,6 +278,169 @@ export async function runThumbnailJob(browser: Browser, projectId: string) {
   }
 }
 
+export interface RenderHooks {
+  /** 0–100 progress, called periodically during the frame loop. */
+  onProgress?: (progress: number) => void;
+  /** Phase transitions the caller may surface (rendering → encoding → uploading). */
+  onPhase?: (status: "rendering" | "encoding" | "uploading") => void;
+}
+
+/**
+ * Provider-agnostic render core: compile scenes → drive Chromium frame by frame
+ * → ffmpeg → mux audio, producing an MP4 file. Takes a self-contained payload
+ * (no DB access), so it's identical whether the data came from Postgres (local
+ * worker) or the render API (remote sandbox). Returns the file path, frame
+ * count, and a cleanup() to remove the temp dir once the caller has read it.
+ */
+export async function renderCompositionToFile(
+  browser: Browser,
+  input: RenderJobPayload,
+  hooks: RenderHooks = {},
+): Promise<{ finalPath: string; totalFrames: number; cleanup: () => void }> {
+  const { fps, width, height } = input;
+  const quality = Math.min(100, Math.max(0, input.quality ?? 80));
+  const crf = Math.round(32 - (quality / 100) * 16);
+  const jpegQuality = Math.round(72 + (quality / 100) * 26);
+
+  const workDir = mkdtempSync(join(tmpdir(), "gm-render-"));
+  let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
+  try {
+    const compiledScenes = await compileScenes(input.scenes);
+    const setup = await createRenderPage(
+      browser,
+      { fps, width, height },
+      compiledScenes,
+    );
+    context = setup.context;
+    const { page, pageErrors } = setup;
+
+    const totalFrames = await page.evaluate(() => window.__gm!.getTotalFrames());
+    if (totalFrames <= 0) throw new Error("Composition has no frames");
+
+    hooks.onPhase?.("rendering");
+
+    // Frame loop → ffmpeg stdin. Encoder args depend on the output format.
+    const meta = exportFormatMeta(input.format);
+    const outputPath = join(workDir, `out.${meta.ext}`);
+    const encodeArgs =
+      input.format === "gif"
+        ? [
+            // Downscale + halve the fps for a sane GIF, then a per-frame palette.
+            "-vf",
+            "fps=15,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+            "-loop", "0",
+          ]
+        : input.format === "webm"
+          ? [
+              "-c:v", "libvpx-vp9",
+              "-b:v", "0",
+              "-crf", String(crf),
+              "-deadline", "good",
+              "-cpu-used", "4",
+              "-row-mt", "1",
+              "-pix_fmt", "yuv420p",
+            ]
+          : [
+              "-c:v", "libx264",
+              "-preset", "veryfast",
+              "-crf", String(crf),
+              "-pix_fmt", "yuv420p",
+              "-movflags", "+faststart",
+            ];
+    const ffmpeg = spawn(FFMPEG_PATH, [
+      "-y",
+      "-f", "image2pipe",
+      "-framerate", String(fps),
+      "-i", "-",
+      ...encodeArgs,
+      outputPath,
+    ]);
+    let ffmpegStderr = "";
+    ffmpeg.stderr.on("data", (d) => {
+      ffmpegStderr += d.toString();
+      if (ffmpegStderr.length > 20000) ffmpegStderr = ffmpegStderr.slice(-10000);
+    });
+    const ffmpegDone = new Promise<void>((resolve, reject) => {
+      ffmpeg.on("close", (code) =>
+        code === 0
+          ? resolve()
+          : reject(new Error(`ffmpeg exited with ${code}: ${ffmpegStderr.slice(-800)}`)),
+      );
+      ffmpeg.on("error", reject);
+    });
+
+    const cdp: CDPSession = await context.newCDPSession(page);
+    for (let frame = 0; frame < totalFrames; frame++) {
+      await page.evaluate((f) => window.__gm!.setFrame(f), frame);
+      const shot = await cdp.send("Page.captureScreenshot", {
+        format: "jpeg",
+        quality: jpegQuality,
+      });
+      const buffer = Buffer.from(shot.data, "base64");
+      if (!ffmpeg.stdin.write(buffer)) {
+        await new Promise((resolve) => ffmpeg.stdin.once("drain", resolve));
+      }
+      if (frame % 15 === 0) {
+        hooks.onProgress?.(Math.round((frame / totalFrames) * 90));
+      }
+    }
+
+    hooks.onPhase?.("encoding");
+    ffmpeg.stdin.end();
+    await ffmpegDone;
+
+    if (pageErrors.length > 0) {
+      console.warn(`[render ${input.exportJobId}] page errors:`, pageErrors.slice(0, 3));
+    }
+
+    // Mix scene voiceovers + audio clips (fetched from their public URLs).
+    let finalPath = outputPath;
+    const tracks: AudioTrackInput[] = [];
+    for (const src of input.audioSources) {
+      const res = await fetch(src.url);
+      if (res.ok) {
+        const audioPath = join(workDir, `audio-${tracks.length}`);
+        writeFileSync(audioPath, Buffer.from(await res.arrayBuffer()));
+        tracks.push({
+          path: audioPath,
+          delayMs: src.delayMs,
+          volume: src.volume,
+          startFromSec: src.startFromSec,
+          durationSec: src.durationSec,
+        });
+      } else {
+        console.warn(
+          `[render ${input.exportJobId}] audio fetch failed (${res.status}) for ${src.url} — exporting without it`,
+        );
+      }
+    }
+    // GIF carries no audio; mp4/webm mux the fetched tracks (Opus for webm).
+    if (tracks.length > 0 && input.format !== "gif") {
+      const mixedPath = join(workDir, `out-audio.${meta.ext}`);
+      const audioCodec = input.format === "webm" ? "libopus" : "aac";
+      await mixAudio(outputPath, tracks, totalFrames / fps, mixedPath, audioCodec);
+      finalPath = mixedPath;
+    }
+
+    await context.close();
+    context = null;
+    return {
+      finalPath,
+      totalFrames,
+      cleanup: () => rmSync(workDir, { recursive: true, force: true }),
+    };
+  } catch (err) {
+    await context?.close();
+    rmSync(workDir, { recursive: true, force: true });
+    throw err;
+  }
+}
+
+/**
+ * Local (DB-connected) render driver: load the job from Postgres, render via the
+ * shared core, upload to R2, and persist the result. The original in-process
+ * behaviour — the worker holds DB + R2 credentials on trusted infra.
+ */
 export async function runRenderJob(browser: Browser, exportJobId: string) {
   const [job] = await db
     .select()
@@ -293,189 +462,73 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
     .from(schema.scenes)
     .where(eq(schema.scenes.projectId, project.id))
     .orderBy(asc(schema.scenes.order));
+  const audioClips = await db
+    .select()
+    .from(schema.audioClips)
+    .where(eq(schema.audioClips.projectId, project.id));
 
-  // Quality 0-100 → x264 CRF (16 best … 32 draft) + JPEG capture quality
-  // (higher quality captures frames with less intermediate loss).
-  const quality = Math.min(100, Math.max(0, job.quality ?? 80));
-  const crf = Math.round(32 - (quality / 100) * 16);
-  const jpegQuality = Math.round(72 + (quality / 100) * 26);
-  console.log(
-    `[render ${exportJobId}] quality ${quality} → crf ${crf}, jpeg q${jpegQuality}`,
-  );
+  const safeName = project.name.replace(/[^a-zA-Z0-9._-]/g, "_") || "video";
+  const meta = exportFormatMeta(job.format);
+  const baseName = `export_${safeName}_${job.createdAt.getTime()}`;
+  const payload: RenderJobPayload = {
+    exportJobId,
+    fps: project.fps,
+    width: project.width,
+    height: project.height,
+    quality: job.quality ?? 95,
+    format: job.format,
+    filename: safeName,
+    scenes: scenes.map((s) => ({
+      id: s.id,
+      name: s.name,
+      code: s.code,
+      durationInFrames: s.durationInFrames,
+    })),
+    audioSources: buildRenderAudioSources(scenes, audioClips, project.fps),
+  };
 
   await updateJob(exportJobId, { status: "rendering", startedAt: new Date(), progress: 0 });
-
-  let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
-  const workDir = mkdtempSync(join(tmpdir(), "gm-render-"));
-
   try {
-    const compiledScenes = await compileScenes(scenes);
-
-    // Fresh context + page, deterministic rendering flags.
-    const setup = await createRenderPage(browser, project, compiledScenes);
-    context = setup.context;
-    const { page, pageErrors } = setup;
-
-    const totalFrames = await page.evaluate(() => window.__gm!.getTotalFrames());
-    if (totalFrames <= 0) throw new Error("Composition has no frames");
-
-    // 3. Frame loop → ffmpeg stdin.
-    const outputPath = join(workDir, "out.mp4");
-    const ffmpeg = spawn(FFMPEG_PATH, [
-      "-y",
-      "-f", "image2pipe",
-      "-framerate", String(project.fps),
-      "-i", "-",
-      "-c:v", "libx264",
-      "-preset", "veryfast",
-      "-crf", String(crf),
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
-      outputPath,
-    ]);
-    let ffmpegStderr = "";
-    ffmpeg.stderr.on("data", (d) => {
-      ffmpegStderr += d.toString();
-      if (ffmpegStderr.length > 20000) ffmpegStderr = ffmpegStderr.slice(-10000);
-    });
-    const ffmpegDone = new Promise<void>((resolve, reject) => {
-      ffmpeg.on("close", (code) =>
-        code === 0
-          ? resolve()
-          : reject(new Error(`ffmpeg exited with ${code}: ${ffmpegStderr.slice(-800)}`)),
-      );
-      ffmpeg.on("error", reject);
-    });
-
-    const cdp: CDPSession = await context.newCDPSession(page);
-    const loopStart = Date.now();
-    let setFrameMs = 0;
-    let shotMs = 0;
-    for (let frame = 0; frame < totalFrames; frame++) {
-      const a = Date.now();
-      await page.evaluate((f) => window.__gm!.setFrame(f), frame);
-      const b = Date.now();
-      const shot = await cdp.send("Page.captureScreenshot", {
-        format: "jpeg",
-        quality: jpegQuality,
-      });
-      const c = Date.now();
-      setFrameMs += b - a;
-      shotMs += c - b;
-
-      const buffer = Buffer.from(shot.data, "base64");
-      if (!ffmpeg.stdin.write(buffer)) {
-        await new Promise((resolve) => ffmpeg.stdin.once("drain", resolve));
-      }
-      if (frame % 15 === 0) {
-        // Fire-and-forget: a slow DB write must never stall the frame loop.
-        void updateJob(exportJobId, {
-          progress: Math.round((frame / totalFrames) * 90),
-        }).catch(() => {});
-      }
-    }
-    const loopMs = Date.now() - loopStart;
-    console.log(
-      `[render ${exportJobId}] frame loop: ${totalFrames} frames in ${loopMs}ms ` +
-        `(${(loopMs / totalFrames).toFixed(1)}ms/frame) — setFrame ${setFrameMs}ms, screenshot ${shotMs}ms`,
+    const { finalPath, totalFrames, cleanup } = await renderCompositionToFile(
+      browser,
+      payload,
+      {
+        onProgress: (p) => void updateJob(exportJobId, { progress: p }).catch(() => {}),
+        onPhase: (status) => void updateJob(exportJobId, { status }).catch(() => {}),
+      },
     );
-
-    await updateJob(exportJobId, { status: "encoding", progress: 92 });
-    ffmpeg.stdin.end();
-    await ffmpegDone;
-
-    if (pageErrors.length > 0) {
-      console.warn(`[render ${exportJobId}] page errors:`, pageErrors.slice(0, 3));
+    try {
+      await updateJob(exportJobId, { status: "uploading", progress: 96 });
+      const output = readFileSync(finalPath);
+      const storageKey = `projects/${project.id}/exports/${exportJobId}/${baseName}.${meta.ext}`;
+      const url = await putObject(storageKey, output, meta.mimeType);
+      const [asset] = await db
+        .insert(schema.assets)
+        .values({
+          userId: job.userId,
+          projectId: project.id,
+          storageKey,
+          url,
+          kind: "export",
+          filename: `${baseName}.${meta.ext}`,
+          mimeType: meta.mimeType,
+          sizeBytes: output.byteLength,
+          width: project.width,
+          height: project.height,
+          durationSeconds: totalFrames / project.fps,
+          status: "ready",
+        })
+        .returning({ id: schema.assets.id });
+      await updateJob(exportJobId, {
+        status: "done",
+        progress: 100,
+        outputAssetId: asset!.id,
+        completedAt: new Date(),
+      });
+      console.log(`[render ${exportJobId}] done — ${totalFrames} frames → ${url}`);
+    } finally {
+      cleanup();
     }
-
-    // 4. Mix scene voiceovers + project audio clips into the video.
-    let finalPath = outputPath;
-    const tracks: AudioTrackInput[] = [];
-
-    // 4a. Scene voiceovers: whole source, delayed to the scene's start.
-    let startFrame = 0;
-    for (const scene of scenes) {
-      if (scene.audioUrl) {
-        const res = await fetch(scene.audioUrl);
-        if (res.ok) {
-          const audioPath = join(workDir, `voiceover-${tracks.length}`);
-          writeFileSync(audioPath, Buffer.from(await res.arrayBuffer()));
-          tracks.push({
-            path: audioPath,
-            delayMs: (startFrame / project.fps) * 1000,
-            volume: scene.audioVolume ?? 1,
-          });
-        } else {
-          console.warn(
-            `[render ${exportJobId}] audio fetch failed (${res.status}) for scene "${scene.name}" — exporting without it`,
-          );
-        }
-      }
-      startFrame += scene.durationInFrames;
-    }
-
-    // 4b. Project audio clips: trimmed to their window, delayed to their start.
-    const audioClips = await db
-      .select()
-      .from(schema.audioClips)
-      .where(eq(schema.audioClips.projectId, project.id));
-    for (const clip of audioClips) {
-      const res = await fetch(clip.url);
-      if (res.ok) {
-        const clipPath = join(workDir, `clip-${tracks.length}`);
-        writeFileSync(clipPath, Buffer.from(await res.arrayBuffer()));
-        tracks.push({
-          path: clipPath,
-          delayMs: (clip.startFrame / project.fps) * 1000,
-          volume: clip.volume,
-          startFromSec: clip.startFrom,
-          durationSec: clip.durationInFrames / project.fps,
-        });
-      } else {
-        console.warn(
-          `[render ${exportJobId}] audio clip fetch failed (${res.status}) for "${clip.name}" — exporting without it`,
-        );
-      }
-    }
-
-    if (tracks.length > 0) {
-      const mixedPath = join(workDir, "out-audio.mp4");
-      await mixAudio(outputPath, tracks, totalFrames / project.fps, mixedPath);
-      finalPath = mixedPath;
-    }
-
-    // 5. Upload + asset row.
-    await updateJob(exportJobId, { status: "uploading", progress: 96 });
-    const mp4 = readFileSync(finalPath);
-    const safeName = project.name.replace(/[^a-zA-Z0-9._-]/g, "_") || "export";
-    const storageKey = `projects/${project.id}/exports/${exportJobId}/${safeName}.mp4`;
-    const url = await putObject(storageKey, mp4, "video/mp4");
-
-    const [asset] = await db
-      .insert(schema.assets)
-      .values({
-        userId: job.userId,
-        projectId: project.id,
-        storageKey,
-        url,
-        kind: "export",
-        filename: `${safeName}.mp4`,
-        mimeType: "video/mp4",
-        sizeBytes: mp4.byteLength,
-        width: project.width,
-        height: project.height,
-        durationSeconds: totalFrames / project.fps,
-        status: "ready",
-      })
-      .returning({ id: schema.assets.id });
-
-    await updateJob(exportJobId, {
-      status: "done",
-      progress: 100,
-      outputAssetId: asset!.id,
-      completedAt: new Date(),
-    });
-    console.log(`[render ${exportJobId}] done — ${totalFrames} frames → ${url}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[render ${exportJobId}] failed:`, message);
@@ -484,8 +537,5 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
       error: message.slice(0, 2000),
       completedAt: new Date(),
     });
-  } finally {
-    await context?.close();
-    rmSync(workDir, { recursive: true, force: true });
   }
 }
