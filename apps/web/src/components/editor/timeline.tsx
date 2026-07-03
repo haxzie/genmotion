@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import {
   DndContext,
   PointerSensor,
@@ -120,28 +127,74 @@ function SceneWaveform({
   );
 }
 
+/** Smallest a scene can be trimmed to by dragging — a fifth of a second. */
+const MIN_SCENE_FRAMES_FACTOR = 0.2;
+
 function SceneBlock({
   scene,
-  widthPx,
   fps,
+  pxPerFrame,
   selected,
   hasError,
   editing,
   onSelect,
   onToggleMute,
+  onResize,
 }: {
   scene: SceneData;
-  widthPx: number;
   fps: number;
+  pxPerFrame: number;
   selected: boolean;
   hasError: boolean;
   editing: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onToggleMute: (sceneId: string, muted: boolean) => void;
+  onResize: (sceneId: string, durationInFrames: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: scene.id });
   const muted = (scene.audioVolume ?? 1) <= 0;
+
+  // While dragging the right edge, override the length locally so the card (and,
+  // via flex reflow, every scene after it) resizes live before we commit.
+  const [draftFrames, setDraftFrames] = useState<number | null>(null);
+  const durationInFrames = draftFrames ?? scene.durationInFrames;
+  const widthPx = durationInFrames * pxPerFrame;
+
+  // Drop the draft once the committed length catches up (optimistic update
+  // lands, or an error rolls it back) — avoids a one-frame snap on release.
+  useEffect(() => {
+    setDraftFrames(null);
+  }, [scene.durationInFrames]);
+
+  function beginResize(e: ReactPointerEvent<HTMLElement>) {
+    // Keep the sortable/drag-to-reorder and the click-to-select from firing.
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const orig = scene.durationInFrames;
+    const minFrames = Math.max(1, Math.round(fps * MIN_SCENE_FRAMES_FACTOR));
+    let next = orig;
+
+    const move = (ev: PointerEvent) => {
+      const dxFrames = Math.round((ev.clientX - startX) / pxPerFrame);
+      next = Math.max(minFrames, orig + dxFrames);
+      setDraftFrames(next);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (next !== orig) {
+        // Keep showing the dragged length; the effect above clears the draft
+        // when the committed value updates.
+        onResize(scene.id, next);
+      } else {
+        setDraftFrames(null);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
 
   return (
     <div
@@ -190,7 +243,7 @@ function SceneBlock({
               scene.audioUrl && (muted ? "opacity-0" : "group-hover:opacity-0"),
             )}
           >
-            {(scene.durationInFrames / fps).toFixed(1)}s
+            {(durationInFrames / fps).toFixed(1)}s
           </span>
         </div>
 
@@ -219,12 +272,23 @@ function SceneBlock({
             <SceneWaveform
               url={scene.audioUrl}
               widthPx={widthPx}
-              durationSec={scene.durationInFrames / fps}
+              durationSec={durationInFrames / fps}
               selected={selected}
               muted={muted}
             />
           </>
         )}
+
+        {/* Right-edge resize handle — drag to change the scene's length. */}
+        <div
+          onPointerDown={beginResize}
+          onClick={(e) => e.stopPropagation()}
+          title="Drag to change scene length"
+          className={cx(
+            "absolute inset-y-0 right-0 z-20 w-1.5 cursor-ew-resize transition-colors",
+            draftFrames !== null ? "bg-green" : "hover:bg-green/60",
+          )}
+        />
       </div>
     </div>
   );
@@ -368,6 +432,7 @@ export function Timeline({
   onReorder,
   onDeleteScenes,
   onToggleMute,
+  onResizeScene,
   onAddClip,
   onUpdateClip,
   onDeleteClip,
@@ -380,6 +445,7 @@ export function Timeline({
   onReorder: (orderedIds: string[]) => void;
   onDeleteScenes: (ids: string[]) => void;
   onToggleMute: (sceneId: string, muted: boolean) => void;
+  onResizeScene: (sceneId: string, durationInFrames: number) => void;
   onAddClip: (input: {
     url: string;
     assetId?: string;
@@ -610,12 +676,13 @@ export function Timeline({
                         key={scene.id}
                         scene={scene}
                         fps={fps}
-                        widthPx={scene.durationInFrames * pxPerFrame}
+                        pxPerFrame={pxPerFrame}
                         selected={selectedSceneIds.includes(scene.id)}
                         hasError={scene.id in sceneErrors}
                         editing={editingSceneIds.includes(scene.id)}
                         onSelect={handleSelect}
                         onToggleMute={onToggleMute}
+                        onResize={onResizeScene}
                       />
                     ))}
                   </div>

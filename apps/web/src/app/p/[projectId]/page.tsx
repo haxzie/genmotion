@@ -266,6 +266,9 @@ export default function EditorPage({
                     onToggleMute={(sceneId, muted) =>
                       updateScene.mutate({ sceneId, audioVolume: muted ? 0 : 1 })
                     }
+                    onResizeScene={(sceneId, durationInFrames) =>
+                      updateScene.mutate({ sceneId, durationInFrames })
+                    }
                     onAddClip={(input) => addAudioClip.mutate(input)}
                     onUpdateClip={(input) => updateAudioClip.mutate(input)}
                     onDeleteClip={(clipId) => deleteAudioClip.mutate(clipId)}

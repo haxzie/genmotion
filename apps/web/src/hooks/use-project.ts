@@ -80,7 +80,29 @@ export function useProjectMutations(projectId: string) {
         method: "PATCH",
         json: patch,
       }),
-    onSuccess: invalidate,
+    onMutate: async ({ sceneId, ...patch }) => {
+      // Optimistic: apply the rename/resize/mute immediately so an edge-resize
+      // doesn't snap back to the old length while the request is in flight.
+      await queryClient.cancelQueries({ queryKey: projectQueryKey(projectId) });
+      const previous = queryClient.getQueryData<ProjectData>(
+        projectQueryKey(projectId),
+      );
+      if (previous) {
+        queryClient.setQueryData<ProjectData>(projectQueryKey(projectId), {
+          ...previous,
+          scenes: previous.scenes.map((s) =>
+            s.id === sceneId ? { ...s, ...patch } : s,
+          ),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(projectQueryKey(projectId), context.previous);
+      }
+    },
+    onSettled: invalidate,
   });
 
   const addAudioClip = useMutation({
