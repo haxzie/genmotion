@@ -8,8 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "e2b:build": "npx -y @e2b/cli template build --config e2b/e2b.toml --dockerfile e2b/e2b.Dockerfile --path e2b",
-    "e2b:publish": "npx -y @e2b/cli template publish --config e2b/e2b.toml --yes"
+    "e2b:build": "npx -y @e2b/cli template create genmotion-workbench --path e2b --dockerfile e2b.Dockerfile --cpu-count 2 --memory-mb 2048",
+    "e2b:publish": "npx -y @e2b/cli template publish genmotion-workbench --yes"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.82",
