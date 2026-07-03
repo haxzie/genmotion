@@ -72,16 +72,7 @@ export default async function ShowcaseVideoPage({ params }: Params) {
             All videos
           </Link>
 
-          <div className="mt-8">
-            <VideoPlayer
-              src={video.videoUrl}
-              poster={video.poster}
-              title={video.title}
-              aspectRatio={video.aspectRatio}
-            />
-          </div>
-
-          <header className="mt-8 border-b border-border pb-8">
+          <header className="mt-8">
             <div className="flex flex-wrap items-center gap-3 text-[0.857rem] text-text-tertiary">
               {video.date && (
                 <time dateTime={video.date}>{formatDate(video.date)}</time>
@@ -129,8 +120,17 @@ export default async function ShowcaseVideoPage({ params }: Params) {
             </div>
           </header>
 
+          <div className="mt-8">
+            <VideoPlayer
+              src={video.videoUrl}
+              poster={video.poster}
+              title={video.title}
+              aspectRatio={video.aspectRatio}
+            />
+          </div>
+
           {video.body && (
-            <div className="mt-10">
+            <div className="mt-10 border-t border-border pt-10">
               <Prose>{video.body}</Prose>
             </div>
           )}
