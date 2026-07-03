@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-/** Buckets decoded per file — high enough to downsample to any render width. */
-const RESOLUTION = 240;
+/**
+ * Buckets decoded per file. Must stay high: a short clip of a LONG track only
+ * maps to a small slice of these buckets, and each bucket is a peak over its
+ * whole span — too few buckets and loud, compressed music (whose peak saturates
+ * in every coarse bucket) collapses to a flat line. 2048 keeps ~16ms detail even
+ * for a 2-minute file. The decode is one pass over the samples regardless, so a
+ * higher count is essentially free.
+ */
+const RESOLUTION = 2048;
 
 export interface WaveformData {
   /** Normalized (0–1) amplitude peaks across the whole source (RESOLUTION long). */
@@ -122,13 +129,19 @@ export function sampleBars(
   if (!peaks || !duration || windowSec <= 0) return bars;
   let windowMax = 0;
   for (let i = 0; i < barCount; i++) {
-    const sourceTime = startSec + ((i + 0.5) / barCount) * windowSec;
-    if (sourceTime >= duration) continue; // past the audio → flat baseline
-    const idx = Math.min(
+    // Each bar spans a slice of time — take the LOUDEST source peak in that
+    // slice (not a single point sample), so transients are never skipped no
+    // matter how many source buckets a bar covers.
+    const t0 = startSec + (i / barCount) * windowSec;
+    if (t0 >= duration) continue; // past the audio → flat baseline
+    const t1 = startSec + ((i + 1) / barCount) * windowSec;
+    const idx0 = Math.max(0, Math.floor((t0 / duration) * peaks.length));
+    const idx1 = Math.min(
       peaks.length - 1,
-      Math.max(0, Math.floor((sourceTime / duration) * peaks.length)),
+      Math.floor((t1 / duration) * peaks.length),
     );
-    const v = peaks[idx] ?? 0;
+    let v = 0;
+    for (let k = idx0; k <= idx1; k++) if ((peaks[k] ?? 0) > v) v = peaks[k]!;
     bars[i] = v;
     if (v > windowMax) windowMax = v;
   }
