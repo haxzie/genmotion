@@ -21,7 +21,12 @@ COPY . /app
 RUN pnpm install --frozen-lockfile --filter @genmotion/renderer... \
   && pnpm --filter @genmotion/renderer exec playwright install chromium
 
-# The E2B provider invokes the render CLI per job via `commands.run`, e.g.:
-#   tsx /app/apps/renderer/src/render-cli.ts render <exportJobId>
-# (override with the E2B_RENDER_CMD env var if your image lays things out
-#  differently). `start_cmd` in e2b.toml keeps the sandbox warm between execs.
+# The E2B provider invokes the render CLI per job via `commands.run`. tsx is a
+# workspace devDependency (installed above, in node_modules — not on PATH), so
+# the default command resolves it with `pnpm exec`:
+#   pnpm --dir /app/apps/renderer exec tsx \
+#     --tsconfig /app/tsconfig.tsx-runtime.json \
+#     /app/apps/renderer/src/render-cli.ts render <exportJobId>
+# Override with the E2B_RENDER_CMD env var if your image lays things out
+# differently. The command is sent from the worker at runtime, so tweaking it
+# needs only a worker redeploy — no template rebuild.

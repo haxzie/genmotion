@@ -9,7 +9,12 @@ export { E2BRenderProvider } from "./e2b";
 export { DockerRenderProvider } from "./docker";
 
 const DEFAULT_RENDER_TIMEOUT_MS = 20 * 60_000; // 20 min
-const DEFAULT_CLI_COMMAND = "tsx /app/apps/renderer/src/render-cli.ts";
+// Run the render CLI inside the sandbox. `tsx` is a workspace devDependency
+// (not on PATH), so resolve it via `pnpm exec` from the renderer package; the
+// --tsconfig gives every .tsx source in the import graph the JSX transform
+// (mirrors the renderer's local `render` script). Repo lives at /app.
+const DEFAULT_CLI_COMMAND =
+  "pnpm --dir /app/apps/renderer exec tsx --tsconfig /app/tsconfig.tsx-runtime.json /app/apps/renderer/src/render-cli.ts";
 
 /** Build the render provider selected by RENDER_PROVIDER (default "local"). */
 export function createRenderProvider(
