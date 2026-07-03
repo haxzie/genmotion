@@ -32,6 +32,7 @@ export type ShowcaseVideo = {
   poster: string;
   author: string;
   authorRole: string;
+  authorImage: string;
   date: string; // ISO yyyy-mm-dd
   duration: string;
   aspectRatio: string;
@@ -107,6 +108,7 @@ export function getAllShowcaseVideos(): ShowcaseVideo[] {
         poster: String(data.poster ?? ""),
         author: String(data.author ?? "GenMotion"),
         authorRole: String(data.authorRole ?? ""),
+        authorImage: String(data.authorImage ?? ""),
         date: String(data.date ?? ""),
         duration: String(data.duration ?? ""),
         aspectRatio: String(data.aspectRatio ?? "16:9"),

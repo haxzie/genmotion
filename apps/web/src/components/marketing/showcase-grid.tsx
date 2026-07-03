@@ -55,10 +55,21 @@ export function ShowcaseCard({ video }: { video: ShowcaseVideo }) {
         <p className="mt-1.5 line-clamp-2 text-[0.95rem] text-text-secondary">
           {video.description}
         </p>
-        <p className="mt-4 text-[0.857rem] text-text-tertiary">
-          {video.author}
-          {video.authorRole && ` · ${video.authorRole}`}
-        </p>
+        <div className="mt-4 flex items-center gap-2 text-[0.857rem] text-text-tertiary">
+          {video.authorImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={video.authorImage}
+              alt=""
+              className="size-5 rounded-full object-cover"
+              loading="lazy"
+            />
+          )}
+          <span>
+            {video.author}
+            {video.authorRole && ` · ${video.authorRole}`}
+          </span>
+        </div>
       </div>
     </Link>
   );
