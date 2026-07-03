@@ -438,7 +438,7 @@ export function AudioLanes({
               }}
               title={muted ? "Unmute" : "Mute"}
               className={cx(
-                "absolute right-1 top-1 z-10 flex items-center rounded text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
+                "absolute right-1 top-1 z-10 flex items-center rounded text-orange/70 transition-opacity duration-150 hover:text-orange",
                 muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
               )}
             >

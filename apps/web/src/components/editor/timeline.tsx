@@ -260,7 +260,7 @@ function SceneBlock({
               }}
               title={muted ? "Unmute voiceover" : "Mute voiceover"}
               className={cx(
-                "absolute right-2 top-2 z-10 flex items-center rounded text-text-tertiary transition-opacity duration-150 hover:text-text-primary",
+                "absolute right-2 top-2 z-10 flex items-center rounded text-purple/70 transition-opacity duration-150 hover:text-purple",
                 muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
               )}
             >
