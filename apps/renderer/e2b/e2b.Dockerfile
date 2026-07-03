@@ -14,12 +14,19 @@ RUN corepack enable && corepack prepare pnpm@11.2.2 --activate
 
 WORKDIR /app
 
+# Install browsers to a fixed, absolute path (the Playwright base image's
+# location). E2B runs render commands as `user` WITHOUT the image's ENV, so the
+# worker also passes PLAYWRIGHT_BROWSERS_PATH=/ms-playwright at runtime — both
+# must agree or Playwright looks in ~/.cache and can't find Chromium.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Copy the monorepo source (node_modules etc. excluded via .e2bignore).
 COPY . /app
 
-# Install only the renderer's workspace subtree, then ensure Chromium is present.
+# Install only the renderer's workspace subtree, then Chromium AND the headless
+# shell (headless: true launches chrome-headless-shell on modern Playwright).
 RUN pnpm install --frozen-lockfile --filter @genmotion/renderer... \
-  && pnpm --filter @genmotion/renderer exec playwright install chromium
+  && pnpm --filter @genmotion/renderer exec playwright install chromium chromium-headless-shell
 
 # The E2B provider invokes the render CLI per job via `commands.run`. tsx is a
 # workspace devDependency (installed above, in node_modules — not on PATH), so

@@ -48,7 +48,15 @@ export class E2BRenderProvider implements RenderProvider {
       scope,
       ttlSeconds: Math.ceil(this.opts.timeoutMs / 1000) + 60,
     });
-    const envs = { API_URL: this.opts.apiUrl, RENDER_JOB_TOKEN: token };
+    const envs = {
+      API_URL: this.opts.apiUrl,
+      RENDER_JOB_TOKEN: token,
+      // The template installs Chromium to /ms-playwright (the Playwright base
+      // image's location), but E2B runs commands as `user` without the image's
+      // ENV, so Playwright would look in ~/.cache and not find it. Point it back.
+      PLAYWRIGHT_BROWSERS_PATH:
+        process.env.E2B_PLAYWRIGHT_BROWSERS_PATH ?? "/ms-playwright",
+    };
 
     const sandbox = await Sandbox.create(this.opts.template, {
       apiKey: this.opts.apiKey,
