@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { Browser } from "playwright";
-import type { RenderJobPayload } from "@genmotion/shared";
-import { renderCompositionToFile } from "./render-job";
+import type { RenderJobPayload, ThumbnailJobPayload } from "@genmotion/shared";
+import { captureThumbnailToFile, renderCompositionToFile } from "./render-job";
 
 /**
  * Remote (credential-less) render driver. Instead of touching Postgres or R2, it
@@ -75,5 +75,52 @@ export async function runRenderJobViaApi(
       completedAt: new Date().toISOString(),
     });
     throw err;
+  }
+}
+
+/**
+ * Remote (credential-less) thumbnail driver: fetch the thumbnail payload from the
+ * control-plane, render one frame via the shared core, and POST the JPG back for
+ * the API to store as the project's thumbnail. Runs inside the sandbox so the
+ * worker never needs a resident Chromium.
+ */
+export async function runThumbnailJobViaApi(
+  browser: Browser,
+  projectId: string,
+  opts: { apiUrl: string; token: string },
+): Promise<void> {
+  const base = opts.apiUrl.replace(/\/$/, "");
+  const authHeaders = { authorization: `Bearer ${opts.token}` };
+
+  const jobRes = await fetch(`${base}/api/render/thumbnails/${projectId}`, {
+    headers: authHeaders,
+  });
+  if (jobRes.status === 404) {
+    // No scenes yet — nothing to render.
+    console.log(`[thumbnail ${projectId}] no scenes; skipped (via API)`);
+    return;
+  }
+  if (!jobRes.ok) {
+    throw new Error(`fetch thumbnail job failed: ${jobRes.status}`);
+  }
+  const payload = (await jobRes.json()) as ThumbnailJobPayload;
+
+  const { thumbPath, cleanup } = await captureThumbnailToFile(browser, payload);
+  try {
+    const jpg = readFileSync(thumbPath);
+    const out = await fetch(
+      `${base}/api/render/thumbnails/${projectId}/output`,
+      {
+        method: "POST",
+        headers: { ...authHeaders, "content-type": "image/jpeg" },
+        body: jpg,
+      },
+    );
+    if (!out.ok) {
+      throw new Error(`upload thumbnail failed: ${out.status}`);
+    }
+    console.log(`[thumbnail ${projectId}] done (via API)`);
+  } finally {
+    cleanup();
   }
 }

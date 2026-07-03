@@ -12,6 +12,7 @@ import {
   buildRenderAudioSources,
   exportFormatMeta,
   type RenderJobPayload,
+  type ThumbnailJobPayload,
 } from "@genmotion/shared";
 import { buildRenderHostBundle } from "./build-host";
 
@@ -211,8 +212,50 @@ async function createRenderPage(
 }
 
 /**
- * Render one representative frame (60% into the first scene, where intro
- * animations have settled) and store it as the project's thumbnail.
+ * Provider-agnostic thumbnail core: render one representative frame of a single
+ * scene (60% in, where intro animations have settled) and scale it to a 640px
+ * JPG. No DB access. Returns the file path + a cleanup for the temp dir.
+ */
+export async function captureThumbnailToFile(
+  browser: Browser,
+  payload: ThumbnailJobPayload,
+): Promise<{ thumbPath: string; cleanup: () => void }> {
+  const { fps, width, height, scene, frame } = payload;
+  const workDir = mkdtempSync(join(tmpdir(), "gm-thumb-"));
+  let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
+  try {
+    const compiled = await compileScenes([scene]);
+    const setup = await createRenderPage(browser, { fps, width, height }, compiled);
+    context = setup.context;
+
+    await setup.page.evaluate((f) => window.__gm!.setFrame(f), frame);
+    const cdp = await context.newCDPSession(setup.page);
+    const shot = await cdp.send("Page.captureScreenshot", {
+      format: "jpeg",
+      quality: 80,
+    });
+    const fullPath = join(workDir, "full.jpg");
+    writeFileSync(fullPath, Buffer.from(shot.data, "base64"));
+
+    const thumbPath = join(workDir, "thumb.jpg");
+    await runFfmpeg(["-y", "-i", fullPath, "-vf", "scale=640:-1", "-q:v", "4", thumbPath]);
+
+    await context.close();
+    context = null;
+    return {
+      thumbPath,
+      cleanup: () => rmSync(workDir, { recursive: true, force: true }),
+    };
+  } catch (err) {
+    await context?.close();
+    rmSync(workDir, { recursive: true, force: true });
+    throw err;
+  }
+}
+
+/**
+ * Local (DB) thumbnail driver: load the project + first scene, render via the
+ * shared core, upload the JPG, and persist thumbnailUrl.
  */
 export async function runThumbnailJob(browser: Browser, projectId: string) {
   const [project] = await db
@@ -235,46 +278,38 @@ export async function runThumbnailJob(browser: Browser, projectId: string) {
     return;
   }
 
-  const workDir = mkdtempSync(join(tmpdir(), "gm-thumb-"));
-  let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
+  const firstScene = scenes[0]!;
   try {
-    // Only the first scene is needed for the thumbnail frame.
-    const firstScene = scenes[0]!;
-    const compiled = await compileScenes([firstScene]);
-    const setup = await createRenderPage(browser, project, compiled);
-    context = setup.context;
-
-    const frame = Math.floor(firstScene.durationInFrames * 0.6);
-    await setup.page.evaluate((f) => window.__gm!.setFrame(f), frame);
-
-    const cdp = await context.newCDPSession(setup.page);
-    const shot = await cdp.send("Page.captureScreenshot", {
-      format: "jpeg",
-      quality: 80,
+    const { thumbPath, cleanup } = await captureThumbnailToFile(browser, {
+      projectId,
+      fps: project.fps,
+      width: project.width,
+      height: project.height,
+      scene: {
+        id: firstScene.id,
+        name: firstScene.name,
+        code: firstScene.code,
+        durationInFrames: firstScene.durationInFrames,
+      },
+      frame: Math.floor(firstScene.durationInFrames * 0.6),
     });
-    const fullPath = join(workDir, "full.jpg");
-    writeFileSync(fullPath, Buffer.from(shot.data, "base64"));
-
-    const thumbPath = join(workDir, "thumb.jpg");
-    await runFfmpeg(["-y", "-i", fullPath, "-vf", "scale=640:-1", "-q:v", "4", thumbPath]);
-
-    const storageKey = `projects/${projectId}/thumbnails/${crypto.randomUUID()}.jpg`;
-    const url = await putObject(storageKey, readFileSync(thumbPath), "image/jpeg");
-
-    await db
-      .update(schema.projects)
-      .set({ thumbnailUrl: url })
-      .where(eq(schema.projects.id, projectId));
-    console.log(`[thumbnail ${projectId}] updated`);
+    try {
+      const storageKey = `projects/${projectId}/thumbnails/${crypto.randomUUID()}.jpg`;
+      const url = await putObject(storageKey, readFileSync(thumbPath), "image/jpeg");
+      await db
+        .update(schema.projects)
+        .set({ thumbnailUrl: url })
+        .where(eq(schema.projects.id, projectId));
+      console.log(`[thumbnail ${projectId}] updated`);
+    } finally {
+      cleanup();
+    }
   } catch (err) {
     // Thumbnails are best-effort; a broken first scene shouldn't crash the worker.
     console.warn(
       `[thumbnail ${projectId}] failed:`,
       err instanceof Error ? err.message : err,
     );
-  } finally {
-    await context?.close();
-    rmSync(workDir, { recursive: true, force: true });
   }
 }
 

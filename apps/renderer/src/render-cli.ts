@@ -10,7 +10,7 @@
  */
 import { launchBrowser } from "./browser";
 import { runRenderJob, runThumbnailJob } from "./render-job";
-import { runRenderJobViaApi } from "./render-remote";
+import { runRenderJobViaApi, runThumbnailJobViaApi } from "./render-remote";
 
 async function main() {
   const [command, id] = process.argv.slice(2);
@@ -35,7 +35,12 @@ async function main() {
         await runRenderJob(browser, id);
       }
     } else if (command === "thumbnail") {
-      await runThumbnailJob(browser, id);
+      if (token) {
+        if (!apiUrl) throw new Error("API_URL is required in render token mode");
+        await runThumbnailJobViaApi(browser, id, { apiUrl, token });
+      } else {
+        await runThumbnailJob(browser, id);
+      }
     } else {
       console.error(`unknown command "${command}" (expected render|thumbnail)`);
       process.exit(2);

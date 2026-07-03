@@ -5,8 +5,10 @@ import { runRenderJob, runThumbnailJob } from "../render-job";
 import type { RenderProvider } from "./types";
 
 /**
- * Runs renders in THIS process with a single reused headless Chromium — the
- * original behaviour. Best for a dedicated always-on worker (VPS/container).
+ * Runs renders in THIS process with a single reused headless Chromium, kept warm
+ * from startup for fast exports. Selected with RENDER_PROVIDER=local — the right
+ * choice for a dedicated always-on worker (VPS/container). The e2b/docker
+ * providers instead offload every job to a sandbox, so they never touch this.
  */
 export class LocalRenderProvider implements RenderProvider {
   private browserPromise: Promise<Browser> | null = null;
@@ -31,8 +33,12 @@ export class LocalRenderProvider implements RenderProvider {
 
   async dispose(): Promise<void> {
     if (!this.browserPromise) return;
-    const browser = await this.browserPromise;
+    const browser = this.browserPromise;
     this.browserPromise = null;
-    await browser.close();
+    try {
+      await (await browser).close();
+    } catch {
+      /* already gone */
+    }
   }
 }

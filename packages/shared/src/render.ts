@@ -42,6 +42,21 @@ export function exportFormatMeta(format: string) {
   return EXPORT_FORMATS.find((f) => f.id === format) ?? EXPORT_FORMATS[0]!;
 }
 
+/**
+ * Everything a renderer needs to produce a project's thumbnail — one frame from
+ * the first scene — with no DB access. Built by the control-plane, consumed by
+ * the (possibly remote) thumbnail renderer.
+ */
+export interface ThumbnailJobPayload {
+  projectId: string;
+  fps: number;
+  width: number;
+  height: number;
+  scene: RenderScenePayload;
+  /** Frame (within the scene) to capture. */
+  frame: number;
+}
+
 export interface RenderJobPayload {
   exportJobId: string;
   fps: number;

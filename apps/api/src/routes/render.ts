@@ -5,6 +5,7 @@ import {
   buildRenderAudioSources,
   exportFormatMeta,
   type RenderJobPayload,
+  type ThumbnailJobPayload,
 } from "@genmotion/shared";
 import { verifyRenderToken } from "@genmotion/shared/render-token";
 import { putObject } from "@genmotion/storage";
@@ -17,33 +18,60 @@ import { env } from "../env";
  * so the sandbox never needs the database or object-storage credentials.
  */
 type ExportJob = typeof schema.exportJobs.$inferSelect;
+type Project = typeof schema.projects.$inferSelect;
 
-type RenderEnv = { Variables: { renderJob: ExportJob } };
+type RenderEnv = {
+  Variables: { renderJob: ExportJob; thumbProject: Project };
+};
 
 export const renderRoutes = new Hono<RenderEnv>();
 
 const renderSecret = () => env.RENDER_JWT_SECRET ?? env.BETTER_AUTH_SECRET;
+const bearer = (c: { req: { header: (k: string) => string | undefined } }) => {
+  const h = c.req.header("authorization") ?? "";
+  return h.startsWith("Bearer ") ? h.slice(7) : "";
+};
 
-// Token auth: the Bearer token must be valid, unexpired, and scoped to :id.
-const tokenAuth = createMiddleware<RenderEnv>(async (c, next) => {
-  const header = c.req.header("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const claims = verifyRenderToken(token, renderSecret());
-  if (!claims) return c.json({ error: "Unauthorized" }, 401);
-  if (claims.jobId !== c.req.param("id")) {
+// Render-job token: scoped "render", must match :id, loads the export job.
+const renderJobAuth = createMiddleware<RenderEnv>(async (c, next) => {
+  const claims = verifyRenderToken(bearer(c), renderSecret());
+  if (!claims || claims.scope !== "render") {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  if (claims.id !== c.req.param("id")) {
     return c.json({ error: "Token/job mismatch" }, 403);
   }
   const [job] = await db
     .select()
     .from(schema.exportJobs)
-    .where(eq(schema.exportJobs.id, claims.jobId));
+    .where(eq(schema.exportJobs.id, claims.id));
   if (!job) return c.json({ error: "Not found" }, 404);
   c.set("renderJob", job);
   await next();
 });
 
-renderRoutes.use("/jobs/:id", tokenAuth);
-renderRoutes.use("/jobs/:id/*", tokenAuth);
+// Thumbnail token: scoped "thumbnail", must match :id (project id), loads project.
+const thumbnailAuth = createMiddleware<RenderEnv>(async (c, next) => {
+  const claims = verifyRenderToken(bearer(c), renderSecret());
+  if (!claims || claims.scope !== "thumbnail") {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  if (claims.id !== c.req.param("id")) {
+    return c.json({ error: "Token/project mismatch" }, 403);
+  }
+  const [project] = await db
+    .select()
+    .from(schema.projects)
+    .where(eq(schema.projects.id, claims.id));
+  if (!project) return c.json({ error: "Not found" }, 404);
+  c.set("thumbProject", project);
+  await next();
+});
+
+renderRoutes.use("/jobs/:id", renderJobAuth);
+renderRoutes.use("/jobs/:id/*", renderJobAuth);
+renderRoutes.use("/thumbnails/:id", thumbnailAuth);
+renderRoutes.use("/thumbnails/:id/*", thumbnailAuth);
 
 /** GET /jobs/:id — the self-contained payload the renderer needs. */
 renderRoutes.get("/jobs/:id", async (c) => {
@@ -161,6 +189,51 @@ renderRoutes.post("/jobs/:id/output", async (c) => {
       completedAt: new Date(),
     })
     .where(eq(schema.exportJobs.id, job.id));
+
+  return c.json({ ok: true, url });
+});
+
+// ── Thumbnails (credential-less, so remote renderers hold no Chromium) ──────
+
+/** GET /thumbnails/:id — payload to render a project's thumbnail (first scene). */
+renderRoutes.get("/thumbnails/:id", async (c) => {
+  const project = c.get("thumbProject");
+  const [scene] = await db
+    .select()
+    .from(schema.scenes)
+    .where(eq(schema.scenes.projectId, project.id))
+    .orderBy(asc(schema.scenes.order))
+    .limit(1);
+  if (!scene) return c.json({ error: "Project has no scenes" }, 404);
+
+  const payload: ThumbnailJobPayload = {
+    projectId: project.id,
+    fps: project.fps,
+    width: project.width,
+    height: project.height,
+    scene: {
+      id: scene.id,
+      name: scene.name,
+      code: scene.code,
+      durationInFrames: scene.durationInFrames,
+    },
+    frame: Math.floor(scene.durationInFrames * 0.6),
+  };
+  return c.json(payload);
+});
+
+/** POST /thumbnails/:id/output — the JPG (raw body); uploaded + set as thumbnail. */
+renderRoutes.post("/thumbnails/:id/output", async (c) => {
+  const project = c.get("thumbProject");
+  const body = Buffer.from(await c.req.arrayBuffer());
+  if (body.byteLength === 0) return c.json({ error: "Empty output" }, 400);
+
+  const storageKey = `projects/${project.id}/thumbnails/${crypto.randomUUID()}.jpg`;
+  const url = await putObject(storageKey, body, "image/jpeg");
+  await db
+    .update(schema.projects)
+    .set({ thumbnailUrl: url })
+    .where(eq(schema.projects.id, project.id));
 
   return c.json({ ok: true, url });
 });
