@@ -21,9 +21,13 @@
   --color-green: #06c167;
   --color-green-strong: #14d077;
   --color-green-muted: rgba(6, 193, 103, 0.14);
-  /* Orange: highlights a selected audio clip on the timeline (+ its chips). */
+  /* Orange: highlights a selected audio clip on the timeline (+ its chips), and
+     tints the inactive audio card (at low opacity). */
   --color-orange: #fb923c;
   --color-orange-muted: rgba(251, 146, 60, 0.16);
+  /* Purple: tints the inactive scene card on the timeline (at low opacity). */
+  --color-purple: #a78bfa;
+  --color-purple-muted: rgba(167, 139, 250, 0.16);
   --color-danger: #f1646c;
   --color-success: #3fb96f;
   --color-warning: #d6a849;

@@ -375,7 +375,7 @@ export function AudioLanes({
               "group absolute flex cursor-grab select-none flex-col overflow-hidden rounded-md border transition-colors duration-150 active:cursor-grabbing",
               selected
                 ? "border-orange bg-orange-muted"
-                : "border-border bg-surface-raised hover:border-border-strong hover:bg-surface-hover",
+                : "border-orange/25 bg-orange/[0.06] hover:border-orange/45 hover:bg-orange/12",
               d && "z-20 shadow-lg",
             )}
             style={{ left, width, top, height: AUDIO_LANE_HEIGHT - 4 }}

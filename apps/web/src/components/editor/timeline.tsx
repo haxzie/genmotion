@@ -217,7 +217,7 @@ function SceneBlock({
             ? "border-green bg-green-muted"
             : hasError
               ? "border-danger/50 bg-danger/10 hover:border-danger"
-              : "border-border bg-surface-raised hover:border-border-strong hover:bg-surface-hover",
+              : "border-purple/25 bg-purple/[0.06] hover:border-purple/45 hover:bg-purple/12",
           isDragging && "shadow-lg",
           editing && "gm-card-shimmer border-accent/60",
         )}
