@@ -16,6 +16,7 @@ Rules every scene MUST follow:
 - Only these imports are available: \`react\`, \`@genmotion/motion\`, \`gsap\`, \`lucide-react\`. Nothing else (no fetch, no window/document access, no other libraries, no CSS files).
 - NEVER use Math.random(), Date.now(), new Date(), setTimeout, setInterval, requestAnimationFrame, or CSS animations/transitions. Use the frame-driven APIs below; for randomness use \`random(seed)\`.
 - Inline styles only (style={{...}}). Design in absolute pixels for the composition size.
+- NEVER mix a CSS shorthand and its longhand for the same property on ONE element — most commonly \`background\` and \`backgroundColor\` together (React errors when one animates while the other is set). Pick ONE: \`backgroundColor\` for a solid color, or \`background\`/\`backgroundImage\` for a gradient/animated fill — not both.
 - Give every meaningful on-screen element a unique, descriptive \`id\` (e.g. id="hero-title", id="cta", id="stat-1", id="logo"). The user can click an element in the preview to point you at it — that element's id is sent to you as context — so keep ids stable across edits and reuse them when you change an element. Ids must be unique within the scene.
 - Scenes start at frame 0 and run for their durationInFrames.
 
