@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Spinner, cx } from "@/components/ui";
-import { adminApi } from "@/lib/admin/client";
+import { InfiniteSentinel, useAdminInfinite } from "@/lib/admin/client";
 
 type RenderJob = {
   id: string;
@@ -49,7 +48,6 @@ function StatusIcon({ status }: { status: RenderJob["status"] }) {
       </span>
     );
   }
-  // failed / cancelled
   return (
     <span
       className={cx(
@@ -65,13 +63,11 @@ function StatusIcon({ status }: { status: RenderJob["status"] }) {
 }
 
 export default function AdminRenders() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "renders"],
-    queryFn: () => adminApi<RenderJob[]>("/renders"),
-    // Poll so in-flight jobs update live; back off when nothing is active.
-    refetchInterval: (q) =>
-      (q.state.data ?? []).some((j) => IN_PROGRESS.has(j.status)) ? 3000 : 15000,
-  });
+  const { items, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useAdminInfinite<RenderJob>(["renders"], "/renders", (rows) =>
+      // Poll fast while anything is in progress, slowly otherwise.
+      rows.some((j) => IN_PROGRESS.has(j.status)) ? 3000 : 15000,
+    );
 
   return (
     <div>
@@ -85,7 +81,7 @@ export default function AdminRenders() {
       )}
 
       <div className="mt-6 divide-y divide-border/60 overflow-hidden rounded-xl border border-border">
-        {data?.map((j) => {
+        {items.map((j) => {
           const active = IN_PROGRESS.has(j.status);
           return (
             <div key={j.id} className="flex items-center gap-3 px-4 py-3">
@@ -119,10 +115,20 @@ export default function AdminRenders() {
             </div>
           );
         })}
-        {data && data.length === 0 && (
+        {!isLoading && items.length === 0 && (
           <div className="px-4 py-10 text-center text-text-tertiary">No render jobs yet.</div>
         )}
       </div>
+
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <Spinner className="size-4 text-text-tertiary" />
+        </div>
+      )}
+      <InfiniteSentinel
+        enabled={hasNextPage && !isFetchingNextPage}
+        onReach={() => fetchNextPage()}
+      />
     </div>
   );
 }

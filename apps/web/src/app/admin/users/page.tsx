@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@/components/ui";
-import { adminApi } from "@/lib/admin/client";
+import { InfiniteSentinel, useAdminInfinite } from "@/lib/admin/client";
 
 type AdminUserRow = {
   id: string;
@@ -22,16 +21,14 @@ function formatDate(iso: string) {
 }
 
 export default function AdminUsers() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: () => adminApi<AdminUserRow[]>("/users"),
-  });
+  const { items, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useAdminInfinite<AdminUserRow>(["users"], "/users");
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold tracking-tight">Users</h1>
       <p className="mt-1 text-[0.95rem] text-text-secondary">
-        {data ? `${data.length} users` : " "}
+        {items.length ? `${items.length}${hasNextPage ? "+" : ""} users` : " "}
       </p>
 
       {isLoading && (
@@ -41,7 +38,7 @@ export default function AdminUsers() {
       )}
 
       <div className="mt-6 divide-y divide-border/60 overflow-hidden rounded-xl border border-border">
-        {data?.map((u) => (
+        {items.map((u) => (
           <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-raised">
             {u.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -61,10 +58,20 @@ export default function AdminUsers() {
             </div>
           </div>
         ))}
-        {data && data.length === 0 && (
+        {!isLoading && items.length === 0 && (
           <div className="px-4 py-10 text-center text-text-tertiary">No users yet.</div>
         )}
       </div>
+
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <Spinner className="size-4 text-text-tertiary" />
+        </div>
+      )}
+      <InfiniteSentinel
+        enabled={hasNextPage && !isFetchingNextPage}
+        onReach={() => fetchNextPage()}
+      />
     </div>
   );
 }

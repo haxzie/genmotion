@@ -1,5 +1,17 @@
 import { Hono } from "hono";
-import { and, count, desc, eq, gte, sql, db, schema } from "@genmotion/db";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  or,
+  sql,
+  db,
+  schema,
+} from "@genmotion/db";
 import { auth } from "../auth";
 import { signAdminToken } from "../admin/token";
 import { isAdminEmail } from "../admin/domains";
@@ -9,13 +21,34 @@ import { requireAdmin, type AdminEnv } from "../middleware/require-admin";
  * Admin console API. `POST /session` is gated by the better-auth session and,
  * after an email-domain check, mints a short-lived admin token. Every other
  * route requires that Bearer token via `requireAdmin` — a normal user session
- * cannot reach the data below.
+ * cannot reach the data below. List endpoints are keyset-paginated for infinite
+ * scroll: they take `?cursor=` and return `{ items, nextCursor }`.
  */
 export const adminRoutes = new Hono<AdminEnv>();
 
+const PAGE = 40;
 const DAY = (col: unknown) => sql<string>`to_char(${col}, 'YYYY-MM-DD')`;
 const scalar = async (query: Promise<Array<{ value: number }>>) =>
   Number((await query)[0]?.value ?? 0);
+
+/** Cursor = `<createdAt ISO>|<id>` — a stable keyset for (createdAt desc, id desc). */
+function parseCursor(raw?: string): { createdAt: Date; id: string } | null {
+  if (!raw) return null;
+  const i = raw.lastIndexOf("|");
+  if (i < 0) return null;
+  const createdAt = new Date(raw.slice(0, i));
+  const id = raw.slice(i + 1);
+  return Number.isNaN(createdAt.getTime()) || !id ? null : { createdAt, id };
+}
+
+function nextCursor(
+  rows: Array<{ createdAt: Date | string; id: string }>,
+): string | null {
+  if (rows.length < PAGE) return null;
+  const last = rows[rows.length - 1]!;
+  const ca = last.createdAt instanceof Date ? last.createdAt.toISOString() : String(last.createdAt);
+  return `${ca}|${last.id}`;
+}
 
 /** Bootstrap: exchange a Google-OAuth session (on an allowed domain) for a token. */
 adminRoutes.post("/session", async (c) => {
@@ -79,8 +112,19 @@ adminRoutes.get("/metrics", async (c) => {
   });
 });
 
-/** Organizations with member + project counts (plan is a "Free" placeholder). */
+/** Organizations (paginated) with member + project counts (plan = "Free"). */
 adminRoutes.get("/organizations", async (c) => {
+  const cursor = parseCursor(c.req.query("cursor"));
+  const keyset = cursor
+    ? or(
+        lt(schema.organization.createdAt, cursor.createdAt),
+        and(
+          eq(schema.organization.createdAt, cursor.createdAt),
+          lt(schema.organization.id, cursor.id),
+        ),
+      )
+    : undefined;
+
   const orgs = await db
     .select({
       id: schema.organization.id,
@@ -89,33 +133,49 @@ adminRoutes.get("/organizations", async (c) => {
       createdAt: schema.organization.createdAt,
     })
     .from(schema.organization)
-    .orderBy(desc(schema.organization.createdAt));
+    .where(keyset)
+    .orderBy(desc(schema.organization.createdAt), desc(schema.organization.id))
+    .limit(PAGE);
 
-  const [members, projects] = await Promise.all([
-    db
-      .select({ orgId: schema.member.organizationId, n: count() })
-      .from(schema.member)
-      .groupBy(schema.member.organizationId),
-    db
-      .select({ orgId: schema.projects.organizationId, n: count() })
-      .from(schema.projects)
-      .groupBy(schema.projects.organizationId),
-  ]);
+  const ids = orgs.map((o) => o.id);
+  const [members, projects] = ids.length
+    ? await Promise.all([
+        db
+          .select({ orgId: schema.member.organizationId, n: count() })
+          .from(schema.member)
+          .where(inArray(schema.member.organizationId, ids))
+          .groupBy(schema.member.organizationId),
+        db
+          .select({ orgId: schema.projects.organizationId, n: count() })
+          .from(schema.projects)
+          .where(inArray(schema.projects.organizationId, ids))
+          .groupBy(schema.projects.organizationId),
+      ])
+    : [[], []];
   const memberBy = new Map(members.map((m) => [m.orgId, m.n]));
   const projectBy = new Map(projects.map((p) => [p.orgId, p.n]));
 
-  return c.json(
-    orgs.map((o) => ({
+  return c.json({
+    items: orgs.map((o) => ({
       ...o,
       plan: "Free",
       memberCount: memberBy.get(o.id) ?? 0,
       projectCount: projectBy.get(o.id) ?? 0,
     })),
-  );
+    nextCursor: nextCursor(orgs),
+  });
 });
 
-/** All users (+ how many projects they created). */
+/** Users (paginated) + how many projects each created. */
 adminRoutes.get("/users", async (c) => {
+  const cursor = parseCursor(c.req.query("cursor"));
+  const keyset = cursor
+    ? or(
+        lt(schema.user.createdAt, cursor.createdAt),
+        and(eq(schema.user.createdAt, cursor.createdAt), lt(schema.user.id, cursor.id)),
+      )
+    : undefined;
+
   const users = await db
     .select({
       id: schema.user.id,
@@ -125,22 +185,39 @@ adminRoutes.get("/users", async (c) => {
       createdAt: schema.user.createdAt,
     })
     .from(schema.user)
-    .orderBy(desc(schema.user.createdAt))
-    .limit(1000);
+    .where(keyset)
+    .orderBy(desc(schema.user.createdAt), desc(schema.user.id))
+    .limit(PAGE);
 
-  const projects = await db
-    .select({ userId: schema.projects.userId, n: count() })
-    .from(schema.projects)
-    .groupBy(schema.projects.userId);
+  const ids = users.map((u) => u.id);
+  const projects = ids.length
+    ? await db
+        .select({ userId: schema.projects.userId, n: count() })
+        .from(schema.projects)
+        .where(inArray(schema.projects.userId, ids))
+        .groupBy(schema.projects.userId)
+    : [];
   const projectBy = new Map(projects.map((p) => [p.userId, p.n]));
 
-  return c.json(
-    users.map((u) => ({ ...u, projectCount: projectBy.get(u.id) ?? 0 })),
-  );
+  return c.json({
+    items: users.map((u) => ({ ...u, projectCount: projectBy.get(u.id) ?? 0 })),
+    nextCursor: nextCursor(users),
+  });
 });
 
-/** Recently exported videos with their project's thumbnail. */
+/** Recently exported videos (paginated) with their project's thumbnail. */
 adminRoutes.get("/videos", async (c) => {
+  const cursor = parseCursor(c.req.query("cursor"));
+  const keyset = cursor
+    ? or(
+        lt(schema.assets.createdAt, cursor.createdAt),
+        and(eq(schema.assets.createdAt, cursor.createdAt), lt(schema.assets.id, cursor.id)),
+      )
+    : undefined;
+  const where = keyset
+    ? and(eq(schema.assets.kind, "export"), keyset)
+    : eq(schema.assets.kind, "export");
+
   const rows = await db
     .select({
       id: schema.assets.id,
@@ -154,20 +231,35 @@ adminRoutes.get("/videos", async (c) => {
     })
     .from(schema.assets)
     .innerJoin(schema.projects, eq(schema.projects.id, schema.assets.projectId))
-    .where(eq(schema.assets.kind, "export"))
-    .orderBy(desc(schema.assets.createdAt))
-    .limit(60);
-  return c.json(rows);
+    .where(where)
+    .orderBy(desc(schema.assets.createdAt), desc(schema.assets.id))
+    .limit(PAGE);
+  return c.json({ items: rows, nextCursor: nextCursor(rows) });
 });
 
-/** Render queue: recent export jobs with status/progress for the live list. */
+/** Render queue (paginated): recent export jobs with status/progress. */
 adminRoutes.get("/renders", async (c) => {
+  const cursor = parseCursor(c.req.query("cursor"));
   const status = c.req.query("status");
-  const where = status
-    ? and(
-        eq(schema.exportJobs.status, status as typeof schema.exportJobs.$inferSelect.status),
-      )
-    : undefined;
+  const clauses = [];
+  if (status) {
+    clauses.push(
+      eq(schema.exportJobs.status, status as typeof schema.exportJobs.$inferSelect.status),
+    );
+  }
+  if (cursor) {
+    clauses.push(
+      or(
+        lt(schema.exportJobs.createdAt, cursor.createdAt),
+        and(
+          eq(schema.exportJobs.createdAt, cursor.createdAt),
+          lt(schema.exportJobs.id, cursor.id),
+        ),
+      ),
+    );
+  }
+  const where = clauses.length ? and(...clauses) : undefined;
+
   const rows = await db
     .select({
       id: schema.exportJobs.id,
@@ -184,7 +276,7 @@ adminRoutes.get("/renders", async (c) => {
     .from(schema.exportJobs)
     .innerJoin(schema.projects, eq(schema.projects.id, schema.exportJobs.projectId))
     .where(where)
-    .orderBy(desc(schema.exportJobs.createdAt))
-    .limit(100);
-  return c.json(rows);
+    .orderBy(desc(schema.exportJobs.createdAt), desc(schema.exportJobs.id))
+    .limit(PAGE);
+  return c.json({ items: rows, nextCursor: nextCursor(rows) });
 });

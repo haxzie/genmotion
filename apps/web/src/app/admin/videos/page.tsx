@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@/components/ui";
-import { adminApi } from "@/lib/admin/client";
+import { InfiniteSentinel, useAdminInfinite } from "@/lib/admin/client";
 
 type Video = {
   id: string;
@@ -25,10 +24,8 @@ function formatDate(iso: string) {
 }
 
 export default function AdminVideos() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "videos"],
-    queryFn: () => adminApi<Video[]>("/videos"),
-  });
+  const { items, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useAdminInfinite<Video>(["videos"], "/videos");
 
   return (
     <div>
@@ -42,7 +39,7 @@ export default function AdminVideos() {
       )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.map((v) => (
+        {items.map((v) => (
           <a
             key={v.id}
             href={v.url}
@@ -79,12 +76,22 @@ export default function AdminVideos() {
             </div>
           </a>
         ))}
-        {data && data.length === 0 && (
+        {!isLoading && items.length === 0 && (
           <div className="col-span-full py-10 text-center text-text-tertiary">
             No exported videos yet.
           </div>
         )}
       </div>
+
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <Spinner className="size-4 text-text-tertiary" />
+        </div>
+      )}
+      <InfiniteSentinel
+        enabled={hasNextPage && !isFetchingNextPage}
+        onReach={() => fetchNextPage()}
+      />
     </div>
   );
 }
