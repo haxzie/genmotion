@@ -14,7 +14,7 @@ import { API_URL, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
-import { useProjectAssets } from "@/hooks/use-assets";
+import { useProjectAssets, uploadProjectAsset } from "@/hooks/use-assets";
 import {
   SceneChips,
   AssetChips,
@@ -24,7 +24,6 @@ import {
   type MessageContextData,
 } from "./scene-chip";
 import { ToolCard, type ToolPartLike } from "./tool-card";
-import { UploadModal } from "./upload-modal";
 import { Spinner, cx } from "@/components/ui";
 
 function PlusIcon({ className }: { className?: string }) {
@@ -400,6 +399,22 @@ function MessageBubble({
 // reasoning/text delta, which is what made streaming jittery.
 const MemoMessageBubble = memo(MessageBubble);
 
+/** An in-flight composer file upload, rendered as a loading context chip. */
+type PendingUpload = {
+  id: string;
+  name: string;
+  kind: string;
+  progress: number;
+  error?: string;
+};
+
+function fileKind(file: File): string {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type.startsWith("audio/")) return "audio";
+  return "file";
+}
+
 function ChatPanelInner({
   projectId,
   scenes,
@@ -414,7 +429,12 @@ function ChatPanelInner({
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
   const { data: assets } = useProjectAssets(projectId);
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const selectAsset = useEditorStore((s) => s.selectAsset);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Files being uploaded from a chat-composer drop — shown as loading chips
+  // until they resolve into real assets and land as context.
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [chatDragOver, setChatDragOver] = useState(false);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
   const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
@@ -439,27 +459,59 @@ function ChatPanelInner({
     prevSelectionCount.current = selectionCount;
   }, [selectionCount]);
 
-  // Dragging a file anywhere into the window opens the upload modal so the user
-  // can drop it there. Also swallow drops outside the drop zone so the browser
-  // doesn't navigate to / open the file.
+  // Swallow file drags that land OUTSIDE a drop zone so the browser doesn't
+  // navigate to / open the file. Files are dropped into the chat composer (below)
+  // or onto the timeline — dragging no longer pops the upload modal.
   useEffect(() => {
     const hasFiles = (e: DragEvent) =>
       Boolean(e.dataTransfer?.types?.includes("Files"));
-    const onDragEnter = (e: DragEvent) => {
-      if (hasFiles(e)) setUploadOpen(true);
-    };
     const prevent = (e: DragEvent) => {
       if (hasFiles(e)) e.preventDefault();
     };
-    window.addEventListener("dragenter", onDragEnter);
     window.addEventListener("dragover", prevent);
     window.addEventListener("drop", prevent);
     return () => {
-      window.removeEventListener("dragenter", onDragEnter);
       window.removeEventListener("dragover", prevent);
       window.removeEventListener("drop", prevent);
     };
   }, []);
+
+  // Upload dropped/attached files, showing a loading chip per file until it
+  // resolves into an asset and is auto-added to the chat context.
+  function handleFiles(files: FileList | File[] | null) {
+    const list = Array.from(files ?? []);
+    for (const file of list) {
+      const id = crypto.randomUUID();
+      setPendingUploads((p) => [
+        ...p,
+        { id, name: file.name, kind: fileKind(file), progress: 0 },
+      ]);
+      uploadProjectAsset(projectId, file, (percent) =>
+        setPendingUploads((p) =>
+          p.map((u) => (u.id === id ? { ...u, progress: percent } : u)),
+        ),
+      )
+        .then((asset) => {
+          setPendingUploads((p) => p.filter((u) => u.id !== id));
+          queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
+          selectAsset(asset.id, true); // land as a context chip
+        })
+        .catch((err) => {
+          setPendingUploads((p) =>
+            p.map((u) =>
+              u.id === id
+                ? { ...u, error: err instanceof Error ? err.message : "Upload failed" }
+                : u,
+            ),
+          );
+          // Clear the failed chip after a moment.
+          setTimeout(
+            () => setPendingUploads((p) => p.filter((u) => u.id !== id)),
+            4000,
+          );
+        });
+    }
+  }
 
   const [transport] = useState(
     () =>
@@ -913,6 +965,28 @@ function ChatPanelInner({
         )}
         <SceneChips scenes={scenes} />
         <AssetChips assets={assets ?? []} />
+        {pendingUploads.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-1 pb-2">
+            {pendingUploads.map((u) => (
+              <span
+                key={u.id}
+                title={u.error ?? `Uploading ${u.name}`}
+                className={cx(
+                  "inline-flex items-center gap-1.5 rounded-full border py-0.5 pl-2 pr-2.5 text-[0.857rem] backdrop-blur-md",
+                  u.error
+                    ? "border-danger/40 bg-danger/10 text-danger"
+                    : "border-accent/40 bg-accent-muted text-accent",
+                )}
+              >
+                {u.error ? "⚠" : <Spinner className="size-3" />}
+                <span className="max-w-[140px] truncate">{u.name}</span>
+                {!u.error && (
+                  <span className="tabular-nums text-accent/70">{u.progress}%</span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
         <AudioClipChips clips={audioClips} />
         <ElementChips />
         <form
@@ -920,7 +994,30 @@ function ChatPanelInner({
             e.preventDefault();
             submit();
           }}
-          className="rounded-2xl border border-[#1f1f24] bg-surface px-3 py-2.5 transition-colors focus-within:border-[#2a2a31]"
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes("Files")) {
+              e.preventDefault();
+              setChatDragOver(true);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setChatDragOver(false);
+            }
+          }}
+          onDrop={(e) => {
+            if (e.dataTransfer.types.includes("Files")) {
+              e.preventDefault();
+              setChatDragOver(false);
+              handleFiles(e.dataTransfer.files);
+            }
+          }}
+          className={cx(
+            "rounded-2xl border bg-surface px-3 py-2.5 transition-colors",
+            chatDragOver
+              ? "border-accent bg-accent-muted/40 ring-2 ring-accent/30"
+              : "border-[#1f1f24] focus-within:border-[#2a2a31]",
+          )}
         >
           <textarea
             ref={inputRef}
@@ -941,10 +1038,21 @@ function ChatPanelInner({
             className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
           />
           <div className="flex items-center justify-between gap-2 pt-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*,audio/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <button
               type="button"
-              title="Attach image, video, or audio"
-              onClick={() => setUploadOpen(true)}
+              title="Attach image, video, or audio (or drag files here)"
+              onClick={() => fileInputRef.current?.click()}
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
             >
               <PlusIcon className="size-[1.15rem]" />
@@ -975,12 +1083,6 @@ function ChatPanelInner({
         </form>
         </div>
       </div>
-
-      <UploadModal
-        projectId={projectId}
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-      />
     </aside>
   );
 }

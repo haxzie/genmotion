@@ -1,14 +1,16 @@
 "use client";
 
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackStore } from "@genmotion/player";
 import {
   clipsOverlap,
   MAX_AUDIO_TRACKS,
   type AudioClipData,
 } from "@genmotion/shared";
-import { cx } from "@/components/ui";
+import { cx, Spinner } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
+import { uploadProjectAsset } from "@/hooks/use-assets";
 import { Waveform } from "./waveform";
 
 export interface AudioAssetOption {
@@ -110,6 +112,7 @@ function ClipWaveform({
  * the clip snaps back instead of round-tripping a 409.
  */
 export function AudioLanes({
+  projectId,
   clips,
   laneCount,
   fps,
@@ -120,6 +123,7 @@ export function AudioLanes({
   onUpdate,
   onAdd,
 }: {
+  projectId: string;
   clips: AudioClipData[];
   laneCount: number;
   fps: number;
@@ -146,9 +150,16 @@ export function AudioLanes({
     track: number;
   }) => void;
 }) {
+  const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
   // True while an alt-drag is in progress (drop creates a copy, not a move).
   const [copyDrag, setCopyDrag] = useState(false);
+  // A dropped audio FILE being uploaded before it lands as a clip (ghost shown).
+  const [pendingDrop, setPendingDrop] = useState<{
+    lane: number;
+    left: number;
+    name: string;
+  } | null>(null);
   const [dropLane, setDropLane] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const lanesRef = useRef<HTMLDivElement>(null);
@@ -321,28 +332,56 @@ export function AudioLanes({
   function handleDrop(e: React.DragEvent, lane: number) {
     e.preventDefault();
     setDropLane(null);
-    const raw = e.dataTransfer.getData("application/x-gm-audio");
-    if (!raw) return;
-    let payload: { url: string; assetId?: string; name?: string; durationSeconds?: number };
-    try {
-      payload = JSON.parse(raw);
-    } catch {
-      return;
-    }
     const el = lanesRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const startFrame = clampFrame((e.clientX - rect.left - padding) / pxPerFrame);
-    onAdd({
-      url: payload.url,
-      assetId: payload.assetId,
-      name: payload.name,
-      startFrame,
-      durationInFrames: payload.durationSeconds
-        ? Math.max(1, Math.round(payload.durationSeconds * fps))
-        : undefined,
-      track: lane,
-    });
+
+    // 1) An in-app audio asset dragged from the assets panel / picker.
+    const raw = e.dataTransfer.getData("application/x-gm-audio");
+    if (raw) {
+      let payload: { url: string; assetId?: string; name?: string; durationSeconds?: number };
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        return;
+      }
+      onAdd({
+        url: payload.url,
+        assetId: payload.assetId,
+        name: payload.name,
+        startFrame,
+        durationInFrames: payload.durationSeconds
+          ? Math.max(1, Math.round(payload.durationSeconds * fps))
+          : undefined,
+        track: lane,
+      });
+      return;
+    }
+
+    // 2) An OS audio FILE dropped straight onto the timeline → upload, then place
+    //    it at the dropped position (a ghost clip shows while it uploads).
+    const file = Array.from(e.dataTransfer.files).find((f) =>
+      f.type.startsWith("audio/"),
+    );
+    if (!file) return;
+    const name = file.name.replace(/\.[a-zA-Z0-9]+$/, "");
+    setPendingDrop({ lane, left: padding + startFrame * pxPerFrame, name });
+    uploadProjectAsset(projectId, file)
+      .then((asset) => {
+        queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
+        onAdd({
+          url: asset.url,
+          assetId: asset.id,
+          name,
+          startFrame,
+          durationInFrames: asset.durationSeconds
+            ? Math.max(1, Math.round(asset.durationSeconds * fps))
+            : undefined,
+          track: lane,
+        });
+      })
+      .finally(() => setPendingDrop(null));
   }
 
   const isEmpty = clips.length === 0;
@@ -366,8 +405,15 @@ export function AudioLanes({
             if (e.target === e.currentTarget) clearAllSelection();
           }}
           onDragOver={(e) => {
-            if (e.dataTransfer.types.includes("application/x-gm-audio")) {
+            const types = e.dataTransfer.types;
+            // Accept an in-app audio asset OR any file drop (filtered to audio
+            // on drop — the file's type isn't readable during dragover).
+            if (
+              types.includes("application/x-gm-audio") ||
+              types.includes("Files")
+            ) {
               e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
               setDropLane(lane);
             }
           }}
@@ -481,6 +527,22 @@ export function AudioLanes({
           </div>
         );
       })}
+
+      {/* Ghost clip while a dropped audio file uploads, at the drop position. */}
+      {pendingDrop && (
+        <div
+          className="pointer-events-none absolute z-30 flex items-center gap-1.5 overflow-hidden rounded-md border border-orange bg-orange-muted px-2 text-[0.72rem] text-orange"
+          style={{
+            left: pendingDrop.left,
+            top: pendingDrop.lane * AUDIO_LANE_HEIGHT + 2,
+            height: AUDIO_LANE_HEIGHT - 4,
+            width: Math.max(90, 4 * fps * pxPerFrame),
+          }}
+        >
+          <Spinner className="size-3 shrink-0" />
+          <span className="truncate">Uploading {pendingDrop.name}…</span>
+        </div>
+      )}
 
       {/* Sticky add-audio picker: stays pinned to the left while the track scrolls. */}
       <div className="pointer-events-none sticky left-1 top-1 z-30 inline-block">

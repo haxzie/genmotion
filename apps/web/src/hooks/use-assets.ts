@@ -87,6 +87,32 @@ async function probeMedia(
   }
 }
 
+/**
+ * Probe + upload one file to a project, reporting progress. Standalone (not a
+ * hook) so callers that manage their own per-file state — the chat composer
+ * (pending chips) and the timeline (drop-to-place) — can track each upload.
+ * Invalidate ["assets", projectId] yourself after success.
+ */
+export async function uploadProjectAsset(
+  projectId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<AssetData> {
+  const metadata = await probeMedia(file);
+  const params = new URLSearchParams({ filename: file.name });
+  if (projectId) params.set("projectId", projectId);
+  if (metadata.width) params.set("width", String(metadata.width));
+  if (metadata.height) params.set("height", String(metadata.height));
+  if (metadata.durationSeconds != null) {
+    params.set("durationSeconds", String(metadata.durationSeconds));
+  }
+  return uploadWithProgress(
+    `${API_URL}/api/assets/upload?${params.toString()}`,
+    file,
+    onProgress ?? (() => {}),
+  );
+}
+
 export function useProjectAssets(projectId: string) {
   return useQuery({
     queryKey: ["assets", projectId],
@@ -113,24 +139,10 @@ export function useUploadAsset(projectId: string) {
 
   const mutation = useMutation({
     mutationFn: async (file: File) => {
-      const metadata = await probeMedia(file);
       setProgress(0);
-
-      const params = new URLSearchParams({ filename: file.name });
-      if (projectId) params.set("projectId", projectId);
-      if (metadata.width) params.set("width", String(metadata.width));
-      if (metadata.height) params.set("height", String(metadata.height));
-      if (metadata.durationSeconds != null) {
-        params.set("durationSeconds", String(metadata.durationSeconds));
-      }
-
       // Upload through the API (browser → API → R2) so there's no browser↔R2
       // CORS to configure, and we can report real progress.
-      return uploadWithProgress(
-        `${API_URL}/api/assets/upload?${params.toString()}`,
-        file,
-        setProgress,
-      );
+      return uploadProjectAsset(projectId, file, setProgress);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets", projectId] });

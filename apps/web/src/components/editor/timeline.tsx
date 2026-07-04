@@ -696,6 +696,7 @@ export function Timeline({
 
           {/* Project-level audio lanes (music / ambience / sfx). */}
           <AudioLanes
+            projectId={projectId}
             clips={audioClips}
             laneCount={laneCount}
             fps={fps}

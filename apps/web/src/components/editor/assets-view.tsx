@@ -195,12 +195,28 @@ export function AssetsView({ projectId }: { projectId: string }) {
                 <div key={asset.id} className="group relative">
                   <button
                     type="button"
+                    // Audio can be dragged straight onto the timeline lanes.
+                    draggable={asset.kind === "audio"}
+                    onDragStart={(e) => {
+                      if (asset.kind !== "audio") return;
+                      e.dataTransfer.setData(
+                        "application/x-gm-audio",
+                        JSON.stringify({
+                          url: asset.url,
+                          assetId: asset.id,
+                          name: asset.filename.replace(/\.[a-zA-Z0-9]+$/, ""),
+                          durationSeconds: asset.durationSeconds ?? undefined,
+                        }),
+                      );
+                      e.dataTransfer.effectAllowed = "copy";
+                    }}
                     onClick={(e) => {
                       setSelectedId(asset.id);
                       selectAsset(asset.id, e.shiftKey);
                     }}
                     className={cx(
                       "flex w-full items-center gap-2 rounded-md py-1.5 pl-2 pr-8 text-left text-[0.857rem] transition-colors",
+                      asset.kind === "audio" && "cursor-grab active:cursor-grabbing",
                       active
                         ? "bg-accent-muted text-accent"
                         : "text-text-secondary hover:bg-surface-raised/60 hover:text-text-primary",
