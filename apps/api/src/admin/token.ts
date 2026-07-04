@@ -8,9 +8,18 @@ import { env } from "../env";
  * `requireAdmin` middleware. Signed AND verified only here (the web treats it as
  * opaque), so it never needs to leave the API. Mirrors `render-token.ts`.
  */
+/**
+ * Audience — pins this token to the admin surface so it can never be confused
+ * with any other HMAC token that happens to share the secret (render tokens,
+ * a future product token, etc.). verifyAdminToken requires it to equal this.
+ */
+const ADMIN_AUDIENCE = "genmotion:admin";
+
 interface AdminTokenClaims {
   /** user id */
   sub: string;
+  /** audience — must be ADMIN_AUDIENCE */
+  aud: string;
   /** admin email (re-checked against the allowlist on verify) */
   email: string;
   /** expiry, unix seconds */
@@ -25,6 +34,7 @@ const b64url = (buf: Buffer) => buf.toString("base64url");
 export function signAdminToken(user: { id: string; email: string }): string {
   const claims: AdminTokenClaims = {
     sub: user.id,
+    aud: ADMIN_AUDIENCE,
     email: user.email,
     exp: Math.floor(Date.now() / 1000) + TTL_SECONDS,
   };
@@ -50,6 +60,7 @@ export function verifyAdminToken(
     ) as AdminTokenClaims;
     if (
       typeof claims.sub !== "string" ||
+      claims.aud !== ADMIN_AUDIENCE ||
       typeof claims.email !== "string" ||
       typeof claims.exp !== "number"
     ) {

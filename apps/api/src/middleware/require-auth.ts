@@ -1,6 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { asc, eq, db, schema } from "@genmotion/db";
 import { auth, type AuthSession } from "../auth";
+import { verifyAdminToken } from "../admin/token";
 
 export type AuthEnv = {
   Variables: {
@@ -12,6 +13,14 @@ export type AuthEnv = {
 };
 
 export const requireAuth = createMiddleware<AuthEnv>(async (c, next) => {
+  // Hard boundary: an admin token is NOT a product credential. Reject it up
+  // front so it can never be treated as a session (belt-and-braces — product
+  // auth is cookie-based and never reads Bearer, but this makes it explicit).
+  const authz = c.req.header("authorization") ?? "";
+  if (authz.startsWith("Bearer ") && verifyAdminToken(authz.slice(7))) {
+    return c.json({ error: "Admin credentials cannot be used on product APIs." }, 401);
+  }
+
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) {
     return c.json({ error: "Unauthorized" }, 401);
