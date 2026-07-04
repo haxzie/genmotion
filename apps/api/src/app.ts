@@ -9,6 +9,7 @@ import { assetRoutes } from "./routes/assets";
 import { exportRoutes } from "./routes/exports";
 import { fileRoutes } from "./routes/files";
 import { renderRoutes } from "./routes/render";
+import { adminRoutes } from "./routes/admin";
 
 export const app = new Hono();
 
@@ -34,3 +35,5 @@ app.route("/api/assets", assetRoutes);
 app.route("/api/exports", exportRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
+// Admin console — /session is session-gated; everything else needs an admin token.
+app.route("/api/admin", adminRoutes);
