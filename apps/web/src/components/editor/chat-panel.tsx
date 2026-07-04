@@ -434,6 +434,9 @@ function ChatPanelInner({
   // Files being uploaded from a chat-composer drop — shown as loading chips
   // until they resolve into real assets and land as context.
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  // `windowDragActive`: a file is being dragged somewhere in the window (cue the
+  // composer as a target). `chatDragOver`: it's directly over the composer.
+  const [windowDragActive, setWindowDragActive] = useState(false);
   const [chatDragOver, setChatDragOver] = useState(false);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
@@ -459,20 +462,41 @@ function ChatPanelInner({
     prevSelectionCount.current = selectionCount;
   }, [selectionCount]);
 
-  // Swallow file drags that land OUTSIDE a drop zone so the browser doesn't
-  // navigate to / open the file. Files are dropped into the chat composer (below)
-  // or onto the timeline — dragging no longer pops the upload modal.
+  // Track file drags across the whole window so the composer lights up as a drop
+  // target the moment a drag begins (not only when it's directly over it). A
+  // depth counter handles dragenter/dragleave firing on nested elements. Also
+  // swallows drops outside a drop zone so the browser doesn't open the file.
   useEffect(() => {
     const hasFiles = (e: DragEvent) =>
       Boolean(e.dataTransfer?.types?.includes("Files"));
-    const prevent = (e: DragEvent) => {
+    let depth = 0;
+    const onEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth += 1;
+      setWindowDragActive(true);
+    };
+    const onLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setWindowDragActive(false);
+    };
+    const onOver = (e: DragEvent) => {
       if (hasFiles(e)) e.preventDefault();
     };
-    window.addEventListener("dragover", prevent);
-    window.addEventListener("drop", prevent);
+    const onDrop = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+      depth = 0;
+      setWindowDragActive(false);
+    };
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragleave", onLeave);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("drop", onDrop);
     return () => {
-      window.removeEventListener("dragover", prevent);
-      window.removeEventListener("drop", prevent);
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragleave", onLeave);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("drop", onDrop);
     };
   }, []);
 
@@ -1016,7 +1040,9 @@ function ChatPanelInner({
             "rounded-2xl border bg-surface px-3 py-2.5 transition-colors",
             chatDragOver
               ? "border-accent bg-accent-muted/40 ring-2 ring-accent/30"
-              : "border-[#1f1f24] focus-within:border-[#2a2a31]",
+              : windowDragActive
+                ? "border-accent/60 bg-accent-muted/15"
+                : "border-[#1f1f24] focus-within:border-[#2a2a31]",
           )}
         >
           <textarea
