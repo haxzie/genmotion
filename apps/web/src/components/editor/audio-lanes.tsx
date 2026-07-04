@@ -141,10 +141,14 @@ export function AudioLanes({
     name?: string;
     startFrame: number;
     durationInFrames?: number;
+    startFrom?: number;
+    volume?: number;
     track: number;
   }) => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
+  // True while an alt-drag is in progress (drop creates a copy, not a move).
+  const [copyDrag, setCopyDrag] = useState(false);
   const [dropLane, setDropLane] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const lanesRef = useRef<HTMLDivElement>(null);
@@ -216,6 +220,8 @@ export function AudioLanes({
         return;
       }
       moved = true;
+      // Alt while moving = duplicate on drop (leave the original in place).
+      setCopyDrag(ev.altKey && mode === "move");
       const dxFrames = Math.round((ev.clientX - startX) / pxPerFrame);
       let next: Draft;
       if (mode === "move") {
@@ -251,24 +257,24 @@ export function AudioLanes({
       setDraft(next);
     };
 
-    const up = () => {
+    const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      setCopyDrag(false);
       if (!moved) {
         // A plain click (no drag) selects the clip as chat context.
         selectClip(clip.id, shiftKey);
         return;
       }
+      // Alt+drag on the body → drop a duplicate at the new spot, original stays.
+      const copy = ev.altKey && mode === "move";
       setDraft((d) => {
         if (d) {
-          const changed =
-            d.startFrame !== orig.startFrame ||
-            d.durationInFrames !== orig.durationInFrames ||
-            d.startFrom !== orig.startFrom ||
-            d.track !== orig.track;
+          // A copy is a brand-new clip, so it must clear ALL clips on the lane
+          // (including the original); a move ignores the clip being dragged.
           const overlaps = clips.some(
             (c) =>
-              c.id !== d.id &&
+              (copy || c.id !== d.id) &&
               c.track === d.track &&
               clipsOverlap(c, {
                 track: d.track,
@@ -276,7 +282,25 @@ export function AudioLanes({
                 durationInFrames: d.durationInFrames,
               }),
           );
-          if (changed && !overlaps) {
+          if (overlaps) return null;
+          if (copy) {
+            onAdd({
+              url: orig.url,
+              name: orig.name,
+              startFrame: d.startFrame,
+              durationInFrames: d.durationInFrames,
+              startFrom: Number(d.startFrom.toFixed(3)),
+              volume: orig.volume,
+              track: d.track,
+            });
+            return null;
+          }
+          const changed =
+            d.startFrame !== orig.startFrame ||
+            d.durationInFrames !== orig.durationInFrames ||
+            d.startFrom !== orig.startFrom ||
+            d.track !== orig.track;
+          if (changed) {
             onUpdate({
               clipId: d.id,
               startFrame: d.startFrame,
@@ -383,6 +407,12 @@ export function AudioLanes({
             onPointerDown={(e) => beginDrag(e, clip, "move")}
             title={clip.name}
           >
+            {/* Copy affordance while alt-dragging this clip. */}
+            {d && copyDrag && (
+              <span className="pointer-events-none absolute right-1 top-1 z-10 flex size-4 items-center justify-center rounded-full bg-orange text-[0.7rem] font-bold leading-none text-white shadow">
+                +
+              </span>
+            )}
             {/* Header: music icon + name (mirrors the scene card) */}
             <div className="flex min-w-0 items-center gap-1 px-1.5 pt-1">
               <MusicIcon

@@ -453,6 +453,8 @@ export function Timeline({
     name?: string;
     startFrame: number;
     durationInFrames?: number;
+    startFrom?: number;
+    volume?: number;
     track: number;
   }) => void;
   onUpdateClip: (input: {
