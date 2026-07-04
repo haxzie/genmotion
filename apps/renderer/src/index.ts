@@ -180,21 +180,7 @@ async function main() {
     `[startup] listening for jobs — ${RENDER_QUEUE} (x${concurrency}) + ${THUMBNAIL_QUEUE}.`,
   );
 
-  // Periodic heartbeat so a stuck/idle worker is obvious in the logs and you can
-  // watch the backlog drain. Off by default cadence of 60s; tune with
-  // RENDER_HEARTBEAT_SECONDS=0 to disable.
-  const heartbeatSeconds = Math.max(
-    0,
-    Math.floor(Number(process.env.RENDER_HEARTBEAT_SECONDS ?? 60)),
-  );
-  const heartbeat =
-    heartbeatSeconds > 0
-      ? setInterval(() => void logBacklog(boss, "heartbeat"), heartbeatSeconds * 1000)
-      : null;
-  heartbeat?.unref?.();
-
   const shutdown = async () => {
-    if (heartbeat) clearInterval(heartbeat);
     await boss.stop();
     await provider.dispose();
     process.exit(0);
