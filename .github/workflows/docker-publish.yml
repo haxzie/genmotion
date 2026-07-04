@@ -43,6 +43,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Only build/deploy a service when its own folder — or the shared
+      # workspace (packages, lockfile, this workflow) — changed. Manual dispatch
+      # and tag pushes always build both.
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/docker-publish.yml'
+            renderer:
+              - 'apps/renderer/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/docker-publish.yml'
+
+      - name: Decide whether to build ${{ matrix.name }}
+        id: gate
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}
+          CHANGED: ${{ matrix.name == 'api' && steps.changes.outputs.api || steps.changes.outputs.renderer }}
+        run: |
+          if [ "$FORCE" = "true" ] || [ "$CHANGED" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No changes for ${{ matrix.name }} — skipping build & deploy."
+          fi
+
       # ghcr requires a lowercase image path; lowercase the owner defensively.
       - name: Compute image name
         id: img
@@ -51,8 +83,10 @@ jobs:
         run: echo "image=${REGISTRY}/${OWNER,,}/genmotion-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.build == 'true'
 
       - name: Log in to GHCR
+        if: steps.gate.outputs.build == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -61,6 +95,7 @@ jobs:
 
       - name: Docker metadata (tags + labels)
         id: meta
+        if: steps.gate.outputs.build == 'true'
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.img.outputs.image }}
@@ -73,6 +108,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Build and push
+        if: steps.gate.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -90,7 +126,7 @@ jobs:
       # Only for the API image, on real pushes (not PRs). No-ops (doesn't fail)
       # if the Coolify secrets aren't configured yet.
       - name: Trigger Coolify redeploy (API)
-        if: matrix.name == 'api' && github.event_name != 'pull_request'
+        if: matrix.name == 'api' && github.event_name != 'pull_request' && steps.gate.outputs.build == 'true'
         env:
           COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
@@ -107,7 +143,7 @@ jobs:
 
       # Same, for the renderer image (its own Coolify resource UUID).
       - name: Trigger Coolify redeploy (renderer)
-        if: matrix.name == 'renderer' && github.event_name != 'pull_request'
+        if: matrix.name == 'renderer' && github.event_name != 'pull_request' && steps.gate.outputs.build == 'true'
         env:
           COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}

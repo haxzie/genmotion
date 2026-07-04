@@ -1,7 +1,11 @@
 import type { MetadataRoute } from "next";
 import { FEATURES } from "@/lib/marketing/features";
 import { TOOLS } from "@/lib/marketing/tools";
-import { getAllPosts, getAllTerms } from "@/lib/marketing/content";
+import {
+  getAllPosts,
+  getAllShowcaseVideos,
+  getAllTerms,
+} from "@/lib/marketing/content";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://genmotion.app";
 
@@ -14,6 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/blog",
     "/glossary",
     "/tools",
+    "/showcase",
   ].map((path) => ({ url: `${BASE}${path}`, changeFrequency: "weekly" as const }));
 
   const featureRoutes = FEATURES.map((f) => ({
@@ -37,11 +42,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly" as const,
   }));
 
+  const showcaseRoutes = getAllShowcaseVideos().map((v) => ({
+    url: `${BASE}/showcase/${v.slug}`,
+    lastModified: v.date || undefined,
+    changeFrequency: "monthly" as const,
+  }));
+
   return [
     ...staticRoutes,
     ...featureRoutes,
     ...toolRoutes,
     ...postRoutes,
     ...termRoutes,
+    ...showcaseRoutes,
   ];
 }
