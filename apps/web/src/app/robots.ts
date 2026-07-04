@@ -2,14 +2,63 @@ import type { MetadataRoute } from "next";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://genmotion.app";
 
+// The authenticated app, editor, admin console, and API are never indexable.
+// Everything else (marketing, features, tools, blog, glossary, showcase) is
+// public and we WANT it discovered.
+const DISALLOW = [
+  "/dashboard",
+  "/projects",
+  "/templates",
+  "/settings",
+  "/onboarding",
+  "/p/",
+  "/login",
+  "/signup",
+  "/accept-invitation",
+  "/admin",
+  "/api/",
+];
+
+// Crawlers we explicitly welcome. `*` already covers everyone, but we name the
+// major search and AI/LLM crawlers so our intent is unambiguous — we want to be
+// discoverable in both traditional search and answer engines (GEO). Add or
+// prune per bot as the landscape changes.
+const USER_AGENTS = [
+  "*",
+  // Search engines
+  "Googlebot",
+  "Bingbot",
+  "DuckDuckBot",
+  "Applebot",
+  // OpenAI (GPTBot = training, OAI-SearchBot = ChatGPT Search, ChatGPT-User = live fetch)
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  // Anthropic
+  "ClaudeBot",
+  "Claude-User",
+  "Claude-SearchBot",
+  "anthropic-ai",
+  // Perplexity
+  "PerplexityBot",
+  "Perplexity-User",
+  // AI training/retrieval extensions & others
+  "Google-Extended",
+  "Applebot-Extended",
+  "CCBot",
+  "Amazonbot",
+  "Meta-ExternalAgent",
+  "cohere-ai",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
+    rules: USER_AGENTS.map((userAgent) => ({
+      userAgent,
       allow: "/",
-      // Keep the authenticated app and project editor out of the index.
-      disallow: ["/dashboard", "/projects", "/templates", "/settings", "/onboarding", "/p/", "/login", "/signup"],
-    },
+      disallow: DISALLOW,
+    })),
     sitemap: `${BASE}/sitemap.xml`,
+    host: BASE,
   };
 }
