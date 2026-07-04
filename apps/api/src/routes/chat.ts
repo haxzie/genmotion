@@ -77,11 +77,29 @@ function trimToolPayload<T extends { type?: string }>(part: T): T {
 }
 
 /**
+ * Coerce a tool part's `input` to an object. An interrupted or malformed tool
+ * call can persist with a non-object input (empty, a string, null, an array),
+ * which the Anthropic API rejects with
+ * "messages.N.content.0.tool_use.input: Input should be an object". The tool
+ * turn is already terminal (it has output), so replacing the broken input with
+ * {} keeps it in context without tripping the validation.
+ */
+function ensureToolInputObject<T extends { type?: string }>(part: T): T {
+  const type = part.type ?? "";
+  if (!(type.startsWith("tool-") || type === "dynamic-tool")) return part;
+  const input = (part as { input?: unknown }).input;
+  const isObject =
+    typeof input === "object" && input !== null && !Array.isArray(input);
+  return isObject ? part : ({ ...part, input: {} } as T);
+}
+
+/**
  * Drop tool parts that never reached a terminal state (a tool call with no
  * result/error). `convertToModelMessages` throws "Tool result is missing for
  * tool call …" on those — they happen when a tool turn was interrupted or the
  * tool threw. Stripping them lets an otherwise-corrupted history recover.
- * Also trims heavy tool payloads in all but the last few messages.
+ * Also normalizes malformed tool inputs and trims heavy tool payloads in all
+ * but the last few messages.
  */
 function repairToolMessages(messages: UIMessage[]): UIMessage[] {
   const trimBefore = Math.max(0, messages.length - KEEP_FULL_RECENT);
@@ -99,7 +117,10 @@ function repairToolMessages(messages: UIMessage[]): UIMessage[] {
           }
           return true;
         })
-        .map((part) => (recent ? part : trimToolPayload(part)));
+        .map((part) => {
+          const fixed = ensureToolInputObject(part);
+          return recent ? fixed : trimToolPayload(fixed);
+        });
       return { ...message, parts };
     })
     .filter((message) => message.parts.length > 0);
