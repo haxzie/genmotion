@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
+import { track } from "@/lib/analytics";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 
 function GoogleIcon() {
@@ -47,6 +48,7 @@ export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
   async function handleSocial(provider: "google" | "github") {
     setError(null);
     setPending(provider);
+    track("signin_started", { provider });
     const result = await signIn.social({ provider, callbackURL: resolvedCallback });
     // On success the browser redirects to the provider; only errors return here.
     if (result?.error) {
@@ -59,6 +61,7 @@ export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
     e.preventDefault();
     setError(null);
     setPending("magic");
+    track("signin_started", { provider: "magic" });
     const result = await signIn.magicLink({ email, callbackURL: resolvedCallback });
     setPending(null);
     if (result.error) {

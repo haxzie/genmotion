@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { api } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import { HeroComposer } from "@/components/composer";
 import { consumePendingCreate } from "@/lib/pending-create";
 
@@ -30,6 +31,7 @@ export default function CreatePage() {
         json: { width: vars.width, height: vars.height },
       }),
     onSuccess: (project, vars) => {
+      track("project_created", { fromPrompt: !!vars.prompt });
       // The editor chat picks this up and sends it as the first message.
       sessionStorage.setItem(`gm-initial-prompt-${project.id}`, vars.prompt);
       queryClient.invalidateQueries({ queryKey: ["projects"] });

@@ -11,6 +11,7 @@ import {
   COMPACTION_MESSAGE_LIMIT,
 } from "@genmotion/shared";
 import { API_URL, api } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import { useEditorStore } from "@/stores/editor-store";
 import { projectQueryKey } from "@/hooks/use-project";
 import { useProjectAssets } from "@/hooks/use-assets";
@@ -773,6 +774,11 @@ function ChatPanelInner({
     const text = input.trim();
     if (!text) return;
     setInput("");
+
+    track("chat_message_sent", {
+      length: text.length,
+      hasSelection: useEditorStore.getState().selectedSceneIds.length > 0,
+    });
 
     const send = buildSendPayload(text);
 

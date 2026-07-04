@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { signOut, useSession, organization } from "@/lib/auth-client";
+import { identify, resetAnalytics } from "@/lib/analytics";
 import { cx } from "@/components/ui";
 
 function slugify(input: string): string {
@@ -337,9 +338,28 @@ function Sidebar() {
 }
 
 /** Sleek app chrome: sidebar + inset content panel (rounded top-left, bordered). */
+/** Attach analytics events to the signed-in user (and clear on sign-out). */
+function AnalyticsIdentity() {
+  const { data: session } = useSession();
+  const userId = session?.user.id ?? null;
+  useEffect(() => {
+    if (userId) {
+      identify(userId, {
+        email: session?.user.email,
+        name: session?.user.name,
+      });
+    } else {
+      resetAnalytics();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+  return null;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-text-primary">
+      <AnalyticsIdentity />
       <Sidebar />
       <div className="min-w-0 flex-1 pt-2">
         <div className="h-full overflow-y-auto rounded-tl-lg border-l border-t border-border bg-surface">

@@ -2,6 +2,8 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
+  # core-js's postinstall is just a funding banner — no build needed.
+  core-js: false
   esbuild: true
   ffmpeg-static: true
   sharp: true
