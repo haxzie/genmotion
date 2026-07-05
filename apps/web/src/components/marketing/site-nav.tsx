@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
+import { FeatureIcon } from "@/components/marketing/icons";
+import { USE_CASES } from "@/lib/marketing/use-cases";
 
 const LINKS = [
-  { label: "Features", href: "/features" },
   { label: "Showcase", href: "/showcase" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
@@ -16,6 +17,58 @@ const LINKS = [
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Desktop "Use Cases" dropdown — the label links to the index, the panel lists
+ *  each use case (opens on hover). */
+function UseCasesMenu({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const active = isActive(pathname, "/use-cases");
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Link
+        href="/use-cases"
+        className={cx(
+          "flex items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition-colors duration-150",
+          active ? "text-text-primary" : "text-text-secondary hover:text-text-primary",
+        )}
+      >
+        Use Cases
+        <svg viewBox="0 0 24 24" className={cx("size-3.5 transition-transform duration-150", open && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </Link>
+      {open && (
+        <div className="absolute left-0 top-full pt-2">
+          <div className="grid w-[24rem] gap-0.5 rounded-xl border border-border bg-surface p-2 shadow-xl">
+            {USE_CASES.map((u) => (
+              <Link
+                key={u.slug}
+                href={`/use-cases/${u.slug}`}
+                className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface-raised"
+              >
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-raised text-text-secondary">
+                  <FeatureIcon name={u.icon} className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-medium text-text-primary">
+                    {u.navLabel}
+                  </span>
+                  <span className="block truncate text-[0.8rem] text-text-tertiary">
+                    {u.tagline}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AuthCta({ stacked = false }: { stacked?: boolean }) {
@@ -79,6 +132,7 @@ export function SiteNav() {
             </span>
           </Link>
           <div className="hidden items-center gap-1 md:flex">
+            <UseCasesMenu pathname={pathname} />
             {LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -116,6 +170,30 @@ export function SiteNav() {
       {open && (
         <div className="border-t border-border bg-background px-6 py-4 md:hidden">
           <div className="flex flex-col gap-1">
+            <Link
+              href="/use-cases"
+              onClick={() => setOpen(false)}
+              className={cx(
+                "rounded-md px-3 py-2 text-[0.95rem] transition-colors duration-150",
+                isActive(pathname, "/use-cases")
+                  ? "bg-surface-raised text-text-primary"
+                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary",
+              )}
+            >
+              Use Cases
+            </Link>
+            <div className="mb-1 ml-2 flex flex-col gap-0.5 border-l border-border pl-2">
+              {USE_CASES.map((u) => (
+                <Link
+                  key={u.slug}
+                  href={`/use-cases/${u.slug}`}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:bg-surface-raised hover:text-text-primary"
+                >
+                  {u.navLabel}
+                </Link>
+              ))}
+            </div>
             {LINKS.map((link) => (
               <Link
                 key={link.href}

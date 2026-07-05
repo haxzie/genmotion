@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { FEATURES } from "@/lib/marketing/features";
+import { USE_CASES } from "@/lib/marketing/use-cases";
 import { TOOLS } from "@/lib/marketing/tools";
 import {
   getAllPosts,
@@ -15,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/pricing",
     "/about",
     "/features",
+    "/use-cases",
     "/blog",
     "/glossary",
     "/tools",
@@ -23,6 +25,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const featureRoutes = FEATURES.map((f) => ({
     url: `${BASE}/features/${f.slug}`,
+    changeFrequency: "monthly" as const,
+  }));
+
+  const useCaseRoutes = USE_CASES.map((u) => ({
+    url: `${BASE}/use-cases/${u.slug}`,
     changeFrequency: "monthly" as const,
   }));
 
@@ -51,6 +58,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...staticRoutes,
     ...featureRoutes,
+    ...useCaseRoutes,
     ...toolRoutes,
     ...postRoutes,
     ...termRoutes,

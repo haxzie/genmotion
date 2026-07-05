@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/marketing/primitives";
+import { USE_CASES } from "@/lib/marketing/use-cases";
 
 const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
@@ -10,6 +11,10 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "Free Tools", href: "/tools" },
       { label: "Dashboard", href: "/dashboard" },
     ],
+  },
+  {
+    heading: "Use Cases",
+    links: USE_CASES.map((u) => ({ label: u.navLabel, href: `/use-cases/${u.slug}` })),
   },
   {
     heading: "Resources",
@@ -33,7 +38,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border">
       <Container className="py-14">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <div>
             <Link href="/" className="flex items-center gap-2" aria-label="GenMotion home">
               {/* eslint-disable-next-line @next/next/no-img-element */}

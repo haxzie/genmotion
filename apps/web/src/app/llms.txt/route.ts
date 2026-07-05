@@ -1,4 +1,5 @@
 import { FEATURES } from "@/lib/marketing/features";
+import { USE_CASES } from "@/lib/marketing/use-cases";
 import { TOOLS } from "@/lib/marketing/tools";
 import {
   getAllPosts,
@@ -36,6 +37,13 @@ export function GET() {
     `- [Pricing](${BASE}/pricing): plans and what each includes`,
     `- [About](${BASE}/about): mission and how we build`,
   ]);
+
+  section(
+    "Use cases",
+    USE_CASES.map(
+      (u) => `- [${u.name}](${BASE}/use-cases/${u.slug}): ${u.tagline}`,
+    ),
+  );
 
   section(
     "Features",
