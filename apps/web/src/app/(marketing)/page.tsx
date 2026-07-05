@@ -33,13 +33,13 @@ const homeJsonLd = {
 };
 
 export const metadata: Metadata = {
-  title: "GenMotion — The AI Motion-Video Studio",
+  title: "AI Product Launch Video Generator — GenMotion",
   description:
-    "Describe a video in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately in your browser, and exports a pixel-perfect MP4.",
+    "Generate a product launch video with AI. Describe it in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
   openGraph: {
-    title: "GenMotion — The AI Motion-Video Studio",
+    title: "AI Product Launch Video Generator — GenMotion",
     description:
-      "Describe it, preview it frame-accurately, export a pixel-perfect MP4.",
+      "Generate a product launch video with AI — describe it, preview it frame-accurately, export a pixel-perfect MP4.",
     type: "website",
   },
 };
@@ -131,9 +131,9 @@ export default async function HomePage() {
             </svg>
           </Link>
           <h1 className="max-w-3xl font-display text-4xl font-medium tracking-tight sm:text-6xl">
-            Describe a video.
+            AI Product Launch
             <br />
-            Watch it animate itself.
+            Video Generator
           </h1>
           <p className="mt-6 max-w-xl text-lg text-text-secondary">
             AI-powered motion graphics editor for your product videos.

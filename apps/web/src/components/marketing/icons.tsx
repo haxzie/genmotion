@@ -81,6 +81,32 @@ function Wrench({ className }: IconProps) {
     </svg>
   );
 }
+function Rocket({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.9 12.9 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    </svg>
+  );
+}
+function ProductHunt({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M10.3 16.5V7.5h3.2a2.75 2.75 0 0 1 0 5.5H10.3" />
+    </svg>
+  );
+}
+function Stars({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M13 3l1.9 4.3 4.6.5-3.4 3.1.9 4.6L13 13.4 8.9 15.5l.9-4.6L6.4 7.8l4.6-.5z" />
+      <path d="M6.5 15.5l.7 1.7 1.8.2-1.4 1.2.4 1.8-1.5-.9-1.5.9.4-1.8-1.4-1.2 1.8-.2z" />
+    </svg>
+  );
+}
 
 export const ICONS = {
   chat: Chat,
@@ -92,6 +118,9 @@ export const ICONS = {
   palette: Palette,
   sparkles: Sparkles,
   wrench: Wrench,
+  rocket: Rocket,
+  producthunt: ProductHunt,
+  stars: Stars,
 } as const;
 
 export type IconKey = keyof typeof ICONS;
@@ -105,4 +134,28 @@ export function FeatureIcon({
 }) {
   const Cmp = ICONS[name];
   return <Cmp className={className} />;
+}
+
+/** A FeatureIcon in a rounded tile tinted with `color`: the icon in full color,
+ *  a semi-transparent fill of the same color, and a matching border. Pass layout
+ *  (size, rounding) via `className`; `iconClassName` sizes the glyph. */
+export function ColorIcon({
+  name,
+  color,
+  className,
+  iconClassName,
+}: {
+  name: IconKey;
+  color: string;
+  className?: string;
+  iconClassName?: string;
+}) {
+  return (
+    <span
+      className={className}
+      style={{ color, backgroundColor: `${color}1f`, borderColor: `${color}59` }}
+    >
+      <FeatureIcon name={name} className={iconClassName} />
+    </span>
+  );
 }

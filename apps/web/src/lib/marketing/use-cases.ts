@@ -21,6 +21,8 @@ export type UseCase = {
   /** Meta description. */
   seoDescription: string;
   icon: IconKey;
+  /** Brand/accent hex for the use case's icon tile (icon, tinted fill, border). */
+  color: string;
   sections: UseCaseSection[];
   faqs: Faq[];
   /** Showcase videos to feature below the hero, matched by category (falls back
@@ -43,7 +45,8 @@ export const USE_CASES: UseCase[] = [
     seoTitle: "AI Product Launch Video Generator — GenMotion",
     seoDescription:
       "Create a product launch video with AI. From a prompt to a polished, pixel-identical MP4 with narration, animation, and brand styling — in minutes, not weeks.",
-    icon: "sparkles",
+    icon: "rocket",
+    color: "#F97316",
     videoCategories: ["Product Launch", "Feature Launch"],
     sections: [
       {
@@ -77,6 +80,7 @@ export const USE_CASES: UseCase[] = [
     seoDescription:
       "Make a SaaS explainer video with AI. Turn your product description into an animated, narrated explainer with frame-accurate motion and a pixel-identical export.",
     icon: "chat",
+    color: "#3B82F6",
     videoCategories: ["Product Launch"],
     sections: [
       {
@@ -109,7 +113,8 @@ export const USE_CASES: UseCase[] = [
     seoTitle: "Product Hunt Launch Video Generator (AI) — GenMotion",
     seoDescription:
       "Generate a Product Hunt launch video with AI — a punchy 30–60s hero video with narration and animation, ready for launch day. From prompt to MP4 in minutes.",
-    icon: "sparkles",
+    icon: "producthunt",
+    color: "#DA552F",
     videoCategories: ["Feature Launch", "Product Launch"],
     sections: [
       {
@@ -142,7 +147,8 @@ export const USE_CASES: UseCase[] = [
     seoTitle: "AI Feature Announcement Video Maker — GenMotion",
     seoDescription:
       "Create a feature announcement video with AI. A focused, animated reveal of your new capability with narration and a pixel-identical MP4 export.",
-    icon: "export",
+    icon: "stars",
+    color: "#8B5CF6",
     videoCategories: ["Feature Launch"],
     sections: [
       {
@@ -172,6 +178,7 @@ export const USE_CASES: UseCase[] = [
     seoDescription:
       "Make an event promo video with AI. An energetic, animated promo with the what/where/why and a pixel-identical MP4 — built to drive sign-ups.",
     icon: "palette",
+    color: "#EC4899",
     videoCategories: ["Event Promo"],
     sections: [
       {
@@ -197,6 +204,7 @@ export const USE_CASES: UseCase[] = [
     seoDescription:
       "Create a data-story or metrics video with AI. Animate counters, charts, and milestones into a shareable, pixel-identical MP4.",
     icon: "timeline",
+    color: "#10B981",
     videoCategories: ["Data Story"],
     sections: [
       {
@@ -222,6 +230,7 @@ export const USE_CASES: UseCase[] = [
     seoDescription:
       "Create social media video ads with AI. Short, animated, scroll-stopping ads exported pixel-perfect in 16:9, 1:1, and 9:16 for every platform.",
     icon: "frame",
+    color: "#06B6D4",
     videoCategories: ["Product Launch", "Feature Launch"],
     sections: [
       {

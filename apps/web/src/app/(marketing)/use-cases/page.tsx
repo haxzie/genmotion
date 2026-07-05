@@ -7,7 +7,7 @@ import {
   LinkButton,
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
-import { FeatureIcon } from "@/components/marketing/icons";
+import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 import { SITE_URL } from "@/lib/marketing/site";
@@ -78,9 +78,12 @@ export default function UseCasesIndexPage() {
                 href={`/use-cases/${u.slug}`}
                 className="group flex flex-col rounded-xl border border-border bg-surface p-6 transition-colors hover:border-border-strong hover:bg-surface-hover"
               >
-                <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-surface-raised">
-                  <FeatureIcon name={u.icon} className="size-5" />
-                </div>
+                <ColorIcon
+                  name={u.icon}
+                  color={u.color}
+                  className="flex size-10 items-center justify-center rounded-lg border"
+                  iconClassName="size-5"
+                />
                 <h2 className="mt-4 text-[1.05rem] font-medium tracking-tight">
                   {u.name}
                 </h2>

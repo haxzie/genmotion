@@ -9,7 +9,7 @@ import {
   LinkButton,
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
-import { FeatureIcon } from "@/components/marketing/icons";
+import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
 import { USE_CASES, getUseCase, type UseCase } from "@/lib/marketing/use-cases";
@@ -123,9 +123,12 @@ export default async function UseCasePage({ params }: Params) {
             </svg>
             All use cases
           </Link>
-          <div className="mt-8 flex size-12 items-center justify-center rounded-xl border border-border bg-surface-raised text-text-primary">
-            <FeatureIcon name={useCase.icon} className="size-6" />
-          </div>
+          <ColorIcon
+            name={useCase.icon}
+            color={useCase.color}
+            className="mt-8 flex size-12 items-center justify-center rounded-xl border"
+            iconClassName="size-6"
+          />
           <h1 className="mt-6 max-w-3xl font-display text-4xl font-semibold tracking-tight sm:text-5xl">
             {useCase.name}
           </h1>
@@ -194,9 +197,12 @@ export default async function UseCasePage({ params }: Params) {
                 href={`/use-cases/${u.slug}`}
                 className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong hover:bg-surface-hover"
               >
-                <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface-raised">
-                  <FeatureIcon name={u.icon} className="size-4.5" />
-                </div>
+                <ColorIcon
+                  name={u.icon}
+                  color={u.color}
+                  className="flex size-9 items-center justify-center rounded-lg border"
+                  iconClassName="size-4.5"
+                />
                 <div className="mt-3 font-medium">{u.name}</div>
                 <div className="mt-1 text-[0.9rem] text-text-secondary">{u.tagline}</div>
               </Link>

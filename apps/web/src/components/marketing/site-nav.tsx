@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
-import { FeatureIcon } from "@/components/marketing/icons";
+import { ColorIcon } from "@/components/marketing/icons";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 
 const LINKS = [
@@ -51,9 +51,12 @@ function UseCasesMenu({ pathname }: { pathname: string }) {
                 href={`/use-cases/${u.slug}`}
                 className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface-raised"
               >
-                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-raised text-text-secondary">
-                  <FeatureIcon name={u.icon} className="size-4" />
-                </span>
+                <ColorIcon
+                  name={u.icon}
+                  color={u.color}
+                  className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border"
+                  iconClassName="size-4"
+                />
                 <span className="min-w-0">
                   <span className="block text-[0.9rem] font-medium text-text-primary">
                     {u.navLabel}
