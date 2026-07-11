@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
     "@genmotion/player",
     "@genmotion/compiler",
   ],
+  async redirects() {
+    return [
+      // Projects were merged into the app home (alongside the create composer).
+      { source: "/projects", destination: "/dashboard", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -80,8 +80,7 @@ function LogOutIcon({ className }: IconProps) {
 }
 
 const NAV = [
-  { label: "Create", href: "/dashboard", Icon: PlusIcon },
-  { label: "Projects", href: "/projects", Icon: PlayIcon },
+  { label: "Projects", href: "/dashboard", Icon: PlayIcon },
   { label: "Templates", href: "/templates", Icon: Layers2Icon },
   { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ] as const;
