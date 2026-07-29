@@ -4,6 +4,9 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Parsed error body, when the server sent one — quota rejections carry
+     *  the limit that was hit, which the upgrade modal needs. */
+    public body?: unknown,
   ) {
     super(message);
   }
@@ -25,13 +28,15 @@ export async function api<T>(
   });
   if (!res.ok) {
     let message = res.statusText;
+    let body: unknown;
     try {
-      const body = await res.json();
-      if (body.error) message = body.error;
+      body = await res.json();
+      const error = (body as { error?: string })?.error;
+      if (error) message = error;
     } catch {
       // non-JSON error body
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, body);
   }
   return res.json() as Promise<T>;
 }

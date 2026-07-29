@@ -6,6 +6,7 @@ import {
   generateText,
   stepCountIs,
   streamText,
+  type LanguageModelUsage,
   type UIMessage,
 } from "ai";
 import { and, asc, gt, eq, db, schema } from "@genmotion/db";
@@ -14,13 +15,15 @@ import {
   buildProjectContext,
   createEditorTools,
   chatModel,
+  CHAT_MODEL_ID,
   loadAudioClipsForContext,
   loadLatestCompaction,
   runCompaction,
   NAMING_PROMPT,
 } from "@genmotion/ai";
-import { COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
+import { COMPACTION_MESSAGE_LIMIT, LIMIT_STATUS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
+import { checkLimit } from "../limits";
 import { enqueueThumbnail } from "../queue";
 
 /** Keep this many trailing messages (~2 turns) at full tool-payload fidelity. */
@@ -176,7 +179,29 @@ chatRoutes.get("/:projectId", async (c) => {
   );
 });
 
-async function persistMessage(projectId: string, message: UIMessage) {
+/**
+ * Map the AI SDK's usage object onto the columns. Every field is optional on
+ * the provider side, so a model that reports nothing simply stores nulls
+ * rather than zeros — "not reported" and "cost nothing" aren't the same thing
+ * when this gets summed for billing.
+ */
+function usageColumns(usage: LanguageModelUsage | undefined) {
+  return {
+    model: usage ? CHAT_MODEL_ID : null,
+    inputTokens: usage?.inputTokens ?? null,
+    outputTokens: usage?.outputTokens ?? null,
+    totalTokens: usage?.totalTokens ?? null,
+    cacheReadTokens: usage?.inputTokenDetails?.cacheReadTokens ?? null,
+    cacheWriteTokens: usage?.inputTokenDetails?.cacheWriteTokens ?? null,
+  };
+}
+
+async function persistMessage(
+  projectId: string,
+  message: UIMessage,
+  usage?: LanguageModelUsage,
+) {
+  const usageValues = usageColumns(usage);
   await db
     .insert(schema.chatMessages)
     .values({
@@ -184,10 +209,13 @@ async function persistMessage(projectId: string, message: UIMessage) {
       projectId,
       role: message.role as "user" | "assistant" | "system",
       parts: message.parts,
+      ...usageValues,
     })
     .onConflictDoUpdate({
       target: schema.chatMessages.id,
-      set: { parts: message.parts },
+      // A resumed/retried stream rewrites the same row — keep the usage in step
+      // with the parts it paid for instead of leaving a stale count behind.
+      set: { parts: message.parts, ...usageValues },
     });
 }
 
@@ -255,7 +283,16 @@ chatRoutes.post("/:projectId", async (c) => {
     log("client disconnected — request aborted mid-stream"),
   );
 
+  // Checked before the user's message is persisted: a turn we refuse to answer
+  // must not be stored, and must not count toward the quota that blocked it.
+  // Only a genuine new turn is gated — a regenerate replays an existing message
+  // and would otherwise be charged twice.
   if (lastMessage?.role === "user") {
+    const blocked = await checkLimit(c.get("organizationId"), "aiTurns");
+    if (blocked) {
+      log("blocked by aiTurns quota", blocked.limit);
+      return c.json(blocked, LIMIT_STATUS);
+    }
     await persistMessage(project.id, lastMessage);
   }
 
@@ -335,6 +372,10 @@ chatRoutes.post("/:projectId", async (c) => {
 
   // Set when the editor tools build their sandbox; torn down on stream finish.
   let disposeSandbox: (() => Promise<void>) | undefined;
+
+  // streamText reports usage in its own onFinish, but the assistant message is
+  // persisted from the outer stream's onFinish — park it here to bridge the two.
+  let turnUsage: LanguageModelUsage | undefined;
 
   const stream = createUIMessageStream({
     originalMessages: messages,
@@ -441,11 +482,14 @@ chatRoutes.post("/:projectId", async (c) => {
             toolResults: toolResults?.length ?? 0,
           });
         },
-        onFinish: ({ finishReason, usage, steps }) => {
+        onFinish: ({ finishReason, totalUsage, steps }) => {
+          // totalUsage, not usage — `usage` is the last step alone, which would
+          // under-report a turn that ran a dozen tool steps.
+          turnUsage = totalUsage;
           log("streamText finished", {
             finishReason,
             steps: steps?.length,
-            usage,
+            usage: totalUsage,
           });
         },
       });
@@ -477,7 +521,7 @@ chatRoutes.post("/:projectId", async (c) => {
         // Tear down the workbench sandbox now that the turn is done.
         await disposeSandbox?.();
         if (responseMessage) {
-          await persistMessage(project.id, responseMessage);
+          await persistMessage(project.id, responseMessage, turnUsage);
         }
         // Scenes likely changed this turn — refresh the project thumbnail.
         await enqueueThumbnail(project.id);

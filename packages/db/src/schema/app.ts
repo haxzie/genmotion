@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -62,6 +63,19 @@ export const chatMessages = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
     parts: jsonb("parts").notNull(),
+    // Token usage for the turn that produced this message, as reported by the
+    // AI SDK. Only assistant rows carry a bill — null everywhere else, and null
+    // on assistant rows written before this was tracked. Summed across all
+    // agent steps, not just the final one.
+    model: text("model"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    // Split out because they price very differently from plain input tokens:
+    // cache reads are ~0.1x and writes ~1.25x. The system prefix is stable per
+    // turn specifically to earn these reads.
+    cacheReadTokens: integer("cache_read_tokens"),
+    cacheWriteTokens: integer("cache_write_tokens"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("chat_messages_project_created_idx").on(t.projectId, t.createdAt)],
@@ -173,6 +187,13 @@ export const exportJobs = pgTable("export_jobs", {
   format: text("format", { enum: ["mp4", "webm", "gif"] })
     .notNull()
     .default("mp4"),
+  /**
+   * Whether the render burns in the GenMotion badge. Resolved from the org's
+   * plan when the job is enqueued and frozen here alongside quality/format, so
+   * the row records what was actually produced and both render drivers (local
+   * worker and the render control-plane) read one source of truth.
+   */
+  watermark: boolean("watermark").notNull().default(false),
   outputAssetId: uuid("output_asset_id").references(() => assets.id),
   error: text("error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

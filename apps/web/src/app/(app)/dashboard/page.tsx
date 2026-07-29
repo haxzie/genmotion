@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { HeroComposer } from "@/components/composer";
 import { consumePendingCreate } from "@/lib/pending-create";
+import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
 const enter = {
@@ -71,6 +72,7 @@ function SkeletonCard() {
 export default function ProjectsHomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { openUpgrade, handleLimitError, isExhausted } = useUpgrade();
 
   const createWithPrompt = useMutation({
     mutationFn: (vars: { prompt: string; width: number; height: number }) =>
@@ -82,9 +84,24 @@ export default function ProjectsHomePage() {
       // The editor chat picks this up and sends it as the first message.
       sessionStorage.setItem(`gm-initial-prompt-${project.id}`, vars.prompt);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: limitsQueryKey });
       router.push(`/p/${project.id}`);
     },
+    onError: handleLimitError,
   });
+
+  /**
+   * Gate the composer before the request when we already know there's no room —
+   * the project list is on screen, so a rejection here would be avoidable. The
+   * 402 path above still backstops a stale count or a second tab.
+   */
+  const startCreate = (vars: { prompt: string; width: number; height: number }) => {
+    if (isExhausted("projects")) {
+      openUpgrade("projects");
+      return;
+    }
+    createWithPrompt.mutate(vars);
+  };
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -101,8 +118,8 @@ export default function ProjectsHomePage() {
   // arrival and continue straight into a new project with the prompt auto-sent.
   useEffect(() => {
     const pending = consumePendingCreate();
-    if (pending) createWithPrompt.mutate(pending);
-    // createWithPrompt.mutate is stable; run once on mount.
+    if (pending) startCreate(pending);
+    // startCreate closes over stable refs; run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -153,7 +170,7 @@ export default function ProjectsHomePage() {
           transition={{ duration: 0.45, ease: enterEase, delay: 0.1 }}
         >
           <HeroComposer
-            onSubmit={(prompt, dims) => createWithPrompt.mutate({ prompt, ...dims })}
+            onSubmit={(prompt, dims) => startCreate({ prompt, ...dims })}
             pending={createWithPrompt.isPending}
           />
         </motion.div>

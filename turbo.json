@@ -10,7 +10,11 @@
       "persistent": true
     },
     "typecheck": {},
-    "test": {},
+    "test": {
+      // Not a pure function of the source tree — the suite talks to a database.
+      // Caching would replay a stale pass against a schema that has since moved.
+      "cache": false
+    },
     "lint": {}
   }
 }

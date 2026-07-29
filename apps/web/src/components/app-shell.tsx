@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { signOut, useSession, organization } from "@/lib/auth-client";
 import { identify, resetAnalytics } from "@/lib/analytics";
 import { cx } from "@/components/ui";
+import { useUpgrade } from "@/components/upgrade-modal";
 
 function slugify(input: string): string {
   return (
@@ -329,10 +330,44 @@ function Sidebar() {
         })}
       </nav>
 
+      <UpgradeCard />
+
       <div className="border-t border-border p-2">
         <UserMenu />
       </div>
     </aside>
+  );
+}
+
+/**
+ * Free-plan nudge, tucked above the user menu. Renders nothing on a paid plan,
+ * nothing while the plan is still loading (so it never flashes in and out), and
+ * nothing on the billing page itself, which already offers the same choice.
+ */
+function UpgradeCard() {
+  const pathname = usePathname();
+  const { plan } = useUpgrade();
+
+  if (plan?.id !== "free") return null;
+  if (pathname.startsWith("/settings/billing")) return null;
+
+  return (
+    <div className="px-3 pb-1">
+      <div className="rounded-lg border border-border bg-surface-raised p-3">
+        <p className="text-[0.857rem] font-medium text-text-primary">
+          You&apos;re on Free
+        </p>
+        <p className="mt-0.5 text-[0.786rem] leading-snug text-text-tertiary">
+          Upgrade for unlimited projects, exports and AI messages.
+        </p>
+        <Link
+          href="/settings/billing"
+          className="mt-2.5 flex h-8 items-center justify-center rounded-md bg-cta text-[0.857rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover"
+        >
+          Upgrade
+        </Link>
+      </div>
+    </div>
   );
 }
 

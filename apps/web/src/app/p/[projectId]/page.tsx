@@ -18,6 +18,7 @@ import { PreviewStage } from "@/components/editor/preview";
 import { Timeline } from "@/components/editor/timeline";
 import { AssetsView } from "@/components/editor/assets-view";
 import { CodeView } from "@/components/editor/code-view";
+import { UpgradeProvider } from "@/components/upgrade-modal";
 import { Button, Spinner, cx } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
 import { formatCompileError } from "@genmotion/compiler";
@@ -182,6 +183,7 @@ export default function EditorPage({
   }
 
   return (
+    <UpgradeProvider>
     <main className="flex h-screen flex-col overflow-hidden bg-background">
       <div className="flex min-h-0 flex-1">
         {/* Left column: project header (over the chat) + chat */}
@@ -280,5 +282,6 @@ export default function EditorPage({
         </div>
       </div>
     </main>
+    </UpgradeProvider>
   );
 }

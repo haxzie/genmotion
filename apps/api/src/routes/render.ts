@@ -100,6 +100,7 @@ renderRoutes.get("/jobs/:id", async (c) => {
     quality: job.quality ?? 95,
     format: job.format,
     filename: project.name.replace(/[^a-zA-Z0-9._-]/g, "_") || "export",
+    watermark: job.watermark,
     scenes: scenes.map((s) => ({
       id: s.id,
       name: s.name,

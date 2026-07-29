@@ -40,6 +40,11 @@ export type AnalyticsEvent =
   | "export_started" // { format }
   | "export_downloaded" // { format }
   | "export_cancelled"
+  // Plan limits
+  | "upgrade_modal_shown" // { limit }
+  | "upgrade_checkout_started" // { plan, reason }
+  | "upgrade_plan_activated" // { plan }
+  | "billing_portal_opened"
   // Marketing
   | "cta_clicked" // { location, label }
   | "showcase_video_opened"; // { slug }

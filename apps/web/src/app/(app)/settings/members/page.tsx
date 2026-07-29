@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
+import { useUpgrade } from "@/components/upgrade-modal";
 
 interface OrgMember {
   id: string;
@@ -42,6 +43,8 @@ export default function MembersPage() {
   const { data } = useSession();
   const meId = data?.user.id;
   const orgId = data?.session.activeOrganizationId ?? null;
+  const { openUpgrade, handleAuthClientError, canInvite, seats } = useUpgrade();
+  const seatsFull = seats ? seats.used >= seats.max : false;
 
   const [org, setOrg] = useState<FullOrg | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +89,13 @@ export default function MembersPage() {
     });
     setInviting(false);
     if (res.error) {
+      // A plan/seat refusal opens the upgrade modal instead of showing a dead
+      // end in the form — the auth client returns {error}, so it never reaches
+      // handleLimitError.
+      if (handleAuthClientError(res.error)) {
+        setInviteOpen(false);
+        return;
+      }
       setError(res.error.message ?? "Couldn't send the invitation.");
       return;
     }
@@ -129,13 +139,28 @@ export default function MembersPage() {
           <Button
             variant="primary"
             onClick={() => {
+              // Kept visible rather than hidden when the plan can't invite:
+              // discovering the capability is the point of the upsell.
+              if (!canInvite) {
+                openUpgrade("invite");
+                return;
+              }
+              if (seatsFull) {
+                openUpgrade("seats");
+                return;
+              }
               setError(null);
               setNotice(null);
               setInviteOpen(true);
             }}
-            className="h-9"
+            className="h-9 gap-2"
           >
             Invite members
+            {!canInvite && (
+              <span className="rounded-full bg-background/15 px-1.5 py-0.5 text-[0.714rem] font-medium">
+                Team
+              </span>
+            )}
           </Button>
         )}
       </div>
@@ -291,6 +316,12 @@ export default function MembersPage() {
             <option value="admin">Admin</option>
           </select>
 
+          {seatsFull && seats && (
+            <p className="mt-3 text-[0.857rem] text-warning">
+              All {seats.max} seats are in use. Remove a member or cancel a
+              pending invitation to free one up.
+            </p>
+          )}
           {error && <p className="mt-3 text-[0.857rem] text-danger">{error}</p>}
           {notice && <p className="mt-3 text-[0.857rem] text-success">{notice}</p>}
 
@@ -306,7 +337,7 @@ export default function MembersPage() {
             <Button
               type="submit"
               variant="primary"
-              disabled={inviting || !email.trim()}
+              disabled={inviting || !email.trim() || seatsFull}
               className="h-10"
             >
               {inviting ? <Spinner className="text-background" /> : "Send invite"}

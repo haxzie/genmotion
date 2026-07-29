@@ -84,6 +84,17 @@ const schema = z.object({
   // BETTER_AUTH_SECRET when unset; must match on the API and the renderer.
   RENDER_JWT_SECRET: z.string().min(1).optional(),
 
+  // ── Billing (Dodo Payments) — optional; billing is inert until set ───
+  DODOPAYMENT_API_KEY: z.string().min(1).optional(),
+  DODOPAYMENT_ENVIRONMENT: z
+    .enum(["test_mode", "live_mode"])
+    .default("test_mode"),
+  DODOPAYMENT_PRO_PRODUCT_ID: z.string().min(1).optional(),
+  DODOPAYMENT_TEAM_PRODUCT_ID: z.string().min(1).optional(),
+  // Standard Webhooks signing secret. Without it the receiver refuses every
+  // delivery rather than trusting an unverified payload.
+  DODOPAYMENT_WEBHOOK_KEY: z.string().min(1).optional(),
+
   // ── Web (Next.js public) ────────────────────────────────────────────
   NEXT_PUBLIC_API_URL: z.url().optional(),
 });

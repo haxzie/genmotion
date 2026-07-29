@@ -1,7 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { magicLink, organization } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
 import { db, schema, eq, asc } from "@genmotion/db";
+import { TEAM_SEATS } from "@genmotion/shared";
+import { assertCanInvite } from "./entitlements";
 import { env } from "./env";
 import { sendEmail, emailEnabled } from "./mailer";
 import { magicLinkEmail, inviteEmail } from "./emails";
@@ -158,6 +161,49 @@ export const auth = betterAuth({
           url,
         });
         await sendEmail({ to: data.email, subject, html, text });
+      },
+
+      /**
+       * A hard ceiling, NOT the per-plan seat count. better-auth reuses this
+       * value as the page size when listing members, so deriving it from the
+       * org's plan would truncate the members list of an org whose plan later
+       * lapsed. Plan-awareness lives in the hooks below.
+       */
+      membershipLimit: TEAM_SEATS,
+
+      organizationHooks: {
+        /**
+         * The invite gate. better-auth awaits this inline — before the
+         * invitation row is written and before the email is sent — so throwing
+         * here rejects the invite cleanly, leaving no row and sending nothing.
+         */
+        beforeCreateInvitation: async ({ invitation }) => {
+          const gate = await assertCanInvite(invitation.organizationId);
+          if (!gate.ok) {
+            throw APIError.from("FORBIDDEN", {
+              code: gate.code,
+              message: gate.message,
+            });
+          }
+        },
+
+        /**
+         * Backstop: an invitation can outlive the plan that authorised it, and
+         * a race between two invitees can oversubscribe the last seat. Pending
+         * invitations are excluded from the count here because the one being
+         * accepted is itself pending and would otherwise count against itself.
+         */
+        beforeAcceptInvitation: async ({ invitation }) => {
+          const gate = await assertCanInvite(invitation.organizationId, {
+            includePendingInvitations: false,
+          });
+          if (!gate.ok) {
+            throw APIError.from("FORBIDDEN", {
+              code: gate.code,
+              message: gate.message,
+            });
+          }
+        },
       },
     }),
   ],

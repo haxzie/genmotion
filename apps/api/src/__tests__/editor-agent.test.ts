@@ -197,7 +197,11 @@ function assertAuthoredScenes(result: TurnResult) {
 }
 
 describe("editor agent (live integration)", () => {
-  it.skipIf(!dbReady)(
+  // Opt-in like its slower sibling below: this calls a live model, so it costs
+  // money and minutes on every run. It used to self-skip whenever the dev DB
+  // happened to be down; now the suite always provisions a database, so the
+  // only thing keeping it out of a routine `pnpm test` is this flag.
+  it.skipIf(!dbReady || !process.env.RUN_SLOW_AGENT_TESTS)(
     "authors a scene for a simple brief and terminates",
     async () => {
       const result = await runEditorTurn(SIMPLE_PROMPT, 170_000);

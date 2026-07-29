@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { AppShell } from "@/components/app-shell";
+import { UpgradeProvider } from "@/components/upgrade-modal";
 import { Spinner } from "@/components/ui";
 
 export default function AppLayout({
@@ -32,5 +33,9 @@ export default function AppLayout({
     );
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <UpgradeProvider>
+      <AppShell>{children}</AppShell>
+    </UpgradeProvider>
+  );
 }

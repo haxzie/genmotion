@@ -24,6 +24,7 @@
     "@hono/zod-validator": "^0.8.0",
     "ai": "^6.0.199",
     "better-auth": "^1.6.15",
+    "dodopayments": "^2.43.0",
     "hono": "^4.12.25",
     "pg-boss": "^12.18.2",
     "zod": "^4.4.3"
@@ -31,6 +32,9 @@
   "devDependencies": {
     "@genmotion/config": "workspace:*",
     "@types/node": "^22",
+    "@types/pg": "^8.15.0",
+    "pg": "^8.16.0",
+    "standardwebhooks": "^1.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.0"

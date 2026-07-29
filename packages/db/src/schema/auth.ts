@@ -92,4 +92,7 @@ export const invitation = pgTable("invitation", {
   inviterId: text("inviter_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  // Required by better-auth's organization plugin: it writes this on every
+  // invitation, and without the column the adapter throws and the invite fails.
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });

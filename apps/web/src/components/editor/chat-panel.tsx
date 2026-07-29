@@ -9,7 +9,9 @@ import {
   type AudioClipData,
   type SceneData,
   COMPACTION_MESSAGE_LIMIT,
+  parseLimitFromText,
 } from "@genmotion/shared";
+import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { useEditorStore } from "@/stores/editor-store";
@@ -428,6 +430,7 @@ function ChatPanelInner({
 }) {
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
+  const { openUpgrade, isExhausted } = useUpgrade();
   const { data: assets } = useProjectAssets(projectId);
   const selectAsset = useEditorStore((s) => s.selectAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -569,6 +572,17 @@ function ChatPanelInner({
       if (dataPart.type === "data-compacted") {
         pendingCompactionClear.current = true;
       }
+    },
+    onError: (err) => {
+      // The transport surfaces a non-2xx as an Error carrying the raw body, so
+      // the quota rejection has to be dug out of the message text rather than
+      // read off a status code.
+      const hit = parseLimitFromText(err.message ?? "");
+      if (hit) openUpgrade(hit.limit.kind);
+    },
+    onFinish: () => {
+      // A turn was consumed — refresh the count that gates the composer.
+      queryClient.invalidateQueries({ queryKey: limitsQueryKey });
     },
   });
   // Set when a turn compacts (tool or auto); consumed on the busy falling edge.
@@ -849,6 +863,14 @@ function ChatPanelInner({
   function submit() {
     const text = input.trim();
     if (!text) return;
+
+    // Gate before clearing the composer: if there's no quota left, the user
+    // keeps what they typed and sees the upgrade modal instead of losing the
+    // message to a rejected request.
+    if (isExhausted("aiTurns")) {
+      openUpgrade("aiTurns");
+      return;
+    }
     setInput("");
 
     track("chat_message_sent", {

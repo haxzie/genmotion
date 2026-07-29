@@ -15,6 +15,7 @@ import {
   type ThumbnailJobPayload,
 } from "@genmotion/shared";
 import { buildRenderHostBundle } from "./build-host";
+import { watermarkHtml } from "./watermark";
 
 const require = createRequire(import.meta.url);
 const FFMPEG_PATH = require("ffmpeg-static") as string;
@@ -159,6 +160,7 @@ async function createRenderPage(
   browser: Browser,
   project: { fps: number; width: number; height: number },
   compiledScenes: Array<{ id: string; name: string; durationInFrames: number; compiledCode: string }>,
+  options: { watermark?: boolean } = {},
 ) {
   const context = await browser.newContext({
     viewport: { width: project.width, height: project.height },
@@ -192,6 +194,18 @@ async function createRenderPage(
   page.on("pageerror", (err) => pageErrors.push(String(err)));
 
   await page.setContent(PAGE_SHELL, { waitUntil: "domcontentloaded" });
+
+  // Appended before the host mounts, so the badge is present on every captured
+  // frame. It lives outside #root — the composition can't paint over it.
+  if (options.watermark) {
+    await page.evaluate((html: string) => {
+      const holder = document.createElement("div");
+      holder.innerHTML = html;
+      const badge = holder.firstElementChild;
+      if (badge) document.body.appendChild(badge);
+    }, watermarkHtml(project.width, project.height));
+  }
+
   await page.addScriptTag({ content: await buildRenderHostBundle() });
 
   const initResult = await page.evaluate(
@@ -345,6 +359,7 @@ export async function renderCompositionToFile(
       browser,
       { fps, width, height },
       compiledScenes,
+      { watermark: input.watermark },
     );
     context = setup.context;
     const { page, pageErrors } = setup;
@@ -513,6 +528,7 @@ export async function runRenderJob(browser: Browser, exportJobId: string) {
     quality: job.quality ?? 95,
     format: job.format,
     filename: safeName,
+    watermark: job.watermark,
     scenes: scenes.map((s) => ({
       id: s.id,
       name: s.name,

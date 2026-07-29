@@ -3,7 +3,10 @@ import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, getTableColumns, db, schema } from "@genmotion/db";
+import { LIMIT_STATUS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
+import { getEntitlements } from "../entitlements";
+import { checkLimit } from "../limits";
 import { getBoss, RENDER_QUEUE } from "../queue";
 
 export const exportRoutes = new Hono<AuthEnv>();
@@ -19,6 +22,10 @@ const createSchema = z.object({
 exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
+
+  const blocked = await checkLimit(organizationId, "exports");
+  if (blocked) return c.json(blocked, LIMIT_STATUS);
+
   const { projectId, quality, format } = c.req.valid("json");
 
   const [project] = await db
@@ -53,6 +60,10 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
     );
   if (active) return c.json({ error: "An export is already queued" }, 409);
 
+  // Free exports carry the GenMotion badge. Frozen onto the job alongside
+  // quality/format so the renderer never has to resolve plan policy itself.
+  const entitlements = await getEntitlements(organizationId);
+
   const [job] = await db
     .insert(schema.exportJobs)
     .values({
@@ -60,6 +71,7 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
       userId: user.id,
       totalFrames,
       quality: quality ?? 95,
+      watermark: !entitlements.paid,
       ...(format && { format }),
     })
     .returning();
