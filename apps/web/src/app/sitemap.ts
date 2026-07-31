@@ -7,8 +7,9 @@ import {
   getAllShowcaseVideos,
   getAllTerms,
 } from "@/lib/marketing/content";
+import { SITE_URL } from "@/lib/marketing/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://genmotion.app";
+const BASE = SITE_URL;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [

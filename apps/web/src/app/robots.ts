@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/marketing/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://genmotion.app";
+const BASE = SITE_URL;
 
 // The authenticated app, editor, admin console, and API are never indexable.
 // Everything else (marketing, features, tools, blog, glossary, showcase) is
