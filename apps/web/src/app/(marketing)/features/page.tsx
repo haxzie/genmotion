@@ -10,6 +10,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES } from "@/lib/marketing/features";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -41,11 +42,12 @@ const FAQS: Faq[] = [
   },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Features — GenMotion",
   description:
     "Explore everything in the GenMotion studio: AI scene authoring, frame-accurate preview, a timeline editor, pixel-identical export, kinetic type, AI voiceover, and brand extraction.",
-};
+  path: "/features",
+});
 
 export default function FeaturesIndexPage() {
   return (

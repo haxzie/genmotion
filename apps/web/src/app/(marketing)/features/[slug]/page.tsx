@@ -12,6 +12,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES, getFeature } from "@/lib/marketing/features";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -24,15 +25,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const feature = getFeature(slug);
   if (!feature) return { title: "Feature — GenMotion" };
-  return {
+  return pageMetadata({
     title: `${feature.name} — GenMotion`,
     description: feature.tagline,
-    openGraph: {
-      title: `${feature.name} — GenMotion`,
-      description: feature.tagline,
-      type: "article",
-    },
-  };
+    path: `/features/${feature.slug}`,
+    type: "article",
+  });
 }
 
 export default async function FeaturePage({ params }: Params) {

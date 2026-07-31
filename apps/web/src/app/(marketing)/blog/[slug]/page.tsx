@@ -5,8 +5,10 @@ import { Container, Section, LinkButton } from "@/components/marketing/primitive
 import { Prose } from "@/components/marketing/prose";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
-import { getAllPosts, getPostBySlug } from "@/lib/marketing/content";
+import { VideoPlayer } from "@/components/marketing/video-player";
+import { getAllPosts, getPostBySlug, parseBody } from "@/lib/marketing/content";
 import { formatDate } from "@/lib/marketing/format";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -19,16 +21,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return { title: "Blog — GenMotion" };
-  return {
+  return pageMetadata({
     title: `${post.title} — GenMotion`,
     description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      type: "article",
-      publishedTime: post.date,
-    },
-  };
+    path: `/blog/${post.slug}`,
+    type: "article",
+    publishedTime: post.date,
+    ogTitle: post.title,
+  });
 }
 
 export default async function BlogPostPage({ params }: Params) {
@@ -87,8 +87,21 @@ export default async function BlogPostPage({ params }: Params) {
           <p className="mt-4 text-lg text-text-secondary">{post.description}</p>
         </header>
 
-        <div className="mt-10">
-          <Prose>{post.body}</Prose>
+        <div className="mt-10 space-y-8">
+          {parseBody(post.body).map((block, i) =>
+            block.type === "video" ? (
+              <figure key={i}>
+                <VideoPlayer src={block.url} title={block.caption} />
+                {block.caption && (
+                  <figcaption className="mt-3 text-center text-[0.9rem] text-text-tertiary">
+                    {block.caption}
+                  </figcaption>
+                )}
+              </figure>
+            ) : (
+              <Prose key={i}>{block.content}</Prose>
+            ),
+          )}
         </div>
 
         <div className="mt-16 flex items-center justify-between gap-4 border-t border-border pt-10">

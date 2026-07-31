@@ -43,6 +43,43 @@ export type ShowcaseVideo = {
   body: string;
 };
 
+/**
+ * A post body is markdown plus optional video embeds. Markdown can't carry an
+ * iframe (the renderer strips raw HTML), so a video is written as a directive
+ * line and split out before rendering:
+ *
+ *   ::video https://youtu.be/PA0mjzzhtVU "Optional caption"
+ */
+export type BodyBlock =
+  | { type: "markdown"; content: string }
+  | { type: "video"; url: string; caption?: string };
+
+const VIDEO_DIRECTIVE = /^::video\s+(\S+)(?:\s+"([^"]*)")?\s*$/;
+
+export function parseBody(body: string): BodyBlock[] {
+  const blocks: BodyBlock[] = [];
+  let buffer: string[] = [];
+
+  const flush = () => {
+    const content = buffer.join("\n").trim();
+    if (content) blocks.push({ type: "markdown", content });
+    buffer = [];
+  };
+
+  for (const line of body.split("\n")) {
+    const match = VIDEO_DIRECTIVE.exec(line.trim());
+    if (match?.[1]) {
+      flush();
+      blocks.push({ type: "video", url: match[1], caption: match[2] });
+    } else {
+      buffer.push(line);
+    }
+  }
+  flush();
+
+  return blocks;
+}
+
 function readDir(sub: string): { slug: string; raw: string }[] {
   const dir = path.join(CONTENT_DIR, sub);
   if (!fs.existsSync(dir)) return [];

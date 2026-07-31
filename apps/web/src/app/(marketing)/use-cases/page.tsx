@@ -10,6 +10,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { USE_CASES } from "@/lib/marketing/use-cases";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -37,12 +38,12 @@ const jsonLd = {
   })),
 };
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Use Cases — AI Video for Launches, Explainers & Ads | GenMotion",
   description:
     "See what you can make with GenMotion: product launch videos, SaaS explainers, Product Hunt videos, feature announcements, event promos, data stories, and social ads — all from a prompt.",
-  alternates: { canonical: `${SITE_URL}/use-cases` },
-};
+  path: "/use-cases",
+});
 
 export default function UseCasesIndexPage() {
   return (

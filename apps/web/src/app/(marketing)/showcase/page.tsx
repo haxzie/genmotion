@@ -4,6 +4,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { ShowcaseBrowser } from "@/components/marketing/showcase-browser";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllShowcaseVideos } from "@/lib/marketing/content";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -22,17 +23,14 @@ const FAQS: Faq[] = [
   },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Showcase — GenMotion",
   description:
     "A gallery of real motion videos made with GenMotion — teasers, explainers, data stories, brand reels, and social ads.",
-  openGraph: {
-    title: "Showcase — GenMotion",
-    description:
-      "Real motion videos made with GenMotion, each generated from a description.",
-    type: "website",
-  },
-};
+  path: "/showcase",
+  ogDescription:
+    "Real motion videos made with GenMotion, each generated from a description.",
+});
 
 export default function ShowcaseIndexPage() {
   const videos = getAllShowcaseVideos();

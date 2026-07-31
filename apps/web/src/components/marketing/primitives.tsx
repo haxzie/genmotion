@@ -9,8 +9,12 @@ export function Container({
   className?: string;
   children: React.ReactNode;
 }) {
+  // `cx` is a plain join, so a `max-w-*` passed in would lose to the default on
+  // CSS source order rather than override it. Drop the default when the caller
+  // supplies its own width.
+  const hasWidth = /(?:^|\s)max-w-/.test(className ?? "");
   return (
-    <div className={cx("mx-auto w-full max-w-6xl px-6", className)}>
+    <div className={cx("mx-auto w-full px-6", !hasWidth && "max-w-6xl", className)}>
       {children}
     </div>
   );

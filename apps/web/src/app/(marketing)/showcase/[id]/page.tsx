@@ -11,6 +11,7 @@ import {
   getShowcaseVideoBySlug,
 } from "@/lib/marketing/content";
 import { formatDate } from "@/lib/marketing/format";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ id: string }> };
@@ -23,16 +24,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const video = getShowcaseVideoBySlug(id);
   if (!video) return { title: "Showcase — GenMotion" };
-  return {
+  return pageMetadata({
     title: `${video.title} — GenMotion Showcase`,
     description: video.description,
-    openGraph: {
-      title: video.title,
-      description: video.description,
-      type: "video.other",
-      images: video.poster ? [{ url: video.poster }] : undefined,
-    },
-  };
+    path: `/showcase/${video.slug}`,
+    type: "video.other",
+    ogTitle: video.title,
+    // Showcase posters are YouTube maxresdefault thumbnails, which are 1280×720.
+    image: video.poster
+      ? { url: video.poster, width: 1280, height: 720, alt: video.title }
+      : undefined,
+  });
 }
 
 export default async function ShowcaseVideoPage({ params }: Params) {

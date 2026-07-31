@@ -8,6 +8,7 @@ import {
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -43,11 +44,12 @@ const FAQS: Faq[] = [
   },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "About — GenMotion",
   description:
     "GenMotion is on a mission to make motion design as easy as describing it. Learn what we believe and why we build the way we do.",
-};
+  path: "/about",
+});
 
 const VALUES = [
   {

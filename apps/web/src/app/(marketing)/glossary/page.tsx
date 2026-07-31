@@ -4,6 +4,7 @@ import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllTerms } from "@/lib/marketing/content";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -22,11 +23,12 @@ const FAQS: Faq[] = [
   },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Glossary — GenMotion",
   description:
     "Plain-language definitions of motion and video terms — frame rate, easing, interpolation, timecode, and more.",
-};
+  path: "/glossary",
+});
 
 export default function GlossaryIndexPage() {
   const terms = getAllTerms();

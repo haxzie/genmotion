@@ -7,15 +7,17 @@ import {
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 import { cx } from "@/lib/cx";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
   description:
     "Simple plans for every creator. Start free, upgrade when you need more renders, longer videos, and higher resolution.",
-};
+  path: "/pricing",
+});
 
 type Tier = {
   name: string;

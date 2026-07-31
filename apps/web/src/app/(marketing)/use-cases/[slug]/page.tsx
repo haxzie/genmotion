@@ -17,6 +17,7 @@ import {
   getAllShowcaseVideos,
   type ShowcaseVideo,
 } from "@/lib/marketing/content";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -29,17 +30,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const useCase = getUseCase(slug);
   if (!useCase) return { title: "Use case — GenMotion" };
-  return {
+  return pageMetadata({
     title: useCase.seoTitle,
     description: useCase.seoDescription,
-    alternates: { canonical: `${SITE_URL}/use-cases/${useCase.slug}` },
-    openGraph: {
-      title: useCase.seoTitle,
-      description: useCase.seoDescription,
-      type: "website",
-      url: `${SITE_URL}/use-cases/${useCase.slug}`,
-    },
-  };
+    path: `/use-cases/${useCase.slug}`,
+  });
 }
 
 /** Videos to feature below the hero — curated slugs, then category match, then

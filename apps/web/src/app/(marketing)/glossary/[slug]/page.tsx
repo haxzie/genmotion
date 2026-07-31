@@ -6,6 +6,7 @@ import { Prose } from "@/components/marketing/prose";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { getAllTerms, getTermBySlug } from "@/lib/marketing/content";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -18,15 +19,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const term = getTermBySlug(slug);
   if (!term) return { title: "Glossary — GenMotion" };
-  return {
+  return pageMetadata({
     title: `${term.term} — GenMotion Glossary`,
     description: term.description,
-    openGraph: {
-      title: `${term.term} — GenMotion Glossary`,
-      description: term.description,
-      type: "article",
-    },
-  };
+    path: `/glossary/${term.slug}`,
+    type: "article",
+  });
 }
 
 export default async function GlossaryTermPage({ params }: Params) {

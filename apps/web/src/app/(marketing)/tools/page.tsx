@@ -5,6 +5,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TOOLS } from "@/lib/marketing/tools";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -43,11 +44,12 @@ const FAQS: Faq[] = [
   },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Free Tools — GenMotion",
   description:
     "Free, no-signup calculators and references for video creators: aspect ratios, timecode, file size, and social media dimensions.",
-};
+  path: "/tools",
+});
 
 export default function ToolsIndexPage() {
   return (

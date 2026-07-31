@@ -18,6 +18,7 @@ import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getAllPosts, getAllShowcaseVideos } from "@/lib/marketing/content";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 
 const homeJsonLd = {
@@ -32,17 +33,14 @@ const homeJsonLd = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "AI Product Launch Video Generator — GenMotion",
   description:
     "Generate a product launch video with AI. Describe it in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
-  openGraph: {
-    title: "AI Product Launch Video Generator — GenMotion",
-    description:
-      "Generate a product launch video with AI — describe it, preview it frame-accurately, export a pixel-perfect MP4.",
-    type: "website",
-  },
-};
+  path: "/",
+  ogDescription:
+    "Generate a product launch video with AI — describe it, preview it frame-accurately, export a pixel-perfect MP4.",
+});
 
 const STEPS = [
   {
