@@ -41,7 +41,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const postRoutes = getAllPosts().map((p) => ({
     url: `${BASE}/blog/${p.slug}`,
-    lastModified: p.date || undefined,
+    lastModified: p.updated || p.date || undefined,
     changeFrequency: "monthly" as const,
   }));
 

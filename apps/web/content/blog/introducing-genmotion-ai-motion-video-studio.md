@@ -101,3 +101,10 @@ GenMotion is live today and free to start — no credit card.
 Full details are on the [pricing page](/pricing).
 
 Describe your first video on the [homepage](/) and watch the agent animate it. If you make something good, we'd love to see it — the best pieces end up in the [showcase](/showcase).
+
+## Read next
+
+- **[How to make a product launch video](/blog/how-to-make-a-product-launch-video)** — the 7-beat script blueprint our agent uses, what each production route costs, and how long the video should actually be.
+- **[Product launch video examples](/blog/product-launch-video-examples)** — the six launch formats and how the beats are allocated inside each one.
+- **[Motion graphics without After Effects](/blog/motion-graphics-without-after-effects)** — the craft rules behind the scenes above, and an honest look at the tooling.
+- **[Remotion alternatives](/blog/remotion-alternatives)** — programmatic video tools compared, for developers deciding between a library and a studio.

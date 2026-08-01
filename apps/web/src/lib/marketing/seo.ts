@@ -36,8 +36,15 @@ type SeoInput = {
   type?: "website" | "article" | "video.other";
   /** ISO date; only meaningful for `type: "article"`. */
   publishedTime?: string;
-  /** Overrides the default card (e.g. a showcase video poster). */
-  image?: SeoImage;
+  /** ISO date of the last material revision; only meaningful for articles. */
+  modifiedTime?: string;
+  /**
+   * Overrides the default card (e.g. a showcase video poster). Pass `null` when
+   * the route ships an `opengraph-image` file — Next replaces `openGraph.images`
+   * rather than merging, so leaving the default here would shadow the generated
+   * card with the static /og.png.
+   */
+  image?: SeoImage | null;
   /** Card title/description, when they should read differently from <title>. */
   ogTitle?: string;
   ogDescription?: string;
@@ -53,6 +60,7 @@ export function pageMetadata({
   path,
   type = "website",
   publishedTime,
+  modifiedTime,
   image,
   ogTitle,
   ogDescription,
@@ -60,13 +68,15 @@ export function pageMetadata({
   const url = canonicalUrl(path);
   const cardTitle = ogTitle ?? title;
   const cardDescription = ogDescription ?? description;
-  const images = [image ?? OG_IMAGE];
+  // `null` means "this route generates its own card" — omit the key entirely so
+  // Next's opengraph-image file convention fills it in.
+  const images = image === null ? undefined : [image ?? OG_IMAGE];
   const shared = {
     title: cardTitle,
     description: cardDescription,
     url,
     siteName: SITE_NAME,
-    images,
+    ...(images ? { images } : {}),
   };
 
   return {
@@ -75,7 +85,7 @@ export function pageMetadata({
     alternates: { canonical: url },
     openGraph:
       type === "article"
-        ? { ...shared, type: "article", publishedTime }
+        ? { ...shared, type: "article", publishedTime, modifiedTime }
         : type === "video.other"
           ? { ...shared, type: "video.other" }
           : { ...shared, type: "website" },
@@ -85,7 +95,7 @@ export function pageMetadata({
       creator: TWITTER_HANDLE,
       title: cardTitle,
       description: cardDescription,
-      images,
+      ...(images ? { images } : {}),
     },
   };
 }

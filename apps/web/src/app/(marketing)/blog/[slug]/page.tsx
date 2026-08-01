@@ -27,7 +27,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     path: `/blog/${post.slug}`,
     type: "article",
     publishedTime: post.date,
+    modifiedTime: post.updated || post.date,
     ogTitle: post.title,
+    image: null, // generated per-post by ./opengraph-image.tsx
   });
 }
 
@@ -36,30 +38,47 @@ export default async function BlogPostPage({ params }: Params) {
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.description,
-    datePublished: post.date,
-    author: { "@type": "Organization", name: post.author },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.description,
+      datePublished: post.date,
+      dateModified: post.updated || post.date,
+      author: { "@type": "Organization", name: post.author },
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
+      },
+      url: `${SITE_URL}/blog/${post.slug}`,
+      mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
     },
-    url: `${SITE_URL}/blog/${post.slug}`,
-    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post.title,
+          item: `${SITE_URL}/blog/${post.slug}`,
+        },
+      ],
+    },
+  ];
 
   return (
     <>
-    <JsonLd data={articleJsonLd} />
+    <JsonLd data={jsonLd} />
     <Section>
       <Container className="max-w-3xl">
         <Link
           href="/blog"
-          className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-text-primary"
+          className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-green"
         >
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H6M11 6l-6 6 6 6" />

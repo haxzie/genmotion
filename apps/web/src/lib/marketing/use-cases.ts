@@ -42,7 +42,10 @@ export const USE_CASES: UseCase[] = [
     tagline: "Cinematic launch videos from a single prompt.",
     description:
       "Turn your product into a launch video that earns attention. Describe what you're shipping and an agent writes the scenes, times the animation to a voiceover, and exports a pixel-identical MP4 — no motion designer, no timeline wrangling.",
-    seoTitle: "AI Product Launch Video Generator — GenMotion",
+    // The homepage owns the exact head term "AI Product Launch Video
+    // Generator" — this page targets the SaaS/startup qualifier instead so the
+    // two don't compete for the same query with the same title.
+    seoTitle: "AI Product Launch Video Maker for SaaS & Startups — GenMotion",
     seoDescription:
       "Create a product launch video with AI. From a prompt to a polished, pixel-identical MP4 with narration, animation, and brand styling — in minutes, not weeks.",
     icon: "rocket",

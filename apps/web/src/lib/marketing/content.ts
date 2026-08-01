@@ -10,6 +10,10 @@ export type BlogPost = {
   title: string;
   description: string;
   date: string; // ISO yyyy-mm-dd
+  /** ISO yyyy-mm-dd. Set when a post is materially revised — drives
+   *  `dateModified` in the article schema and the sitemap's `lastModified`,
+   *  which is what search engines read as a freshness signal. */
+  updated?: string;
   author: string;
   tags: string[];
   faqs: Faq[];
@@ -101,6 +105,7 @@ export function getAllPosts(): BlogPost[] {
         title: String(data.title ?? slug),
         description: String(data.description ?? ""),
         date: String(data.date ?? ""),
+        updated: data.updated ? String(data.updated) : undefined,
         author: String(data.author ?? "GenMotion"),
         tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
         faqs: parseFaqs(data.faqs),

@@ -42,31 +42,47 @@ export default async function ShowcaseVideoPage({ params }: Params) {
   const video = getShowcaseVideoBySlug(id);
   if (!video) notFound();
 
-  const videoJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "VideoObject",
-    name: video.title,
-    description: video.description,
-    thumbnailUrl: video.poster || undefined,
-    uploadDate: video.date,
-    contentUrl: video.videoUrl,
-    creator: { "@type": "Person", name: video.author },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: video.title,
+      description: video.description,
+      thumbnailUrl: video.poster || undefined,
+      uploadDate: video.date,
+      contentUrl: video.videoUrl,
+      creator: { "@type": "Person", name: video.author },
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
+      },
+      url: `${SITE_URL}/showcase/${video.slug}`,
     },
-    url: `${SITE_URL}/showcase/${video.slug}`,
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Showcase", item: `${SITE_URL}/showcase` },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: video.title,
+          item: `${SITE_URL}/showcase/${video.slug}`,
+        },
+      ],
+    },
+  ];
 
   return (
     <>
-      <JsonLd data={videoJsonLd} />
+      <JsonLd data={jsonLd} />
       <Section>
         <Container className="max-w-4xl">
           <Link
             href="/showcase"
-            className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-text-primary"
+            className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-green"
           >
             <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H6M11 6l-6 6 6 6" />
