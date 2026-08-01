@@ -87,7 +87,7 @@ export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
               setSent(false);
               setError(null);
             }}
-            className="mt-4 text-[0.857rem] text-accent hover:text-accent-hover"
+            className="mt-4 text-[0.857rem] text-accent hover:text-green"
           >
             Use a different email
           </button>

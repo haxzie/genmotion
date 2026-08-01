@@ -34,7 +34,7 @@ function UseCasesMenu({ pathname }: { pathname: string }) {
         href="/use-cases"
         className={cx(
           "flex items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition-colors duration-150",
-          active ? "text-text-primary" : "text-text-secondary hover:text-text-primary",
+          active ? "text-text-primary" : "text-text-secondary hover:text-green",
         )}
       >
         Use Cases
@@ -96,7 +96,7 @@ function AuthCta({ stacked = false }: { stacked?: boolean }) {
       <Link
         href="/login"
         className={cx(
-          "inline-flex h-9 items-center justify-center rounded-md px-3 text-[1rem] font-medium text-text-secondary transition-colors duration-150 hover:text-text-primary",
+          "inline-flex h-9 items-center justify-center rounded-md px-3 text-[1rem] font-medium text-text-secondary transition-colors duration-150 hover:text-green",
           stacked && "w-full",
         )}
       >
@@ -144,7 +144,7 @@ export function SiteNav() {
                   "rounded-md px-3 py-1.5 text-[0.95rem] transition-colors duration-150",
                   isActive(pathname, link.href)
                     ? "text-text-primary"
-                    : "text-text-secondary hover:text-text-primary",
+                    : "text-text-secondary hover:text-green",
                 )}
               >
                 {link.label}
@@ -180,7 +180,7 @@ export function SiteNav() {
                 "rounded-md px-3 py-2 text-[0.95rem] transition-colors duration-150",
                 isActive(pathname, "/use-cases")
                   ? "bg-surface-raised text-text-primary"
-                  : "text-text-secondary hover:bg-surface-raised hover:text-text-primary",
+                  : "text-text-secondary hover:bg-surface-raised hover:text-green",
               )}
             >
               Use Cases
@@ -191,7 +191,7 @@ export function SiteNav() {
                   key={u.slug}
                   href={`/use-cases/${u.slug}`}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:bg-surface-raised hover:text-text-primary"
+                  className="rounded-md px-3 py-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:bg-surface-raised hover:text-green"
                 >
                   {u.navLabel}
                 </Link>
@@ -206,7 +206,7 @@ export function SiteNav() {
                   "rounded-md px-3 py-2 text-[0.95rem] transition-colors duration-150",
                   isActive(pathname, link.href)
                     ? "bg-surface-raised text-text-primary"
-                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary",
+                    : "text-text-secondary hover:bg-surface-raised hover:text-green",
                 )}
               >
                 {link.label}

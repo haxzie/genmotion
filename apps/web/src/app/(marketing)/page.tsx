@@ -142,7 +142,7 @@ export default async function HomePage() {
               Free to start · no credit card ·{" "}
               <Link
                 href="/features"
-                className="text-text-secondary underline underline-offset-2 hover:text-text-primary"
+                className="text-text-secondary underline underline-offset-2 hover:text-green"
               >
                 explore features
               </Link>
@@ -168,7 +168,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/showcase"
-                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
               >
                 View all
                 <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

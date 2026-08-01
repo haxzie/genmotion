@@ -44,7 +44,8 @@ export default function BlogIndexPage() {
       headline: p.title,
       description: p.description,
       datePublished: p.date || undefined,
-      author: { "@type": "Person", name: p.author },
+      dateModified: p.updated || p.date || undefined,
+      author: { "@type": "Organization", name: p.author },
       url: `${SITE_URL}/blog/${p.slug}`,
     })),
   };
@@ -60,12 +61,12 @@ export default function BlogIndexPage() {
           </h1>
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        <div className="mt-10 grid gap-x-10 gap-y-10 sm:grid-cols-2">
           {posts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group flex flex-col rounded-xl border border-border bg-surface p-6 transition-colors hover:border-border-strong hover:bg-surface-hover"
+              className="group block"
             >
               <div className="flex items-center gap-3 text-[0.857rem] text-text-tertiary">
                 <time dateTime={post.date}>{formatDate(post.date)}</time>
@@ -76,24 +77,18 @@ export default function BlogIndexPage() {
                   </>
                 )}
               </div>
-              <h2 className="mt-3 font-display text-xl font-semibold tracking-tight">
+              <h2 className="mt-2 font-display text-xl font-semibold tracking-tight transition-colors group-hover:text-green">
                 {post.title}
               </h2>
-              <p className="mt-2 flex-1 text-[0.95rem] text-text-secondary">
+              <p className="mt-2 text-[0.95rem] text-text-secondary">
                 {post.description}
               </p>
-              <span className="mt-5 inline-flex items-center gap-1 text-[0.9rem] text-accent">
-                Read post
-                <svg viewBox="0 0 24 24" className="size-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </span>
             </Link>
           ))}
         </div>
 
         {posts.length === 0 && (
-          <p className="mt-10 rounded-xl border border-dashed border-border px-6 py-16 text-center text-text-tertiary">
+          <p className="mt-10 text-text-tertiary">
             No posts yet — check back soon.
           </p>
         )}
