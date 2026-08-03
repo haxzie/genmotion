@@ -15,7 +15,7 @@ const NAV = [
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {
-  const { status, user, signInGoogle, signOutAdmin } = useAdmin();
+  const { status, user, reason, deniedEmail, signInGoogle, signOutAdmin } = useAdmin();
   const pathname = usePathname();
 
   if (status === "loading") {
@@ -28,6 +28,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (status !== "ready") {
     const forbidden = status === "forbidden";
+    const unreachable = status === "unreachable";
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 text-center">
@@ -36,20 +37,43 @@ function AdminShell({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="mt-2 text-[0.95rem] text-text-secondary">
             {forbidden
-              ? "This account isn't authorized for the admin area. Sign in with a team account."
-              : "Sign in with your team Google account to continue."}
+              ? "This Google account isn't on the admin allowlist."
+              : unreachable
+                ? "Couldn't reach the API."
+                : "Sign in with your team Google account to continue."}
           </p>
+
+          {/* The signed-in address is the answer to "why am I locked out" — it
+              is almost always the wrong Google account, not a broken session. */}
+          {forbidden && deniedEmail && (
+            <p className="mt-3 truncate rounded-md border border-border bg-surface-raised px-3 py-2 font-mono text-[0.8rem] text-text-primary">
+              {deniedEmail}
+            </p>
+          )}
+          {unreachable && reason && (
+            <p className="mt-3 break-words rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-left text-[0.78rem] text-danger">
+              {reason}
+            </p>
+          )}
+
           <div className="mt-6 flex flex-col gap-2">
-            <Button className="w-full" onClick={signInGoogle}>
-              Continue with Google
-            </Button>
+            {!unreachable && (
+              <Button className="w-full" onClick={signInGoogle}>
+                Continue with Google
+              </Button>
+            )}
             {forbidden && (
               <button
                 onClick={() => void signOutAdmin()}
                 className="text-[0.85rem] text-text-tertiary hover:text-text-primary"
               >
-                Use a different account
+                Sign out and use a different account
               </button>
+            )}
+            {unreachable && (
+              <Button className="w-full" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
             )}
           </div>
         </div>

@@ -54,11 +54,20 @@ export type AdminUser = {
   email: string;
   image: string | null;
 };
-type Status = "loading" | "signed-out" | "forbidden" | "ready";
+/**
+ * `unreachable` is deliberately distinct from `signed-out`: a CORS rejection or
+ * a down API used to surface as "please sign in", which sends you off signing in
+ * again over and over for a problem no sign-in can fix.
+ */
+type Status = "loading" | "signed-out" | "forbidden" | "unreachable" | "ready";
 
 interface AdminContextValue {
   status: Status;
   user: AdminUser | null;
+  /** Why the bootstrap failed — the server's message, shown on the gate. */
+  reason: string | null;
+  /** The signed-in address, when it's the reason we were refused. */
+  deniedEmail: string | null;
   signInGoogle: () => void;
   signOutAdmin: () => Promise<void>;
 }
@@ -68,27 +77,50 @@ const AdminContext = createContext<AdminContextValue | null>(null);
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
+  const [deniedEmail, setDeniedEmail] = useState<string | null>(null);
 
   const bootstrap = useCallback(async () => {
+    let res: Response;
     try {
-      const res = await fetch(`${API_URL}/api/admin/session`, {
+      res = await fetch(`${API_URL}/api/admin/session`, {
         method: "POST",
         credentials: "include",
       });
-      if (res.status === 403) return setStatus("forbidden");
-      if (!res.ok) return setStatus("signed-out");
-      const data = (await res.json()) as { token: string; user: AdminUser };
-      adminToken = data.token;
-      try {
-        localStorage.setItem(TOKEN_KEY, data.token);
-      } catch {
-        /* private mode */
-      }
-      setUser(data.user);
-      setStatus("ready");
-    } catch {
-      setStatus("signed-out");
+    } catch (err) {
+      // Never reached the API at all — wrong NEXT_PUBLIC_API_URL, a CORS origin
+      // mismatch, or the server being down. Signing in again cannot help.
+      setReason(
+        `Couldn't reach the API at ${API_URL}. ${
+          err instanceof Error ? err.message : "Network request failed."
+        }`,
+      );
+      return setStatus("unreachable");
     }
+
+    const body = (await res.json().catch(() => null)) as
+      | { token?: string; user?: AdminUser; error?: string; email?: string }
+      | null;
+
+    if (res.status === 403) {
+      setDeniedEmail(body?.email ?? null);
+      setReason(body?.error ?? "This account isn't authorized for the admin area.");
+      return setStatus("forbidden");
+    }
+    if (!res.ok || !body?.token || !body.user) {
+      setReason(body?.error ?? `Sign-in check failed (HTTP ${res.status}).`);
+      return setStatus("signed-out");
+    }
+
+    adminToken = body.token;
+    try {
+      localStorage.setItem(TOKEN_KEY, body.token);
+    } catch {
+      /* private mode */
+    }
+    setUser(body.user);
+    setReason(null);
+    setStatus("ready");
   }, []);
 
   useEffect(() => {
@@ -119,11 +151,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
     await authClient.signOut();
     setUser(null);
+    setReason(null);
+    setDeniedEmail(null);
     setStatus("signed-out");
   }, []);
 
   return (
-    <AdminContext.Provider value={{ status, user, signInGoogle, signOutAdmin }}>
+    <AdminContext.Provider
+      value={{ status, user, reason, deniedEmail, signInGoogle, signOutAdmin }}
+    >
       {children}
     </AdminContext.Provider>
   );

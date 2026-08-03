@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Spinner, cx } from "@/components/ui";
+import { Spinner } from "@/components/ui";
+import { ProjectPlayer } from "./project-player";
 import { useAdminDetail } from "@/lib/admin/client";
 import {
   formatBytes,
@@ -156,17 +157,9 @@ export function ProjectSheet({ id, onClose }: { id: string | null; onClose: () =
         )
       ) : (
         <>
-          <div
-            className={cx(
-              "aspect-video w-full overflow-hidden rounded-lg border border-border",
-              "bg-surface-raised",
-            )}
-          >
-            {data.thumbnailUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.thumbnailUrl} alt="" className="size-full object-cover" />
-            )}
-          </div>
+          {/* Keyed by id so switching projects tears the player down rather
+              than feeding new scenes to a running clock. */}
+          <ProjectPlayer key={data.id} project={data} />
 
           <div className="mt-4">
             <StatGrid

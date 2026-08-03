@@ -150,11 +150,26 @@ export interface ProjectDetail {
   sceneCount: number;
   messageCount: number;
   exportCount: number;
+  /** Full scene source — enough to compile and play the composition. */
   scenes: Array<{
     id: string;
     name: string;
     order: number;
     durationInFrames: number;
+    code: string;
+    audioUrl: string | null;
+    audioVolume: number;
+  }>;
+  audioClips: Array<{
+    id: string;
+    track: number;
+    assetId: string | null;
+    url: string;
+    name: string;
+    startFrame: number;
+    durationInFrames: number;
+    startFrom: number;
+    volume: number;
   }>;
   exports: ExportRow[];
 }

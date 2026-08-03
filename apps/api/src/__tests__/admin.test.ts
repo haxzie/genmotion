@@ -66,6 +66,43 @@ describe.skipIf(!dbReady)("admin auth boundary", () => {
   });
 });
 
+describe.skipIf(!dbReady)("POST /api/admin/session", () => {
+  beforeEach(truncateAll);
+
+  it("401s when there is no session", async () => {
+    const { status } = await requestJson("/api/admin/session", { method: "POST" });
+    expect(status).toBe(401);
+  });
+
+  it("mints a token for an allowlisted domain", async () => {
+    const user = await createUser({ email: "someone@genmotion.dev" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const { status, body } = await requestJson<{ token: string; user: { email: string } }>(
+      "/api/admin/session",
+      { method: "POST", as: session },
+    );
+    expect(status).toBe(200);
+    expect(body.token).toBeTruthy();
+    expect(body.user.email).toBe("someone@genmotion.dev");
+  });
+
+  it("403s a signed-in user off the allowlist, echoing the email back", async () => {
+    const user = await createUser({ email: "personal@gmail.com" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const { status, body } = await requestJson<{ error: string; email: string }>(
+      "/api/admin/session",
+      { method: "POST", as: session },
+    );
+    expect(status).toBe(403);
+    // The console renders this so the wrong-Google-account case is self-evident.
+    expect(body.email).toBe("personal@gmail.com");
+  });
+});
+
 describe.skipIf(!dbReady)("GET /api/admin/organizations", () => {
   beforeEach(truncateAll);
 

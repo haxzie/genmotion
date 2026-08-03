@@ -139,7 +139,16 @@ adminRoutes.post("/session", async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "Not signed in" }, 401);
   if (!isAdminEmail(session.user.email)) {
-    return c.json({ error: "This account isn't authorized for the admin area." }, 403);
+    // Echo the address back: the console renders it, so "why am I locked out"
+    // is answerable without reading server logs. It's the caller's own email,
+    // so nothing is disclosed that they don't already have.
+    return c.json(
+      {
+        error: "This account isn't authorized for the admin area.",
+        email: session.user.email,
+      },
+      403,
+    );
   }
   const token = signAdminToken({ id: session.user.id, email: session.user.email });
   return c.json({
@@ -678,9 +687,13 @@ adminRoutes.get("/organizations/:id", async (c) => {
 });
 
 /**
- * A single project, including every export attempt with the URL of the finished
- * file so the console can play it inline. Scene `code` is deliberately omitted —
- * it is large and of no use in a list.
+ * A single project: its scenes (including their code), audio, and every export
+ * attempt with the URL of the finished file.
+ *
+ * Scene `code` is what lets the console compile and play the composition itself
+ * rather than only its finished renders — the same source the editor previews.
+ * It is the bulk of this response, which is why it is confined to the detail
+ * endpoint and never sent with a list.
  */
 adminRoutes.get("/projects/:id", async (c) => {
   const id = c.req.param("id");
@@ -707,17 +720,35 @@ adminRoutes.get("/projects/:id", async (c) => {
     .where(eq(schema.projects.id, id));
   if (!project) return c.json({ error: "Not found" }, 404);
 
-  const [scenes, exports, messages, plans] = await Promise.all([
+  const [scenes, audioClips, exports, messages, plans] = await Promise.all([
     db
       .select({
         id: schema.scenes.id,
         name: schema.scenes.name,
         order: schema.scenes.order,
         durationInFrames: schema.scenes.durationInFrames,
+        code: schema.scenes.code,
+        audioUrl: schema.scenes.audioUrl,
+        audioVolume: schema.scenes.audioVolume,
       })
       .from(schema.scenes)
       .where(eq(schema.scenes.projectId, id))
       .orderBy(asc(schema.scenes.order)),
+    // Timeline audio, so the console's playback matches what the editor hears.
+    db
+      .select({
+        id: schema.audioClips.id,
+        track: schema.audioClips.track,
+        assetId: schema.audioClips.assetId,
+        url: schema.audioClips.url,
+        name: schema.audioClips.name,
+        startFrame: schema.audioClips.startFrame,
+        durationInFrames: schema.audioClips.durationInFrames,
+        startFrom: schema.audioClips.startFrom,
+        volume: schema.audioClips.volume,
+      })
+      .from(schema.audioClips)
+      .where(eq(schema.audioClips.projectId, id)),
     db
       .select({
         id: schema.exportJobs.id,
@@ -760,6 +791,7 @@ adminRoutes.get("/projects/:id", async (c) => {
       ? { id: orgId, name: orgName!, ...(plans.get(orgId) ?? FREE) }
       : null,
     scenes,
+    audioClips,
     exports,
   });
 });
