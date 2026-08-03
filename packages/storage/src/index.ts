@@ -148,18 +148,34 @@ export async function listObjects(prefix: string): Promise<StoredObject[]> {
 export interface FetchedObject {
   body: Readable;
   contentType?: string;
+  /** Bytes in `body` — the slice length when a range was requested. */
   contentLength?: number;
+  /** Set only for a satisfied range request, e.g. `bytes 0-1023/204800`. */
+  contentRange?: string;
+  acceptRanges?: string;
 }
 
-/** Fetch an object as a stream plus metadata — used by the API file proxy. */
-export async function getObject(key: string): Promise<FetchedObject> {
+/**
+ * Fetch an object as a stream plus metadata — used by the API file proxy.
+ *
+ * `range` is a raw HTTP Range header value (`bytes=0-1023`) forwarded to the
+ * store; S3, R2 and MinIO all honour it. When it is satisfied the response
+ * carries `contentRange` and the body is just that slice, which is what lets
+ * the proxy answer 206 and browsers seek within a video.
+ */
+export async function getObject(
+  key: string,
+  range?: string,
+): Promise<FetchedObject> {
   const res = await client.send(
-    new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+    new GetObjectCommand({ Bucket: BUCKET, Key: key, Range: range }),
   );
   return {
     body: res.Body as Readable,
     contentType: res.ContentType,
     contentLength: res.ContentLength,
+    contentRange: res.ContentRange,
+    acceptRanges: res.AcceptRanges,
   };
 }
 

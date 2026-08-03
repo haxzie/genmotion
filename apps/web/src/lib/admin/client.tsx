@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
@@ -104,7 +104,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const signInGoogle = useCallback(() => {
     void authClient.signIn.social({
       provider: "google",
-      callbackURL: "/admin",
+      // Must be absolute: the auth client's baseURL is the API origin, so a
+      // relative path would send the browser to <api-host>/admin, which 404s.
+      callbackURL: `${window.location.origin}/admin`,
     });
   }, []);
 
@@ -167,6 +169,19 @@ export function useAdminInfinite<T>(
   });
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
   return { ...query, items };
+}
+
+/**
+ * Single admin record, fetched lazily. Pass `null` for `path` while nothing is
+ * selected so opening a list doesn't fetch a detail nobody asked for.
+ */
+export function useAdminDetail<T>(key: Array<string | null>, path: string | null) {
+  return useQuery({
+    queryKey: ["admin", ...key],
+    queryFn: () => adminApi<T>(path!),
+    enabled: Boolean(path),
+    staleTime: 30_000,
+  });
 }
 
 /**

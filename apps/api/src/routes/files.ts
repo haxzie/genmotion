@@ -90,31 +90,50 @@ async function listFiles(c: Context<AuthEnv>) {
 /**
  * GET /:projectId/assets/* — stream a file through the API (public, so <Img>/
  * <Audio>/<Video> tags and the renderer can load it by URL).
+ *
+ * Range requests are forwarded to the store and answered with 206, which is
+ * what lets a browser seek inside a video instead of buffering it linearly from
+ * the start. Full-body responses still advertise `Accept-Ranges` so the player
+ * knows it may ask for one.
  */
 async function streamFile(c: Context<AuthEnv>) {
   const projectId = c.req.param("projectId")!;
   const key = objectKeyFromPath(c.req.path, projectId);
   if (!key) return c.json({ error: "Invalid path" }, 400);
   const decoded = key.slice(`projects/${projectId}/`.length);
+  const range = c.req.header("range");
   try {
-    const { body, contentType, contentLength } = await getObject(key);
+    const { body, contentType, contentLength, contentRange } = await getObject(
+      key,
+      range,
+    );
     const webStream = Readable.toWeb(body) as ReadableStream;
     const headers: Record<string, string> = {
       "Content-Type":
         contentType ?? CONTENT_TYPE[ext(decoded)] ?? "application/octet-stream",
       "Cache-Control": "public, max-age=3600",
+      "Accept-Ranges": "bytes",
     };
     if (contentLength !== undefined) {
       headers["Content-Length"] = String(contentLength);
     }
+    if (contentRange) headers["Content-Range"] = contentRange;
     // `?download` forces a save dialog (attachment) instead of inline playback —
     // needed because the <a download> attribute is ignored cross-origin.
     if (c.req.query("download") !== undefined) {
       const filename = decoded.split("/").pop() || "download";
       headers["Content-Disposition"] = `attachment; filename="${filename}"`;
     }
-    return new Response(webStream, { headers });
-  } catch {
+    return new Response(webStream, {
+      status: contentRange ? 206 : 200,
+      headers,
+    });
+  } catch (error) {
+    // A range past the end of the object is 416, not a missing file — players
+    // rely on the distinction when probing an object of unknown length.
+    if ((error as { name?: string })?.name === "InvalidRange") {
+      return c.json({ error: "Range not satisfiable" }, 416);
+    }
     return c.json({ error: "Not found" }, 404);
   }
 }
