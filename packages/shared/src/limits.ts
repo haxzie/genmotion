@@ -9,7 +9,7 @@ export const FREE_LIMITS = {
   /** Exports started per calendar month. Failed exports don't count. */
   exports: 10,
   /** Chat turns sent to the agent per calendar month. */
-  aiTurns: 20,
+  aiTurns: 10,
 } as const;
 
 export type LimitKind = keyof typeof FREE_LIMITS;
