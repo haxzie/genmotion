@@ -82,7 +82,9 @@ function LogOutIcon({ className }: IconProps) {
 
 const NAV = [
   { label: "Projects", href: "/dashboard", Icon: PlayIcon },
-  { label: "Templates", href: "/templates", Icon: Layers2Icon },
+  // Templates is hidden from the sidebar for now. The route and page are still
+  // there and reachable by URL — this only takes it out of the navigation.
+  // { label: "Templates", href: "/templates", Icon: Layers2Icon },
   { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ] as const;
 
