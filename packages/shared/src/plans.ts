@@ -20,6 +20,14 @@ export type PlanLimits = Record<LimitKind, number | null>;
 export interface PlanDefinition {
   id: PlanId;
   name: string;
+  /**
+   * List price in whole USD per month, for the plan as a whole — not per seat.
+   * Team is a flat price covering its `seats`. Read through `planPrice()` so
+   * the marketing page and the in-app billing page can never quote different
+   * numbers; the payment provider remains the source of truth for what is
+   * actually charged.
+   */
+  priceUsd: number;
   limits: PlanLimits;
   /** Total people an org may have: accepted members plus outstanding invites. */
   seats: number;
@@ -36,6 +44,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   free: {
     id: "free",
     name: "Free",
+    priceUsd: 0,
     // Derived from FREE_LIMITS rather than repeated, so the two can't drift.
     limits: {
       projects: FREE_LIMITS.projects,
@@ -56,6 +65,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   pro: {
     id: "pro",
     name: "Pro",
+    priceUsd: 39,
     limits: { projects: null, exports: null, aiTurns: null },
     // Pro is deliberately single-seat: unlimited work for one person. Inviting
     // teammates is what Team is for.
@@ -73,6 +83,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   team: {
     id: "team",
     name: "Team",
+    priceUsd: 199,
     limits: { projects: null, exports: null, aiTurns: null },
     seats: 10,
     canInvite: true,
@@ -117,6 +128,14 @@ export type UpgradeReason = LimitKind | "invite" | "seats";
 
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && value in PLANS;
+}
+
+/**
+ * List price as displayed, e.g. `$39`. Whole dollars, so no trailing `.00`.
+ * Every surface that quotes a price goes through here.
+ */
+export function planPrice(plan: PlanId): string {
+  return `$${PLANS[plan].priceUsd}`;
 }
 
 /** The org's cap for one quota, or null when the plan is unlimited. */

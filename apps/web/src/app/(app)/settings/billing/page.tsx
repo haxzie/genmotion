@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   PLANS,
+  planPrice,
   type LimitKind,
   type LimitSnapshot,
   type PlanId,
@@ -192,6 +193,79 @@ function Stat({
   );
 }
 
+/** The plans a checkout can move this org to, cheapest first. */
+const PURCHASABLE = ["pro", "team"] as const;
+
+/**
+ * A single plan, priced and buyable on its own. The price is repeated in the
+ * button because that button starts a paid checkout — what you're about to be
+ * charged should be legible at the point of commitment, not only in the
+ * heading above it.
+ */
+function PlanCard({
+  plan,
+  busy,
+  disabled,
+  onSelect,
+}: {
+  plan: (typeof PURCHASABLE)[number];
+  busy: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}) {
+  const def = PLANS[plan];
+  const featured = plan === "pro";
+  return (
+    <div
+      className={cx(
+        "flex flex-col rounded-xl border p-5",
+        featured
+          ? "border-accent/40 bg-accent-muted/40"
+          : "border-border bg-surface-raised",
+      )}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="font-display text-xl font-semibold tracking-tight">
+          {def.name}
+        </p>
+        <p className="text-[0.857rem] text-text-tertiary">
+          <span className="text-text-primary tabular-nums">{planPrice(plan)}</span>
+          {" / month"}
+        </p>
+      </div>
+      <p className="mt-2 text-[0.9rem] text-text-secondary">
+        {plan === "pro"
+          ? "Every limit removed, for one person."
+          : `Everything in Pro, for up to ${def.seats} seats.`}
+      </p>
+      <ul className="mt-3 flex flex-1 flex-col gap-1.5">
+        {def.features.map((f) => (
+          <li key={f} className="text-[0.9rem] text-text-secondary">
+            {f}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onSelect}
+        className={cx(
+          "mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
+          featured
+            ? "border-transparent bg-cta text-background hover:bg-cta-hover"
+            : "border-border bg-surface text-text-primary hover:bg-surface-hover",
+        )}
+      >
+        {busy ? (
+          <Spinner />
+        ) : (
+          `Upgrade to ${def.name} — ${planPrice(plan)}/mo`
+        )}
+      </button>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [data, setData] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -248,6 +322,8 @@ export default function BillingPage() {
 
   const totals = data?.totals;
   const hasUsage = (totals?.totalTokens ?? 0) > 0;
+  // Never offer the plan they're already on; on Team there's nothing above it.
+  const upgradable = PURCHASABLE.filter((p) => p !== data?.plan.id);
 
   return (
     <div className="mx-auto max-w-3xl px-8 pb-20 pt-10">
@@ -273,8 +349,14 @@ export default function BillingPage() {
               </div>
             )}
 
-            {/* Plan + upgrade or manage */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Current plan, plus the billing portal once there's something to
+                manage. Upgrade options get their own cards further down. */}
+            <div
+              className={cx(
+                "grid gap-4",
+                data.subscription.manageable && "sm:grid-cols-2",
+              )}
+            >
               <div className="rounded-xl border border-border bg-surface-raised p-5">
                 <div className="flex items-center gap-2">
                   <span className="text-[0.857rem] text-text-tertiary">
@@ -282,9 +364,16 @@ export default function BillingPage() {
                   </span>
                   <PlanStatusPill subscription={data.subscription} />
                 </div>
-                <p className="mt-1.5 font-display text-xl font-semibold tracking-tight">
-                  {data.plan.name}
-                </p>
+                <div className="mt-1.5 flex items-baseline gap-2">
+                  <p className="font-display text-xl font-semibold tracking-tight">
+                    {data.plan.name}
+                  </p>
+                  {data.subscription.paid && (
+                    <span className="text-[0.857rem] text-text-tertiary tabular-nums">
+                      {planPrice(data.plan.id)} / month
+                    </span>
+                  )}
+                </div>
                 <ul className="mt-2.5 flex flex-col gap-1.5">
                   {PLANS[data.plan.id].features.map((f) => (
                     <li
@@ -335,52 +424,47 @@ export default function BillingPage() {
                     {portalBusy ? <Spinner /> : "Manage billing"}
                   </button>
                 </div>
-              ) : (
-                <div className="rounded-xl border border-accent/40 bg-accent-muted/40 p-5">
-                  <span className="text-[0.857rem] text-text-tertiary">
-                    Upgrade
-                  </span>
-                  <p className="mt-1.5 font-display text-xl font-semibold tracking-tight">
-                    Unlimited everything
-                  </p>
-                  <p className="mt-2 text-[0.9rem] text-text-secondary">
-                    Pro removes every limit for one person. Team adds{" "}
-                    {PLANS.team.seats} seats and teammate invites.
-                  </p>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {(["pro", "team"] as const).map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        disabled={checkoutBusy !== null}
-                        onClick={async () => {
-                          setCheckoutBusy(p);
-                          setError(null);
-                          try {
-                            await startCheckout(p);
-                          } catch (e) {
-                            setError(
-                              e instanceof Error
-                                ? e.message
-                                : "Couldn't start checkout.",
-                            );
-                            setCheckoutBusy(null);
-                          }
-                        }}
-                        className={cx(
-                          "inline-flex h-9 cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
-                          p === "pro"
-                            ? "border-transparent bg-cta text-background hover:bg-cta-hover"
-                            : "border-border bg-surface text-text-primary hover:bg-surface-hover",
-                        )}
-                      >
-                        {checkoutBusy === p ? <Spinner /> : PLANS[p].name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ) : null}
             </div>
+
+            {/* One card per purchasable plan the org isn't already on, so each
+                plan states its own price and features instead of sharing a box. */}
+            {upgradable.length > 0 && (
+              <>
+                <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
+                  {data.subscription.paid ? "Change plan" : "Upgrade"}
+                </h2>
+                <div
+                  className={cx(
+                    "grid gap-4",
+                    upgradable.length > 1 && "sm:grid-cols-2",
+                  )}
+                >
+                  {upgradable.map((p) => (
+                    <PlanCard
+                      key={p}
+                      plan={p}
+                      busy={checkoutBusy === p}
+                      disabled={checkoutBusy !== null}
+                      onSelect={async () => {
+                        setCheckoutBusy(p);
+                        setError(null);
+                        try {
+                          await startCheckout(p);
+                        } catch (e) {
+                          setError(
+                            e instanceof Error
+                              ? e.message
+                              : "Couldn't start checkout.",
+                          );
+                          setCheckoutBusy(null);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Plan allowances */}
             <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">

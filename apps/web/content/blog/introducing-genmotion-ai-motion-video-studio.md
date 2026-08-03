@@ -16,7 +16,7 @@ faqs:
   - q: "How long does it take to make a video?"
     a: "Minutes. The agent drafts a full sequence from your first prompt, and most of the work after that is conversational refinement rather than keyframing."
   - q: "Is there a free plan?"
-    a: "Yes. The free plan is $0 forever and includes up to 5 projects, the frame-accurate preview, the timeline editor, and 720p MP4 exports with a watermark. Pro at $30 per month adds unlimited projects, 1080p and 4K export with no watermark, AI voiceover, and brand extraction."
+    a: "Yes. The free plan is $0 forever and includes up to 5 projects, the frame-accurate preview, the timeline editor, and 720p MP4 exports with a watermark. Pro at $39 per month adds unlimited projects, 1080p and 4K export with no watermark, AI voiceover, and brand extraction."
 ---
 
 Animated video is still one of the most effective ways to launch a product, announce a feature, or explain an idea. It is also one of the slowest things a team can make. A thirty-second piece traditionally means specialist software, a steep learning curve, and hours of keyframing — which is why most teams ship a screenshot and a paragraph instead.
@@ -95,8 +95,8 @@ Together they add up to a workflow that behaves like design software and moves l
 GenMotion is live today and free to start — no credit card.
 
 - **Free ($0 forever)** — up to 5 projects, frame-accurate preview, timeline editor, and 720p MP4 export with a watermark.
-- **Pro ($30 per user / month)** — unlimited projects and exports, 1080p and 4K export with no watermark, AI voiceover, brand extraction, priority rendering, plus $30 in AI credits included every month.
-- **Team ($100 per user / month)** — everything in Pro, shared brand assets, reusable scene skills, centralized billing, SSO, and priority support.
+- **Pro ($39 per month)** — unlimited projects and exports, 1080p and 4K export with no watermark, AI voiceover, brand extraction, and priority rendering.
+- **Team ($199 per month)** — everything in Pro for up to 10 seats, shared brand assets, reusable scene skills, centralized billing, SSO, and priority support.
 
 Full details are on the [pricing page](/pricing).
 

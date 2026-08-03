@@ -11,6 +11,7 @@ import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 import { cx } from "@/lib/cx";
+import { PLANS, planPrice } from "@genmotion/shared";
 
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
@@ -29,10 +30,15 @@ type Tier = {
   features: string[];
 };
 
+/**
+ * Prices come from PLANS so this page and the in-app billing page can never
+ * quote different numbers. The feature copy is deliberately this page's own —
+ * marketing bullets are richer than the terse in-app list.
+ */
 const TIERS: Tier[] = [
   {
-    name: "Free",
-    price: "$0",
+    name: PLANS.free.name,
+    price: planPrice("free"),
     cadence: "forever",
     blurb: "Make your first videos and learn the workflow.",
     cta: { label: "Start free", href: "/signup" },
@@ -45,14 +51,13 @@ const TIERS: Tier[] = [
     ],
   },
   {
-    name: "Pro",
-    price: "$30",
-    cadence: "per user / month",
+    name: PLANS.pro.name,
+    price: planPrice("pro"),
+    cadence: "per month",
     blurb: "For creators shipping videos regularly.",
     cta: { label: "Start Pro trial", href: "/signup" },
     highlighted: true,
     features: [
-      "$30 in AI credits included every month",
       "Unlimited projects",
       "1080p & 4K export, no watermark",
       "AI voiceover with premium voices",
@@ -62,14 +67,13 @@ const TIERS: Tier[] = [
     ],
   },
   {
-    name: "Team",
-    price: "$100",
-    cadence: "per user / month",
+    name: PLANS.team.name,
+    price: planPrice("team"),
+    cadence: "per month",
     blurb: "Shared brand assets and collaboration for teams.",
     cta: { label: "Contact sales", href: "/about" },
     features: [
-      "$100 in AI credits per user every month",
-      "Everything in Pro",
+      `Everything in Pro, for up to ${PLANS.team.seats} seats`,
       "Centralized billing for every seat",
       "Shared brand assets library",
       "Reusable scene skills",
@@ -95,10 +99,6 @@ const pricingJsonLd = {
 };
 
 const FAQ: Faq[] = [
-  {
-    q: "How do AI credits work?",
-    a: "Every paid plan includes AI credits equal to its price — Pro gives you $30 in credits each month, and Team gives $100 per user each month. Credits cover AI usage like scene generation, voiceover, and brand extraction, so your subscription effectively pays for itself in usage.",
-  },
   {
     q: "Is there really a free plan?",
     a: "Yes. The Free plan lets you create projects, preview frame-accurately, and export watermarked 720p MP4s with no time limit. Upgrade only when you need higher resolution, no watermark, or more capacity.",
