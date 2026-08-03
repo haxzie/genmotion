@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/server-session";
 import { HomeComposer } from "@/components/marketing/home-composer";
 import {
   Container,
@@ -89,11 +87,10 @@ const FAQS: Faq[] = [
 ];
 
 export default async function HomePage() {
-  // Server-side gate: authed visitors go straight to the app, so the marketing
-  // HTML is never sent to them (no client-side redirect flash).
-  const session = await getServerSession();
-  if (session) redirect("/dashboard");
-
+  // The authed-visitor redirect lives in the proxy (src/proxy.ts), not here:
+  // reading cookies during render would make this route dynamic, and Next
+  // would serve it `no-store, private` — which stops X and other social
+  // crawlers from caching a link card for the site's most-shared URL.
   const latestPost = getAllPosts()[0];
   // Home shows only videos flagged `featured` in their frontmatter — latest 6
   // (getAllShowcaseVideos is already sorted newest-first).
