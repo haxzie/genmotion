@@ -195,16 +195,26 @@ function ReasoningBlock({ text, streaming }: { text: string; streaming: boolean 
   const [open, setOpen] = useState(false);
   const show = streaming || open;
   const scrollRef = useRef<HTMLDivElement>(null);
+  // The top fade only makes sense once there is scrolled-past content above to
+  // dissolve into. Applied unconditionally it eats the first line or two of
+  // reasoning that's short enough not to scroll at all.
+  const [scrolled, setScrolled] = useState(false);
 
   // Keep the newest reasoning in view — pin to the bottom as it streams (and
   // when first opened). Batch into a rAF and cancel any pending one so rapid
   // token updates coalesce to a single scroll per frame (no layout thrash).
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+      setScrolled(false);
+      return;
+    }
     const el = scrollRef.current;
     if (!el) return;
     const id = requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
+      // Programmatic scrolling fires onScroll too, but set it here as well so
+      // content that never overflows resolves to `false` on the first frame.
+      setScrolled(el.scrollTop > 0);
     });
     return () => cancelAnimationFrame(id);
   }, [text, show]);
@@ -238,10 +248,16 @@ function ReasoningBlock({ text, streaming }: { text: string; streaming: boolean 
       </button>
       {show && (
         <div className="relative mt-1.5 min-w-0 max-w-full">
-          {/* Top fade so scrolled-past reasoning dissolves seamlessly. */}
+          {/* Top fade so scrolled-past reasoning dissolves seamlessly — only
+              once something is actually scrolled above it. */}
           <div
             ref={scrollRef}
-            className="max-h-64 min-w-0 max-w-full overflow-y-auto overflow-x-hidden border-l-2 border-border pl-3 [mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,#000_2rem)]"
+            onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+            className={cx(
+              "max-h-64 min-w-0 max-w-full overflow-y-auto overflow-x-hidden border-l-2 border-border pl-3",
+              scrolled &&
+                "[mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,#000_2rem)]",
+            )}
           >
             {/* While streaming, render cheap plain text — running the growing
                 reasoning through the markdown pipeline on every token is what
