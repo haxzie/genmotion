@@ -137,10 +137,11 @@ export default async function HomePage() {
               <path d="M5 12h13M13 6l6 6-6 6" />
             </svg>
           </Link>
-          <h1 className="max-w-3xl font-display text-4xl font-medium tracking-tight sm:text-6xl">
-            AI Product Launch
-            <br />
-            Video Generator
+          {/* Balanced wrapping instead of a hardcoded <br />: the line is long
+              enough that a fixed break lands badly at one of the two sizes. */}
+          <h1 className="max-w-3xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
+            Create your product launch video in{" "}
+            <span className="chromatic-word">minutes</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-text-secondary">
             AI-powered motion graphics editor for your product videos.

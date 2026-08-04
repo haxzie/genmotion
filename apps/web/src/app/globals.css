@@ -271,6 +271,16 @@ body {
   );
 }
 
+/* Static chromatic aberration on the hero's payoff word ("...in minutes").
+   Built from text-shadow rather than duplicated ::before/::after copies so the
+   word isn't repeated in the accessibility tree. */
+.chromatic-word {
+  display: inline-block;
+  text-shadow:
+    -2px 0 rgba(255, 0, 90, 0.75),
+    2px 0 rgba(0, 225, 255, 0.75);
+}
+
 /* Trailing dots that pulse in a wave. */
 .thinking-dots i {
   font-style: normal;
