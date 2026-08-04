@@ -14,7 +14,7 @@ import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
-import { getAllPosts, getAllShowcaseVideos } from "@/lib/marketing/content";
+import { getPostBySlug, getAllShowcaseVideos } from "@/lib/marketing/content";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
@@ -86,12 +86,20 @@ const FAQS: Faq[] = [
   },
 ];
 
+/** The launch announcement the hero badge points at. */
+const LAUNCH_POST_SLUG = "introducing-genmotion-ai-motion-video-studio";
+
 export default async function HomePage() {
   // The authed-visitor redirect lives in the proxy (src/proxy.ts), not here:
   // reading cookies during render would make this route dynamic, and Next
   // would serve it `no-store, private` — which stops X and other social
   // crawlers from caching a link card for the site's most-shared URL.
-  const latestPost = getAllPosts()[0];
+  // The hero badge is pinned to the launch announcement, not the newest post:
+  // its label reads "Launching GenMotion", so following the latest post sent
+  // people to whatever shipped most recently under an announcement banner.
+  // Resolved by slug rather than a bare href so it degrades to /blog if the
+  // post is ever renamed, instead of linking to a 404.
+  const launchPost = getPostBySlug(LAUNCH_POST_SLUG);
   // Home shows only videos flagged `featured` in their frontmatter — latest 6
   // (getAllShowcaseVideos is already sorted newest-first).
   const showcaseVideos = getAllShowcaseVideos()
@@ -104,9 +112,13 @@ export default async function HomePage() {
       {/* Hero */}
       <div className="relative overflow-hidden">
         <GradientBlobs />
-        <Container className="relative flex flex-col items-center py-24 text-center sm:py-32">
+        {/* Fades the hue down into the page background so the showcase card
+            below can sit over it cleanly — same treatment as the dashboard. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        {/* Extra bottom padding is the room the showcase card is pulled up into. */}
+        <Container className="relative flex flex-col items-center pb-32 pt-24 text-center sm:pb-40 sm:pt-32">
           <Link
-            href={latestPost ? `/blog/${latestPost.slug}` : "/blog"}
+            href={launchPost ? `/blog/${launchPost.slug}` : "/blog"}
             className="group mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 py-1 pl-1.5 pr-3 text-[0.857rem] text-text-secondary transition-colors duration-150 hover:border-border-strong hover:text-text-primary"
           >
             <span className="rounded-full bg-green-muted px-2 py-0.5 text-[0.786rem] font-medium text-green">
@@ -148,39 +160,43 @@ export default async function HomePage() {
         </Container>
       </div>
 
-      {/* Showcase gallery */}
+      {/* Showcase gallery — pulled up with a negative margin so the card
+          overlaps the hero composer above, mirroring how the dashboard's
+          projects list overlaps its composer. z-10 keeps it over the blobs. */}
       {showcaseVideos.length > 0 && (
-        <Section className="border-t border-border">
+        <section className="relative z-10 -mt-28 sm:-mt-36">
           <Container>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <Eyebrow className="mb-4">Showcase</Eyebrow>
-                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Made with GenMotion
-                </h2>
-                <p className="mt-4 text-text-secondary">
-                  Real motion videos — teasers, explainers, data stories, and
-                  more — each one generated from a description.
-                </p>
+            <div className="rounded-2xl border border-border bg-background p-5 shadow-[0_-8px_40px_rgba(10,10,20,0.35)] sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-2xl">
+                  <Eyebrow className="mb-4">Showcase</Eyebrow>
+                  <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                    Made with GenMotion
+                  </h2>
+                  <p className="mt-4 text-text-secondary">
+                    Real motion videos — teasers, explainers, data stories, and
+                    more — each one generated from a description.
+                  </p>
+                </div>
+                <Link
+                  href="/showcase"
+                  className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
+                >
+                  View all
+                  <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h13M13 6l6 6-6 6" />
+                  </svg>
+                </Link>
               </div>
-              <Link
-                href="/showcase"
-                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
-              >
-                View all
-                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </Link>
-            </div>
-            <ShowcaseGrid videos={showcaseVideos} className="mt-14" />
-            <div className="mt-12 flex justify-center">
-              <LinkButton href="/showcase" variant="secondary" size="lg">
-                View more videos
-              </LinkButton>
+              <ShowcaseGrid videos={showcaseVideos} className="mt-8" />
+              <div className="mt-10 flex justify-center">
+                <LinkButton href="/showcase" variant="secondary" size="lg">
+                  View more videos
+                </LinkButton>
+              </div>
             </div>
           </Container>
-        </Section>
+        </section>
       )}
 
       {/* How it works */}
