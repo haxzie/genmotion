@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 import { and, asc, desc, eq, gt, lt, db, schema } from "@genmotion/db";
-import { chatModel } from "./models";
+import { chatModel, CHAT_PROVIDER_OPTIONS } from "./models";
 
 export const COMPACT_PROMPT = `You compress an AI motion-design assistant's conversation into a dense hand-off summary, so a fresh agent can continue the project without re-reading the old messages.
 
@@ -144,6 +144,7 @@ export async function runCompaction(projectId: string): Promise<CompactionResult
 
   const { text } = await generateText({
     model: chatModel(),
+    providerOptions: CHAT_PROVIDER_OPTIONS,
     system: COMPACT_PROMPT,
     prompt: promptParts.join("\n\n"),
   });

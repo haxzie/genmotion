@@ -25,14 +25,24 @@ billingRoutes.use(requireAuth);
  * are cache reads, so folding them into the input rate would overstate the
  * bill by an order of magnitude.
  *
- * Rates are Anthropic list prices and are NOT fetched from the provider, so
+ * Rates are provider list prices and are NOT fetched from the provider, so
  * they drift if pricing changes. Everything derived from them is presented as
  * an estimate.
+ *
+ * Moonshot bills no separate cache-write rate — writing the prefix costs the
+ * ordinary cache-miss input price — so cacheWrite mirrors input for the Kimi
+ * models rather than carrying Anthropic's 1.25x premium.
  */
 const RATES_PER_MTOK: Record<
   string,
   { input: number; output: number; cacheRead: number; cacheWrite: number }
 > = {
+  // Moonshot Kimi — the agent models.
+  "kimi-k2.7-code": { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0.95 },
+  "kimi-k2.7-code-highspeed": { input: 1.9, output: 8, cacheRead: 0.38, cacheWrite: 1.9 },
+  "kimi-k2.6": { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0.95 },
+  "kimi-k2.5": { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 },
+  // Anthropic — still used for the website-branding vision tool.
   "claude-sonnet-4-6": { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
   "claude-opus-4-8": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "claude-haiku-4-5": { input: 1, output: 5, cacheRead: 0.1, cacheWrite: 1.25 },
@@ -40,7 +50,7 @@ const RATES_PER_MTOK: Record<
 
 /** Fall back to the configured model's rate so an unpriced row isn't free. */
 const FALLBACK_RATE =
-  RATES_PER_MTOK[CHAT_MODEL_ID] ?? RATES_PER_MTOK["claude-sonnet-4-6"]!;
+  RATES_PER_MTOK[CHAT_MODEL_ID] ?? RATES_PER_MTOK["kimi-k2.7-code"]!;
 
 /** The plan half of a billing response — shared by /limits and /usage. */
 function planPayload(ent: Entitlements) {

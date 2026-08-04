@@ -71,7 +71,12 @@ const schema = z.object({
   // Google Gemini "Nano Banana" image generation (generateImage tool).
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_IMAGE_MODEL: z.string().min(1).default("gemini-2.5-flash-image"),
-  CHAT_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
+  // Agent models (Moonshot Kimi). Chat/compaction stream, so they run the base
+  // tier; the scene writer blocks the chat stream, so it runs the high-speed
+  // tier. Defaults must match packages/ai/src/models.ts, which reads
+  // process.env directly — a workspace package can't import this module.
+  CHAT_MODEL: z.string().min(1).default("kimi-k2.6"),
+  SCENE_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
 
   // ── Renderer worker (apps/renderer) — where video exports run ───────
   RENDER_PROVIDER: z.enum(["local", "e2b", "docker"]).default("local"),

@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { chatModel } from "./models";
+import { sceneModel } from "./models";
 import { SCENE_WRITER_PROMPT } from "./system-prompt";
 
 const MAX_ATTEMPTS = 3;
@@ -67,7 +67,7 @@ export async function writeScene(
     let text: string;
     try {
       ({ text } = await generateText({
-        model: chatModel(),
+        model: sceneModel(),
         system: SCENE_WRITER_PROMPT,
         messages,
         // Backstop so a stalled request can't hang the stream forever.
