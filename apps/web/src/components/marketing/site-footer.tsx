@@ -83,7 +83,14 @@ export function SiteFooter() {
         </div>
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-[0.857rem] text-text-tertiary sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} GenMotion. All rights reserved.</span>
-          <span className="font-mono text-text-tertiary">Made with motion.</span>
+          <a
+            href="https://x.com/haxzie_"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-text-tertiary transition-colors duration-150 hover:text-green"
+          >
+            Made with love, by @haxzie
+          </a>
         </div>
       </Container>
     </footer>
