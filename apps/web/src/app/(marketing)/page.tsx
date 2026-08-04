@@ -89,6 +89,13 @@ const FAQS: Faq[] = [
 /** The launch announcement the hero badge points at. */
 const LAUNCH_POST_SLUG = "introducing-genmotion-ai-motion-video-studio";
 
+/**
+ * Features hidden from the home grid only. They keep their own pages and stay
+ * in /features, the sitemap, llms.txt, and the related-features rail — this
+ * list just trims what the homepage leads with.
+ */
+const FEATURES_HIDDEN_ON_HOME = new Set(["brand-extraction"]);
+
 export default async function HomePage() {
   // The authed-visitor redirect lives in the proxy (src/proxy.ts), not here:
   // reading cookies during render would make this route dynamic, and Next
@@ -244,7 +251,7 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feature) => (
+            {FEATURES.filter((f) => !FEATURES_HIDDEN_ON_HOME.has(f.slug)).map((feature) => (
               <Link
                 key={feature.slug}
                 href={`/features/${feature.slug}`}
