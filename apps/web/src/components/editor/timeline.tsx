@@ -552,18 +552,8 @@ export function Timeline({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
-  const handleSelect = useCallback(
-    (id: string, additive: boolean) => {
-      selectScene(id, additive);
-      // Park the playhead at the start of the clicked scene.
-      const index = scenes.findIndex((s) => s.id === id);
-      if (index !== -1) {
-        seek(sceneStartFrames(scenes)[index]!);
-      }
-    },
-    [selectScene, scenes, seek],
-  );
-
+  // Selecting a scene deliberately leaves the playhead alone — picking a scene
+  // to edit is not a request to move the preview off wherever you had it.
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -685,7 +675,7 @@ export function Timeline({
                         selected={selectedSceneIds.includes(scene.id)}
                         hasError={scene.id in sceneErrors}
                         editing={editingSceneIds.includes(scene.id)}
-                        onSelect={handleSelect}
+                        onSelect={selectScene}
                         onToggleMute={onToggleMute}
                         onResize={onResizeScene}
                       />
