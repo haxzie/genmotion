@@ -226,6 +226,19 @@ async function clipPlacements(projectId: string, excludeId?: string) {
   return excludeId ? rows.filter((r) => r.id !== excludeId) : rows;
 }
 
+/** Where the composition ends — the sum of the project's scene durations. */
+async function compositionFrames(projectId: string): Promise<number> {
+  const [row] = await db
+    .select({
+      frames: sql<number>`coalesce(sum(${schema.scenes.durationInFrames}), 0)`.mapWith(
+        Number,
+      ),
+    })
+    .from(schema.scenes)
+    .where(eq(schema.scenes.projectId, projectId));
+  return row?.frames ?? 0;
+}
+
 const MAX_CLIP_FRAMES = 30 * 60 * 60; // 1h at 30fps — generous upper bound
 
 const createAudioClipSchema = z.object({
@@ -259,6 +272,17 @@ projectRoutes.post(
       }
     }
     durationInFrames = durationInFrames ?? project.fps * 5;
+
+    // A three-minute song dropped on a twenty-second video is a clip that
+    // dwarfs the timeline and plays into nothing, so a new clip is trimmed at
+    // the end of the last scene. Only ever shortened — a clip stays its natural
+    // length if it already fits, and one dropped past the end (or on a project
+    // with no scenes yet) has no end to trim to. Resizing afterwards is still
+    // unrestricted.
+    const compositionEnd = await compositionFrames(project.id);
+    if (compositionEnd > startFrame) {
+      durationInFrames = Math.min(durationInFrames, compositionEnd - startFrame);
+    }
 
     const existing = await clipPlacements(project.id);
     const track = resolveAudioTrack(existing, startFrame, durationInFrames, body.track);
