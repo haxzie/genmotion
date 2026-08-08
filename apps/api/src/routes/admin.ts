@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import {
   and,
   asc,
@@ -13,7 +15,7 @@ import {
   db,
   schema,
 } from "@genmotion/db";
-import type { PlanId } from "@genmotion/shared";
+import { PLAN_IDS, PLANS, type PlanId } from "@genmotion/shared";
 import { auth } from "../auth";
 import { signAdminToken } from "../admin/token";
 import { isAdminEmail } from "../admin/domains";
@@ -685,6 +687,77 @@ adminRoutes.get("/organizations/:id", async (c) => {
     projects,
   });
 });
+
+const setPlanSchema = z.object({ plan: z.enum(PLAN_IDS) });
+
+/**
+ * Move an organization onto a plan by hand, so the console can put an org on
+ * Pro or Team without running a checkout and watch the product behave as that
+ * plan does. Entitlement is derived from this row, so writing it is all it
+ * takes — no other surface needs telling.
+ *
+ * This overwrites what billing recorded. For an org with a live subscription
+ * that erases the provider's account of what was bought, and there is no way
+ * back to it from here.
+ *
+ * `lastEventAt` is deliberately not written: it is the ordering key the webhook
+ * upsert compares against, and stamping it with "now" would silently drop every
+ * real delivery timestamped earlier. Leaving it alone means genuine billing
+ * events still land — so on an org that is actually subscribed, a change made
+ * here holds only until the next one arrives.
+ */
+adminRoutes.patch(
+  "/organizations/:id/plan",
+  zValidator("json", setPlanSchema),
+  async (c) => {
+    const id = c.req.param("id");
+    const { plan } = c.req.valid("json");
+
+    const [org] = await db
+      .select({ id: schema.organization.id })
+      .from(schema.organization)
+      .where(eq(schema.organization.id, id));
+    if (!org) return c.json({ error: "Not found" }, 404);
+
+    const patch = {
+      plan,
+      // Only `active` entitles outright, and Free is the absence of a
+      // subscription rather than a subscription to nothing.
+      status: plan === "free" ? "none" : "active",
+      seats: PLANS[plan].seats,
+      // The row no longer describes a real billing cycle, so the dates that
+      // belong to one are cleared rather than left to be read as fact.
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      updatedAt: new Date(),
+    };
+
+    await db
+      .insert(schema.organizationSubscriptions)
+      .values({ organizationId: id, ...patch })
+      .onConflictDoUpdate({
+        target: schema.organizationSubscriptions.organizationId,
+        set: patch,
+      });
+
+    // The console's only mutating route and there is no audit table, so the
+    // server log is the record of who changed what.
+    console.log(`[admin] ${c.get("adminUser").email} set org ${id} to ${plan}`);
+
+    const ent = await getEntitlements(id);
+    return c.json({
+      plan: ent.plan,
+      planName: ent.planName,
+      subscription: {
+        status: ent.status,
+        seats: ent.seats,
+        paid: ent.paid,
+        currentPeriodEnd: ent.currentPeriodEnd,
+        cancelAtPeriodEnd: ent.cancelAtPeriodEnd,
+      },
+    });
+  },
+);
 
 /**
  * A single project: its scenes (including their code), audio, and every export

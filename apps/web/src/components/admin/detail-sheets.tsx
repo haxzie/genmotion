@@ -1,7 +1,9 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { PLAN_IDS, PLANS, type PlanId } from "@genmotion/shared";
 import { Spinner } from "@/components/ui";
-import { useAdminDetail } from "@/lib/admin/client";
+import { adminApi, useAdminDetail } from "@/lib/admin/client";
 import { formatDate, formatDateTime } from "@/lib/admin/format";
 import type { OrgDetail, UserDetail } from "@/lib/admin/types";
 import {
@@ -12,10 +14,13 @@ import {
   PersonRow,
   PlanBadge,
   Section,
+  SelectField,
   Sheet,
   StatGrid,
   useRetained,
 } from "./sheet";
+
+const PLAN_OPTIONS = PLAN_IDS.map((id) => ({ value: id, label: PLANS[id].name }));
 
 /** Centered spinner / error, shared by every detail panel. */
 function DetailState({ loading, error }: { loading: boolean; error: unknown }) {
@@ -141,6 +146,31 @@ export function OrgSheet({ id, onClose }: { id: string | null; onClose: () => vo
     shown ? `/organizations/${shown}` : null,
   );
 
+  const queryClient = useQueryClient();
+  /**
+   * Put the org on a plan by hand, to see the product behave as that plan does
+   * without running a checkout. Everything on screen re-reads from the refetch
+   * rather than being patched locally, so the plan shown is always the plan the
+   * server resolved.
+   */
+  const setPlan = useMutation({
+    mutationFn: (plan: PlanId) =>
+      adminApi<Pick<OrgDetail, "plan" | "planName" | "subscription">>(
+        `/organizations/${shown}/plan`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ plan }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "org", shown] });
+      // The plan is a column in both lists behind this sheet.
+      queryClient.invalidateQueries({ queryKey: ["admin", "organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+
   return (
     <Sheet
       open={Boolean(id)}
@@ -172,11 +202,24 @@ export function OrgSheet({ id, onClose }: { id: string | null; onClose: () => vo
 
           <Section title="Subscription">
             <Panel>
-              <Field label="Plan">{data.planName}</Field>
+              <SelectField
+                label="Plan"
+                value={data.plan as PlanId}
+                options={PLAN_OPTIONS}
+                onChange={(plan) => setPlan.mutate(plan)}
+                disabled={setPlan.isPending}
+              />
               <Field label="Status">{data.subscription.status}</Field>
               <Field label="Seats">{data.subscription.seats}</Field>
               <Field label="Renews">{formatDate(data.subscription.currentPeriodEnd)}</Field>
             </Panel>
+            {setPlan.error && (
+              <p className="mt-2 text-[0.8rem] text-danger">
+                {setPlan.error instanceof Error
+                  ? setPlan.error.message
+                  : "Couldn't change the plan."}
+              </p>
+            )}
           </Section>
 
           <Section title="Details">

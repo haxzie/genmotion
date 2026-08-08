@@ -315,3 +315,106 @@ describe.skipIf(!dbReady)("admin detail endpoints", () => {
     expect((await requestJson("/api/admin/organizations/nope", auth)).status).toBe(404);
   });
 });
+
+/**
+ * The console's one mutating route. What matters is that the write lands where
+ * entitlement is actually read from — so every assertion goes back through the
+ * detail endpoint rather than inspecting the row it wrote.
+ */
+describe.skipIf(!dbReady)("PATCH /api/admin/organizations/:id/plan", () => {
+  beforeEach(truncateAll);
+
+  /** The org's plan as the product would resolve it. */
+  async function planOf(orgId: string) {
+    const { body } = await requestJson<{
+      planName: string;
+      subscription: { status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean };
+    }>(`/api/admin/organizations/${orgId}`, await adminAuth());
+    return body;
+  }
+
+  it("rejects an unauthenticated caller", async () => {
+    const { orgId } = await createOrg();
+    const { status } = await requestJson(`/api/admin/organizations/${orgId}/plan`, {
+      method: "PATCH",
+      json: { plan: "pro" },
+    });
+    expect(status).toBe(401);
+  });
+
+  it("puts a free org on a paid plan", async () => {
+    const { orgId } = await createOrg();
+
+    const { status, body } = await requestJson<{ planName: string }>(
+      `/api/admin/organizations/${orgId}/plan`,
+      { ...(await adminAuth()), method: "PATCH", json: { plan: "pro" } },
+    );
+    expect(status).toBe(200);
+    expect(body.planName).toBe("Pro");
+
+    const org = await planOf(orgId);
+    expect(org.planName).toBe("Pro");
+    expect(org.subscription.status).toBe("active");
+  });
+
+  it("drops a paid org back to free, clearing the billing cycle with it", async () => {
+    const { orgId } = await createOrg();
+    await setSubscription(orgId, {
+      plan: "team",
+      status: "active",
+      currentPeriodEnd: new Date(Date.now() + 10 * DAY),
+      cancelAtPeriodEnd: true,
+    });
+
+    const { status } = await requestJson(`/api/admin/organizations/${orgId}/plan`, {
+      ...(await adminAuth()),
+      method: "PATCH",
+      json: { plan: "free" },
+    });
+    expect(status).toBe(200);
+
+    const org = await planOf(orgId);
+    expect(org.planName).toBe("Free");
+    expect(org.subscription.status).toBe("none");
+    // Dates from a cycle that no longer exists would read as fact in the console.
+    expect(org.subscription.currentPeriodEnd).toBeNull();
+    expect(org.subscription.cancelAtPeriodEnd).toBe(false);
+  });
+
+  it("leaves lastEventAt alone so real billing events still apply", async () => {
+    const { orgId } = await createOrg();
+    const lastEventAt = new Date(Date.now() - DAY);
+    await setSubscription(orgId, { plan: "free", status: "none", lastEventAt });
+
+    await requestJson(`/api/admin/organizations/${orgId}/plan`, {
+      ...(await adminAuth()),
+      method: "PATCH",
+      json: { plan: "team" },
+    });
+
+    const [row] = await db
+      .select({ lastEventAt: schema.organizationSubscriptions.lastEventAt })
+      .from(schema.organizationSubscriptions)
+      .where(eq(schema.organizationSubscriptions.organizationId, orgId));
+    expect(row!.lastEventAt?.getTime()).toBe(lastEventAt.getTime());
+  });
+
+  it("refuses a plan that doesn't exist", async () => {
+    const { orgId } = await createOrg();
+    const { status } = await requestJson(`/api/admin/organizations/${orgId}/plan`, {
+      ...(await adminAuth()),
+      method: "PATCH",
+      json: { plan: "enterprise" },
+    });
+    expect(status).toBe(400);
+  });
+
+  it("404s on an unknown org", async () => {
+    const { status } = await requestJson("/api/admin/organizations/nope/plan", {
+      ...(await adminAuth()),
+      method: "PATCH",
+      json: { plan: "pro" },
+    });
+    expect(status).toBe(404);
+  });
+});

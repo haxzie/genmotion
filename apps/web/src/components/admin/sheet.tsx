@@ -181,6 +181,94 @@ export function Badge({
   );
 }
 
+/**
+ * A `Field`-shaped row whose value is editable. Deliberately not `Field` with a
+ * dropdown inside it: that cell is `truncate`, and the resulting `overflow:
+ * hidden` would clip the open menu.
+ *
+ * Same trigger-plus-scrim construction as the composer's aspect-ratio menu.
+ */
+export function SelectField<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+
+  return (
+    <div className="flex items-center justify-between gap-4 py-1.5">
+      <span className="shrink-0 text-[0.85rem] text-text-tertiary">{label}</span>
+      <div className="relative">
+        <button
+          type="button"
+          disabled={disabled}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-[0.85rem] text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:opacity-50"
+        >
+          {current?.label ?? value}
+          <svg
+            viewBox="0 0 24 24"
+            className={cx("size-3 shrink-0 transition-transform duration-150", open && "rotate-180")}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        {open && (
+          <>
+            <button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              className="fixed inset-0 z-40 cursor-default"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              role="menu"
+              className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+            >
+              {options.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    if (o.value !== value) onChange(o.value);
+                  }}
+                  className={cx(
+                    "block w-full px-3 py-1.5 text-left text-[0.85rem] transition-colors duration-150",
+                    o.value === value
+                      ? "text-text-primary"
+                      : "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Free reads as neutral; anything paid is worth spotting in a list. */
 export function PlanBadge({ plan, planName }: { plan: string; planName: string }) {
   return <Badge tone={plan === "free" ? "default" : "accent"}>{planName}</Badge>;
