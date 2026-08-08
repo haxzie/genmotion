@@ -627,7 +627,9 @@ export function Timeline({
 
           {/* Time scale */}
           <div
-            className="relative shrink-0 cursor-col-resize"
+            // select-none: this row is a scrub surface, and a drag across it
+            // would otherwise highlight the timecode labels it passes over.
+            className="relative shrink-0 cursor-col-resize select-none"
             style={{ height: RULER_HEIGHT }}
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
