@@ -1,20 +1,19 @@
-import type { MetricVideoData } from "../types";
+import type { MetricPoint, MetricVideoData } from "../types";
 import { SourceError, fetchJson, inlineImage } from "./fetch";
 
 /**
- * GitHub star count.
+ * GitHub star count and star history.
  *
- * `GITHUB_TOKEN` is optional here — `/repos/{owner}/{repo}` is public — but set
- * it in production, because unauthenticated callers get only 60 requests per
- * hour per IP.
+ * `GITHUB_TOKEN` is optional — `/repos/{owner}/{repo}` is public — but set it in
+ * production, because unauthenticated callers get only 60 requests per hour per
+ * IP.
  *
- * Deliberately no star history and no stargazer avatars: GitHub does not expose
- * *who* starred a repository. `/repos/{owner}/{repo}/stargazers` answers 404 and
- * the GraphQL `stargazers` connection returns zero edges, for any repo, with any
- * token (`/subscribers` behaves the same way, while `/forks` and
- * `/contributors` are fine — it's the "which humans follow this repo" lists that
- * are restricted). Star counts are available; star identities and timestamps are
- * not. Don't rebuild either feature on those endpoints.
+ * The history does NOT come from GitHub. `/repos/{o}/{r}/stargazers` is
+ * unreliable for this: it needs auth, is ordered oldest-first, and stops
+ * paginating at 400 pages (~40,000 stars), so the recent end of a popular
+ * repo's timeline is unreachable even when it does answer. It comes instead
+ * from OSS Insight, which derives it from GH Archive's public event stream —
+ * no auth, no star ceiling, and monthly totals back to the repo's first star.
  */
 
 const API = "https://api.github.com";
@@ -97,5 +96,71 @@ export async function getStarCount(input: string): Promise<MetricVideoData> {
     avatar: await inlineImage(avatarUrl(data.owner.avatar_url)),
     url: data.html_url,
     accent: "#3b6ef6",
+  };
+}
+
+/** OSS Insight's star-history endpoint. Public, unauthenticated, ~100 req/min. */
+const OSSINSIGHT = "https://api.ossinsight.io/v1/repos";
+
+interface StarHistoryResponse {
+  data?: { rows?: { date?: string; stargazers?: string }[] };
+}
+
+/**
+ * Cumulative star totals per month, plus today's exact figure.
+ *
+ * Two sources on purpose: OSS Insight supplies the shape of the curve, and
+ * GitHub supplies the headline number. OSS Insight's newest bucket is the
+ * current month and can trail by a few hours, so the last point is replaced
+ * with GitHub's live `stargazers_count` — otherwise the curve would land
+ * somewhere slightly below the number printed above it.
+ */
+export async function getStarHistory(input: string): Promise<MetricVideoData> {
+  const { owner, repo } = parseRepo(input);
+  const data = await fetchRepo(owner, repo);
+
+  // Ask under the repo's *canonical* name. A transferred repo returns no rows
+  // under its old one — facebook/react is empty, react/react is complete — and
+  // `full_name` is GitHub's answer to where it lives now.
+  const body = await fetchJson<StarHistoryResponse>(
+    `${OSSINSIGHT}/${data.full_name}/stargazers/history/`,
+    {
+      revalidate: 21_600,
+      notFound: `No star history available for ${data.full_name}.`,
+    },
+  );
+
+  const series: MetricPoint[] = (body.data?.rows ?? [])
+    .map((row) => ({ t: Date.parse(`${row.date}T00:00:00Z`), v: Number(row.stargazers) }))
+    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v))
+    .sort((a, b) => a.t - b.t);
+
+  if (series.length < 2) {
+    throw new SourceError(
+      422,
+      `${data.full_name} doesn't have enough star history to chart yet.`,
+    );
+  }
+
+  // Close the curve on the live count rather than the month bucket.
+  series[series.length - 1] = { t: Date.now(), v: data.stargazers_count };
+
+  const months = series.length;
+  const gained = data.stargazers_count - series[0]!.v;
+
+  return {
+    source: "github-star-history",
+    title: data.full_name,
+    subtitle: "GitHub star history",
+    value: data.stargazers_count,
+    unit: "stars",
+    delta: {
+      value: gained,
+      label: `+${gained.toLocaleString("en-US")} over ${months} months`,
+    },
+    series,
+    avatar: await inlineImage(avatarUrl(data.owner.avatar_url)),
+    url: data.html_url,
+    accent: "#f5b800",
   };
 }

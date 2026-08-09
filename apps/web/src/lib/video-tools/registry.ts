@@ -32,6 +32,15 @@ export const GENERATORS: Record<string, Generator> = {
     templates: ["count-up", "stat-card"],
     hint: "Any public repository — owner/repo or a GitHub URL.",
   },
+  "github-star-history": {
+    slug: "github-star-history",
+    source: "github-star-history",
+    inputLabel: "Repository",
+    inputPlaceholder: "facebook/react",
+    examples: ["facebook/react", "vercel/next.js", "tailwindlabs/tailwindcss"],
+    templates: ["chart-rise", "count-up", "stat-card"],
+    hint: "Any public repository — the chart covers its whole life, month by month.",
+  },
   "npm-downloads": {
     slug: "npm-downloads",
     source: "npm-downloads",

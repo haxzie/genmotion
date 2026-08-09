@@ -8,6 +8,7 @@
 
 export const SOURCE_IDS = [
   "github-stars",
+  "github-star-history",
   "npm-downloads",
   "youtube-subscribers",
 ] as const;

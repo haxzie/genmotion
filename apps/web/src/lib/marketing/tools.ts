@@ -103,6 +103,78 @@ export const TOOLS: Tool[] = [
     ],
   },
   {
+    slug: "github-star-history",
+    name: "GitHub Star History Video Generator",
+    description:
+      "Animate a repository's growth over time as a star history chart video.",
+    icon: "timeline",
+    metaDescription:
+      "Turn any public GitHub repository's star history into an animated chart video. Free, no sign-up \u2014 renders in your browser and downloads as an MP4.",
+    shortName: "star history video",
+    steps: [
+      {
+        icon: "github",
+        title: "Paste a repository",
+        body:
+          "Type any public repo as owner/repo, or paste its GitHub URL. We chart its whole life, from its first star to today's total.",
+      },
+      {
+        icon: "timeline",
+        title: "Watch the curve draw",
+        body:
+          "The Chart rise style draws the line month by month while the number counts alongside it, so both land together on the live figure.",
+      },
+      {
+        icon: "export",
+        title: "Download the MP4",
+        body:
+          "Rendered in your browser in a few seconds and saved straight to your machine. No account, no queue.",
+      },
+    ],
+    personas: [
+      {
+        icon: "github",
+        title: "Open-source maintainers",
+        body:
+          "Show the shape of a project's growth, not just today's number \u2014 the curve tells the story a star count can't.",
+      },
+      {
+        icon: "rocket",
+        title: "Founders and indie hackers",
+        body:
+          "A rising line is the clearest traction slide you can make. Drop it into a launch thread, deck or investor update.",
+      },
+      {
+        icon: "sparkles",
+        title: "Developer advocates",
+        body:
+          "Mark an anniversary or a breakout month with a chart that animates, without opening After Effects.",
+      },
+    ],
+    faqs: [
+      {
+        q: "How do I make a GitHub star history video?",
+        a: "Enter a repository as owner/repo \u2014 for example facebook/react \u2014 pick the Chart rise style and a size, then hit Download. The video renders in your browser and saves as an MP4.",
+      },
+      {
+        q: "Where does the star history come from?",
+        a: "From OSS Insight, which derives it from GH Archive \u2014 GitHub's public event stream. That gives monthly totals across the repository's whole life, and today's exact total comes from the GitHub API so the chart ends on the live figure.",
+      },
+      {
+        q: "Why not use GitHub's own stargazers API?",
+        a: "It stops paginating after 400 pages, about 40,000 stars, so for any popular repository the recent part of the timeline is simply unreachable. The event-stream data has no such ceiling \u2014 a repo with 250,000 stars charts in full.",
+      },
+      {
+        q: "My repository shows no history \u2014 why?",
+        a: "Usually because it was renamed or transferred; history follows the repository's current name, which we resolve automatically. Very new repositories may also not have enough months to chart yet.",
+      },
+      {
+        q: "Is the star history video generator free?",
+        a: "Yes \u2014 free, no sign-up, and no limit on how many videos you make.",
+      },
+    ],
+  },
+  {
     slug: "npm-downloads",
     name: "NPM Downloads Video Generator",
     description:
@@ -519,6 +591,7 @@ export const TOOLS: Tool[] = [
  */
 export const GENERATOR_SLUGS: ReadonlySet<string> = new Set([
   "github-star-count",
+  "github-star-history",
   "npm-downloads",
   "youtube-subscribers",
 ]);

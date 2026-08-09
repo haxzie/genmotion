@@ -36,6 +36,18 @@ export const SAMPLES: Record<SourceId, MetricVideoData> = {
     url: "https://github.com/facebook/react",
     accent: "#3b6ef6",
   },
+  "github-star-history": {
+    source: "github-star-history",
+    title: "facebook/react",
+    subtitle: "GitHub star history",
+    value: 238412,
+    unit: "stars",
+    delta: { value: 238412, label: "+238,412 over 120 months" },
+    series: growthSeries(120, 238412, 1.9),
+    avatar: null,
+    url: "https://github.com/facebook/react",
+    accent: "#f5b800",
+  },
   "npm-downloads": {
     source: "npm-downloads",
     title: "react",
