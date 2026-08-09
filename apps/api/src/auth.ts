@@ -6,6 +6,7 @@ import { db, schema, eq, asc } from "@genmotion/db";
 import { TEAM_SEATS } from "@genmotion/shared";
 import { assertCanInvite } from "./entitlements";
 import { env } from "./env";
+import { trackServer } from "./analytics";
 import { sendEmail, emailEnabled } from "./mailer";
 import { magicLinkEmail, inviteEmail } from "./emails";
 
@@ -109,6 +110,17 @@ export const auth = betterAuth({
           } catch (err) {
             console.error("[auth] default org creation failed:", err);
           }
+          // The one place a signup can be counted exactly once. Magic link and
+          // OAuth both land on the same callback, so the browser cannot tell a
+          // new account from a returning login; this hook runs only on insert.
+          trackServer("user_signed_up", {
+            distinctId: createdUser.id,
+            person: {
+              email: createdUser.email,
+              name: createdUser.name,
+              signed_up_at: createdUser.createdAt,
+            },
+          });
         },
       },
     },

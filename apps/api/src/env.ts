@@ -36,6 +36,9 @@ const schema = z.object({
   // ── Admin console (/admin) ──────────────────────────────────────────
   // Comma-separated email domains allowed into the admin area (Google OAuth).
   ADMIN_EMAIL_DOMAINS: z.string().min(1).default("sequel.sh,genmotion.dev"),
+  // Server-side analytics. Optional: unset means the API emits nothing.
+  POSTHOG_KEY: z.string().optional(),
+  POSTHOG_HOST: z.string().url().default("https://us.i.posthog.com"),
   // Secret for the short-lived admin API tokens. Falls back to BETTER_AUTH_SECRET.
   ADMIN_JWT_SECRET: z.string().min(1).optional(),
 

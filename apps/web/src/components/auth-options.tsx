@@ -33,7 +33,19 @@ const socialButton =
  * sent to `callbackURL` (defaults to /dashboard), where any pending prompt from
  * the homepage composer is picked up.
  */
-export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
+export function AuthOptions({
+  callbackURL,
+  mode = "signin",
+}: {
+  callbackURL?: string;
+  /**
+   * Which page this is on. Both routes do the same thing — an account is
+   * created on first sign-in either way — but intent differs, and funnel
+   * numbers are meaningless if /signup and /login report the same event.
+   */
+  mode?: "signin" | "signup";
+}) {
+  const startEvent = mode === "signup" ? "signup_started" : "signin_started";
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<null | "google" | "github" | "magic">(null);
@@ -48,7 +60,7 @@ export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
   async function handleSocial(provider: "google" | "github") {
     setError(null);
     setPending(provider);
-    track("signin_started", { provider });
+    track(startEvent, { provider });
     const result = await signIn.social({ provider, callbackURL: resolvedCallback });
     // On success the browser redirects to the provider; only errors return here.
     if (result?.error) {
@@ -61,7 +73,7 @@ export function AuthOptions({ callbackURL }: { callbackURL?: string }) {
     e.preventDefault();
     setError(null);
     setPending("magic");
-    track("signin_started", { provider: "magic" });
+    track(startEvent, { provider: "magic" });
     const result = await signIn.magicLink({ email, callbackURL: resolvedCallback });
     setPending(null);
     if (result.error) {

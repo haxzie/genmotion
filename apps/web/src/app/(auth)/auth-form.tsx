@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AuthOptions } from "@/components/auth-options";
 
-export function AuthForm() {
+export function AuthForm({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* Left — the sign-in inputs */}
@@ -26,7 +26,7 @@ export function AuthForm() {
             <p className="mt-2 text-text-secondary">Sign in or create an account</p>
           </div>
 
-          <AuthOptions />
+          <AuthOptions mode={mode} />
 
           <p className="mt-4 text-center text-[0.786rem] text-text-tertiary">
             We&apos;ll create your account automatically on first sign-in.

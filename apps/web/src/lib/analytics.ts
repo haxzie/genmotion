@@ -26,9 +26,14 @@ export { posthog };
 
 /** The custom events we deliberately track (in addition to autocapture). */
 export type AnalyticsEvent =
-  // Auth
+  // Auth. The completed signup itself is emitted server-side as
+  // `user_signed_up` (apps/api/src/analytics.ts) — the browser can't tell a new
+  // account from a returning login, since both land on the same callback.
   | "signin_started" // { provider }
   | "signup_started" // { provider }
+  // Onboarding
+  | "onboarding_started"
+  | "onboarding_completed" // { hasRole, renamedTeam }
   // Projects
   | "project_created" // { fromPrompt }
   | "project_opened"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, updateUser, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
+import { identify, track } from "@/lib/analytics";
 
 const ROLES = [
   "Founder / CEO",
@@ -43,6 +44,21 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spinLogo, setSpinLogo] = useState(false);
+
+  // Identify here as well as in AppShell: /onboarding sits outside the (app)
+  // route group, so without this the first thing a new user ever does would be
+  // recorded against an anonymous id and never stitched to their account.
+  const userId = session?.user.id ?? null;
+  // Already-onboarded users land here for an instant before being redirected to
+  // the dashboard; counting them would inflate the top of the funnel.
+  const needsOnboarding = !!session && !session.user.onboardingCompleted;
+  useEffect(() => {
+    if (!userId || !needsOnboarding) return;
+    identify(userId, { email: session?.user.email, name: session?.user.name });
+    track("onboarding_started");
+    // Once per user, not once per render or per step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, needsOnboarding]);
 
   useEffect(() => {
     if (isPending) return;
@@ -92,6 +108,12 @@ export default function OnboardingPage() {
         name: name.trim() || session!.user.email,
         jobRole: role ?? undefined,
         onboardingCompleted: true,
+      });
+
+      // Fired after the write succeeds, so the event and the flag can't disagree.
+      track("onboarding_completed", {
+        hasRole: !!role,
+        renamedTeam: targetName !== teamNameFrom(name.trim()),
       });
 
       router.replace("/dashboard");

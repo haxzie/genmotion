@@ -27,6 +27,7 @@
     "dodopayments": "^2.43.0",
     "hono": "^4.12.25",
     "pg-boss": "^12.18.2",
+    "posthog-node": "^5.48.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
