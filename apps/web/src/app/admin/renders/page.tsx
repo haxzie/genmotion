@@ -10,6 +10,7 @@ type RenderJob = {
   format: string;
   error: string | null;
   createdAt: string;
+  startedAt: string | null;
   completedAt: string | null;
   projectId: string;
   projectName: string;
@@ -17,6 +18,8 @@ type RenderJob = {
 };
 
 const IN_PROGRESS = new Set(["queued", "rendering", "encoding", "uploading"]);
+/** In progress *and* already picked up — i.e. the render clock is running. */
+const IN_PROGRESS_RUNNING = new Set(["rendering", "encoding", "uploading"]);
 const STATUS_LABEL: Record<RenderJob["status"], string> = {
   queued: "Queued",
   rendering: "Rendering",
@@ -26,6 +29,41 @@ const STATUS_LABEL: Record<RenderJob["status"], string> = {
   failed: "Failed",
   cancelled: "Cancelled",
 };
+
+/** "1m 42s" / "8.4s" — a duration, not a clock time. */
+function formatDuration(ms: number) {
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m ${Math.round(s - m * 60)}s`;
+}
+
+/** Wall-clock time of day, for "when did this start". */
+function formatClock(iso: string) {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+/**
+ * How long the job waited for a worker, and how long the render itself took.
+ * Split deliberately: a slow queue and a slow render are different problems,
+ * and a single "took 4m" number hides which one you have.
+ */
+function timings(j: RenderJob) {
+  const created = new Date(j.createdAt).getTime();
+  const started = j.startedAt ? new Date(j.startedAt).getTime() : null;
+  const ended = j.completedAt ? new Date(j.completedAt).getTime() : null;
+  // Still running: measure against now so the number ticks up as it polls.
+  const renderEnd = ended ?? (started && IN_PROGRESS_RUNNING.has(j.status) ? Date.now() : null);
+  return {
+    waited: started ? started - created : null,
+    rendered: started && renderEnd ? renderEnd - started : null,
+    running: !ended && started !== null,
+  };
+}
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -59,6 +97,27 @@ function StatusIcon({ status }: { status: RenderJob["status"] }) {
         <path d="M18 6 6 18M6 6l12 12" />
       </svg>
     </span>
+  );
+}
+
+function RenderTimings({ job }: { job: RenderJob }) {
+  const { waited, rendered, running } = timings(job);
+  if (waited === null && rendered === null) return null;
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-[0.72rem] text-text-tertiary">
+      {job.startedAt && (
+        <span title={new Date(job.startedAt).toLocaleString()}>
+          started {formatClock(job.startedAt)}
+        </span>
+      )}
+      {waited !== null && waited > 0 && <span>queued {formatDuration(waited)}</span>}
+      {rendered !== null && (
+        <span className={running ? "text-accent" : "text-text-secondary"}>
+          {running ? "rendering" : "took"} {formatDuration(rendered)}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -103,6 +162,7 @@ export default function AdminRenders() {
                     {active ? ` · ${j.progress}%` : ` · ${timeAgo(j.createdAt)}`}
                   </div>
                 )}
+                <RenderTimings job={j} />
               </div>
               {active && (
                 <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-surface-raised">

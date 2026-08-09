@@ -33,7 +33,8 @@ export function ProjectPlayer({ project }: { project: ProjectDetail }) {
       <button
         onClick={() => setStarted(true)}
         aria-label="Play project"
-        className="group relative block aspect-video w-full overflow-hidden rounded-lg border border-border bg-surface-raised"
+        style={{ aspectRatio: `${project.width} / ${project.height}` }}
+        className="group relative block w-full overflow-hidden rounded-lg border border-border bg-surface-raised"
       >
         {project.thumbnailUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -63,7 +64,10 @@ function LivePreview({ project }: { project: ProjectDetail }) {
 
   if (initializing) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-border bg-surface-raised">
+      <div
+        style={{ aspectRatio: `${project.width} / ${project.height}` }}
+        className="flex w-full items-center justify-center rounded-lg border border-border bg-surface-raised"
+      >
         <Spinner className="size-5 text-text-tertiary" />
       </div>
     );
@@ -71,7 +75,10 @@ function LivePreview({ project }: { project: ProjectDetail }) {
 
   if (!compiled.length) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-border bg-surface-raised text-[0.85rem] text-text-tertiary">
+      <div
+        style={{ aspectRatio: `${project.width} / ${project.height}` }}
+        className="flex w-full items-center justify-center rounded-lg border border-border bg-surface-raised text-[0.85rem] text-text-tertiary"
+      >
         This project has no scenes to play.
       </div>
     );
@@ -79,13 +86,26 @@ function LivePreview({ project }: { project: ProjectDetail }) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-black">
-      <Player
-        scenes={compiled}
-        fps={project.fps}
-        width={project.width}
-        height={project.height}
-        audioClips={project.audioClips}
-      />
+      {/*
+        The stage needs an explicit height. <Player> sizes its own root
+        height:100%, which against an auto-height parent resolves to auto — and
+        the composition's native size (1080px tall) then sets it, so the preview
+        jumped to full height the moment it replaced the poster. Giving the box
+        the project's own ratio also keeps portrait projects from being forced
+        into 16:9.
+      */}
+      <div
+        className="w-full"
+        style={{ aspectRatio: `${project.width} / ${project.height}` }}
+      >
+        <Player
+          scenes={compiled}
+          fps={project.fps}
+          width={project.width}
+          height={project.height}
+          audioClips={project.audioClips}
+        />
+      </div>
       <Transport fps={project.fps} />
     </div>
   );

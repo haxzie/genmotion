@@ -518,6 +518,10 @@ adminRoutes.get("/renders", async (c) => {
       format: schema.exportJobs.format,
       error: schema.exportJobs.error,
       createdAt: schema.exportJobs.createdAt,
+      // Queued at `createdAt`, picked up at `startedAt`, finished at
+      // `completedAt` — the console needs all three to separate time spent
+      // waiting for a worker from time spent actually rendering.
+      startedAt: schema.exportJobs.startedAt,
       completedAt: schema.exportJobs.completedAt,
       projectId: schema.projects.id,
       projectName: schema.projects.name,

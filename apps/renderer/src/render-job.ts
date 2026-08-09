@@ -171,6 +171,10 @@ async function createRenderPage(
   const storageOrigin = new URL(
     process.env.S3_PUBLIC_URL ?? "http://localhost:9000",
   ).origin;
+  // Requests the allowlist turned away. A blocked request surfaces in the page
+  // as a bare `TypeError: Failed to fetch`, which says nothing about what was
+  // blocked — so keep the URLs and attach them to the failure.
+  const blocked: string[] = [];
   await context.route("**/*", (route) => {
     const url = route.request().url();
     const type = route.request().resourceType();
@@ -186,6 +190,7 @@ async function createRenderPage(
       type === "image" ||
       type === "media" ||
       type === "font";
+    if (!allowed && blocked.length < 20) blocked.push(`${type} ${url}`);
     return allowed ? route.continue() : route.abort();
   });
 
@@ -222,7 +227,7 @@ async function createRenderPage(
     throw new Error(initResult.error);
   }
 
-  return { context, page, pageErrors };
+  return { context, page, pageErrors, blocked };
 }
 
 /**
@@ -237,10 +242,12 @@ export async function captureThumbnailToFile(
   const { fps, width, height, scene, frame } = payload;
   const workDir = mkdtempSync(join(tmpdir(), "gm-thumb-"));
   let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
+  let blockedRequests: string[] = [];
   try {
     const compiled = await compileScenes([scene]);
     const setup = await createRenderPage(browser, { fps, width, height }, compiled);
     context = setup.context;
+    blockedRequests = setup.blocked;
 
     await setup.page.evaluate((f) => window.__gm!.setFrame(f), frame);
     const cdp = await context.newCDPSession(setup.page);
@@ -263,8 +270,24 @@ export async function captureThumbnailToFile(
   } catch (err) {
     await context?.close();
     rmSync(workDir, { recursive: true, force: true });
-    throw err;
+    throw enrichWithBlocked(err, blockedRequests);
   }
+}
+
+/**
+ * Name the blocked requests in the thrown error.
+ *
+ * Playwright aborts anything outside the network allowlist, and the page then
+ * throws a bare `TypeError: Failed to fetch` — a message that reaches the admin
+ * console and tells whoever reads it nothing at all. Appending the URLs turns
+ * an unactionable failure into one that names the asset to allow or remove.
+ */
+function enrichWithBlocked(err: unknown, blocked: string[]): unknown {
+  if (blocked.length === 0 || !(err instanceof Error)) return err;
+  const shown = blocked.slice(0, 3).join(", ");
+  const more = blocked.length > 3 ? ` (+${blocked.length - 3} more)` : "";
+  err.message = `${err.message} — blocked by the render network allowlist: ${shown}${more}`;
+  return err;
 }
 
 /**
@@ -353,6 +376,10 @@ export async function renderCompositionToFile(
 
   const workDir = mkdtempSync(join(tmpdir(), "gm-render-"));
   let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
+  // Hoisted out of the try so the catch can still read it: a request the
+  // allowlist turned away is the usual cause of an otherwise contextless
+  // "Failed to fetch", and the URL is the only part worth reporting.
+  let blockedRequests: string[] = [];
   try {
     const compiledScenes = await compileScenes(input.scenes);
     const setup = await createRenderPage(
@@ -362,7 +389,8 @@ export async function renderCompositionToFile(
       { watermark: input.watermark },
     );
     context = setup.context;
-    const { page, pageErrors } = setup;
+    const { page, pageErrors, blocked } = setup;
+    blockedRequests = blocked;
 
     const totalFrames = await page.evaluate(() => window.__gm!.getTotalFrames());
     if (totalFrames <= 0) throw new Error("Composition has no frames");
@@ -442,6 +470,12 @@ export async function renderCompositionToFile(
     if (pageErrors.length > 0) {
       console.warn(`[render ${input.exportJobId}] page errors:`, pageErrors.slice(0, 3));
     }
+    if (blocked.length > 0) {
+      console.warn(
+        `[render ${input.exportJobId}] ${blocked.length} request(s) blocked by the network allowlist:`,
+        blocked.slice(0, 5),
+      );
+    }
 
     // Mix scene voiceovers + audio clips (fetched from their public URLs).
     let finalPath = outputPath;
@@ -482,9 +516,10 @@ export async function renderCompositionToFile(
   } catch (err) {
     await context?.close();
     rmSync(workDir, { recursive: true, force: true });
-    throw err;
+    throw enrichWithBlocked(err, blockedRequests);
   }
 }
+
 
 /**
  * Local (DB-connected) render driver: load the job from Postgres, render via the
