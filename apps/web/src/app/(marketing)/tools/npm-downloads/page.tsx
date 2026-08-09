@@ -1,19 +1,29 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { pageMetadata } from "@/lib/marketing/seo";
+import { toolJsonLd } from "@/lib/marketing/tool-jsonld";
 import { getTool } from "@/lib/marketing/tools";
 import { Tool } from "./tool";
 
-// The generator is a client component, which can't export metadata — hence this
-// server wrapper. Without it the page inherits the site-wide card, including a
-// homepage og:url.
+// The tool itself is a client component, which can't export metadata — hence
+// this server wrapper. It also owns the structured data: it's static, so there
+// is no reason to ship it in the client bundle.
 const TOOL = getTool("npm-downloads")!;
 
 export const metadata: Metadata = pageMetadata({
   title: `${TOOL.name} — Free Online Tool | GenMotion`,
-  description: TOOL.description,
+  description: TOOL.metaDescription,
   path: `/tools/${TOOL.slug}`,
+  // This route ships its own opengraph-image; Next replaces openGraph.images
+  // rather than merging, so the default card would shadow the generated one.
+  image: null,
 });
 
 export default function Page() {
-  return <Tool />;
+  return (
+    <>
+      <JsonLd data={toolJsonLd(TOOL)} />
+      <Tool />
+    </>
+  );
 }

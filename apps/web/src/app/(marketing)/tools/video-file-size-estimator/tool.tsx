@@ -6,22 +6,10 @@ import { Card } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
 import { getTool } from "@/lib/marketing/tools";
-import { JsonLd } from "@/components/marketing/json-ld";
 import { SITE_URL } from "@/lib/marketing/site";
 
 const TOOL = getTool("video-file-size-estimator")!;
 const FAQS = TOOL.faqs;
-const toolJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: TOOL.name,
-  description: TOOL.description,
-  url: `${SITE_URL}/tools/${TOOL.slug}`,
-  applicationCategory: "MultimediaApplication",
-  operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-};
-
 export function VideoFileSizeEstimator() {
   const [videoMbps, setVideoMbps] = useState(8);
   const [audioKbps, setAudioKbps] = useState(192);
@@ -40,7 +28,6 @@ export function VideoFileSizeEstimator() {
 
   return (
     <>
-    <JsonLd data={toolJsonLd} />
     <ToolShell
       title="Video File Size Estimator"
       description="Estimate how large an export will be from its bitrate and duration."

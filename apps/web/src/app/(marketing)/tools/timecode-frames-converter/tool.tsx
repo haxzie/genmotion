@@ -6,23 +6,10 @@ import { Card } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
 import { getTool } from "@/lib/marketing/tools";
-import { JsonLd } from "@/components/marketing/json-ld";
-import { SITE_URL } from "@/lib/marketing/site";
 import { cx } from "@/components/ui";
 
 const TOOL = getTool("timecode-frames-converter")!;
 const FAQS = TOOL.faqs;
-const toolJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: TOOL.name,
-  description: TOOL.description,
-  url: `${SITE_URL}/tools/${TOOL.slug}`,
-  applicationCategory: "MultimediaApplication",
-  operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-};
-
 const FPS_PRESETS = [24, 25, 30, 50, 60];
 
 function pad(n: number) {
@@ -55,7 +42,6 @@ export function TimecodeFramesConverter() {
 
   return (
     <>
-    <JsonLd data={toolJsonLd} />
     <ToolShell
       title="Timecode ↔ Frames Converter"
       description="Convert between a raw frame count and HH:MM:SS:FF timecode at any frame rate."

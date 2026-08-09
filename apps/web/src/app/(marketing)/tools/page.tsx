@@ -24,9 +24,19 @@ const toolsJsonLd = {
       url: `${SITE_URL}/tools/${t.slug}`,
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Web",
+      isAccessibleForFree: true,
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     },
   })),
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    { "@type": "ListItem", position: 2, name: "Free Tools", item: `${SITE_URL}/tools` },
+  ],
 };
 
 const FAQS: Faq[] = [
@@ -51,14 +61,14 @@ const FAQS: Faq[] = [
 export const metadata: Metadata = pageMetadata({
   title: "Free Tools — GenMotion",
   description:
-    "Free, no-signup video generators and calculators: GitHub star count and star history videos, npm download videos, YouTube subscriber videos, aspect ratios, timecode, and file size.",
+    "Free, no-signup video generators and calculators for creators: GitHub star, npm download and YouTube subscriber videos, plus aspect ratio and timecode tools.",
   path: "/tools",
 });
 
 export default function ToolsIndexPage() {
   return (
     <>
-      <JsonLd data={toolsJsonLd} />
+      <JsonLd data={[toolsJsonLd, breadcrumbJsonLd]} />
       <Section>
       <Container>
         <div className="max-w-2xl">

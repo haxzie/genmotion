@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Player, usePlaybackStore } from "@genmotion/player";
 import { FaqSection } from "@/components/marketing/faq";
-import { JsonLd } from "@/components/marketing/json-ld";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
 import { Button, Spinner, cx } from "@/components/ui";
 import { UpsellModal, type ExportPhase } from "@/components/tools/upsell-modal";
 import { getTool } from "@/lib/marketing/tools";
-import { SITE_URL } from "@/lib/marketing/site";
 import { getGenerator } from "@/lib/video-tools/registry";
 import { SAMPLES } from "@/lib/video-tools/samples";
 import { usableTemplates } from "@/lib/video-tools/templates";
@@ -160,18 +158,6 @@ export function VideoTool({ slug }: { slug: string }) {
 
   return (
     <>
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          name: tool.name,
-          description: tool.description,
-          url: `${SITE_URL}/tools/${tool.slug}`,
-          applicationCategory: "MultimediaApplication",
-          operatingSystem: "Web",
-          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-        }}
-      />
       <ToolShell wide title={tool.name} description={tool.description}>
         <div className="flex flex-col gap-7">
           <form

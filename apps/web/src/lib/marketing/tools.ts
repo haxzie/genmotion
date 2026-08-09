@@ -15,6 +15,13 @@ export type Tool = {
   icon: IconKey;
   /** Short label for the tool's own name in running copy — "star count video". */
   shortName: string;
+  /**
+   * The <meta name="description"> and social-card copy, 120–160 characters.
+   * `description` is deliberately shorter because it also has to fit a card in
+   * a three-up grid, which leaves search results well under the space Google
+   * actually gives them.
+   */
+  metaDescription: string;
   /** Exactly three, in order: the three steps to a finished result. */
   steps: [ToolCard, ToolCard, ToolCard];
   /** Exactly three: who reaches for this, and what they do with it. */
@@ -29,6 +36,8 @@ export const TOOLS: Tool[] = [
     description:
       "Turn any public repository's star count into a shareable animated video.",
     icon: "github",
+    metaDescription:
+      "Turn any public GitHub repository's star count into a shareable animated video. Free, no sign-up — renders in your browser and downloads as an MP4.",
     shortName: "star count video",
     steps: [
       {
@@ -99,6 +108,8 @@ export const TOOLS: Tool[] = [
     description:
       "Turn a package's weekly npm download count into an animated video.",
     icon: "npm",
+    metaDescription:
+      "Turn any npm package's weekly download count into an animated video with a 52-week trend chart. Free, no sign-up, downloads straight as an MP4.",
     shortName: "npm downloads video",
     steps: [
       {
@@ -165,6 +176,8 @@ export const TOOLS: Tool[] = [
     description:
       "Turn a channel's subscriber count into a shareable animated video.",
     icon: "youtube",
+    metaDescription:
+      "Turn any YouTube channel's subscriber count into a shareable animated video. Free, no sign-up — renders in your browser and downloads as an MP4.",
     shortName: "subscriber count video",
     steps: [
       {
@@ -231,6 +244,8 @@ export const TOOLS: Tool[] = [
     description:
       "Lock an aspect ratio and solve for the missing width or height in pixels.",
     icon: "frame",
+    metaDescription:
+      "Free aspect ratio calculator for video. Pick 16:9, 9:16, 1:1 or 4:5, lock a width or height, and get the exact matching pixel dimensions instantly.",
     shortName: "aspect ratio calculator",
     steps: [
       {
@@ -297,6 +312,8 @@ export const TOOLS: Tool[] = [
     description:
       "Convert between HH:MM:SS:FF timecode and a raw frame count at any frame rate.",
     icon: "timeline",
+    metaDescription:
+      "Free timecode calculator. Convert HH:MM:SS:FF timecode to a frame count and back, at any frame rate — 24, 25, 30 or 60fps. No sign-up required.",
     shortName: "timecode converter",
     steps: [
       {
@@ -363,6 +380,8 @@ export const TOOLS: Tool[] = [
     description:
       "Estimate an export's file size from its bitrate and duration — and vice versa.",
     icon: "export",
+    metaDescription:
+      "Free video file size calculator. Estimate an export's size from its bitrate and duration, or work backwards to the bitrate that fits your limit.",
     shortName: "file size estimator",
     steps: [
       {
@@ -429,6 +448,8 @@ export const TOOLS: Tool[] = [
     description:
       "A cheat sheet of recommended video dimensions and ratios for every major platform.",
     icon: "palette",
+    metaDescription:
+      "Free cheat sheet of recommended video sizes and aspect ratios for YouTube, Instagram, TikTok, LinkedIn and X — with exact pixel dimensions for each.",
     shortName: "social video size guide",
     steps: [
       {
@@ -490,6 +511,17 @@ export const TOOLS: Tool[] = [
     ],
   },
 ];
+
+/**
+ * Tools that produce a video, as opposed to the calculators and references.
+ * Drives the grouping in "explore more tools" and the browser requirements
+ * reported in structured data — only these need WebCodecs.
+ */
+export const GENERATOR_SLUGS: ReadonlySet<string> = new Set([
+  "github-star-count",
+  "npm-downloads",
+  "youtube-subscribers",
+]);
 
 export function getTool(slug: string): Tool | undefined {
   return TOOLS.find((t) => t.slug === slug);
