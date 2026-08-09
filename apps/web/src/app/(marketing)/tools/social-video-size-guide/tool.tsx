@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { FaqSection } from "@/components/marketing/faq";
+import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
 import { getTool } from "@/lib/marketing/tools";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { SITE_URL } from "@/lib/marketing/site";
@@ -114,7 +115,9 @@ export function SocialVideoSizeGuide() {
         </p>
       </div>
     </ToolShell>
+    <ToolSections tool={TOOL} />
     <FaqSection items={FAQS} />
+    <MoreTools current={TOOL.slug} />
     </>
   );
 }

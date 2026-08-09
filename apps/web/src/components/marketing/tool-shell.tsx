@@ -5,15 +5,18 @@ import { Container, Section } from "@/components/marketing/primitives";
 export function ToolShell({
   title,
   description,
+  wide = false,
   children,
 }: {
   title: string;
   description: string;
+  /** Widen the column — the video generators need room for a 16:9 preview. */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Section>
-      <Container className="max-w-2xl">
+      <Container className={wide ? "max-w-4xl" : "max-w-2xl"}>
         <Link
           href="/tools"
           className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-green"

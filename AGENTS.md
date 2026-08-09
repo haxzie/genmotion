@@ -81,7 +81,18 @@ pnpm db:push                          # sync schema to DEV only
   the worker image. `local`/`docker` providers render on-box.
 - **Secrets/env:** validated in `apps/api/src/env.ts`. Add new vars there
   (`.optional()` or `.default()` unless truly required). Never bake secrets into
-  images; pass at runtime.
+  images; pass at runtime. *Exception:* the free video generators under
+  `/tools` read `GITHUB_TOKEN` and `YOUTUBE_API_KEY` in **apps/web**, because
+  their endpoints are public and unauthenticated — routing them through the
+  product API would give it its first unauthenticated posture. `next.config.ts`
+  loads the root `.env` for this (Next only looks in its own directory).
+- **Free video generators (`/tools`):** the four generators are client-side
+  end to end — data comes from cached Next route handlers under
+  `apps/web/src/app/api/tools/*`, and the MP4 is rendered and encoded **in the
+  browser** (`src/lib/video-tools/render/`), never by `apps/renderer`. Adding a
+  source or a template is additive; see
+  `apps/web/src/lib/video-tools/templates/README.md` for the authoring rules
+  that keep DOM rasterization faithful.
 
 ## Git & PRs
 

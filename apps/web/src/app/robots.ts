@@ -18,6 +18,8 @@ const DISALLOW = [
   "/accept-invitation",
   "/admin",
   "/api/",
+  // Local-only harnesses (/dev/player, /dev/video-tools) — never useful to a crawler.
+  "/dev/",
 ];
 
 // Crawlers we explicitly welcome. `*` already covers everyone, but we name the

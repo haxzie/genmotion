@@ -303,3 +303,13 @@ body {
     opacity: 1;
   }
 }
+
+/* Hue blobs in the free-tools upsell modal header — the marketing hero's own
+   palette and drift, scaled down to a card-sized box. Marker class only; the
+   colours, size and animation come from utilities on the element. It exists so
+   the motion can be switched off, which the hero's blobs predate. */
+@media (prefers-reduced-motion: reduce) {
+  .hue-blob {
+    animation: none;
+  }
+}

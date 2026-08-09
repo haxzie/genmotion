@@ -39,15 +39,19 @@ const FAQS: Faq[] = [
     a: "No account is needed. The tools are standalone utilities; GenMotion itself is the AI studio you can try separately when you're ready to make a video.",
   },
   {
+    q: "How do the video generators work?",
+    a: "You enter a repository, package, or channel, we fetch the live numbers, and the video is rendered and encoded entirely in your browser — nothing is uploaded and there's no queue to wait in. Downloads are MP4 and carry a small GenMotion badge.",
+  },
+  {
     q: "Will you add more tools?",
-    a: "Yes. We'll keep adding calculators and references that help video creators — check back, or start with the ones here.",
+    a: "Yes. We'll keep adding generators, calculators, and references that help video creators — check back, or start with the ones here.",
   },
 ];
 
 export const metadata: Metadata = pageMetadata({
   title: "Free Tools — GenMotion",
   description:
-    "Free, no-signup calculators and references for video creators: aspect ratios, timecode, file size, and social media dimensions.",
+    "Free, no-signup video generators and calculators: GitHub star count and star history videos, npm download videos, YouTube subscriber videos, aspect ratios, timecode, and file size.",
   path: "/tools",
 });
 
@@ -63,8 +67,8 @@ export default function ToolsIndexPage() {
             Free tools for video creators
           </h1>
           <p className="mt-5 text-lg text-text-secondary">
-            Handy calculators and references — no account required. We&apos;ll keep
-            adding to these.
+            Video generators, calculators, and references — no account required.
+            We&apos;ll keep adding to these.
           </p>
         </div>
 
