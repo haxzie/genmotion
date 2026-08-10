@@ -110,7 +110,7 @@ export default async function BlogPostPage({ params }: Params) {
           {parseBody(post.body).map((block, i) =>
             block.type === "video" ? (
               <figure key={i}>
-                <VideoPlayer src={block.url} title={block.caption} />
+                <VideoPlayer src={block.url} poster={block.poster} title={block.caption} />
                 {block.caption && (
                   <figcaption className="mt-3 text-center text-[0.9rem] text-text-tertiary">
                     {block.caption}

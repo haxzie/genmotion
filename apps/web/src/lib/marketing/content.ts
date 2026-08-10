@@ -53,12 +53,18 @@ export type ShowcaseVideo = {
  * line and split out before rendering:
  *
  *   ::video https://youtu.be/PA0mjzzhtVU "Optional caption"
+ *   ::video /blog/x/clip.mp4 "Caption" /blog/x/clip.jpg
+ *
+ * The third field is an optional poster, which only applies to a direct media
+ * file — an embedded YouTube player brings its own. Without one a self-hosted
+ * clip shows a black rectangle until it is played.
  */
 export type BodyBlock =
   | { type: "markdown"; content: string }
-  | { type: "video"; url: string; caption?: string };
+  | { type: "video"; url: string; caption?: string; poster?: string };
 
-const VIDEO_DIRECTIVE = /^::video\s+(\S+)(?:\s+"([^"]*)")?\s*$/;
+const VIDEO_DIRECTIVE =
+  /^::video\s+(\S+)(?:\s+"([^"]*)")?(?:\s+(\S+))?\s*$/;
 
 export function parseBody(body: string): BodyBlock[] {
   const blocks: BodyBlock[] = [];
@@ -74,7 +80,12 @@ export function parseBody(body: string): BodyBlock[] {
     const match = VIDEO_DIRECTIVE.exec(line.trim());
     if (match?.[1]) {
       flush();
-      blocks.push({ type: "video", url: match[1], caption: match[2] });
+      blocks.push({
+        type: "video",
+        url: match[1],
+        caption: match[2],
+        poster: match[3],
+      });
     } else {
       buffer.push(line);
     }

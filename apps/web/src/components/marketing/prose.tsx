@@ -12,11 +12,20 @@ import { Streamdown } from "streamdown";
  * bordered card around every table. `controls={false}` drops the buttons and the
  * `table` override replaces the card with a plain scroll container — wide tables
  * still scroll on narrow screens, they just don't render as a boxed widget.
+ *
+ * `linkSafety` is the other chat default worth undoing. Streamdown renders every
+ * link as a <button> that opens a "are you sure" modal, which is right for
+ * untrusted model output and wrong for an article: markdown links rendered as
+ * plain buttons that navigate nowhere, so no post could link anywhere and none
+ * ever tried. This content is ours, written in the repo and reviewed in a PR, so
+ * links render as real anchors — which also matters for crawlers, since a button
+ * carries no href to follow.
  */
 export function Prose({ children }: { children: string }) {
   return (
     <Streamdown
       controls={false}
+      linkSafety={{ enabled: false }}
       components={{
         table: ({ node: _node, className: _className, ...props }) => (
           <div className="overflow-x-auto">
