@@ -53,6 +53,23 @@ the downloaded file.
    from the export while still showing in the preview.
 6. **Size everything relative to `useVideoConfig()`**, not fixed pixels, so the
    same template works at 1920×1080, 1080×1080, and 1080×1920.
+7. **Give every run of text a width budget.** Templates scale type off the
+   SHORT edge so the design holds across aspects, but what text has to fit is
+   the LONG edge minus padding — and at 1:1 and 9:16 those are the same 1080px.
+   A headline that is comfortable at 1920×1080 will run off both margins at
+   9:16 and be clipped by the frame. Pass the available width through
+   `fitSize()` (in `shared.ts`) so the size drops until it fits:
+
+   ```tsx
+   const content = width - unit * 16;               // the padding this scene uses
+   <span style={{ fontSize: fitSize(unit * 4.4, content, textEm(data.title)) }}>
+   <RollingNumber value={data.value} size={unit * 24} maxWidth={content} />
+   ```
+
+   `textEm()` estimates from character count with a deliberately generous
+   per-character advance. `RollingNumber` doesn't estimate — it knows its exact
+   glyph composition and computes a real width, because tabular figures all
+   share one advance.
 
 ## Adding a template
 

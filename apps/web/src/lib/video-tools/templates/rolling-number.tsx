@@ -1,5 +1,5 @@
 import { gsap, useGsapTimeline } from "@genmotion/motion";
-import { compactParts, groupPositions } from "./shared";
+import { compactParts, fitSize, groupPositions } from "./shared";
 
 /**
  * A number that spins into place, one wheel per digit.
@@ -35,11 +35,70 @@ const CELL = 1.45;
 const EDGE_FADE =
   "linear-gradient(to bottom, transparent 0%, #000 16%, #000 84%, transparent 100%)";
 
+/**
+ * Glyph advances in em, measured in the browser against the app's Geist faces
+ * with `font-variant-numeric: tabular-nums` and the -0.045em tracking below.
+ *
+ * They can be constants because none of them depend on which glyph is shown:
+ * tabular figures all share the "0" advance (a digit slot is `width: 1ch`), and
+ * the separators are the only other repeated characters. The sum reproduced a
+ * measured 8-digit number's width exactly, so the fit is real rather than
+ * approximate. `M` is the widest suffix at 0.763; 0.78 leaves a little margin.
+ */
+const DIGIT_EM = 0.608;
+const SEPARATOR_EM = 0.164;
+const SUFFIX_EM = 0.78;
+
+/**
+ * How a value breaks down into rendered glyphs. Shared by the component and by
+ * `rollingNumberEm`, so the width a template fits to and the width the number
+ * actually occupies are derived from one place and cannot drift apart.
+ */
+function glyphParts(value: number, compact: boolean) {
+  const { divisor, decimals, suffix } = compact
+    ? compactParts(value)
+    : { divisor: 1, decimals: 0, suffix: "" };
+
+  const shown = Math.abs(value) / divisor;
+  const integerDigits = Math.max(1, Math.floor(shown).toString().length);
+
+  // Digits come from one rounded integer rather than from `value / 10^e` per
+  // place: 20.1 / 0.1 is 200.999… in binary floating point, which floors to the
+  // wrong digit. Scaling once and reading the string can't drift.
+  const digits = Math.round(shown * Math.pow(10, decimals))
+    .toString()
+    .padStart(integerDigits + decimals, "0")
+    .split("")
+    .map(Number);
+
+  const separators = compact ? new Set<number>() : groupPositions(integerDigits);
+  // Both the thousands commas and the decimal point are `Static` glyphs.
+  const separatorCount = separators.size + (decimals > 0 ? 1 : 0);
+
+  return { digits, decimals, integerDigits, separators, separatorCount, suffix };
+}
+
+/** Width of the rendered number in em — what `fitSize` needs to size it. */
+export function rollingNumberEm(value: number, compact = false): number {
+  const { digits, separatorCount, suffix } = glyphParts(value, compact);
+  return (
+    digits.length * DIGIT_EM +
+    separatorCount * SEPARATOR_EM +
+    (suffix ? SUFFIX_EM : 0)
+  );
+}
+
 export interface RollingNumberProps {
   /** The final value. The component owns the animation to it. */
   value: number;
   /** Font size in px; also the height of one digit cell. */
   size: number;
+  /**
+   * Width the number must fit into. When the number would be wider, `size` is
+   * scaled down until it fits — which is what stops long values being clipped
+   * by the frame at 1:1 and 9:16.
+   */
+  maxWidth?: number;
   /** Render as 20.1M rather than 20,143,882. */
   compact?: boolean;
   /** Seconds before the spin starts. */
@@ -59,6 +118,7 @@ export interface RollingNumberProps {
 export function RollingNumber({
   value,
   size,
+  maxWidth,
   compact = false,
   delay = 0.25,
   duration = 1.25,
@@ -66,24 +126,12 @@ export function RollingNumber({
   ease = "power4.out",
   color = "#ffffff",
 }: RollingNumberProps) {
-  const { divisor, decimals, suffix } = compact
-    ? compactParts(value)
-    : { divisor: 1, decimals: 0, suffix: "" };
+  const { digits, decimals, integerDigits, separators, suffix } = glyphParts(value, compact);
 
-  const shown = Math.abs(value) / divisor;
-  const integerDigits = Math.max(1, Math.floor(shown).toString().length);
-  const cell = size * CELL;
-
-  // Digits come from one rounded integer rather than from `value / 10^e` per
-  // place: 20.1 / 0.1 is 200.999… in binary floating point, which floors to the
-  // wrong digit. Scaling once and reading the string can't drift.
-  const digits = Math.round(shown * Math.pow(10, decimals))
-    .toString()
-    .padStart(integerDigits + decimals, "0")
-    .split("")
-    .map(Number);
-
-  const separators = compact ? new Set<number>() : groupPositions(integerDigits);
+  // Shrink to fit before anything else: `cell` and the GSAP travel distances
+  // are both derived from the final size, so they stay in step.
+  const fitted = fitSize(size, maxWidth ?? 0, rollingNumberEm(value, compact));
+  const cell = fitted * CELL;
 
   const ref = useGsapTimeline<HTMLSpanElement>((container) => {
     const tl = gsap.timeline();
@@ -108,7 +156,7 @@ export function RollingNumber({
       style={{
         display: "inline-flex",
         alignItems: "flex-start",
-        fontSize: size,
+        fontSize: fitted,
         lineHeight: 1,
         fontVariantNumeric: "tabular-nums",
         letterSpacing: "-0.045em",

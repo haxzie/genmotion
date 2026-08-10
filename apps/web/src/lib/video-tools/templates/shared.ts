@@ -104,6 +104,37 @@ export function resample(series: MetricPoint[], count: number): number[] {
   return out;
 }
 
+/**
+ * The largest font size at which something `widthInEm` wide still fits
+ * `maxWidth`, never exceeding `desired`.
+ *
+ * This is what keeps 1:1 and 9:16 honest. Every template sizes type off the
+ * SHORT edge so the design scales, but what a headline has to fit into is the
+ * LONG edge minus padding — at 9:16 those are 1080 and 1920, so a size that is
+ * comfortable in landscape overflows the frame in portrait and the text is
+ * clipped at both margins. Sizing down to fit is the fix; nothing is ever
+ * trimmed.
+ */
+export function fitSize(desired: number, maxWidth: number, widthInEm: number): number {
+  if (!(maxWidth > 0) || !(widthInEm > 0)) return desired;
+  return Math.min(desired, maxWidth / widthInEm);
+}
+
+/**
+ * Width of a run of text in em, estimated from its length.
+ *
+ * Real subjects — repo slugs, package names, channel handles, the source
+ * captions — measure between 0.47 and 0.55 em per character in Geist. 0.62 sits
+ * above that whole range, so the estimate errs towards a slightly smaller font
+ * rather than an overflowing one. Digits don't go through here: `RollingNumber`
+ * knows its exact glyph composition and computes a real width.
+ */
+const TEXT_EM_PER_CHAR = 0.62;
+
+export function textEm(text: string): number {
+  return text.length * TEXT_EM_PER_CHAR;
+}
+
 /** Build an SVG path through points already mapped into the viewBox. */
 export function linePath(points: { x: number; y: number }[]): string {
   return points

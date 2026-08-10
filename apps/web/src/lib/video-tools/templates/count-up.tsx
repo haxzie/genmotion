@@ -1,8 +1,10 @@
 import { AbsoluteFill, gsap, useGsapTimeline, useVideoConfig } from "@genmotion/motion";
 import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
-import { alpha, shade } from "./shared";
+import { alpha, fitSize, shade, textEm } from "./shared";
+import { BrandMark } from "./brand";
 import { RollingNumber } from "./rolling-number";
+import { Sparkline } from "./sparkline";
 
 /**
  * The universal template: avatar + title, a big number spinning up to the real
@@ -22,6 +24,13 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
   const unit = Math.min(width, height) / 100;
   const portrait = height > width;
 
+  // Type is sized off the SHORT edge so the design scales, but it has to FIT
+  // the long edge minus the padding. At 1:1 and 9:16 those diverge, so every
+  // run of text gets a width budget and shrinks into it rather than overflowing
+  // the frame. The avatar and its gap come out of the headline's budget.
+  const content = width - unit * 16;
+  const titleWidth = content - (data.avatar ? unit * 9.2 : 0);
+
   const ref = useGsapTimeline<HTMLDivElement>((c) => {
     const q = <T extends Element = HTMLElement>(sel: string) =>
       c.querySelectorAll<T>(sel);
@@ -30,6 +39,7 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
     tl.from(q("[data-wash]"), { scale: 0.6, opacity: 0, duration: 1.1, ease: "power2.out" }, 0)
       .from(q("[data-head]"), { y: unit * 3, opacity: 0, duration: 0.7 }, 0.05)
       .from(q("[data-number]"), { scale: 0.92, opacity: 0, duration: 0.8 }, 0.12)
+      .from(q("[data-spark]"), { y: unit * 2, opacity: 0, duration: 0.7 }, 0.55)
       .from(q("[data-caption]"), { y: unit * 2, opacity: 0, duration: 0.6, stagger: 0.1 }, 1.35)
       .from(q("[data-footer]"), { opacity: 0, duration: 0.6 }, "-=0.4");
 
@@ -91,14 +101,39 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
             }}
           />
         )}
-        <span style={{ fontSize: unit * 4.4, fontWeight: 500, letterSpacing: "-0.01em" }}>
+        <span
+          style={{
+            fontSize: fitSize(unit * 4.4, titleWidth, textEm(data.title)),
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+            whiteSpace: "nowrap",
+          }}
+        >
           {data.title}
         </span>
       </div>
 
       <div data-number style={{ position: "relative", fontWeight: 650 }}>
-        <RollingNumber value={data.value} size={portrait ? unit * 19 : unit * 24} />
+        <RollingNumber
+          value={data.value}
+          size={portrait ? unit * 19 : unit * 24}
+          maxWidth={content}
+        />
       </div>
+
+      {/* Sources with history draw it under the number. Sources without one
+          (a repo's star count, a subscriber count) simply don't. */}
+      {data.series && data.series.length >= 2 && (
+        <div data-spark style={{ position: "relative" }}>
+          <Sparkline
+            series={data.series}
+            accent={data.accent}
+            width={Math.min(content, unit * 64)}
+            height={unit * 11}
+            strokeWidth={unit * 0.42}
+          />
+        </div>
+      )}
 
       <div
         style={{
@@ -109,18 +144,27 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
           gap: unit * 1.6,
         }}
       >
-        <span
+        <div
           data-caption
           style={{
-            fontSize: unit * 4.2,
-            fontWeight: 500,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: data.accent,
+            display: "flex",
+            alignItems: "center",
+            gap: unit * 1.5,
+            color: "#ffffff",
           }}
         >
-          {data.unit}
-        </span>
+          <BrandMark source={data.source} size={unit * 4} />
+          <span
+            style={{
+              fontSize: fitSize(unit * 4.2, content - unit * 5.5, textEm(data.subtitle)),
+              fontWeight: 500,
+              letterSpacing: "-0.01em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {data.subtitle}
+          </span>
+        </div>
         {data.delta && (
           <span
             data-caption
@@ -144,11 +188,14 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
         style={{
           position: "absolute",
           bottom: unit * 6,
-          fontSize: unit * 2.4,
+          fontSize: fitSize(unit * 2.4, content, textEm(data.url.replace(/^https?:\/\//, ""))),
           color: "#6b6b71",
+          whiteSpace: "nowrap",
         }}
       >
-        {data.subtitle}
+        {/* The URL, not the subtitle — the branded caption above now says what
+            the number is, so repeating it here reads as a duplicate. */}
+        {data.url.replace(/^https?:\/\//, "")}
       </span>
     </AbsoluteFill>
   );

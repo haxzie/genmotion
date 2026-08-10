@@ -1,8 +1,10 @@
 import { AbsoluteFill, gsap, useGsapTimeline, useVideoConfig } from "@genmotion/motion";
 import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
-import { alpha, formatSigned, shade } from "./shared";
+import { alpha, fitSize, formatSigned, shade, textEm } from "./shared";
+import { BrandMark } from "./brand";
 import { RollingNumber } from "./rolling-number";
+import { Sparkline } from "./sparkline";
 
 /**
  * A social-card layout: the metric sits inside a raised card that springs in,
@@ -14,12 +16,20 @@ function StatCardScene({ data }: { data: MetricVideoData }) {
   const { width, height } = useVideoConfig();
   const unit = Math.min(width, height) / 100;
 
+  // Width budget inside the card — see `fitSize`. The card is capped at
+  // `unit * 76`, sits inside `unit * 8` of scene padding, and has `unit * 6` of
+  // its own padding on each side.
+  const card = Math.min(width - unit * 16, unit * 76);
+  const content = card - unit * 12;
+
   const ref = useGsapTimeline<HTMLDivElement>((c) => {
     const q = (sel: string) => c.querySelectorAll<HTMLElement>(sel);
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
     tl.from(q("[data-card]"), { y: unit * 5, scale: 0.95, opacity: 0, duration: 0.8 }, 0)
       .from(q("[data-row]"), { y: unit * 2, opacity: 0, duration: 0.6, stagger: 0.12 }, 0.2)
+      // The curve draws itself in per frame; this only fades the box it lives in.
+      .from(q("[data-spark]"), { opacity: 0, duration: 0.7 }, 0.7)
       // back.out gives the pill a small overshoot, so it pops rather than fades.
       .from(q("[data-pill]"), { scale: 0.6, opacity: 0, duration: 0.6, ease: "back.out(2.2)" }, 1.7)
       .from(q("[data-footer]"), { opacity: 0, duration: 0.6 }, 0.6);
@@ -69,30 +79,67 @@ function StatCardScene({ data }: { data: MetricVideoData }) {
               }}
             />
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: unit * 0.5 }}>
-            <span style={{ fontSize: unit * 3.6, fontWeight: 550, letterSpacing: "-0.01em" }}>
-              {data.title}
-            </span>
-            <span style={{ fontSize: unit * 2.5, color: "#6b6b71" }}>{data.subtitle}</span>
-          </div>
+          {/* Title only — the subtitle moved to the branded row below the
+              number, where it sits next to its logo. */}
+          <span
+            style={{
+              fontSize: fitSize(
+                unit * 3.6,
+                content - (data.avatar ? unit * 8 : 0),
+                textEm(data.title),
+              ),
+              fontWeight: 550,
+              letterSpacing: "-0.01em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {data.title}
+          </span>
         </div>
 
         <span style={{ fontWeight: 650 }}>
-          <RollingNumber value={data.value} size={unit * 15} compact delay={0.4} />
+          <RollingNumber value={data.value} size={unit * 15} maxWidth={content} compact delay={0.4} />
         </span>
 
+        {/* Sources with history draw it inside the card; the rest don't. */}
+        {data.series && data.series.length >= 2 && (
+          <div data-spark>
+            <Sparkline
+              series={data.series}
+              accent={data.accent}
+              width={content}
+              height={unit * 8}
+              strokeWidth={unit * 0.36}
+            />
+          </div>
+        )}
+
         <div data-row style={{ display: "flex", alignItems: "center", gap: unit * 1.6 }}>
-          <span
+          <div
             style={{
-              fontSize: unit * 2.9,
-              fontWeight: 500,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              color: data.accent,
+              display: "flex",
+              alignItems: "center",
+              gap: unit * 1.2,
+              color: "#ffffff",
             }}
           >
-            {data.unit}
-          </span>
+            <BrandMark source={data.source} size={unit * 3} />
+            <span
+              style={{
+                fontSize: fitSize(
+                  unit * 2.9,
+                  // The mark, the gap and the delta pill share the row.
+                  content - unit * (data.delta ? 14 : 4.2),
+                  textEm(data.subtitle),
+                ),
+                fontWeight: 500,
+                letterSpacing: "-0.005em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {data.subtitle}
+            </span>
+          </div>
           {data.delta && (
             <span
               data-pill
@@ -117,8 +164,13 @@ function StatCardScene({ data }: { data: MetricVideoData }) {
           position: "absolute",
           bottom: unit * 6,
           left: unit * 8,
-          fontSize: unit * 2.3,
+          fontSize: fitSize(
+            unit * 2.3,
+            width - unit * 16,
+            textEm(data.url.replace(/^https?:\/\//, "")),
+          ),
           color: "#6b6b71",
+          whiteSpace: "nowrap",
         }}
       >
         {data.url.replace(/^https?:\/\//, "")}

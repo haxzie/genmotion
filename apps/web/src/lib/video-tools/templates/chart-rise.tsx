@@ -9,7 +9,8 @@ import {
 } from "@genmotion/motion";
 import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
-import { alpha, linePath, resample, shade } from "./shared";
+import { alpha, fitSize, linePath, resample, shade, textEm } from "./shared";
+import { BrandMark } from "./brand";
 import { RollingNumber } from "./rolling-number";
 
 /** Points the curve is resampled onto — enough to read as smooth at 1080p. */
@@ -28,6 +29,10 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
 
   const unit = Math.min(width, height) / 100;
   const portrait = height > width;
+
+  // Width budget for the header block — see `fitSize`. The header is inset by
+  // `unit * 10` on each side.
+  const content = width - unit * 20;
 
   const values = resample(data.series ?? [], RESOLUTION);
   const peak = Math.max(...values, 1);
@@ -111,10 +116,35 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
           padding: `${unit * 9}px ${unit * 10}px 0`,
         }}
       >
-        <span data-head style={{ fontSize: unit * 3.4, color: "#a0a0a6", letterSpacing: "0.02em" }}>
-          {data.subtitle}
-        </span>
-        <span data-head style={{ fontSize: unit * 5.2, fontWeight: 550, letterSpacing: "-0.015em" }}>
+        <div
+          data-head
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: unit * 1.2,
+            color: "#a0a0a6",
+          }}
+        >
+          <BrandMark source={data.source} size={unit * 3} />
+          <span
+            style={{
+              fontSize: fitSize(unit * 3.4, content - unit * 4.2, textEm(data.subtitle)),
+              letterSpacing: "0.02em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {data.subtitle}
+          </span>
+        </div>
+        <span
+          data-head
+          style={{
+            fontSize: fitSize(unit * 5.2, content, textEm(data.title)),
+            fontWeight: 550,
+            letterSpacing: "-0.015em",
+            whiteSpace: "nowrap",
+          }}
+        >
           {data.title}
         </span>
         <span data-head style={{ fontWeight: 650 }}>
@@ -125,6 +155,7 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
           <RollingNumber
             value={data.value}
             size={portrait ? unit * 12 : unit * 13}
+            maxWidth={content}
             delay={DRAW_FROM / fps}
             duration={(DRAW_TO - DRAW_FROM) / fps}
             spins={2}
