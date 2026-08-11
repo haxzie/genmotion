@@ -344,11 +344,32 @@ function Playhead({
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const trailRef = useRef<HTMLDivElement>(null);
+
+  // Length of the light trail: two-thirds of a second of travel, derived from
+  // the scale rather than hardcoded so it still reads right if PX_PER_SECOND
+  // changes. Long enough to register as motion, short enough not to smear.
+  const trailPx = Math.round(pxPerFrame * fps * 0.66);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const maxFrame = Math.max(0, totalFrames - 1);
+
+    // The trail is decoration on top of motion the user already asked for, so
+    // it's the first thing to drop when they've asked for less of it.
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    /** Light up the head while it's travelling; go flat the moment it stops. */
+    const setMoving = (on: boolean) => {
+      const lit = on && !reduceMotion;
+      if (trailRef.current) trailRef.current.style.opacity = lit ? "1" : "0";
+      el.style.boxShadow = lit
+        ? "0 0 10px 0 color-mix(in srgb, var(--color-accent) 55%, transparent)"
+        : "none";
+    };
 
     const apply = (f: number, smoothScroll: boolean) => {
       const x = TRACK_PADDING + f * pxPerFrame;
@@ -374,6 +395,7 @@ function Playhead({
     let playing = usePlaybackStore.getState().isPlaying;
 
     const startLoop = () => {
+      setMoving(true);
       anchor = performance.now() - (usePlaybackStore.getState().frame / fps) * 1000;
       lastFrame = usePlaybackStore.getState().frame;
       const tick = () => {
@@ -401,6 +423,7 @@ function Playhead({
       } else if (!s.isPlaying && playing) {
         playing = false;
         cancelAnimationFrame(raf);
+        setMoving(false);
         apply(s.frame, true);
       } else if (!s.isPlaying) {
         // Paused scrubbing / jumps.
@@ -410,6 +433,7 @@ function Playhead({
 
     return () => {
       cancelAnimationFrame(raf);
+      setMoving(false);
       unsubscribe();
     };
   }, [pxPerFrame, fps, totalFrames, scrollRef]);
@@ -417,8 +441,23 @@ function Playhead({
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute left-0 top-0 z-10 h-full w-px bg-accent will-change-transform"
+      className="pointer-events-none absolute left-0 top-0 z-10 h-full w-px bg-accent transition-shadow duration-200 will-change-transform"
     >
+      {/* Light trail. It rides the same transform as the head, so it costs no
+          per-frame work — only the opacity flips, on play and on pause. It
+          extends left because playback only ever travels right; `transition-
+          shadow` above is deliberate, since transitioning transform would
+          fight the rAF loop. */}
+      <div
+        ref={trailRef}
+        aria-hidden
+        className="absolute right-0 top-0 h-full opacity-0 transition-opacity duration-200 ease-out"
+        style={{
+          width: trailPx,
+          background:
+            "linear-gradient(to left, color-mix(in srgb, var(--color-accent) 42%, transparent), transparent)",
+        }}
+      />
       <div className="absolute -left-[5px] top-0 size-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-accent" />
     </div>
   );
