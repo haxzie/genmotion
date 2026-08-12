@@ -64,6 +64,27 @@ async function validateSceneCode(
     return `Scene code uses "${banned[1]}", which breaks deterministic rendering. Use the frame-driven APIs from @genmotion/motion instead (random(seed) for randomness).`;
   }
 
+  // Hot-linked logo CDNs are the top source of broken images in finished
+  // videos: Simple Icons 404s for any brand it doesn't carry (plenty of famous
+  // ones were pulled at the owner's request), and a 404 renders as a silent
+  // gap. Saving first turns that into a tool error the agent can act on.
+  const hotLinked = code.match(
+    /https?:\/\/(cdn\.simpleicons\.org|thesvg\.org)\/[^"'`\s)]*/,
+  );
+  if (hotLinked) {
+    return `Scene code hot-links a logo CDN ("${hotLinked[0]}"). That URL is never verified, so if the brand isn't in the set it 404s and the video ships with a broken image. Save it into the project first with saveImageToProject and use the URL it returns. If you cannot save assets (scene writers can't), use a lucide-react icon or the brand name set in type instead.`;
+  }
+
+  // Raster-pinning hints are fine on their own, but under a camera they tell
+  // the compositor to freeze a layer's raster scale — so a zoom stretches a
+  // stale texture instead of redrawing the text, and the export looks soft.
+  if (/<\s*Camera[\s/>]/.test(code)) {
+    const pinning = code.match(/\b(willChange|translate3d|translateZ)\b/);
+    if (pinning) {
+      return `Scene code uses "${pinning[1]}" inside a <Camera> scene. That pins the browser's raster scale, so a camera zoom magnifies a blurry cached texture instead of re-rendering the content. Remove it — the motion components handle compositing themselves.`;
+    }
+  }
+
   const evaluated = evaluateScene(result.code);
   if (!evaluated.ok) {
     return `Scene failed to load: ${evaluated.error.message}`;
