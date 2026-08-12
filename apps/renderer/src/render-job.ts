@@ -164,6 +164,10 @@ async function createRenderPage(
 ) {
   const context = await browser.newContext({
     viewport: { width: project.width, height: project.height },
+    // Deliberately 1: raising it does NOT raise capture resolution. Verified —
+    // Page.captureScreenshot returns byte-identical output at deviceScaleFactor
+    // 1 and 2, because Playwright normalizes the capture back to CSS pixels.
+    // Supersampling is done with `clip.scale` at capture time instead.
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   });
@@ -373,6 +377,7 @@ export async function renderCompositionToFile(
   const quality = Math.min(100, Math.max(0, input.quality ?? 80));
   const crf = Math.round(32 - (quality / 100) * 16);
   const jpegQuality = Math.round(72 + (quality / 100) * 26);
+  const supersample = input.supersample ?? 1;
 
   const workDir = mkdtempSync(join(tmpdir(), "gm-render-"));
   let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
@@ -400,6 +405,14 @@ export async function renderCompositionToFile(
     // Frame loop → ffmpeg stdin. Encoder args depend on the output format.
     const meta = exportFormatMeta(input.format);
     const outputPath = join(workDir, `out.${meta.ext}`);
+    // Bring a supersampled capture back to the project's real dimensions.
+    // `area` is a box filter — for an exact 2:1 reduction it is both the
+    // cheapest and the cleanest on type. The GIF branch must NOT get this: it
+    // already owns -vf with a labelled palette filtergraph, a second -vf would
+    // silently replace it, and its own scale=640:-1 already resamples in one
+    // step from whatever size it is handed.
+    const downscaleArgs =
+      supersample > 1 ? ["-vf", `scale=${width}:${height}:flags=area`] : [];
     const encodeArgs =
       input.format === "gif"
         ? [
@@ -410,6 +423,7 @@ export async function renderCompositionToFile(
           ]
         : input.format === "webm"
           ? [
+              ...downscaleArgs,
               "-c:v", "libvpx-vp9",
               "-b:v", "0",
               "-crf", String(crf),
@@ -419,8 +433,11 @@ export async function renderCompositionToFile(
               "-pix_fmt", "yuv420p",
             ]
           : [
+              ...downscaleArgs,
               "-c:v", "libx264",
-              "-preset", "veryfast",
+              // A camera move changes every pixel every frame, which is the
+              // worst case for motion estimation; `veryfast` smears it.
+              "-preset", "medium",
               "-crf", String(crf),
               "-pix_fmt", "yuv420p",
               "-movflags", "+faststart",
@@ -448,12 +465,20 @@ export async function renderCompositionToFile(
     });
 
     const cdp: CDPSession = await context.newCDPSession(page);
+    // `clip.scale` is the only lever that actually raises capture resolution
+    // (deviceScaleFactor does not — see createRenderPage). ffmpeg scales the
+    // result back down, which is what gives a camera zoom something to sample.
+    const captureParams =
+      supersample > 1
+        ? {
+            format: "jpeg" as const,
+            quality: jpegQuality,
+            clip: { x: 0, y: 0, width, height, scale: supersample },
+          }
+        : { format: "jpeg" as const, quality: jpegQuality };
     for (let frame = 0; frame < totalFrames; frame++) {
       await page.evaluate((f) => window.__gm!.setFrame(f), frame);
-      const shot = await cdp.send("Page.captureScreenshot", {
-        format: "jpeg",
-        quality: jpegQuality,
-      });
+      const shot = await cdp.send("Page.captureScreenshot", captureParams);
       const buffer = Buffer.from(shot.data, "base64");
       if (!ffmpeg.stdin.write(buffer)) {
         await new Promise((resolve) => ffmpeg.stdin.once("drain", resolve));
