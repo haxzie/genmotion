@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useCurrentFrame } from "../context";
+import { useIsCameraScaled } from "../camera-context";
 import { Easing, type EasingFunction } from "../easing";
 import { stagger as staggerFn } from "../helpers";
 import { random } from "../random";
@@ -107,6 +108,7 @@ export function TextAnimation({
   className,
 }: TextAnimationProps) {
   const frame = useCurrentFrame();
+  const cameraScaled = useIsCameraScaled();
 
   const units = useMemo(() => {
     if (by === "word") return text.split(/(\s+)/);
@@ -135,7 +137,10 @@ export function TextAnimation({
             style={{
               display: "inline-block",
               whiteSpace: "pre",
-              willChange: "transform, opacity, filter",
+              // Promoting each unit pins its raster scale, so under a camera
+              // zoom the glyph texture is stretched rather than re-rasterized.
+              // Outside a camera the compositing win is real, so keep it there.
+              willChange: cameraScaled ? undefined : "transform, opacity, filter",
               ...unitStyle(preset, p),
             }}
           >

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useCurrentFrame, useVideoConfig } from "../context";
+import { useIsCameraScaled } from "../camera-context";
 import { interpolate } from "../interpolate";
 import { random } from "../random";
 
@@ -90,6 +91,7 @@ export function Confetti({
 }: ConfettiProps) {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
+  const cameraScaled = useIsCameraScaled();
   const palette = colors.length > 0 ? colors : DEFAULT_COLORS;
 
   // Per-particle constants are independent of the frame — compute once.
@@ -186,7 +188,9 @@ export function Confetti({
               borderRadius: p.aspect === 1 ? 2 : 1,
               opacity,
               transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`,
-              willChange: "transform, opacity",
+              // See TextAnimation: promotion pins raster scale, which a camera
+              // zoom then stretches instead of re-rasterizing.
+              willChange: cameraScaled ? undefined : "transform, opacity",
             }}
           />
         );
