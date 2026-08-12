@@ -34,12 +34,35 @@ const client = new S3Client({
 
 const BUCKET = process.env.S3_BUCKET ?? "genmotion";
 
-/** Base URL of the API server, which proxies object reads (R2 isn't public). */
-const API_URL = (
-  process.env.API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:4001"
-).replace(/\/$/, "");
+/**
+ * Base URL of the API server, which proxies object reads (R2 isn't public).
+ *
+ * This is load-bearing in a way that is easy to miss: `publicUrl()` bakes an
+ * ABSOLUTE url into every row it produces — `projects.thumbnailUrl`,
+ * `assets.url`, export urls — at write time. So an unset value here does not
+ * degrade, it silently persists `http://localhost:4001/...` into the database
+ * forever, and every one of those rows has to be rewritten to fix it.
+ *
+ * Hence: complain loudly rather than fall back silently. The env var is
+ * optional in `apps/api/src/env.ts` and this package reads `process.env`
+ * directly, so this is the only place it gets checked.
+ *
+ * This logs rather than throws on purpose: a hard failure here takes the API
+ * down at boot, which turns a bad-URL problem into an outage. Once API_URL is
+ * set everywhere, this is worth promoting to a throw in production.
+ */
+const API_URL_RAW = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_URL_RAW) {
+  console.error(
+    "[storage] Neither API_URL nor NEXT_PUBLIC_API_URL is set — falling back " +
+      "to http://localhost:4001. publicUrl() writes ABSOLUTE urls into the " +
+      "database, so every thumbnail, asset and export saved from this process " +
+      "will be permanently unreachable. Set API_URL.",
+  );
+}
+
+const API_URL = (API_URL_RAW ?? "http://localhost:4001").replace(/\/$/, "");
 
 /** Storage key prefix holding a project's user-facing + agent-generated files. */
 export function projectFilesPrefix(projectId: string): string {
