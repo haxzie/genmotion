@@ -131,7 +131,7 @@ export function PreviewStage({
             </div>
           </div>
         ) : (
-          <PreviewInspector scenes={scenes} fps={fps}>
+          <PreviewInspector scenes={scenes} fps={fps} width={width} height={height}>
             <Player
               scenes={scenes}
               fps={fps}

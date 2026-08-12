@@ -46,17 +46,24 @@ function contains(a: Box, b: Box): boolean {
 }
 
 /**
- * Whether a box effectively covers the whole preview frame — i.e. the scene's
- * root background (AbsoluteFill). We never want to select that, only the
- * elements inside it.
+ * Whether an element is the scene's root background (AbsoluteFill, or a
+ * <Camera>'s viewport/world/layer boxes). We never want to select those, only
+ * the elements inside them.
+ *
+ * Measured with offsetWidth/offsetHeight against the composition's own
+ * dimensions, NOT with getBoundingClientRect against the container: rendered
+ * rects include every ancestor transform, so under a camera zoom an ordinary
+ * card reports a bigger-than-frame box and would be misread as the background —
+ * making the one element the camera pushed into unclickable. Layout sizes are
+ * transform-immune, so this holds at any zoom.
  */
-function isFullFrame(box: Box, frameW: number, frameH: number): boolean {
+function isFullFrame(el: HTMLElement, frameW: number, frameH: number): boolean {
   const margin = 8; // px slack for borders/rounding
+  // The camera's own structural boxes are world-sized, so they clear the frame
+  // test on size, but tag them explicitly since the world may be larger.
+  if (el.dataset.cameraDepth !== undefined) return true;
   return (
-    box.left <= margin &&
-    box.top <= margin &&
-    box.width >= frameW - margin * 2 &&
-    box.height >= frameH - margin * 2
+    el.offsetWidth >= frameW - margin * 2 && el.offsetHeight >= frameH - margin * 2
   );
 }
 
@@ -69,10 +76,16 @@ function isFullFrame(box: Box, frameW: number, frameH: number): boolean {
 export function PreviewInspector({
   scenes,
   fps,
+  width,
+  height,
   children,
 }: {
   scenes: CompiledScene[];
   fps: number;
+  /** Composition dimensions — the frame test measures against these, not the
+   * on-screen container, so it survives a camera zoom. */
+  width: number;
+  height: number;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -115,7 +128,7 @@ export function PreviewInspector({
     let el: HTMLElement | null = null;
     let node: HTMLElement | null = target;
     while (node && node !== ref.current) {
-      if (node.id && !isFullFrame(toBox(node), container.width, container.height)) {
+      if (node.id && !isFullFrame(node, width, height)) {
         el = node;
         break;
       }
@@ -124,7 +137,7 @@ export function PreviewInspector({
     // No id'd inner element on the path; fall back to the raw target unless it
     // (too) covers the whole frame — clicking empty background selects nothing.
     if (!el) {
-      if (isFullFrame(toBox(target), container.width, container.height)) return null;
+      if (isFullFrame(target, width, height)) return null;
       el = target;
     }
 
@@ -139,6 +152,8 @@ export function PreviewInspector({
     if (!root) return [];
     const c = root.getBoundingClientRect();
     const hits = Array.from(root.querySelectorAll<HTMLElement>("[id]"))
+      // Never grab the scene's root background, only inner elements.
+      .filter((el) => !isFullFrame(el, width, height))
       .map((el) => {
         const r = el.getBoundingClientRect();
         return {
@@ -152,8 +167,6 @@ export function PreviewInspector({
         };
       })
       .filter(({ box }) => box.width > 0 && box.height > 0)
-      // Never grab the scene's root background, only inner elements.
-      .filter(({ box }) => !isFullFrame(box, c.width, c.height))
       .filter(({ box }) => intersects(box, area))
       // Drop ancestors that merely wrap the whole drag area.
       .filter(({ box }) => !contains(box, area));

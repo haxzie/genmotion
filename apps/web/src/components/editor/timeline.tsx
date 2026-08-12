@@ -346,10 +346,11 @@ function Playhead({
   const ref = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
 
-  // Length of the light trail: two-thirds of a second of travel, derived from
-  // the scale rather than hardcoded so it still reads right if PX_PER_SECOND
-  // changes. Long enough to register as motion, short enough not to smear.
-  const trailPx = Math.round(pxPerFrame * fps * 0.66);
+  // Length of the light trail: a bit over a third of a second of travel,
+  // derived from the scale rather than hardcoded so it still reads right if
+  // PX_PER_SECOND changes. Enough to register as motion out of the corner of
+  // your eye, short enough that it never reads as a smear following the head.
+  const trailPx = Math.round(pxPerFrame * fps * 0.36);
 
   useEffect(() => {
     const el = ref.current;
@@ -455,7 +456,7 @@ function Playhead({
         style={{
           width: trailPx,
           background:
-            "linear-gradient(to left, color-mix(in srgb, var(--color-accent) 42%, transparent), transparent)",
+            "linear-gradient(to left, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent)",
         }}
       />
       <div className="absolute -left-[5px] top-0 size-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-accent" />
