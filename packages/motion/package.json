@@ -20,7 +20,9 @@
   "devDependencies": {
     "@genmotion/config": "workspace:*",
     "@types/react": "^19",
+    "@types/react-dom": "^19.2.3",
     "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^5.9.3",
     "vitest": "^3.2.0"
   }

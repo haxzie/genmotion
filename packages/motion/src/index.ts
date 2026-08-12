@@ -25,6 +25,36 @@ export {
   type ScrambleTextProps,
 } from "./components/text-animation";
 export { Confetti, type ConfettiProps } from "./components/confetti";
+export {
+  Camera,
+  Layer,
+  Overlay,
+  type CameraProps,
+  type LayerProps,
+  type OverlayProps,
+} from "./components/camera";
+export { CameraContext, useCamera, useIsCameraScaled } from "./camera-context";
+export {
+  cameraAt,
+  cameraMatrix,
+  cameraMatrixToCss,
+  cameraTransform,
+  clampCamera,
+  clampTilt,
+  depthForZ,
+  horizonHeadroom,
+  minZoomForWorld,
+  perspectiveDistance,
+  zoomToFit,
+  CAMERA_DEFAULTS,
+  type CameraState,
+  type CameraKeyframe,
+  type CameraGeometry,
+  type CameraMatrix,
+  type CameraTilt,
+  type DriftOptions,
+  type ShakeOptions,
+} from "./camera";
 export { useGsapTimeline, gsap } from "./gsap";
 export {
   MediaReadinessContext,
