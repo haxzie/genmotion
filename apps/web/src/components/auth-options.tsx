@@ -5,7 +5,7 @@ import { signIn } from "@/lib/auth-client";
 import { track } from "@/lib/analytics";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 
-function GoogleIcon() {
+export function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-4 shrink-0" aria-hidden="true">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z" />
@@ -16,7 +16,7 @@ function GoogleIcon() {
   );
 }
 
-function GithubIcon() {
+export function GithubIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-4 shrink-0 fill-current" aria-hidden="true">
       <path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-1.96c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.12-.3-.52-1.48.11-3.08 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.6.23 2.78.11 3.07.75.82 1.2 1.85 1.2 3.11 0 4.43-2.7 5.41-5.28 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z" />
@@ -24,7 +24,8 @@ function GithubIcon() {
   );
 }
 
-const socialButton =
+/** Shared by this component and the desktop login screen, so the two match. */
+export const socialButton =
   "flex h-10 w-full items-center justify-center gap-2.5 rounded-md border border-border bg-surface-raised text-text-primary font-medium transition-colors duration-150 outline-none hover:border-border-strong hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**

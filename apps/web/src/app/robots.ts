@@ -16,6 +16,8 @@ const DISALLOW = [
   "/login",
   "/signup",
   "/accept-invitation",
+  // Desktop sign-in hand-off — reached only from the app.
+  "/device",
   "/admin",
   "/api/",
   // Local-only harnesses (/dev/player, /dev/video-tools) — never useful to a crawler.
