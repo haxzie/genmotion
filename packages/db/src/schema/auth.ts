@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -96,3 +96,28 @@ export const invitation = pgTable("invitation", {
   // invitation, and without the column the adapter throws and the invite fails.
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ── Device authorization plugin (better-auth) ──────────────────────────────
+// One row per desktop sign-in attempt (RFC 8628). The columns are exactly the
+// fields better-auth's device-authorization plugin declares — it adds no
+// created/updated timestamps to plugin models, so this table has none.
+
+export const deviceCode = pgTable(
+  "device_code",
+  {
+    id: text("id").primaryKey(),
+    // Secret held only by the desktop app; it polls the token endpoint with this.
+    deviceCode: text("device_code").notNull().unique(),
+    // Short code the human sees in both the app and the browser.
+    userCode: text("user_code").notNull(),
+    // Claimed by GET /api/auth/device once the browser has a session; null before.
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    status: text("status").notNull(),
+    lastPolledAt: timestamp("last_polled_at"),
+    pollingInterval: integer("polling_interval"),
+    clientId: text("client_id"),
+    scope: text("scope"),
+  },
+  (t) => [index("device_code_user_code_idx").on(t.userCode)],
+);

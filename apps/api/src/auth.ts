@@ -1,9 +1,14 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { magicLink, organization } from "better-auth/plugins";
+import {
+  bearer,
+  deviceAuthorization,
+  magicLink,
+  organization,
+} from "better-auth/plugins";
 import { APIError } from "better-auth/api";
 import { db, schema, eq, asc } from "@genmotion/db";
-import { TEAM_SEATS } from "@genmotion/shared";
+import { DESKTOP_CLIENT_ID, TEAM_SEATS } from "@genmotion/shared";
 import { assertCanInvite } from "./entitlements";
 import { env } from "./env";
 import { trackServer } from "./analytics";
@@ -88,6 +93,7 @@ export const auth = betterAuth({
       organization: schema.organization,
       member: schema.member,
       invitation: schema.invitation,
+      deviceCode: schema.deviceCode,
     },
   }),
   user: {
@@ -144,6 +150,33 @@ export const auth = betterAuth({
   // Email/password is intentionally disabled — sign-in is magic link + OAuth only.
   socialProviders,
   plugins: [
+    /**
+     * Lets `Authorization: Bearer <session token>` stand in for the session
+     * cookie. The desktop app has no cookie jar and no shared registrable
+     * domain with the API, so this is how it authenticates; the token it sends
+     * is the very one `/device/token` hands back.
+     */
+    bearer(),
+
+    /**
+     * OAuth 2.0 Device Authorization Grant (RFC 8628) — how the desktop app
+     * signs in. It cannot receive a redirect, so the browser does the sign-in
+     * on the web app and the app polls for the resulting session.
+     */
+    deviceAuthorization({
+      // Long enough to sign up from scratch in a browser, short enough that an
+      // abandoned code is not left lying around.
+      expiresIn: "10m",
+      interval: "3s",
+      verificationUri: `${WEB_URL}/device`,
+      // Only our own desktop build may open a device request.
+      validateClient: (clientId) => clientId === DESKTOP_CLIENT_ID,
+      // Not a customization: the plugin validates its own options with a zod
+      // schema that forgot to mark this field optional, so omitting it throws
+      // at startup. An empty override merges to the plugin's own table.
+      schema: {},
+    }),
+
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         // Dev fallback: with no SES sender configured, print the link to the
