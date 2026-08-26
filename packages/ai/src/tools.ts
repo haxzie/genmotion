@@ -38,6 +38,45 @@ const DEFAULT_VALIDATION_CONFIG: ValidationConfig = {
 };
 
 /**
+ * Non-blocking advisories: things that compile and render fine, but that the
+ * motion library already does better. These never fail a scene — they are fed
+ * back for one polish pass, because a scene that hand-rolls text motion is
+ * usually also mis-timing it.
+ *
+ * Kept deliberately narrow. Each pattern has to co-occur with per-unit
+ * animation before it fires, since false positives just teach the model to
+ * ignore the advice.
+ */
+export function reviewSceneCode(code: string): string[] {
+  const notes: string[] = [];
+  const animatesPerUnit = /\bstagger\s*\(|\binterpolate\s*\(/.test(code);
+
+  const splitting = [
+    /\.split\(\s*(?:""|'')\s*\)/,
+    /\.split\(\s*\/\(?\\s\+\)?\//,
+    /\.split\(\s*(?:" "|' ')\s*\)/,
+    /\[\s*\.\.\.\s*[A-Za-z_$][\w$]*\s*\]\s*\.map\(/,
+  ].find((re) => re.test(code));
+
+  if (splitting && animatesPerUnit) {
+    notes.push(
+      "This scene splits text into words/characters and animates the pieces by hand. `<TextAnimation>` does exactly this — 46 tuned effects, `by=\"word\"|\"char\"|\"line\"`, `order`, `hold`, and `exit=\"auto\"` which times the exit against the enclosing <Sequence> for you. Replace the hand-rolled split with it unless the effect genuinely isn't in the catalog.",
+    );
+  }
+
+  // toLocaleString() with no explicit locale follows the host, and the export
+  // sandbox is not guaranteed to match the editor — so the number can render
+  // differently in the MP4 than in the preview.
+  if (/\.toLocaleString\(\s*\)/.test(code) && animatesPerUnit) {
+    notes.push(
+      "This scene formats an animated number with `toLocaleString()` and no locale, which follows whatever locale the renderer happens to run under — the export can disagree with the preview. Use `<CountText to={...} decimals={...} prefix suffix compact />`: it pins the locale, counts the value for you, and sets tabular figures so the digits don't shuffle.",
+    );
+  }
+
+  return notes;
+}
+
+/**
  * Validate scene code the way the browser will actually run it:
  * 1. esbuild compile (syntax) — same pinned version as the editor,
  * 2. evaluate the module through the sandbox require-shim (catches
@@ -284,11 +323,15 @@ export function createEditorTools({
         const results = await Promise.all(
           briefs.map(async (brief, index) => {
             try {
-              const written = await writeScene(brief, project, (code) =>
-                validateSceneCode(code, {
-                  ...project,
-                  durationInFrames: brief.durationInFrames,
-                }),
+              const written = await writeScene(
+                brief,
+                project,
+                (code) =>
+                  validateSceneCode(code, {
+                    ...project,
+                    durationInFrames: brief.durationInFrames,
+                  }),
+                reviewSceneCode,
               );
               if (!written.ok) {
                 progress(`✗ “${brief.name}” failed (${++done}/${briefs.length})`);

@@ -39,11 +39,17 @@ function extractCode(text: string): string {
  * One scene-writer subagent: brief in, validated TSX out. Compile errors are
  * fed back to the same writer for up to MAX_ATTEMPTS self-corrections. Run
  * several of these concurrently to write multi-scene requests in parallel.
+ *
+ * `review` returns non-blocking advisories (e.g. text motion that should use
+ * the library instead of being hand-rolled). A scene that validates but draws
+ * advisories gets ONE polish pass; if the polished version fails validation,
+ * the already-good original is kept. Advisories can never lose a working scene.
  */
 export async function writeScene(
   request: SceneBrief,
   project: ProjectConfig,
   validate: (code: string) => Promise<string | null>,
+  review?: (code: string) => string[],
 ): Promise<SceneWriteResult> {
   const userPrompt = [
     `Composition: ${project.width}×${project.height} @ ${project.fps}fps.`,
@@ -59,6 +65,11 @@ export async function writeScene(
   ];
 
   let lastError = "unknown error";
+  // A scene that has already passed validation. Held so a polish pass that
+  // goes wrong falls back to it instead of failing the whole write.
+  let accepted: string | null = null;
+  let polished = false;
+
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const startedAt = Date.now();
     console.log(
@@ -89,8 +100,35 @@ export async function writeScene(
     const code = extractCode(text);
     const error = await validate(code);
     if (!error) {
-      console.log(`[scene-writer] "${request.name}" ok on attempt ${attempt + 1}`);
-      return { ok: true, code };
+      const notes = review?.(code) ?? [];
+      if (notes.length === 0 || polished || attempt === MAX_ATTEMPTS - 1) {
+        console.log(`[scene-writer] "${request.name}" ok on attempt ${attempt + 1}`);
+        return { ok: true, code };
+      }
+
+      // Valid, but it hand-rolled something the library covers. Spend one
+      // attempt improving it, keeping this version as the fallback.
+      console.log(
+        `[scene-writer] "${request.name}" valid on attempt ${attempt + 1}, polishing (${notes.length} note(s))`,
+      );
+      accepted = code;
+      polished = true;
+      messages.push(
+        { role: "assistant", content: text },
+        {
+          role: "user",
+          content: `Your scene works, but it can be simplified:\n\n${notes.map((n) => `- ${n}`).join("\n\n")}\n\nReply with the revised complete TSX module (code only, no fences). Keep the timing, layout and copy exactly as they are — change only what the notes call out.`,
+        },
+      );
+      continue;
+    }
+
+    // A failed polish attempt must never throw away a scene that already works.
+    if (accepted) {
+      console.warn(
+        `[scene-writer] "${request.name}" polish attempt failed validation, keeping the original`,
+      );
+      return { ok: true, code: accepted };
     }
 
     console.warn(
@@ -105,6 +143,9 @@ export async function writeScene(
       },
     );
   }
+
+  // Ran out of attempts mid-polish — the pre-polish version is still good.
+  if (accepted) return { ok: true, code: accepted };
 
   return {
     ok: false,

@@ -1,6 +1,10 @@
 "use client";
 
-import { FrameContext, useCurrentFrame } from "../context";
+import {
+  FrameContext,
+  SequenceDurationContext,
+  useCurrentFrame,
+} from "../context";
 import { AbsoluteFill } from "./layout";
 
 export interface SequenceProps {
@@ -31,8 +35,10 @@ export function Sequence({
     layout === "absolute-fill" ? <AbsoluteFill>{children}</AbsoluteFill> : children;
 
   return (
-    <FrameContext.Provider value={frame - from}>
-      {content}
-    </FrameContext.Provider>
+    <SequenceDurationContext.Provider value={durationInFrames}>
+      <FrameContext.Provider value={frame - from}>
+        {content}
+      </FrameContext.Provider>
+    </SequenceDurationContext.Provider>
   );
 }

@@ -1,166 +1,249 @@
 "use client";
 
 import { useMemo } from "react";
-import { useCurrentFrame } from "../context";
+import { useCurrentFrame, useVideoConfig, useWindowDuration } from "../context";
 import { useIsCameraScaled } from "../camera-context";
 import { Easing, type EasingFunction } from "../easing";
-import { stagger as staggerFn } from "../helpers";
 import { random } from "../random";
+import { getTextEffect, type TextEffectName } from "../text/effects";
+import { holdStyle, type HoldBehaviour } from "../text/hold";
+import { maxRank, orderRanks, type StaggerOrder } from "../text/order";
+import { splitText, toLines, type SplitMode, type TextUnit } from "../text/split";
+import {
+  autoExitAt,
+  DEFAULT_EXIT_EASE,
+  defaultExitDuration,
+  unitProgress,
+  type EnterWindow,
+} from "../text/timing";
+import { resolveTextStyle, type TextTransform } from "../text/transform";
 
-export type TextAnimationPreset =
-  | "fadeUp"
-  | "fadeIn"
-  | "typewriter"
-  | "blurIn"
-  | "blurUp"
-  | "slideIn"
-  | "scaleIn"
-  | "scaleBlur"
-  | "dropIn"
-  | "flipUp"
-  | "clipReveal"
-  | "wordReveal"
-  | "riseMask";
+/** Any catalog effect name. Kept as the historical type name. */
+export type TextAnimationPreset = TextEffectName;
+
+export interface TextExitSpec {
+  /** Borrow another effect's shape for the exit. */
+  preset?: TextEffectName;
+  /** Explicit target displacement, overriding `preset`. */
+  transform?: TextTransform;
+  /** Explicit start frame; omit to auto-time against the end of the window. */
+  at?: number;
+  duration?: number;
+  stagger?: number;
+  easing?: EasingFunction;
+}
+
+/**
+ * `"auto"` continues the entrance's own travel, timed to finish just before the
+ * element's window ends. A preset name borrows that effect's shape instead.
+ */
+export type TextExit = "auto" | TextEffectName | TextExitSpec | false;
 
 export interface TextAnimationProps {
-  text: string;
-  /** Split granularity. */
-  by?: "char" | "word";
-  preset?: TextAnimationPreset;
-  /** Frame at which the animation starts. */
+  /** Newlines split into lines; an array is taken as the lines directly. */
+  text: string | string[];
+  /** Split granularity. Defaults to the effect's own preference, else "word". */
+  by?: SplitMode;
+  preset?: TextEffectName;
+  /** Frame at which the entrance starts. */
   startFrom?: number;
   /** Frames between successive units. */
   stagger?: number;
   /** Frames each unit animates for. */
   duration?: number;
   easing?: EasingFunction;
+  /** How the element leaves. Omit for no exit. */
+  exit?: TextExit;
+  /** The sequence in which units fire. */
+  order?: StaggerOrder;
+  /** Ambient motion held between the entrance and the exit. */
+  hold?: HoldBehaviour;
+  /** Seed for `order: "random"`. Defaults to the text itself. */
+  seed?: string;
+  /** Stable id — needed by <Camera focus> and the editor's preview inspector. */
+  id?: string;
+  /** Element to render as. Defaults to a span. */
+  as?: "span" | "div" | "p" | "h1" | "h2" | "h3" | "h4";
   style?: React.CSSProperties;
   className?: string;
 }
 
-function unitStyle(
-  preset: TextAnimationPreset,
-  p: number,
-): React.CSSProperties {
-  switch (preset) {
-    case "fadeUp":
-      return { opacity: p, transform: `translateY(${(1 - p) * 0.6}em)` };
-    case "fadeIn":
-      return { opacity: p };
-    case "typewriter":
-      return { opacity: p >= 1 ? 1 : p > 0 ? 1 : 0 };
-    case "blurIn":
-      return { opacity: p, filter: `blur(${(1 - p) * 12}px)` };
-    case "blurUp":
-      // Blur + rise + fade — the smoothest, most cinematic general entrance.
-      return {
-        opacity: p,
-        transform: `translateY(${(1 - p) * 0.5}em)`,
-        filter: `blur(${(1 - p) * 10}px)`,
-      };
-    case "slideIn":
-      return { opacity: p, transform: `translateX(${(1 - p) * 1.2}em)` };
-    case "scaleIn":
-      return { opacity: p, transform: `scale(${0.4 + 0.6 * p})` };
-    case "scaleBlur":
-      // Settles down from slightly larger + blurred (zoom-blur focus-in).
-      return {
-        opacity: p,
-        transform: `scale(${1 + (1 - p) * 0.35})`,
-        filter: `blur(${(1 - p) * 8}px)`,
-      };
-    case "dropIn":
-      return { opacity: p, transform: `translateY(${(1 - p) * -0.6}em)` };
-    case "flipUp":
-      // 3D rotate up around the baseline — great per word or line.
-      return {
-        opacity: p,
-        transform: `perspective(600px) rotateX(${(1 - p) * -90}deg)`,
-        transformOrigin: "bottom center",
-      };
-    case "clipReveal":
-      // Left-to-right wipe via clip-path (no fade; the clip does the reveal).
-      return { opacity: 1, clipPath: `inset(0 ${(1 - p) * 100}% 0 0)` };
-    case "wordReveal":
-      return {
-        opacity: p,
-        transform: `translateY(${(1 - p) * 100}%)`,
-      };
-    case "riseMask":
-      // Masked slide-up (no fade) — clean editorial reveal; needs the overflow wrap.
-      return { opacity: 1, transform: `translateY(${(1 - p) * 110}%)` };
-  }
-}
+const MASK_WRAPPER: React.CSSProperties = {
+  display: "inline-block",
+  overflow: "hidden",
+  verticalAlign: "bottom",
+};
+
+const PLAIN_WRAPPER: React.CSSProperties = { display: "inline-block" };
 
 /**
- * Animated text, split by word or character, with staggered entrances.
- * <TextAnimation text="Ship faster" preset="fadeUp" by="word" />
+ * Animated text, split by line, word or character, with staggered entrances and
+ * — unlike the original — a matching exit.
+ *
+ *   <TextAnimation text="Ship it faster" preset="riseMask" exit="auto" />
+ *
+ * Every visual is a pure function of the current frame, so scrubbing backwards
+ * and the export renderer's forward sweep agree exactly.
  */
 export function TextAnimation({
   text,
-  by = "word",
+  by,
   preset = "fadeUp",
   startFrom = 0,
-  stagger = by === "char" ? 2 : 4,
-  duration = 18,
-  easing = Easing.outSmooth,
+  stagger,
+  duration,
+  easing,
+  exit,
+  order = "forward",
+  hold = "none",
+  seed,
+  id,
+  as: Tag = "span",
   style,
   className,
 }: TextAnimationProps) {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const windowEnd = useWindowDuration();
   const cameraScaled = useIsCameraScaled();
 
-  const units = useMemo(() => {
-    if (by === "word") return text.split(/(\s+)/);
-    return [...text];
-  }, [text, by]);
+  const effect = getTextEffect(preset);
+  const splitBy: SplitMode = by ?? effect.by ?? "word";
 
-  const wrapInOverflow = preset === "wordReveal" || preset === "riseMask";
+  // The thirteen original presets carry no defaults of their own, so they fall
+  // through to the values this component has always used.
+  const enterDuration = duration ?? effect.duration ?? 18;
+  const enterStagger = stagger ?? effect.stagger ?? (splitBy === "char" ? 2 : 4);
+  const enterEase = easing ?? effect.ease ?? Easing.outSmooth;
 
-  let animatableIndex = 0;
+  const units = useMemo(() => splitText(text, splitBy), [text, splitBy]);
+  const lineCount = useMemo(() => toLines(text).length, [text]);
+
+  const animatable = useMemo(() => units.filter((u) => u.animate).length, [units]);
+  const orderSeed = useMemo(
+    () => seed ?? (Array.isArray(text) ? text.join("|") : text),
+    [seed, text],
+  );
+  const ranks = useMemo(
+    () => orderRanks(order, animatable, orderSeed),
+    [order, animatable, orderSeed],
+  );
+  const lastRank = useMemo(() => maxRank(ranks), [ranks]);
+
+  const enterWindow: EnterWindow = {
+    at: startFrom,
+    duration: enterDuration,
+    stagger: enterStagger,
+    easing: enterEase,
+  };
+
+  const exitPlan = useMemo(() => {
+    if (exit === undefined || exit === false) return null;
+    const spec: TextExitSpec =
+      typeof exit === "string"
+        ? exit === "auto"
+          ? {}
+          : { preset: exit }
+        : exit;
+
+    const target =
+      spec.transform ??
+      (spec.preset ? getTextEffect(spec.preset).from : (effect.to ?? effect.from));
+    const exitDuration =
+      spec.duration ?? effect.exitDuration ?? defaultExitDuration(enterDuration);
+    const exitStagger = spec.stagger ?? enterStagger;
+    const at =
+      spec.at ??
+      autoExitAt({
+        windowEnd,
+        maxRank: lastRank,
+        duration: exitDuration,
+        stagger: exitStagger,
+      });
+
+    return {
+      target,
+      window: {
+        at,
+        duration: exitDuration,
+        stagger: exitStagger,
+        easing: spec.easing ?? effect.exitEase ?? DEFAULT_EXIT_EASE,
+      } satisfies EnterWindow,
+    };
+  }, [exit, effect, enterDuration, enterStagger, windowEnd, lastRank]);
+
+  const exitTarget = exitPlan?.target ?? {};
+
+  let animIndex = 0;
+  const rendered = units.map((unit, i) => {
+    if (!unit.animate) {
+      return { line: unit.line, node: <span key={i}>{unit.text}</span> };
+    }
+    const index = animIndex++;
+    const rank = ranks[index] ?? index;
+
+    const enterP = unitProgress(frame, enterWindow, rank);
+    const exitP = exitPlan ? unitProgress(frame, exitPlan.window, rank) : 0;
+
+    const ambient = holdStyle(hold, {
+      frame,
+      fps,
+      index,
+      // Ramped by the entrance and unwound by the exit, so ambient motion never
+      // fights a move that is already happening.
+      amplitude: enterP * (1 - exitP),
+    });
+
+    const unitStyle = resolveTextStyle(
+      effect.from,
+      exitTarget,
+      enterP,
+      exitP,
+      effect.perspective,
+      {
+        step: effect.step,
+        extraTransforms: ambient.transforms,
+        opacityFactor: ambient.opacityFactor,
+      },
+    );
+
+    const inner = (
+      <span
+        style={{
+          display: "inline-block",
+          whiteSpace: "pre",
+          // Promoting each unit pins its raster scale, so under a camera zoom
+          // the glyph texture is stretched rather than re-rasterized. Outside a
+          // camera the compositing win is real, so keep it there.
+          willChange: cameraScaled ? undefined : "transform, opacity, filter",
+          textShadow: ambient.textShadow,
+          ...unitStyle,
+        }}
+      >
+        {unit.text}
+      </span>
+    );
+
+    return {
+      line: unit.line,
+      node: (
+        <span key={i} style={effect.mask ? MASK_WRAPPER : PLAIN_WRAPPER}>
+          {inner}
+        </span>
+      ),
+    };
+  });
+
   return (
-    <span className={className} style={{ display: "inline-block", ...style }}>
-      {units.map((unit, i) => {
-        const isSpace = /^\s+$/.test(unit);
-        if (isSpace) {
-          return <span key={i}>{unit}</span>;
-        }
-        const p = staggerFn({
-          frame: frame - startFrom,
-          index: animatableIndex++,
-          each: stagger,
-          duration,
-          easing,
-        });
-        const inner = (
-          <span
-            style={{
-              display: "inline-block",
-              whiteSpace: "pre",
-              // Promoting each unit pins its raster scale, so under a camera
-              // zoom the glyph texture is stretched rather than re-rasterized.
-              // Outside a camera the compositing win is real, so keep it there.
-              willChange: cameraScaled ? undefined : "transform, opacity, filter",
-              ...unitStyle(preset, p),
-            }}
-          >
-            {unit}
-          </span>
-        );
-        return wrapInOverflow ? (
-          <span
-            key={i}
-            style={{ display: "inline-block", overflow: "hidden", verticalAlign: "bottom" }}
-          >
-            {inner}
-          </span>
-        ) : (
-          <span key={i} style={{ display: "inline-block" }}>
-            {inner}
-          </span>
-        );
-      })}
-    </span>
+    <Tag id={id} className={className} style={{ display: "inline-block", ...style }}>
+      {lineCount > 1
+        ? Array.from({ length: lineCount }, (_, line) => (
+            <span key={line} style={{ display: "block" }}>
+              {rendered.filter((r) => r.line === line).map((r) => r.node)}
+            </span>
+          ))
+        : rendered.map((r) => r.node)}
+    </Tag>
   );
 }
 
@@ -174,8 +257,11 @@ export interface ScrambleTextProps {
   duration?: number;
   /** Frames between glyph changes while a character is still scrambling. */
   flickerEvery?: number;
+  /** Glyph pool to flicker through. */
+  glyphs?: string;
   style?: React.CSSProperties;
   className?: string;
+  id?: string;
 }
 
 /**
@@ -190,8 +276,10 @@ export function ScrambleText({
   startFrom = 0,
   duration = 36,
   flickerEvery = 2,
+  glyphs = SCRAMBLE_GLYPHS,
   style,
   className,
+  id,
 }: ScrambleTextProps) {
   const frame = useCurrentFrame();
   const t = frame - startFrom;
@@ -199,7 +287,7 @@ export function ScrambleText({
   const step = Math.floor(t / Math.max(1, flickerEvery));
 
   return (
-    <span className={className} style={{ whiteSpace: "pre-wrap", ...style }}>
+    <span id={id} className={className} style={{ whiteSpace: "pre-wrap", ...style }}>
       {chars.map((ch, i) => {
         if (ch.trim() === "") return <span key={i}>{ch}</span>;
         // Each character locks in once the wipe front passes it.
@@ -208,9 +296,7 @@ export function ScrambleText({
         // Before the start, reserve width with the real (hidden) character.
         if (t < 0) return <span key={i} style={{ opacity: 0 }}>{ch}</span>;
         const glyph =
-          SCRAMBLE_GLYPHS[
-            Math.floor(random(`scramble-${i}-${step}`) * SCRAMBLE_GLYPHS.length)
-          ];
+          glyphs[Math.floor(random(`scramble-${i}-${step}`) * glyphs.length)];
         return (
           <span key={i} style={{ opacity: 0.75 }}>
             {glyph}

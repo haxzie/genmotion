@@ -3,10 +3,13 @@ export {
   VideoConfigContext,
   RenderModeContext,
   PlayingContext,
+  SequenceDurationContext,
   useCurrentFrame,
   useVideoConfig,
   useRenderMode,
   useIsPlaying,
+  useSequenceDuration,
+  useWindowDuration,
   type RenderMode,
 } from "./context";
 export { interpolate, type InterpolateOptions, type ExtrapolateType } from "./interpolate";
@@ -22,8 +25,35 @@ export {
   ScrambleText,
   type TextAnimationProps,
   type TextAnimationPreset,
+  type TextExit,
+  type TextExitSpec,
   type ScrambleTextProps,
 } from "./components/text-animation";
+export {
+  Typewriter,
+  TextSwap,
+  CountText,
+  HighlightText,
+  type TypewriterProps,
+  type TextSwapProps,
+  type CountTextProps,
+  type HighlightTextProps,
+} from "./components/text-effects";
+export {
+  TEXT_EFFECTS,
+  TEXT_EFFECT_ALIASES,
+  TEXT_EFFECT_NAMES,
+  getTextEffect,
+  type TextEffect,
+  type TextEffectName,
+  type EffectGroup,
+} from "./text/effects";
+export { TEXT_EFFECT_CATALOG } from "./text/catalog";
+export { type TextTransform, type ClipSpec } from "./text/transform";
+export { splitText, toLines, type SplitMode, type TextUnit } from "./text/split";
+export { orderRanks, type StaggerOrder } from "./text/order";
+export { type HoldBehaviour } from "./text/hold";
+export { EXIT_TAIL_PAD } from "./text/timing";
 export { Confetti, type ConfettiProps } from "./components/confetti";
 export {
   Camera,

@@ -5,7 +5,13 @@
  * GSAP rules, design standards, exemplars). Keep these strings stable —
  * they are marked for Anthropic prompt caching; per-request project state
  * is appended separately in the chat route.
+ *
+ * The text effect list is generated from the runtime registry rather than
+ * written out here, so the two cannot drift. It is built once at module load
+ * from a static object, so the prompt stays byte-identical between turns.
  */
+
+import { TEXT_EFFECT_CATALOG } from "@genmotion/motion";
 
 export const SCENE_AUTHORING_GUIDE = `# What a scene is
 
@@ -24,7 +30,8 @@ Rules every scene MUST follow:
 
 Hooks:
 - \`useCurrentFrame(): number\` — current frame, starting at 0 (relative to the enclosing <Sequence> if any).
-- \`useVideoConfig(): { fps, width, height, durationInFrames }\`
+- \`useVideoConfig(): { fps, width, height, durationInFrames }\` — \`durationInFrames\` here is always the WHOLE scene.
+- \`useWindowDuration(): number\` — length of the window this element lives in: the enclosing \`<Sequence>\`'s duration, or the scene's when there isn't one. This is the number to time an exit against.
 
 Animation math (all pure functions):
 - \`interpolate(frame, inputRange, outputRange, { easing?, extrapolateLeft?, extrapolateRight? })\` — map frame to a value. Ranges can be multi-segment: \`interpolate(f, [0,20,40], [0,1,0])\`. ALWAYS pass \`extrapolateLeft: "clamp", extrapolateRight: "clamp"\` unless you want extension.
@@ -38,14 +45,23 @@ Animation math (all pure functions):
 Components:
 - \`<AbsoluteFill style={{...}}>\` — absolute inset-0 flex container (column, centered). The root of almost every scene.
 - \`<Sequence from={30} durationInFrames={60}>\` — children mount at frame 30 and see their own frame starting at 0. Great for choreographing phases.
-- \`<TextAnimation text="..." by="word"|"char" preset="..." startFrom={0} stagger={4} duration={18} easing={Easing.outSmooth} />\` — split-and-stagger text entrances (the foundation of smooth text transitions: split into words/chars, then stagger each unit's animation). Presets:
-  - Smooth headline entrances (prefer these): \`blurUp\` (blur + rise + fade — the smoothest, most cinematic; great default for hero text), \`fadeUp\`, \`scaleBlur\` (settles in from larger + blurred, a focus-pull), \`dropIn\`.
-  - Mask/clip reveals: \`riseMask\` and \`wordReveal\` (lines/words slide up from behind a mask — clean editorial feel), \`clipReveal\` (left-to-right wipe).
-  - Accents: \`flipUp\` (3D rotate-up around the baseline, strong per word/line), \`slideIn\`, \`scaleIn\`, \`blurIn\`, \`fadeIn\`, \`typewriter\`.
-  - Use by="char" with a small stagger (~2) for tight per-letter cascades, by="word" (~3) for headlines. Wrap in a styled div for font size/color/weight; pass \`easing\` (e.g. \`Easing.outQuart\`, \`Easing.bezier(...)\`) to tune the feel. Smooth = blur/scale/mask + per-unit stagger, never a single hard cut. Keep \`duration\` tight (10–14 frames; 8 when the brief wants pace) — smoothness comes from the blur and the stagger, not from a slow tween.
-  - TextAnimation only animates text IN. It has no exit prop, so the exit goes on the wrapper — see "Text must enter AND exit" below. Every \`<TextAnimation>\` you write must sit inside an exit-driven wrapper.
-- \`<ScrambleText text="INITIALIZING" startFrom={0} duration={40} />\` — decode/scramble: characters flicker through random glyphs then lock in left-to-right. Use a monospace font so the width doesn't jitter. Perfect for techy/terminal/loading/number-reveal beats.
-- For fully custom text choreography (per-line masks, character physics, exit transitions), split the text into per-word/char spans yourself and drive each with \`interpolate\`/\`spring\`/\`stagger\` by index, or with \`useGsapTimeline\` (gsap stagger over \`container.querySelectorAll('.char')\`).
+- \`<TextAnimation text="..." preset="blurUp" exit="auto" />\` — THE way text animates. Splits into lines/words/characters and staggers them in, and back out again, from the catalog below. Do NOT hand-roll per-word or per-character spans driven by \`interpolate\`/\`stagger\` — this component exists so you never have to, and hand-rolled text is the single most common source of broken timing.
+  - \`text\` — a string; \`"\\n"\` or a \`string[]\` gives explicit lines. \`by="word"\` (default) | \`"char"\` | \`"line"\` | \`"none"\`. Line splitting is explicit: you write the breaks, there is no measured wrapping.
+  - \`exit\` — **\`exit="auto"\` is what you want almost every time.** The text leaves the way it arrived, timed so the last unit clears 6 frames before its window ends. It reads the enclosing \`<Sequence>\`'s length (or the scene's), so you never compute an exit frame yourself. Also: \`exit="fadeUp"\` to borrow another effect's shape, \`exit={{ at: 90, duration: 8 }}\` to place it by hand, or omit it entirely for text that must survive the cut (a handoff element).
+  - \`order\` — the sequence units fire in: \`"forward"\` (default), \`"reverse"\`, \`"center"\`, \`"edges"\`, \`"random"\`.
+  - \`hold\` — ambient motion held between the entrance and the exit: \`"float"\`, \`"breathe"\`, \`"wave"\`, \`"shimmer"\`, \`"glow"\`. Put one on any text that sits on screen for more than ~40 frames; it is what stops a held frame reading as frozen.
+  - \`startFrom\`, \`duration\`, \`stagger\`, \`easing\` — every effect already carries tuned defaults, so pass these ONLY when the brief calls for a different pace.
+  - \`id\` — set it whenever the camera focuses this text. \`as\` — render as \`h1\`/\`div\`/\`p\` etc. \`style\`/\`className\` land on the root.
+
+Text effects (all of them work as both an entrance and an exit):
+${TEXT_EFFECT_CATALOG}
+
+- \`<Typewriter text="..." speed={2} caret />\` — types out character by character with a blinking caret. Reserves its full width from frame 0, so the line never reflows as it types.
+- \`<TextSwap words={["faster", "safer", "cheaper"]} every={45} preset="blurUp" />\` — one word replaced by the next in place, each with its own entrance and exit. For "ship it faster / safer / cheaper" beats.
+- \`<CountText to={1200000} duration={40} compact prefix="$" />\` — a number counting to its target, in tabular figures so the digits don't shuffle. Props: \`from\`, \`decimals\`, \`prefix\`, \`suffix\`, \`compact\` (1.2M), \`locale\`. Use this for every stat and metric — never hand-roll a counter.
+- \`<HighlightText variant="underline" color="#5e6ad2">phrase</HighlightText>\` — draws a highlight bar, underline, or strike-through across a phrase. \`variant="highlight"|"underline"|"strike"\`, \`from="left"|"right"|"center"\`.
+- \`<ScrambleText text="INITIALIZING" startFrom={0} duration={40} />\` — decode/scramble: characters flicker through random glyphs then lock in left-to-right. Use a monospace font so the width doesn't jitter. Perfect for techy/terminal/loading beats.
+- Only if the catalog genuinely cannot express a beat (character physics, path-following text, per-glyph 3D), hand-roll it with \`interpolate\`/\`spring\`/\`stagger\` by index or \`useGsapTimeline\`. That is a last resort, not a starting point.
 - \`<Confetti startFrom={0} duration={90} count={80} colors={["#ff3b30", "#ffcc00", "#34c759"]} />\` — deterministic, frame-driven confetti for celebratory beats (success, "you're verified", milestones, payoff moments). Don't hand-roll particle systems or reach for canvas-confetti — use this. It pops from ANY point and in ANY direction:
   - \`origin={{ x, y }}\` — launch point, normalized 0–1 (center \`{0.5,0.5}\`, top-left \`{0,0}\`, right edge \`{1,0.5}\`, etc.).
   - \`angle\` — launch DIRECTION in degrees (90 = up [default], 0 = right, 180 = left, 270 = down). \`spread\` = cone width around it; \`spread={360}\` bursts in ALL directions (a firework from the point).
@@ -155,41 +171,30 @@ IMPORTANT: when the task or brief specifies a brand's design style (colors, ligh
 
 Text that pops in and is still sitting there when the scene cuts is the single most amateur thing a scene can do. EVERY text element gets BOTH an entrance and an exit — no exceptions, including the last scene (it exits, then the frame holds on whatever remains: the logo, the color, the mark).
 
-Safe defaults, use these unless the brief says otherwise:
-- **In:** blur + slide up + fade — the \`blurUp\` preset, or hand-rolled \`opacity\` + \`translateY(40→0)\` + \`blur(10px→0)\`. 10–14 frames, stagger 2–4.
-- **Out:** slide up (continuing the same direction of travel) + blur + fade. 6–10 frames — always faster than the entrance. Sliding DOWN on exit is the alternative when the next element enters from below.
-- Keep in and out on the same axis. Text that rises in and then drifts sideways out reads as an accident.
-
-\`<TextAnimation>\` handles the entrance only. Put the exit on a wrapper div around it:
+For text, this is one prop. \`exit="auto"\` runs the entrance in reverse — continuing its direction of travel — and times it so the last unit clears 6 frames before the element's window ends:
 
 \`\`\`tsx
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, Easing, TextAnimation } from "@genmotion/motion";
+import { AbsoluteFill, TextAnimation } from "@genmotion/motion";
 
 export default function Scene() {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-
-  // Exit finishes 6 frames before the cut, so the frame is clear when it lands.
-  const out = interpolate(frame, [durationInFrames - 16, durationInFrames - 6], [0, 1], {
-    easing: Easing.inOutCubic, extrapolateLeft: "clamp", extrapolateRight: "clamp",
-  });
-
   return (
     <AbsoluteFill style={{ background: "#0a0a0c" }}>
-      <div style={{ opacity: 1 - out, transform: \`translateY(\${out * -70}px)\`, filter: \`blur(\${out * 14}px)\` }}>
-        <h1 style={{ margin: 0, fontSize: 104, fontWeight: 500, letterSpacing: "-0.02em", color: "#ededef", fontFamily: "Inter, sans-serif" }}>
-          <TextAnimation text="Ship it faster" by="word" preset="blurUp" stagger={3} duration={12} />
-        </h1>
-      </div>
+      <h1 style={{ margin: 0, fontSize: 104, fontWeight: 500, letterSpacing: "-0.02em", color: "#ededef", fontFamily: "Inter, sans-serif" }}>
+        <TextAnimation text="Ship it faster" preset="blurUp" exit="auto" hold="float" />
+      </h1>
     </AbsoluteFill>
   );
 }
 \`\`\`
 
+That is the whole pattern. No wrapper div, no \`interpolate\`, no exit frame arithmetic — and inside a \`<Sequence>\` it automatically times against THAT sequence's length rather than the scene's.
+
 Rules that follow from this:
-- The exit must COMPLETE ~5–8 frames before the element's beat ends. Cutting mid-exit looks like a dropped frame.
-- Multiple text blocks in one scene: each gets its own in/out window, and the outgoing block should be clearing as the incoming one arrives (overlap by a few frames — never leave an empty frame between them).
-- GOTCHA: inside a \`<Sequence>\`, \`useCurrentFrame()\` is sequence-relative but \`useVideoConfig().durationInFrames\` is still the WHOLE scene. Inside a Sequence, time the exit against that Sequence's own \`durationInFrames\` (the number you passed it), not the config value.
+- Reach for \`exit="auto"\` by default. Give an explicit \`exit={{ at, duration }}\` only when a beat has to land on a specific frame, and omit \`exit\` only for the handoff element that must survive the cut.
+- Keep in and out on the same axis — the catalog effects already do this, which is why \`"auto"\` is safe. Text that rises in and drifts sideways out reads as an accident.
+- The exit must COMPLETE ~5–8 frames before the element's beat ends. \`"auto"\` handles this; if you time an exit by hand, honour it.
+- Multiple text blocks in one scene: each gets its own \`<Sequence>\` (which \`exit="auto"\` then reads), and the outgoing block should be clearing as the incoming one arrives — overlap by a few frames, never leave an empty frame between them.
+- Non-text elements (cards, icons, stats, images) still need hand-rolled exits. Use \`useWindowDuration()\` for their window length — it returns the enclosing \`<Sequence>\`'s duration, or the scene's when there isn't one. Do NOT use \`useVideoConfig().durationInFrames\` inside a Sequence; the frame clock is sequence-relative but that value is not.
 - Same discipline for non-text elements: cards, icons, stats and images enter and leave. Only the background and the handoff element (below) survive the cut.
 
 # Scene handoffs — one scene becomes the next
@@ -273,13 +278,11 @@ export default function Scene() {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const badge = spring({ frame, fps, config: springPresets.bouncy, durationInFrames: 12 });
-  const lift = spring({ frame, fps, delay: 6, config: springPresets.default, durationInFrames: 14 });
   const glow = interpolate(frame, [0, 60, 120], [0.15, 0.5, 0.15], { easing: Easing.inOutCubic, extrapolateRight: "clamp" });
 
-  // Text clears out before the camera commits to the push.
-  const out = interpolate(frame, [durationInFrames - 40, durationInFrames - 30], [0, 1], {
-    easing: Easing.inOutCubic, extrapolateLeft: "clamp", extrapolateRight: "clamp",
-  });
+  // The copy has to clear before the camera commits to the push, which is
+  // earlier than the end of the scene — so this exit is placed by hand.
+  const copyExit = { at: durationInFrames - 40, duration: 10 };
 
   return (
     <Camera
@@ -294,12 +297,12 @@ export default function Scene() {
       ]}
     >
       <Layer>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 36, opacity: 1 - out, transform: \`translateY(\${out * -70}px)\`, filter: \`blur(\${out * 14}px)\` }}>
-          <h1 style={{ margin: 0, transform: \`translateY(\${(1 - lift) * 70}px)\`, opacity: lift, fontSize: 104, fontWeight: 500, letterSpacing: "-0.025em", color: "#ededef", fontFamily: "Inter, sans-serif" }}>
-            <TextAnimation text="Meet Horizon" by="char" preset="blurUp" stagger={2} duration={12} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 36 }}>
+          <h1 style={{ margin: 0, fontSize: 104, fontWeight: 500, letterSpacing: "-0.025em", color: "#ededef", fontFamily: "Inter, sans-serif" }}>
+            <TextAnimation text="Meet Horizon" by="char" preset="blurUp" stagger={2} duration={12} exit={copyExit} hold="float" />
           </h1>
           <p style={{ margin: 0, fontSize: 36, color: "#8a8a93", fontFamily: "Inter, sans-serif" }}>
-            <TextAnimation text="The fastest way to ship" by="word" preset="blurUp" startFrom={14} stagger={3} duration={12} />
+            <TextAnimation text="The fastest way to ship" by="word" preset="blurUp" startFrom={14} stagger={3} duration={12} exit={copyExit} />
           </p>
         </div>
         {/* Stable wrapper: the camera aims at THIS, the spring animates inside it. */}
@@ -314,31 +317,37 @@ export default function Scene() {
 }
 \`\`\`
 
-A stat counter scene (interpolate driving numbers):
+A stat counter scene. \`<CountText>\` does the number; the CARDS are hand-rolled because they aren't text, and they get their exit timed against \`useWindowDuration()\`:
 
 \`\`\`tsx
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, Easing, stagger } from "@genmotion/motion";
+import { AbsoluteFill, CountText, TextAnimation, useCurrentFrame, useWindowDuration, interpolate, Easing, stagger } from "@genmotion/motion";
 
 const STATS = [
-  { label: "Active users", value: 48200, suffix: "+" },
-  { label: "Uptime", value: 99.99, suffix: "%" },
-  { label: "Countries", value: 130, suffix: "" },
+  { label: "Active users", value: 48200, suffix: "+", decimals: 0 },
+  { label: "Uptime", value: 99.99, suffix: "%", decimals: 2 },
+  { label: "Countries", value: 130, suffix: "", decimals: 0 },
 ];
 
 export default function Scene() {
   const frame = useCurrentFrame();
+  const windowEnd = useWindowDuration();
+  // Cards are not text, so their exit is hand-rolled — clearing 6 frames early.
+  const out = interpolate(frame, [windowEnd - 18, windowEnd - 6], [0, 1], {
+    easing: Easing.inOutCubic, extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  });
+
   return (
     <AbsoluteFill style={{ background: "#0a0a0c", flexDirection: "row", gap: 48 }}>
       {STATS.map((stat, i) => {
         const p = stagger({ frame, index: i, each: 8, duration: 24 });
-        const count = interpolate(frame, [10 + i * 8, 70 + i * 8], [0, stat.value], { easing: Easing.outExpo, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const display = stat.value % 1 === 0 ? Math.round(count).toLocaleString() : count.toFixed(2);
         return (
-          <div key={stat.label} style={{ opacity: p, transform: \`translateY(\${(1 - p) * 60}px)\`, width: 420, padding: 48, borderRadius: 20, border: "1px solid rgba(255,255,255,0.09)", background: "linear-gradient(180deg, #16161c 0%, #101014 100%)", display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ fontSize: 84, fontWeight: 500, letterSpacing: "-0.02em", color: "#ededef", fontFamily: "Inter, sans-serif", fontVariantNumeric: "tabular-nums" }}>
-              {display}{stat.suffix}
+          <div key={stat.label} style={{ opacity: p * (1 - out), transform: \`translateY(\${(1 - p) * 60 + out * -50}px)\`, width: 420, padding: 48, borderRadius: 20, border: "1px solid rgba(255,255,255,0.09)", background: "linear-gradient(180deg, #16161c 0%, #101014 100%)", display: "flex", flexDirection: "column", gap: 12 }}>
+            <span style={{ fontSize: 84, fontWeight: 500, letterSpacing: "-0.02em", color: "#ededef", fontFamily: "Inter, sans-serif" }}>
+              <CountText to={stat.value} decimals={stat.decimals} suffix={stat.suffix} startFrom={10 + i * 8} duration={60} />
             </span>
-            <span style={{ fontSize: 28, color: "#8a8a93", fontFamily: "Inter, sans-serif" }}>{stat.label}</span>
+            <span style={{ fontSize: 28, color: "#8a8a93", fontFamily: "Inter, sans-serif" }}>
+              <TextAnimation text={stat.label} preset="fadeUp" startFrom={16 + i * 8} />
+            </span>
           </div>
         );
       })}
@@ -347,10 +356,10 @@ export default function Scene() {
 }
 \`\`\`
 
-Choreographed phases with <Sequence>:
+Choreographed phases with <Sequence>. Each headline's \`exit="auto"\` times itself against ITS OWN sequence — the first clears before frame 55, the second before the end of the scene — with no frame arithmetic anywhere:
 
 \`\`\`tsx
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, spring, TextAnimation } from "@genmotion/motion";
+import { AbsoluteFill, Sequence, TextAnimation } from "@genmotion/motion";
 
 export default function Scene() {
   return (
@@ -366,13 +375,10 @@ export default function Scene() {
 }
 
 function Headline({ text, accent = false }: { text: string; accent?: boolean }) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const enter = spring({ frame, fps });
   return (
     <AbsoluteFill>
-      <h1 style={{ margin: 0, opacity: enter, transform: \`scale(\${0.94 + enter * 0.06})\`, fontSize: 96, fontWeight: 500, letterSpacing: "-0.02em", color: accent ? "#7c8aff" : "#ededef", fontFamily: "Inter, sans-serif" }}>
-        <TextAnimation text={text} by="word" preset="fadeUp" />
+      <h1 style={{ margin: 0, fontSize: 96, fontWeight: 500, letterSpacing: "-0.02em", color: accent ? "#7c8aff" : "#ededef", fontFamily: "Inter, sans-serif" }}>
+        <TextAnimation text={text} preset="blurUp" exit="auto" hold="breathe" />
       </h1>
     </AbsoluteFill>
   );
