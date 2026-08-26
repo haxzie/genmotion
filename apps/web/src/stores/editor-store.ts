@@ -36,6 +36,11 @@ interface EditorState {
   fixRequest: FixRequest | null;
   requestFix(request: FixRequest): void;
   consumeFixRequest(): FixRequest | null;
+  /** A message composed outside the composer (the preview's comment bubble),
+   *  sent by the chat panel with whatever context is attached at the time. */
+  promptRequest: string | null;
+  requestPrompt(text: string): void;
+  consumePrompt(): string | null;
   /** Click: select only this scene. Shift-click: toggle it in the selection. */
   selectScene(id: string, additive?: boolean): void;
   deselectScene(id: string): void;
@@ -90,6 +95,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const request = get().fixRequest;
     if (request) set({ fixRequest: null });
     return request;
+  },
+  promptRequest: null,
+  requestPrompt(promptRequest) {
+    set({ promptRequest });
+  },
+  consumePrompt() {
+    const text = get().promptRequest;
+    if (text) set({ promptRequest: null });
+    return text;
   },
   selectScene(id, additive = false) {
     set((state) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlaybackStore, type CompiledScene } from "@genmotion/player";
 import { framesToTimecode, globalToLocal } from "@genmotion/shared";
 import { useEditorStore, type ElementContext } from "@/stores/editor-store";
@@ -9,6 +9,9 @@ import { useEditorStore, type ElementContext } from "@/stores/editor-store";
 const HILITE = "#a855f7";
 /** Pointer travel (px) before a press becomes a marquee drag rather than a click. */
 const DRAG_THRESHOLD = 5;
+/** Comment-bubble footprint, used to keep it inside the preview. */
+const BUBBLE_W = 300;
+const BUBBLE_H = 68;
 
 interface Box {
   left: number;
@@ -67,11 +70,33 @@ function isFullFrame(el: HTMLElement, frameW: number, frameH: number): boolean {
   );
 }
 
+/** An open comment bubble: what was picked, where to draw it. */
+interface Draft {
+  elements: ElementContext[];
+  /** Outlines pinned over the picked elements while the bubble is open. */
+  boxes: Box[];
+  /** The clicked point (the bubble's little anchor dot). */
+  anchor: { x: number; y: number };
+  /** Bubble position, clamped to the preview at open time. */
+  place: { left: number; top: number };
+  label: string;
+}
+
+function SendGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
 /**
  * Wraps the preview and lets you inspect it like a browser: hover highlights
- * the element under the cursor; click attaches it (with its scene + timecode)
- * to the chat as context. Dragging a marquee box attaches EVERY id'd element
- * inside the box at once.
+ * the element under the cursor; clicking opens a Figma-style comment bubble
+ * right where you clicked. What you type there is sent to the chat with the
+ * element (plus its scene + timecode) attached as context; submitting empty
+ * just parks the element as a context pill. Dragging a marquee box picks EVERY
+ * id'd element inside it at once.
  */
 export function PreviewInspector({
   scenes,
@@ -92,11 +117,28 @@ export function PreviewInspector({
   const [box, setBox] = useState<Box | null>(null);
   const [marquee, setMarquee] = useState<Box | null>(null);
   const [marqueeHits, setMarqueeHits] = useState<Box[]>([]);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [note, setNote] = useState("");
   const addElement = useEditorStore((s) => s.addElement);
+  const requestPrompt = useEditorStore((s) => s.requestPrompt);
+  const isPlaying = usePlaybackStore((s) => s.isPlaying);
 
   // Drag bookkeeping (refs so it survives re-renders without re-binding).
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const movedRef = useRef(false);
+
+  // Clicking the preview again to re-target blurs the bubble's input (the
+  // preview isn't focusable), so put the caret back on every open.
+  const noteRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (draft) noteRef.current?.focus();
+  }, [draft]);
+
+  // Playback resumed under an open bubble — its pinned outlines no longer match
+  // what's on screen, so drop it.
+  useEffect(() => {
+    if (isPlaying) setDraft(null);
+  }, [isPlaying]);
 
   function relPoint(clientX: number, clientY: number) {
     const c = ref.current!.getBoundingClientRect();
@@ -202,19 +244,72 @@ export function PreviewInspector({
       : `${c.sceneId ?? ""}|${c.tag}|${c.text}`;
   }
 
-  /** Add `el` unless an equivalent element is already in context. */
-  function addUnique(el: HTMLElement, taken: Set<string>) {
-    const ctx = buildContext(el);
-    const key = contextKey(ctx);
-    if (taken.has(key)) return;
-    taken.add(key);
-    addElement(ctx);
-  }
-
   function takenIds(): Set<string> {
     return new Set(
       useEditorStore.getState().selectedElements.map(contextKey),
     );
+  }
+
+  /**
+   * Open the comment bubble over what the user just picked. Playback is paused
+   * so the frame they're asking about — and the outlines pinned over it — hold
+   * still while they type.
+   */
+  function openDraft(hits: Array<{ el: HTMLElement; box: Box }>, at: { x: number; y: number }) {
+    if (hits.length === 0) {
+      setDraft(null);
+      return;
+    }
+    usePlaybackStore.getState().pause();
+    const seen = new Set<string>();
+    const elements: ElementContext[] = [];
+    for (const { el } of hits) {
+      const ctx = buildContext(el);
+      const key = contextKey(ctx);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      elements.push(ctx);
+    }
+
+    const c = ref.current!.getBoundingClientRect();
+    const left = Math.max(8, Math.min(at.x + 10, c.width - BUBBLE_W - 8));
+    // Below the click, or above it when there's no room left underneath.
+    const below = at.y + 14;
+    const top =
+      below + BUBBLE_H + 8 <= c.height ? below : Math.max(8, at.y - BUBBLE_H - 14);
+
+    setNote("");
+    setDraft({
+      elements,
+      boxes: hits.map((h) => h.box),
+      anchor: at,
+      place: { left, top },
+      label:
+        elements.length > 1
+          ? `${elements.length} elements`
+          : (elements[0]?.label ?? ""),
+    });
+  }
+
+  /** Attach the draft's elements as chat context, skipping any already there. */
+  function attachDraft(d: Draft) {
+    const taken = takenIds();
+    for (const ctx of d.elements) {
+      const key = contextKey(ctx);
+      if (taken.has(key)) continue;
+      taken.add(key);
+      addElement(ctx);
+    }
+  }
+
+  /** Enter in the bubble: attach the context, and send the note if there is one. */
+  function commitDraft() {
+    if (!draft) return;
+    attachDraft(draft);
+    const text = note.trim();
+    if (text) requestPrompt(text);
+    setDraft(null);
+    setNote("");
   }
 
   return (
@@ -254,16 +349,15 @@ export function PreviewInspector({
         }
 
         if (start && movedRef.current) {
-          // Marquee drag → attach every id'd element inside it.
-          const area = rectFromPoints(start, relPoint(e.clientX, e.clientY));
-          const taken = takenIds();
-          for (const { el } of collect(area)) addUnique(el, taken);
+          // Marquee drag → ask about every id'd element inside it.
+          const end = relPoint(e.clientX, e.clientY);
+          openDraft(collect(rectFromPoints(start, end)), end);
         } else if (start) {
-          // Plain click → attach the single element under the cursor. (Pointer
-          // capture retargets the event, so resolve the real element by point.)
+          // Plain click → ask about the single element under the cursor.
+          // (Pointer capture retargets the event, so resolve it by point.)
           const target = document.elementFromPoint(e.clientX, e.clientY);
           const m = measure(target);
-          if (m) addUnique(m.el, takenIds());
+          openDraft(m ? [m] : [], relPoint(e.clientX, e.clientY));
         }
 
         movedRef.current = false;
@@ -275,6 +369,23 @@ export function PreviewInspector({
       }}
     >
       {children}
+
+      {/* Elements the open bubble is about, held under a solid outline. */}
+      {draft?.boxes.map((hit, i) => (
+        <div
+          key={i}
+          className="pointer-events-none absolute z-20 rounded-[3px]"
+          style={{
+            left: hit.left,
+            top: hit.top,
+            width: hit.width,
+            height: hit.height,
+            border: `1.5px solid ${HILITE}`,
+            background: `${HILITE}1a`,
+            boxShadow: `0 0 0 1px ${HILITE}55`,
+          }}
+        />
+      ))}
 
       {/* Hover highlight (only when not dragging). */}
       {box && !marquee && (
@@ -322,6 +433,72 @@ export function PreviewInspector({
             background: `${HILITE}14`,
           }}
         />
+      )}
+
+      {/* Figma-style comment bubble, anchored where the user clicked. */}
+      {draft && (
+        <>
+          <div
+            className="pointer-events-none absolute z-40 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              left: draft.anchor.x,
+              top: draft.anchor.y,
+              background: HILITE,
+              boxShadow: `0 0 0 3px ${HILITE}44`,
+            }}
+          />
+          <form
+            style={{ left: draft.place.left, top: draft.place.top, width: BUBBLE_W }}
+            className="absolute z-40 flex cursor-auto select-text flex-col gap-1 rounded-xl border border-[#a855f7]/50 bg-surface/95 px-2.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.5)] backdrop-blur-md"
+            // The bubble sits inside the inspector — keep its pointer events from
+            // re-triggering hover/marquee/reselect on the layer underneath.
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onPointerMove={(e) => {
+              e.stopPropagation();
+              setBox(null);
+            }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              commitDraft();
+            }}
+          >
+            {/* What's targeted, then the note under it — same shape as the
+                chat's element pill. */}
+            <span
+              className="truncate text-[0.786rem]"
+              style={{ color: "#cba3f5" }}
+              title={draft.label}
+            >
+              {draft.label}
+              <span className="text-[#a855f7]/70">
+                {" "}
+                · {draft.elements[0]?.timecode}
+              </span>
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                ref={noteRef}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation(); // don't let Escape clear the chat's pills
+                  if (e.key === "Escape") setDraft(null);
+                }}
+                placeholder="Ask for a change…"
+                className="min-w-0 flex-1 bg-transparent text-[0.929rem] text-text-primary outline-none placeholder:text-text-tertiary"
+              />
+              <button
+                type="submit"
+                aria-label={note.trim() ? "Send" : "Add to chat context"}
+                title={note.trim() ? "Send (⏎)" : "Add to chat context (⏎)"}
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-cta text-background transition-colors hover:bg-cta-hover"
+              >
+                <SendGlyph />
+              </button>
+            </div>
+          </form>
+        </>
       )}
     </div>
   );

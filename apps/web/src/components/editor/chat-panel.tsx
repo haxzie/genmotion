@@ -1,6 +1,13 @@
 "use client";
 
-import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Streamdown } from "streamdown";
@@ -27,6 +34,19 @@ import {
 } from "./scene-chip";
 import { ToolCard, type ToolPartLike } from "./tool-card";
 import { Spinner, cx } from "@/components/ui";
+
+/**
+ * An extra control for the composer's action row, rendered beside the attach
+ * button. The hosted app has nothing to put there; the desktop app uses it for
+ * the agent-harness picker, which only exists where there is a local harness to
+ * pick. Registered rather than passed as a prop because ChatPanel is mounted by
+ * the editor page, not by the host.
+ */
+let ComposerAccessory: ComponentType | null = null;
+
+export function registerComposerAccessory(component: ComponentType | null): void {
+  ComposerAccessory = component;
+}
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -352,7 +372,10 @@ function MessageBubble({
     );
     const userText = textParts[textParts.length - 1]?.text ?? "";
     return (
-      <div className={cx("ml-8 self-end rounded-2xl rounded-br-md bg-surface-raised px-3 py-2 text-text-primary", spacing)}>
+      <div
+        data-message-id={message.id}
+        className={cx("ml-8 self-end rounded-2xl rounded-br-md bg-surface-raised px-3 py-2 text-text-primary", spacing)}
+      >
         {ctxPart?.data && <MessageContextPills ctx={ctxPart.data} />}
         {userText && <p className="whitespace-pre-wrap">{userText}</p>}
       </div>
@@ -463,6 +486,7 @@ function ChatPanelInner({
   const selectedElements = useEditorStore((s) => s.selectedElements);
   const setAiBusy = useEditorStore((s) => s.setAiBusy);
   const fixRequest = useEditorStore((s) => s.fixRequest);
+  const promptRequest = useEditorStore((s) => s.promptRequest);
 
   // When a selection is made in the studio (scene, asset, or a preview element)
   // and its context chip appears, jump focus to the chat input so the user can
@@ -775,6 +799,17 @@ function ChatPanelInner({
     }
   }, [fixRequest, busy, sendMessage]);
 
+  // Breathing room left above a focused message, so it reads as the top of the
+  // turn rather than being flush against the panel's edge.
+  const FOCUS_GAP = 12;
+  // How close to the bottom counts as "following along".
+  const STICK_SLOP = 80;
+  // Slack left below the focused turn, and the reason it is more than
+  // STICK_SLOP: without it the scroll lands flush against the bottom, `onScroll`
+  // reads that as the user following along, and the next token pins the view to
+  // the bottom again — undoing the focus a frame after it happened.
+  const FOCUS_SLACK = STICK_SLOP + 24;
+
   // Pin to bottom as messages stream in — but only while the user is already at
   // the bottom, and batched into a rAF so a burst of tokens coalesces to one
   // scroll per frame instead of a synchronous reflow on every token.
@@ -784,7 +819,7 @@ function ChatPanelInner({
 
   const handleMessagesScroll = () => {
     const el = scrollRef.current;
-    if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_SLOP;
   };
 
   useEffect(() => {
@@ -801,6 +836,58 @@ function ChatPanelInner({
         scrollRaf.current = null;
       }
     };
+  }, [messages]);
+
+  /**
+   * Bring a newly sent message to the top of the view and hold it there.
+   *
+   * Pinning to the bottom alone reads badly on a long turn: the question the
+   * user just asked scrolls away the moment the answer starts arriving, and
+   * they end up watching tool cards with no idea what prompted them. Lifting it
+   * to the top instead puts the question and the start of the reply on screen
+   * together, which is where the interesting part is.
+   *
+   * The last turn is usually shorter than the panel, so there is nothing below
+   * it to scroll against — hence the tail spacer, sized to whatever is missing.
+   */
+  const [tailSpace, setTailSpace] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Mirrored, because the measurement below has to discount the spacer left
+  // over from the previous turn — it is part of `scrollHeight` but isn't
+  // content, and counting it would leave the new message short of the top.
+  const tailSpaceRef = useRef(0);
+  const focusedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const last = [...messages].reverse().find((m) => m.role === "user");
+    if (!last) return;
+    const first = focusedUserId.current === null;
+    if (last.id === focusedUserId.current) return;
+    focusedUserId.current = last.id;
+    // On mount the transcript is restored whole; its last question is old news,
+    // and the useful view is the bottom, where the conversation left off.
+    if (first) return;
+
+    const el = scrollRef.current;
+    const list = listRef.current;
+    const node = el?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(last.id)}"]`);
+    if (!el || !list || !node) return;
+
+    const top = node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+    // Measured off the list, not the scroller: a conversation shorter than the
+    // panel has `scrollHeight === clientHeight`, which overstates what is below
+    // the message and leaves the spacer too short to lift it to the top.
+    const below = list.getBoundingClientRect().height - top - tailSpaceRef.current;
+    tailSpaceRef.current = Math.max(0, el.clientHeight - below - FOCUS_GAP + FOCUS_SLACK);
+    setTailSpace(tailSpaceRef.current);
+    // Following the bottom would undo this on the next token; the user scrolling
+    // back down turns it on again through `handleMessagesScroll`.
+    stickToBottom.current = false;
+    // Let the spacer land before scrolling, or the target is still out of reach.
+    const raf = requestAnimationFrame(() => {
+      el.scrollTo({ top: Math.max(0, top - FOCUS_GAP), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages]);
 
   // Build the exact (message, options) args for sendMessage from the current
@@ -876,8 +963,9 @@ function ChatPanelInner({
       );
   }
 
-  function submit() {
-    const text = input.trim();
+  /** Send `override` (the preview's comment bubble) or the composer's contents. */
+  function submit(override?: string) {
+    const text = (override ?? input).trim();
     if (!text) return;
 
     // Gate before clearing the composer: if there's no quota left, the user
@@ -887,7 +975,7 @@ function ChatPanelInner({
       openUpgrade("aiTurns");
       return;
     }
-    setInput("");
+    if (override === undefined) setInput("");
 
     track("chat_message_sent", {
       length: text.length,
@@ -912,6 +1000,17 @@ function ChatPanelInner({
     }
   }
 
+  // Messages typed straight into the preview (the element comment bubble). The
+  // bubble attaches its element context first, so this send picks it up like any
+  // composer message — queueing behind a live turn included.
+  useEffect(() => {
+    if (!promptRequest) return;
+    const text = useEditorStore.getState().consumePrompt();
+    if (text) submit(text);
+    // `submit` is rebuilt each render; the effect always runs the current one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promptRequest]);
+
   return (
     <aside className="relative flex min-h-0 flex-1 flex-col bg-background">
       {/* Fade messages into the background as they scroll under the top edge */}
@@ -933,7 +1032,7 @@ function ChatPanelInner({
             </p>
           </div>
         ) : (
-          <div className="flex min-w-0 max-w-full flex-col px-4 pb-40 pt-4">
+          <div ref={listRef} className="flex min-w-0 max-w-full flex-col px-4 pb-40 pt-4">
             {messages.map((message, index) => {
               const grouped = messages[index - 1]?.role === message.role;
               return (
@@ -992,6 +1091,8 @@ function ChatPanelInner({
                 </button>
               </div>
             )}
+            {/* Scroll room for the focused message; see the tail-spacer note. */}
+            {tailSpace > 0 && <div aria-hidden style={{ height: tailSpace }} />}
           </div>
         )}
       </div>
@@ -1121,6 +1222,7 @@ function ChatPanelInner({
             >
               <PlusIcon className="size-[1.15rem]" />
             </button>
+            {ComposerAccessory && <ComposerAccessory />}
             <span className="min-w-0 flex-1 truncate text-center text-[0.786rem] text-text-tertiary">
               {selectedSceneIds.length > 0
                 ? `${selectedSceneIds.length} scene${selectedSceneIds.length > 1 ? "s" : ""} in context`
