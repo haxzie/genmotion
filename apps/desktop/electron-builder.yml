@@ -1,0 +1,62 @@
+appId: dev.genmotion.desktop
+productName: GenMotion
+directories:
+  output: release
+  buildResources: build
+# Everything is bundled into dist, so no node_modules ships — pnpm's symlinked
+# layout is not something electron-builder's packer can walk.
+files:
+  - dist/**
+  - package.json
+# The browser returns from a desktop sign-in through this scheme. It only
+# raises the window — polling is what completes the login — but without the
+# registration the hand-off is silent.
+protocols:
+  - name: GenMotion
+    schemes:
+      - genmotion
+asarUnpack:
+  # Executables cannot be run from inside an asar archive, and Node's ESM
+  # loader cannot import from one.
+  - dist/bin/**
+  - dist/vendor/**
+mac:
+  category: public.app-category.video
+  icon: build/icon.icns
+  # arm64 only, deliberately. `scripts/copy-esbuild-binary.mjs` resolves esbuild
+  # and ffmpeg for the *host* architecture, so an x64 or universal build would
+  # ship arm64 binaries and fail at the first compile or export. Widening this
+  # means teaching those scripts to fetch both slices first.
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  # Required for notarization, and the reason build/entitlements.mac.plist
+  # exists: the hardened runtime blocks V8 outright without those exceptions.
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  # `spctl --assess` fails on an app that has not been notarized *yet*, which is
+  # every app at the moment electron-builder would run the check. The real
+  # assessment happens after stapling, in `pnpm verify:mac`.
+  gatekeeperAssess: false
+  # Signing identity comes from the keychain (Developer ID Application). Local
+  # builds opt out with CSC_IDENTITY_AUTO_DISCOVERY=false — see the `package`
+  # script — rather than being hardcoded unsigned here.
+  #
+  # electron-builder notarizes signed macOS builds itself, using the App Store
+  # Connect key in APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER, and
+  # fails the build if they are missing. That is the right default for a
+  # release: an un-notarized DMG is refused by Gatekeeper on every Mac but the
+  # one that built it. `pnpm release:mac:sign-only` opts out for testing.
+  notarize: true
+win:
+  icon: build/icon.png
+  target: nsis
+linux:
+  icon: build/icon.png
+  target: AppImage
+  category: Video

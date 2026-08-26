@@ -1,0 +1,21 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    macOS icon geometry: 1024 canvas with the artwork inset to 824×824 and a
+    185.4 corner radius, which is what gives a native app its familiar shape
+    and optical size next to the system icons.
+  -->
+  <rect x="100" y="100" width="824" height="824" rx="185.4" ry="185.4" fill="#0B1533"/>
+
+  <!-- The mark at 66% of the artwork: smaller reads as a dot in the Dock
+       and at 16px in the menu bar, larger crowds the corners. -->
+  <g transform="translate(240.08 240.08) scale(1.0622)">
+    <path d="M280.083 111.725V38.5C280.083 25.2083 269.208 14.3333 255.917 14.3333C179.55 14.3333 118.65 108.1 111.642 231.833H38.4167C25.125 231.833 14.25 242.708 14.25 256C14.25 332.367 108.017 393.267 231.75 400.275V473.5C231.75 486.792 242.625 497.667 255.917 497.667C332.283 497.667 393.183 403.9 400.192 280.167H473.417C486.708 280.167 497.583 269.292 497.583 256C497.583 179.633 403.817 118.733 280.083 111.725ZM255.917 292.25C235.858 292.25 219.667 276.058 219.667 256C219.667 235.942 235.858 219.75 255.917 219.75C275.975 219.75 292.167 235.942 292.167 256C292.167 276.058 275.975 292.25 255.917 292.25Z" fill="url(#markGradient)"/>
+  </g>
+
+  <defs>
+    <linearGradient id="markGradient" x1="61" y1="88.5" x2="428.5" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C6F91E"/>
+      <stop offset="1" stop-color="#16F5BD"/>
+    </linearGradient>
+  </defs>
+</svg>

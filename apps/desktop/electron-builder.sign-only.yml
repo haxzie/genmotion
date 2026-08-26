@@ -1,0 +1,13 @@
+# Everything the real release does, minus the trip to Apple.
+#
+# Signing and notarization fail for completely different reasons — a bad
+# entitlement or an unsigned nested binary is a local mistake, while a rejected
+# submission is not — and notarization costs minutes per attempt. This config
+# lets the signing half be checked on its own, which is the half that changes
+# when the app gains a new binary or entitlement.
+#
+# The output is NOT distributable: Gatekeeper refuses an un-notarized app on
+# any Mac other than the one that built it. Use `pnpm release:mac` for that.
+extends: electron-builder.yml
+mac:
+  notarize: false

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Spinner, cx } from "@/components/ui";
 import { useTypewriter } from "@/hooks/use-typewriter";
 
@@ -135,13 +135,20 @@ export const USE_CASES = [
  * The prompt-first composer used on both the dashboard and the marketing home.
  * Owns its own input + aspect-ratio state; hands the trimmed prompt and chosen
  * dimensions to `onSubmit`.
+ *
+ * `accessory` is an extra control for the action row — the same slot the chat
+ * composer has. The hosted app has nothing to put there; the desktop app puts
+ * the agent-harness picker in it, so the choice is available before a project
+ * exists rather than only once the editor is open.
  */
 export function HeroComposer({
   onSubmit,
   pending,
+  accessory,
 }: {
   onSubmit: (prompt: string, dims: { width: number; height: number }) => void;
   pending: boolean;
+  accessory?: ReactNode;
 }) {
   const [input, setInput] = useState("");
   const [aspect, setAspect] = useState<AspectRatio>(ASPECT_RATIOS[0]);
@@ -184,13 +191,16 @@ export function HeroComposer({
         />
       </div>
       <div className="flex items-center justify-between gap-1.5 pt-1">
-        <button
-          type="button"
-          aria-label="Add"
-          className="flex size-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
-        >
-          <PlusIcon className="size-[1.15rem]" />
-        </button>
+        <div className="flex min-w-0 items-center gap-1">
+          <button
+            type="button"
+            aria-label="Add"
+            className="flex size-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
+          >
+            <PlusIcon className="size-[1.15rem]" />
+          </button>
+          {accessory}
+        </div>
         <div className="flex items-center gap-1.5">
           <AspectDropdown value={aspect} onChange={setAspect} />
           <button

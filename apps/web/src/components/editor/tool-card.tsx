@@ -38,11 +38,118 @@ const TOOL_LABELS: Record<string, { active: string; done: string }> = {
   },
 };
 
+/**
+ * Presentation for a tool this component doesn't know about natively.
+ *
+ * The editor agent's toolset depends on which harness is driving it — the
+ * hosted agent has `createScene`, a coding harness has `Write` and `Edit` — so
+ * hosts register their own vocabulary rather than this file enumerating every
+ * possibility. Without an entry a tool still renders, just with its raw name.
+ */
+export interface ToolPresentation {
+  labels: { active: string; done: string };
+  icon?: Glyph;
+  /** Short descriptor shown after the label, e.g. the file being written. */
+  subject?: (part: ToolPartLike) => string | undefined;
+  /** Expanded content. Falls back to the built-in body when omitted. */
+  body?: (part: ToolPartLike) => ReactNode;
+  /**
+   * Show the body while the call is still running, and keep it toggleable.
+   * For tools whose body is the point of the call rather than a record of it —
+   * a question waiting on an answer, work you watch as it lands.
+   */
+  expandWhileRunning?: boolean;
+}
+
+const REGISTERED: Record<string, ToolPresentation> = {};
+
+/** Teach the tool cards about a host's own tools. Merges; call once at startup. */
+export function registerToolPresentation(
+  entries: Record<string, ToolPresentation>,
+): void {
+  Object.assign(REGISTERED, entries);
+}
+
 const RESEARCH_TOOLS = new Set([
   "analyzeWebsiteBranding",
   "readWebsite",
   "searchWeb",
 ]);
+
+/**
+ * The tools `ExpandedBody` draws a purpose-built body for.
+ *
+ * Anything outside this set — a harness tool nobody has registered a
+ * presentation for yet, or one a newer CLI added — falls through to the raw
+ * input/output dump. Without it an unknown tool expands to an empty box, which
+ * reads as "the tool did nothing" rather than "we don't know this tool".
+ */
+const NATIVE_TOOLS = new Set([
+  ...RESEARCH_TOOLS,
+  "createScene",
+  "updateScene",
+  "createScenes",
+  "getSceneCode",
+  "updateSceneDuration",
+  "reorderScenes",
+  "renameProject",
+  "deleteScene",
+  "CreateVoiceOverAudio",
+  "editScene",
+  "workbench",
+  "saveImageToProject",
+  "generateImage",
+  "compactConversation",
+]);
+
+/** Tool results arrive as a string, as MCP content blocks, or as a plain object. */
+function readableOutput(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    const blocks = value.map((block) =>
+      block && typeof block === "object" && "text" in block
+        ? String((block as { text: unknown }).text)
+        : "",
+    );
+    // Only treat it as content blocks when every entry actually carried text;
+    // a plain array of data reads better as JSON than as a run of blanks.
+    if (blocks.every(Boolean)) return blocks.join("\n");
+  }
+  if (typeof value === "object" && "text" in (value as object)) {
+    return String((value as { text: unknown }).text);
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+/** Last resort: show what went in and what came back, rather than nothing. */
+function GenericBody({ part }: { part: ToolPartLike }) {
+  const input = readableOutput(part.input);
+  const output = readableOutput((part as { output?: unknown }).output);
+  if (!input.trim() && !output.trim()) {
+    return (
+      <p className="px-3 py-2 text-[0.786rem] text-text-tertiary">No details.</p>
+    );
+  }
+  return (
+    <>
+      {input.trim() && (
+        <pre className="max-h-60 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-[0.714rem] leading-relaxed text-text-tertiary">
+          {input.slice(0, 3000)}
+        </pre>
+      )}
+      {output.trim() && (
+        <pre className="max-h-60 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-[0.714rem] leading-relaxed text-text-secondary">
+          {output.slice(0, 3000)}
+        </pre>
+      )}
+    </>
+  );
+}
 
 type Glyph = (props: { className?: string }) => ReactNode;
 
@@ -172,6 +279,8 @@ interface SceneBriefInput {
 export interface ToolPartLike {
   type: string;
   state?: string;
+  /** The harness's id for this call — how a host addresses the call it belongs to. */
+  toolCallId?: string;
   input?: {
     name?: string;
     code?: string;
@@ -603,6 +712,8 @@ function ExpandedBody({
           {JSON.stringify(output, null, 2).slice(0, 3000)}
         </pre>
       )}
+
+      {!NATIVE_TOOLS.has(toolName) && <GenericBody part={part} />}
     </div>
   );
 }
@@ -657,24 +768,31 @@ export function ToolCard({
 }) {
   const [open, setOpen] = useState(false);
   const toolName = parts[0]!.type.replace(/^tool-/, "");
-  const labels = TOOL_LABELS[toolName] ?? { active: toolName, done: toolName };
-  const ToolIcon = TOOL_ICONS[toolName] ?? DotIcon;
+  const registered = REGISTERED[toolName];
+  const labels =
+    registered?.labels ?? TOOL_LABELS[toolName] ?? { active: toolName, done: toolName };
+  const ToolIcon = registered?.icon ?? TOOL_ICONS[toolName] ?? DotIcon;
 
   const statuses = parts.map((p) => computeStatus(p, toolName, scenes, live));
   const status = aggregateStatus(statuses);
   const count = parts.length;
 
+  const subjectOf = (part: ToolPartLike) =>
+    registered?.subject?.(part) ?? partSubject(part, scenes);
   const subject =
     count === 1
-      ? partSubject(parts[0]!, scenes)
-      : parts.map((p) => partSubject(p, scenes)).filter(Boolean).join(", ");
+      ? subjectOf(parts[0]!)
+      : parts.map(subjectOf).filter(Boolean).join(", ");
 
-  // createScenes is expandable, and auto-shows its scene list, while running —
-  // so you can watch the scenes being written in parallel.
+  // Most cards seal shut while they run — there is nothing to see yet. Some
+  // are the opposite: createScenes auto-shows its scene list so you can watch
+  // the scenes being written in parallel, and a question card is useless
+  // unless you can answer it where it stands.
   const isCreateScenes = toolName === "createScenes";
+  const liveBody = isCreateScenes || registered?.expandWhileRunning === true;
   const running = status === "running";
-  const toggleable = !running || isCreateScenes;
-  const showBody = open || (isCreateScenes && running);
+  const toggleable = !running || liveBody;
+  const showBody = open || (liveBody && running);
 
   return (
     <div className="w-full min-w-0 max-w-full">
@@ -726,17 +844,25 @@ export function ToolCard({
           )}
         >
           {count === 1 ? (
-            <ExpandedBody toolName={toolName} part={parts[0]!} scenes={scenes} live={live} />
+            registered?.body ? (
+              registered.body(parts[0]!)
+            ) : (
+              <ExpandedBody toolName={toolName} part={parts[0]!} scenes={scenes} live={live} />
+            )
           ) : (
             parts.map((p, i) => (
               <div key={i} className={cx(i > 0 && "border-t border-border")}>
                 <div className="flex items-center gap-2 bg-surface-raised/40 px-3 py-1.5 text-[0.786rem]">
                   <StatusIcon status={statuses[i]!} />
                   <span className="truncate text-text-secondary">
-                    {partSubject(p, scenes) || `#${i + 1}`}
+                    {subjectOf(p) || `#${i + 1}`}
                   </span>
                 </div>
-                <ExpandedBody toolName={toolName} part={p} scenes={scenes} live={live} />
+                {registered?.body ? (
+                  registered.body(p)
+                ) : (
+                  <ExpandedBody toolName={toolName} part={p} scenes={scenes} live={live} />
+                )}
               </div>
             ))
           )}

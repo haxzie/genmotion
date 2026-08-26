@@ -4,6 +4,9 @@ packages:
 allowBuilds:
   # core-js's postinstall is just a funding banner — no build needed.
   core-js: false
+  # electron's postinstall downloads the platform runtime — the desktop app
+  # cannot start without it.
+  electron: true
   esbuild: true
   ffmpeg-static: true
   sharp: true

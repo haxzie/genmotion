@@ -1,0 +1,3 @@
+# electron-builder output: packaged .app bundles, DMGs and zips.
+# Hundreds of megabytes of binaries rebuilt by `pnpm package` on demand.
+release/

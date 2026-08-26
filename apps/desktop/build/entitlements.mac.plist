@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime exceptions for the main app. Every one of these is required
+  by something we actually ship; notarization rejects nothing here, but each
+  entitlement widens the process, so nothing speculative belongs in this file.
+-->
+<plist version="1.0">
+<dict>
+  <!-- V8 compiles JavaScript at runtime, and the agent's scene code is compiled
+       on the fly by esbuild-wasm in the renderer. Without these two the app
+       crashes on launch under the hardened runtime. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- The main process points esbuild at its own binary through
+       ESBUILD_BINARY_PATH, and electron reads DYLD_* during startup. -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+
+  <!-- We spawn two third-party executables from app.asar.unpacked/dist/bin
+       (esbuild and ffmpeg). They carry our signature after packaging, but the
+       loader still refuses them without this. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>

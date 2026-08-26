@@ -3,8 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "//": "./prompt exposes the prompts alone, importable without the DB/sandbox/provider deps this package otherwise pulls in — the desktop app renders the same authoring guide into its own system prompt.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./prompt": "./src/system-prompt.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

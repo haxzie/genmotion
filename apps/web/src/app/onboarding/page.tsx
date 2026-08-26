@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession, updateUser, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
@@ -32,8 +32,37 @@ function teamNameFrom(name: string): string {
   return /s$/i.test(n) ? `${n}' Team` : `${n}'s Team`;
 }
 
+/**
+ * Where to go once onboarding is done. Defaults to the dashboard; the desktop
+ * sign-in flow passes `?next=/device?user_code=…` so a brand-new user lands
+ * back on the approval page instead of being stranded on the dashboard.
+ *
+ * Only same-origin relative paths are honoured — this value comes from a URL.
+ */
+function safeNext(next: string | null): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/dashboard";
+  return next;
+}
+
 export default function OnboardingPage() {
+  // useSearchParams opts the route out of prerendering unless it sits behind a
+  // Suspense boundary.
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center">
+          <Spinner />
+        </main>
+      }
+    >
+      <Onboarding />
+    </Suspense>
+  );
+}
+
+function Onboarding() {
   const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
   const { data: session, isPending } = useSession();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -67,7 +96,7 @@ export default function OnboardingPage() {
       return;
     }
     if (session.user.onboardingCompleted) {
-      router.replace("/dashboard");
+      router.replace(next);
       return;
     }
     if (!prefilled) {
@@ -76,7 +105,7 @@ export default function OnboardingPage() {
       setOrgName(teamNameFrom(existing));
       setPrefilled(true);
     }
-  }, [session, isPending, router, prefilled]);
+  }, [session, isPending, router, prefilled, next]);
 
   async function finish() {
     setSubmitting(true);
@@ -116,7 +145,7 @@ export default function OnboardingPage() {
         renamedTeam: targetName !== teamNameFrom(name.trim()),
       });
 
-      router.replace("/dashboard");
+      router.replace(next);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong. Try again.",

@@ -21,6 +21,8 @@ apps/
              assets, exports, admin, render control-plane)     → :4001
   renderer/  pg-boss worker → E2B sandbox (or local Playwright)
              + ffmpeg; renders exports & thumbnails
+  desktop/   Electron app: local project folders, own agent,
+             loopback API speaking the hosted routes            → :4100
 packages/
   motion/    frame-deterministic animation runtime
   player/    composition player (drives BOTH editor preview and render page)
@@ -29,6 +31,8 @@ packages/
   db/        Drizzle schema + client (Postgres, node-postgres)
   storage/   S3 wrapper (MinIO dev / R2 prod)
   shared/    types + timeline frame math (+ render-token, subpath exports)
+  project/   a project as a folder on disk: manifest, scaffold,
+             scene bundler, validation (used by apps/desktop)
 ```
 
 ## Setup & run
@@ -70,12 +74,22 @@ pnpm db:push                          # sync schema to DEV only
   admin routes use `requireAdmin` (Bearer admin token). The two are mutually
   exclusive — don't cross them.
 - **Auth:** better-auth (magic link + Google/GitHub OAuth + organization
-  plugin). Every product request is scoped to `organizationId`.
+  plugin). Every product request is scoped to `organizationId`. The desktop app
+  signs in through the device-authorization grant (`/api/auth/device/*`): it
+  opens `WEB_URL/device` in the real browser, polls for the session, and then
+  authenticates with `Authorization: Bearer <session token>` via the `bearer`
+  plugin. Its token lives in the Electron main process — never the renderer.
 - **Scenes (agent-authored TSX):** may import only `react`, `@genmotion/motion`,
   `gsap`, `lucide-react`. No `Math.random`/`Date.now`/timers/CSS transitions —
   everything is a pure function of the current frame. Inline styles only; never
   mix a CSS shorthand and its longhand (e.g. `background` + `backgroundColor`)
   on one element.
+- **Text motion:** use `<TextAnimation>` (46 effects in
+  `packages/motion/src/text/effects.ts`, `exit="auto"`, `hold`, `order`) plus
+  `Typewriter`/`TextSwap`/`CountText`/`HighlightText` — don't hand-roll per-word
+  or per-char spans. Adding an effect to the registry is enough; the agent-facing
+  catalog in the system prompt is generated from it. Browse them all at
+  `/dev/motion`.
 - **Rendering:** default provider is `e2b` (renders offload to a sandbox via the
   API's credential-less control-plane); Chromium lives in the E2B template, not
   the worker image. `local`/`docker` providers render on-box.

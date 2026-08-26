@@ -16,6 +16,14 @@ const MODULES: Record<string, unknown> = {
   "lucide-react": Lucide,
 };
 
+/**
+ * The modules the host injects rather than the scene bundling its own copy.
+ * A bundler must mark exactly these external: React and the motion runtime
+ * carry shared state (hook dispatcher, frame contexts, the single GSAP
+ * instance), so a second copy silently breaks hooks and the frame clock.
+ */
+export const HOST_MODULE_IDS = Object.freeze(Object.keys(MODULES));
+
 function requireShim(id: string): unknown {
   const mod = MODULES[id];
   if (!mod) {
