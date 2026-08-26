@@ -25,16 +25,14 @@ const DOWNLOAD_PATH = "/api/releases/latest/download";
  */
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-/** What both routes need. `assetUrl` never leaves this module. */
+/** What both routes need. */
 interface Release {
   version: string;
   tag: string;
   size: number;
   publishedAt: string;
   filename: string;
-  /** The GitHub *API* url for the asset — needs a token, returns a redirect. */
-  assetUrl: string;
-  /** The public url. Useless on a private repo; correct once public. */
+  /** Where the DMG actually is. Public, so the browser can be sent straight there. */
   browserUrl: string;
 }
 
@@ -54,11 +52,16 @@ interface GitHubRelease {
 
 let cached: { at: number; value: Release | null } | null = null;
 
+/**
+ * No credential. The repo is public, so releases and their assets are readable
+ * anonymously — and a token here would only be a thing that can go stale. That
+ * costs the unauthenticated rate limit, 60 requests an hour per IP, which the
+ * ten-minute cache below keeps to roughly six.
+ */
 function headers(): Record<string, string> {
   return {
     accept: "application/vnd.github+json",
     "user-agent": "genmotion-api",
-    ...(env.GITHUB_TOKEN ? { authorization: `Bearer ${env.GITHUB_TOKEN}` } : {}),
   };
 }
 
@@ -85,7 +88,6 @@ async function fetchLatest(): Promise<Release | null> {
     size: dmg.size,
     publishedAt: release.published_at,
     filename: dmg.name,
-    assetUrl: dmg.url,
     browserUrl: dmg.browser_download_url,
   };
 }
@@ -144,12 +146,9 @@ releaseRoutes.get("/latest", async (c) => {
  * the API would tie up a connection for the length of every download to save
  * nobody anything.
  *
- * While the repo is private, `browser_download_url` is useless to an anonymous
- * browser — GitHub answers it with a login page. Asking the *asset API* for
- * `application/octet-stream` with a token gets a 302 to a short-lived signed
- * URL that needs no credentials, which is what makes the button work before
- * the repo goes public. On a public repo the browser url already works, so the
- * extra round-trip is skipped.
+ * Public repo, so this is a plain redirect to GitHub's own download URL — no
+ * credential to resolve, and the bytes come off their CDN rather than through
+ * us.
  */
 releaseRoutes.get("/latest/download", async (c) => {
   let release: Release | null;
@@ -160,17 +159,5 @@ releaseRoutes.get("/latest/download", async (c) => {
   }
   if (!release) return c.json({ error: "No release published yet" }, 404);
 
-  if (!env.GITHUB_TOKEN) return c.redirect(release.browserUrl, 302);
-
-  const asset = await fetch(release.assetUrl, {
-    headers: { ...headers(), accept: "application/octet-stream" },
-    redirect: "manual",
-    signal: AbortSignal.timeout(10_000),
-  });
-  const location = asset.headers.get("location");
-  if (!location) {
-    console.error(`[releases] asset request returned ${asset.status}, no redirect`);
-    return c.json({ error: "Could not resolve the download" }, 502);
-  }
-  return c.redirect(location, 302);
+  return c.redirect(release.browserUrl, 302);
 });

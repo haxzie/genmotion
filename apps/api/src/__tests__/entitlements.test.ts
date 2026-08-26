@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { FREE_LIMITS, PLANS } from "@genmotion/shared";
+import { PLANS } from "@genmotion/shared";
 import { schema } from "@genmotion/db";
 import {
   assertCanInvite,
@@ -49,7 +49,6 @@ describe("entitlementsFromRow", () => {
     expect(ent.paid).toBe(false);
     expect(ent.canInvite).toBe(false);
     expect(ent.seats).toBe(1);
-    expect(ent.limits.projects).toBe(FREE_LIMITS.projects);
     expect(ent.manageable).toBe(false);
   });
 
@@ -57,36 +56,35 @@ describe("entitlementsFromRow", () => {
     const ent = entitlementsFromRow("org-1", row({ plan: "pro", status: "active" }), NOW);
     expect(ent.plan).toBe("pro");
     expect(ent.paid).toBe(true);
-    expect(ent.limits.projects).toBeNull();
-    expect(ent.limits.exports).toBeNull();
-    expect(ent.limits.aiTurns).toBeNull();
-    // Pro is single-seat and cannot invite — the distinguishing rule.
-    expect(ent.seats).toBe(1);
-    expect(ent.canInvite).toBe(false);
+    // Pro carries one seat and may invite — every teammate is an add-on seat.
+    expect(ent.seats).toBe(PLANS.pro.includedSeats);
+    expect(ent.canInvite).toBe(true);
   });
 
-  it("grants Team with ten seats and invites", () => {
-    const ent = entitlementsFromRow("org-1", row({ plan: "team", status: "active" }), NOW);
-    expect(ent.plan).toBe("team");
-    expect(ent.seats).toBe(PLANS.team.seats);
-    expect(ent.canInvite).toBe(true);
-    expect(ent.prioritySupport).toBe(true);
+  it("reports the seats the subscription actually covers, not the base", () => {
+    const ent = entitlementsFromRow(
+      "org-1",
+      row({ plan: "pro", status: "active", seats: 6 }),
+      NOW,
+    );
+    // Six people: the included seat plus five add-on seats.
+    expect(ent.seats).toBe(6);
   });
 
   it("keeps a cancelled plan until the period ends", () => {
     const ent = entitlementsFromRow(
       "org-1",
-      row({ plan: "team", status: "cancelled", currentPeriodEnd: FUTURE, cancelAtPeriodEnd: true }),
+      row({ plan: "pro", status: "cancelled", currentPeriodEnd: FUTURE, cancelAtPeriodEnd: true }),
       NOW,
     );
-    expect(ent.plan).toBe("team");
+    expect(ent.plan).toBe("pro");
     expect(ent.cancelAtPeriodEnd).toBe(true);
   });
 
   it("drops a cancelled plan once the period has passed", () => {
     const ent = entitlementsFromRow(
       "org-1",
-      row({ plan: "team", status: "cancelled", currentPeriodEnd: PAST }),
+      row({ plan: "pro", status: "cancelled", currentPeriodEnd: PAST }),
       NOW,
     );
     expect(ent.plan).toBe("free");
@@ -105,7 +103,7 @@ describe("entitlementsFromRow", () => {
     for (const status of ["expired", "failed", "pending", "none"]) {
       const ent = entitlementsFromRow(
         "o",
-        row({ plan: "team", status, currentPeriodEnd: FUTURE }),
+        row({ plan: "pro", status, currentPeriodEnd: FUTURE }),
         NOW,
       );
       expect(ent.plan, `status ${status}`).toBe("free");
@@ -116,14 +114,14 @@ describe("entitlementsFromRow", () => {
   it("falls back to Free on an unrecognised status", () => {
     const ent = entitlementsFromRow(
       "o",
-      row({ plan: "team", status: "quantum_superposition", currentPeriodEnd: FUTURE }),
+      row({ plan: "pro", status: "quantum_superposition", currentPeriodEnd: FUTURE }),
       NOW,
     );
     expect(ent.plan).toBe("free");
   });
 
   it("ignores a stored plan with no active status", () => {
-    expect(entitlementsFromRow("o", row({ plan: "team", status: "none" }), NOW).plan).toBe("free");
+    expect(entitlementsFromRow("o", row({ plan: "pro", status: "none" }), NOW).plan).toBe("free");
   });
 
   it("reports manageable once a customer exists", () => {
@@ -133,11 +131,12 @@ describe("entitlementsFromRow", () => {
     ).toBe(true);
   });
 
-  // Seats and limits are read from PLANS, never from the row, so a stale seat
-  // count written by a webhook can't inflate what the org may do.
-  it("ignores the row's stored seat count", () => {
-    const ent = entitlementsFromRow("o", row({ plan: "pro", status: "active", seats: 99 }), NOW);
-    expect(ent.seats).toBe(PLANS.pro.seats);
+  // Seats now come from the row, because the add-on quantity is what was
+  // actually bought — the plan table only supplies the base when there is no
+  // subscription to read.
+  it("falls back to the plan's included seats when the row has none", () => {
+    const ent = entitlementsFromRow("o", null, NOW);
+    expect(ent.seats).toBe(PLANS.free.includedSeats);
   });
 });
 
@@ -181,40 +180,42 @@ describe.skipIf(!dbReady)("assertCanInvite", () => {
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
     if (!gate.ok) {
-      expect(gate.code).toBe("PLAN_REQUIRES_TEAM");
-      expect(gate.message).toContain("Team");
+      expect(gate.code).toBe("PLAN_REQUIRES_PRO");
+      expect(gate.message).toContain("Pro");
     }
   });
 
-  it("refuses on Pro — a single seat has nobody to invite", async () => {
+  it("refuses on Pro once the bought seats are used up", async () => {
     const { orgId } = await createOrg();
-    await setSubscription(orgId, { plan: "pro", status: "active" });
+    // One seat, taken by the owner — another teammate needs another seat.
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 1 });
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
-    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_TEAM");
+    if (!gate.ok) expect(gate.code).toBe("SEAT_LIMIT_REACHED");
   });
 
-  it("allows on Team with seats free", async () => {
+  it("allows on Pro while a bought seat is free", async () => {
     const { orgId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 2 });
     expect((await assertCanInvite(orgId)).ok).toBe(true);
   });
 
-  it("refuses on Team once every seat is taken", async () => {
+  it("refuses once every seat the subscription covers is taken", async () => {
     const { orgId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
-    await addMembers(orgId, PLANS.team.seats - 1); // owner + 9 = 10
+    // Three seats bought: the included one plus two add-ons.
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 3 });
+    await addMembers(orgId, 2); // owner + 2 = 3
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
     if (!gate.ok) {
       expect(gate.code).toBe("SEAT_LIMIT_REACHED");
-      expect(gate.seats).toEqual({ used: 10, max: 10 });
+      expect(gate.seats).toEqual({ used: 3, max: 3 });
     }
   });
 
   it("counts pending invitations toward the cap", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active" });
     await addMembers(orgId, 7); // owner + 7 = 8
     await createPendingInvitation(orgId, { inviterId: ownerId });
     await createPendingInvitation(orgId, { inviterId: ownerId });
@@ -224,7 +225,7 @@ describe.skipIf(!dbReady)("assertCanInvite", () => {
 
   it("does not let expired invitations hold seats", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
     await addMembers(orgId, 7);
     for (let i = 0; i < 2; i++) {
       await createPendingInvitation(orgId, {
@@ -235,16 +236,16 @@ describe.skipIf(!dbReady)("assertCanInvite", () => {
     expect((await assertCanInvite(orgId)).ok).toBe(true);
   });
 
-  it("refuses once a Team subscription has expired", async () => {
+  it("refuses once a Pro subscription has expired", async () => {
     const { orgId } = await createOrg();
     await setSubscription(orgId, {
-      plan: "team",
+      plan: "pro",
       status: "expired",
       currentPeriodEnd: new Date(Date.now() - 1000),
     });
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
-    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_TEAM");
+    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_PRO");
   });
 });
 
@@ -254,12 +255,12 @@ describe.skipIf(!dbReady)("getEntitlements", () => {
   it("reads the stored subscription", async () => {
     const { orgId } = await createOrg();
     await setSubscription(orgId, {
-      plan: "team",
+      plan: "pro",
       status: "active",
       dodoCustomerId: "cus_abc",
     });
     const ent = await getEntitlements(orgId);
-    expect(ent.plan).toBe("team");
+    expect(ent.plan).toBe("pro");
     expect(ent.manageable).toBe(true);
     expect(ent.organizationId).toBe(orgId);
   });

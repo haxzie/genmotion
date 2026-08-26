@@ -4,7 +4,7 @@ import { z } from "zod";
 import { and, desc, eq, gte, isNotNull, sql, db, schema } from "@genmotion/db";
 import { CHAT_MODEL_ID } from "@genmotion/ai";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
-import { limitSnapshot } from "../limits";
+import { trialState } from "../limits";
 import {
   countSeats,
   getEntitlements,
@@ -59,7 +59,6 @@ function planPayload(ent: Entitlements) {
     name: ent.planName,
     seats: ent.seats,
     canInvite: ent.canInvite,
-    prioritySupport: ent.prioritySupport,
   };
 }
 
@@ -81,20 +80,26 @@ function subscriptionPayload(ent: Entitlements) {
  */
 billingRoutes.get("/limits", async (c) => {
   const organizationId = c.get("organizationId");
-  const ent = await getEntitlements(organizationId);
-  const [limits, seatsUsed] = await Promise.all([
-    limitSnapshot(organizationId, ent),
+  const [ent, seatsUsed, trial] = await Promise.all([
+    getEntitlements(organizationId),
     countSeats(organizationId),
+    trialState(organizationId),
   ]);
   return c.json({
     plan: planPayload(ent),
-    limits,
     seats: { used: seatsUsed, max: ent.seats },
+    trial: {
+      active: trial.active,
+      daysLeft: trial.daysLeft,
+      endsAt: trial.endsAt?.toISOString() ?? null,
+    },
+    // Whether the app may export right now — the only gate left.
+    entitled: ent.paid || trial.active,
     subscription: subscriptionPayload(ent),
   });
 });
 
-const checkoutSchema = z.object({ plan: z.enum(["pro", "team"]) });
+const checkoutSchema = z.object({ plan: z.literal("pro") });
 
 /** Only an owner or admin may commit the organization to a charge. */
 async function isBillingAdmin(
@@ -366,7 +371,8 @@ billingRoutes.get("/usage", async (c) => {
 
   return c.json({
     plan: planPayload(ent),
-    limits: await limitSnapshot(organizationId, ent),
+    // Seats are what the bill scales with now, so the usage page needs them.
+    seats: { used: await countSeats(organizationId), max: ent.seats },
     subscription: subscriptionPayload(ent),
     period: { start: start.toISOString(), end: now.toISOString() },
     totals: {

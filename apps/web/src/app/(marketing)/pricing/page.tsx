@@ -11,7 +11,12 @@ import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 import { cx } from "@/lib/cx";
-import { PLANS, planPrice } from "@genmotion/shared";
+import {
+  PLANS,
+  SEAT_PRICE_USD,
+  TRIAL_DAYS,
+  planPrice,
+} from "@genmotion/shared";
 
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
@@ -39,45 +44,30 @@ const TIERS: Tier[] = [
   {
     name: PLANS.free.name,
     price: planPrice("free"),
-    cadence: "forever",
-    blurb: "Make your first videos and learn the workflow.",
+    cadence: `${TRIAL_DAYS} days`,
+    blurb: "The whole app, for a week. No card, no watermark, nothing withheld.",
     cta: { label: "Download", href: "/download" },
     features: [
-      "Up to 5 projects",
-      "720p MP4 export with watermark",
-      "Frame-accurate browser preview",
-      "Timeline editor",
-      "Community support",
+      "Every feature Pro has",
+      "Unlimited projects and exports",
+      "1080p & 4K export, no watermark",
+      "Bring your own Claude Code or Codex",
+      "No credit card",
     ],
   },
   {
     name: PLANS.pro.name,
     price: planPrice("pro"),
-    cadence: "per month",
-    blurb: "For creators shipping videos regularly.",
-    cta: { label: "Start Pro trial", href: "/signup" },
+    cadence: "per person, per month",
+    blurb: "For anyone still making videos after the first week.",
+    cta: { label: "Download", href: "/download" },
     highlighted: true,
     features: [
-      "Unlimited projects",
-      "1080p & 4K export, no watermark",
-      "AI voiceover with premium voices",
-      "Brand extraction from any URL",
-      "Priority rendering queue",
-      "Email support",
-    ],
-  },
-  {
-    name: PLANS.team.name,
-    price: planPrice("team"),
-    cadence: "per month",
-    blurb: "Shared brand assets and collaboration for teams.",
-    cta: { label: "Contact sales", href: "/about" },
-    features: [
-      `Everything in Pro, for up to ${PLANS.team.seats} seats`,
-      "Centralized billing for every seat",
-      "Shared brand assets library",
-      "Reusable scene skills",
-      "SSO & priority support",
+      "Everything in the trial, without the clock",
+      "Unlimited projects, exports and scenes",
+      `Add teammates at $${SEAT_PRICE_USD} each`,
+      "Renders on your machine — no queue",
+      "Priority support",
     ],
   },
 ];

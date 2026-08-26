@@ -85,6 +85,8 @@ export function subscriptionEvent(
     cancelAtNextBillingDate?: boolean;
     timestamp?: Date;
     withMetadata?: boolean;
+    /** Extra seats bought as add-on quantity, on top of the one Pro includes. */
+    extraSeats?: number;
   } = {},
 ) {
   const {
@@ -97,6 +99,7 @@ export function subscriptionEvent(
     cancelAtNextBillingDate = false,
     timestamp = new Date(),
     withMetadata = true,
+    extraSeats = 0,
   } = opts;
 
   return {
@@ -113,6 +116,15 @@ export function subscriptionEvent(
         withMetadata && organizationId ? { organizationId, plan: "pro" } : {},
       next_billing_date: nextBillingDate?.toISOString() ?? null,
       cancel_at_next_billing_date: cancelAtNextBillingDate,
+      addons:
+        extraSeats > 0
+          ? [
+              {
+                addon_id: process.env.DODOPAYMENT_SEAT_ADDON_ID ?? "adn_test_seat",
+                quantity: extraSeats,
+              },
+            ]
+          : [],
     },
   };
 }

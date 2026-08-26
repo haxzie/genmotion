@@ -1,14 +1,27 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { eq, db, schema } from "@genmotion/db";
-import { FREE_LIMITS } from "@genmotion/shared";
 import { getEntitlements } from "../entitlements";
-import { checkLimit } from "../limits";
+import { checkPaywall } from "../limits";
 import { dbReady, truncateAll } from "./helpers/db";
 import { createOrg, createProject } from "./helpers/factories";
 import { postWebhook, signWebhook, subscriptionEvent } from "./helpers/dodo";
 
 const PRO = "pdt_test_pro";
-const TEAM = "pdt_test_team";
+
+/**
+ * Backdate an org past its trial.
+ *
+ * Entitlement is only observable once the free week is over — before that
+ * every org may work regardless of what the webhook wrote, which would make
+ * these assertions pass for the wrong reason.
+ */
+async function pastTrial(orgId: string) {
+  await db
+    .update(schema.organization)
+    .set({ createdAt: new Date(Date.now() - 60 * 86_400_000) })
+    .where(eq(schema.organization.id, orgId));
+}
+const OTHER_PRODUCT = "pdt_not_ours";
 
 async function subscriptionRow(organizationId: string) {
   const [row] = await db
@@ -39,7 +52,7 @@ describe.skipIf(!dbReady)("webhook signature verification", () => {
     const { orgId } = await createOrg();
     const delivery = signWebhook(
       subscriptionEvent("subscription.active", { organizationId: orgId }),
-      { tamper: (b) => b.replace(PRO, TEAM) },
+      { tamper: (b) => b.replace(PRO, OTHER_PRODUCT) },
     );
     const { status } = await postWebhook(delivery);
     expect(status).toBe(401);
@@ -104,19 +117,31 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
     expect((await getEntitlements(orgId)).plan).toBe("pro");
   });
 
-  it("activates Team with ten seats", async () => {
+  it("derives seats from the add-on quantity, not from the plan", async () => {
     const { orgId } = await createOrg();
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", {
           organizationId: orgId,
-          productId: TEAM,
+          productId: PRO,
+          extraSeats: 9,
         }),
       ),
     );
     const row = await subscriptionRow(orgId);
-    expect(row).toMatchObject({ plan: "team", seats: 10 });
+    // One included seat plus nine add-on seats.
+    expect(row).toMatchObject({ plan: "pro", seats: 10 });
     expect((await getEntitlements(orgId)).canInvite).toBe(true);
+  });
+
+  it("activates a solo subscription with the one included seat", async () => {
+    const { orgId } = await createOrg();
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
+      ),
+    );
+    expect(await subscriptionRow(orgId)).toMatchObject({ plan: "pro", seats: 1 });
   });
 
   it("advances the period on renewal", async () => {
@@ -152,14 +177,14 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
       signWebhook(
         subscriptionEvent("subscription.plan_changed", {
           organizationId: orgId,
-          productId: TEAM,
+          productId: PRO,
           timestamp: new Date(Date.now() + 1000),
         }),
       ),
     );
 
     const row = await subscriptionRow(orgId);
-    expect(row).toMatchObject({ plan: "team", seats: 10, dodoProductId: TEAM });
+    expect(row).toMatchObject({ plan: "pro", dodoProductId: PRO });
   });
 
   // Cancellation is not immediate: the org keeps what it paid for.
@@ -167,14 +192,14 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
     const { orgId } = await createOrg();
     await postWebhook(
       signWebhook(
-        subscriptionEvent("subscription.active", { organizationId: orgId, productId: TEAM }),
+        subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
       ),
     );
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.cancelled", {
           organizationId: orgId,
-          productId: TEAM,
+          productId: PRO,
           timestamp: new Date(Date.now() + 1000),
         }),
       ),
@@ -184,25 +209,19 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
     expect(row!.status).toBe("cancelled");
     expect(row!.cancelAtPeriodEnd).toBe(true);
     // Period end is still in the future, so the plan is still in force.
-    expect((await getEntitlements(orgId)).plan).toBe("team");
+    expect((await getEntitlements(orgId)).plan).toBe("pro");
   });
 
-  it("drops to Free on expiry and re-applies quotas", async () => {
-    const { orgId, ownerId } = await createOrg();
+  it("drops to Free on expiry and paywalls again", async () => {
+    const { orgId } = await createOrg();
+    await pastTrial(orgId);
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
       ),
     );
-
-    // Well past the free cap — allowed only while the plan is unlimited.
-    for (let i = 0; i < FREE_LIMITS.projects + 2; i++) {
-      await createProject(orgId, {
-        userId: ownerId,
-        createdAt: new Date("2027-01-01T00:00:00Z"),
-      });
-    }
-    expect(await checkLimit(orgId, "projects")).toBeNull();
+    // Paying, so the spent trial does not matter.
+    expect(await checkPaywall(orgId)).toBeNull();
 
     await postWebhook(
       signWebhook(
@@ -216,28 +235,28 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
 
     expect((await subscriptionRow(orgId))!.plan).toBe("free");
     expect((await getEntitlements(orgId)).plan).toBe("free");
-    expect(await checkLimit(orgId, "projects")).not.toBeNull();
+    expect(await checkPaywall(orgId)).not.toBeNull();
   });
 
   it("keeps entitlement while a payment is being retried", async () => {
     const { orgId } = await createOrg();
     await postWebhook(
       signWebhook(
-        subscriptionEvent("subscription.active", { organizationId: orgId, productId: TEAM }),
+        subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
       ),
     );
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.on_hold", {
           organizationId: orgId,
-          productId: TEAM,
+          productId: PRO,
           timestamp: new Date(Date.now() + 1000),
         }),
       ),
     );
 
     expect((await subscriptionRow(orgId))!.status).toBe("on_hold");
-    expect((await getEntitlements(orgId)).plan).toBe("team");
+    expect((await getEntitlements(orgId)).plan).toBe("pro");
   });
 
   it("takes the status from the payload on a generic update", async () => {
@@ -246,7 +265,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
       signWebhook(
         subscriptionEvent("subscription.updated", {
           organizationId: orgId,
-          productId: TEAM,
+          productId: PRO,
           status: "on_hold",
         }),
       ),
@@ -410,15 +429,9 @@ describe.skipIf(!dbReady)("checkout to entitlement", () => {
    * the webhook reads back to decide who just paid.
    */
   it("upgrades the org that started the checkout", async () => {
-    const { orgId, ownerId } = await createOrg();
-
-    for (let i = 0; i < FREE_LIMITS.projects; i++) {
-      await createProject(orgId, {
-        userId: ownerId,
-        createdAt: new Date("2027-01-01T00:00:00Z"),
-      });
-    }
-    expect(await checkLimit(orgId, "projects")).not.toBeNull();
+    const { orgId } = await createOrg();
+    await pastTrial(orgId);
+    expect(await checkPaywall(orgId)).not.toBeNull();
 
     await postWebhook(
       signWebhook(
@@ -429,6 +442,6 @@ describe.skipIf(!dbReady)("checkout to entitlement", () => {
       ),
     );
 
-    expect(await checkLimit(orgId, "projects")).toBeNull();
+    expect(await checkPaywall(orgId)).toBeNull();
   });
 });

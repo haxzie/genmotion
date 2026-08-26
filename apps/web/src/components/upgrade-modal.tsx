@@ -10,12 +10,11 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  FREE_LIMITS,
-  LIMIT_STATUS,
+  PAYWALL_STATUS,
   PLANS,
-  isLimitExceededBody,
-  type LimitKind,
-  type LimitSnapshot,
+  SEAT_PRICE_USD,
+  TRIAL_DAYS,
+  isPaywallBody,
   type PlanId,
   type UpgradeReason,
 } from "@genmotion/shared";
@@ -26,30 +25,15 @@ import { Modal } from "@/components/modal";
 import { Spinner } from "@/components/ui";
 
 const COPY: Record<UpgradeReason, { title: string; body: string }> = {
-  projects: {
-    title: `You've used all ${FREE_LIMITS.projects} free projects`,
-    body: `The Free plan includes ${FREE_LIMITS.projects} projects. Upgrade for unlimited projects, or delete one to free a slot.`,
-  },
-  exports: {
-    title: `You've used your ${FREE_LIMITS.exports} free exports`,
-    body: `The Free plan includes ${FREE_LIMITS.exports} exports a month. Upgrade for unlimited exports at 1080p and 4K, with no watermark.`,
-  },
-  aiTurns: {
-    title: `You've used your ${FREE_LIMITS.aiTurns} free AI messages`,
-    body: `The Free plan includes ${FREE_LIMITS.aiTurns} AI messages a month. Upgrade to keep building with the agent.`,
-  },
-  invite: {
-    title: "Inviting teammates is part of Team",
-    body: `Team includes ${PLANS.team.seats} seats so you can bring your collaborators into the same projects.`,
+  trial: {
+    title: "Your free trial has ended",
+    body: `The ${TRIAL_DAYS}-day trial included everything. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting — unlimited projects, no watermark.`,
   },
   seats: {
-    title: "Every seat is in use",
-    body: `Your plan includes ${PLANS.team.seats} seats and all of them are taken. Remove a member or cancel a pending invitation to free one up.`,
+    title: "That needs another seat",
+    body: `Your plan covers the people already in it. Adding a teammate costs $${SEAT_PRICE_USD} a month, charged from today.`,
   },
 };
-
-/** Pro can't invite, so offering it for a seat problem would be a trap. */
-const TEAM_ONLY: ReadonlySet<UpgradeReason> = new Set(["invite", "seats"]);
 
 export const limitsQueryKey = ["billing-limits"] as const;
 
@@ -61,10 +45,18 @@ export interface PlanPayload {
   prioritySupport: boolean;
 }
 
+export interface TrialPayload {
+  active: boolean;
+  daysLeft: number;
+  endsAt: string | null;
+}
+
 export interface LimitsResponse {
   plan: PlanPayload;
-  limits: LimitSnapshot;
   seats: { used: number; max: number };
+  trial: TrialPayload;
+  /** Whether the org may do paid-tier work right now: paying, or still in trial. */
+  entitled: boolean;
   subscription: {
     status: string;
     currentPeriodEnd: string | null;
@@ -75,11 +67,11 @@ export interface LimitsResponse {
 }
 
 interface UpgradeContextValue {
-  /** Open the upgrade modal for a quota, or for the invite/seat gates. */
+  /** Open the upgrade modal for the trial or seat gate. */
   openUpgrade: (reason: UpgradeReason) => void;
   /**
-   * Show the modal if `err` is a quota rejection from our own API. Returns true
-   * when handled, so callers can skip their own error toast.
+   * Show the modal if `err` is a paywall rejection from our own API. Returns
+   * true when handled, so callers can skip their own error toast.
    */
   handleLimitError: (err: unknown) => boolean;
   /**
@@ -87,14 +79,12 @@ interface UpgradeContextValue {
    * than throwing an ApiError, so `handleLimitError` can't see invite refusals.
    */
   handleAuthClientError: (err: unknown) => boolean;
-  limits?: LimitSnapshot;
   plan?: PlanPayload;
   seats?: LimitsResponse["seats"];
+  trial?: TrialPayload;
   subscription?: LimitsResponse["subscription"];
   /** Whether the org may invite at all — false while loading. */
   canInvite: boolean;
-  /** True when this quota has no room left. Falsy while limits are loading. */
-  isExhausted: (kind: LimitKind) => boolean;
 }
 
 const UpgradeContext = createContext<UpgradeContextValue | null>(null);
@@ -123,9 +113,9 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
 
   const handleLimitError = useCallback(
     (err: unknown) => {
-      if (err instanceof ApiError && err.status === LIMIT_STATUS) {
-        if (isLimitExceededBody(err.body)) {
-          openUpgrade(err.body.limit.kind);
+      if (err instanceof ApiError && err.status === PAYWALL_STATUS) {
+        if (isPaywallBody(err.body)) {
+          openUpgrade(err.body.paywall.reason);
           return true;
         }
       }
@@ -137,8 +127,8 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   const handleAuthClientError = useCallback(
     (err: unknown) => {
       const code = (err as { code?: string } | null)?.code;
-      if (code === "PLAN_REQUIRES_TEAM") {
-        openUpgrade("invite");
+      if (code === "PLAN_REQUIRES_PRO") {
+        openUpgrade("seats");
         return true;
       }
       if (code === "SEAT_LIMIT_REACHED") {
@@ -150,32 +140,18 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
     [openUpgrade],
   );
 
-  const limits = data?.limits;
-
-  // An unlimited quota is never exhausted, so every client-side pre-gate stops
-  // firing the moment an org upgrades — no per-call-site plan checks needed.
-  const isExhausted = useCallback(
-    (k: LimitKind) => {
-      const l = limits?.[k];
-      if (!l || l.unlimited) return false;
-      return (l.remaining ?? 0) <= 0;
-    },
-    [limits],
-  );
-
   const value = useMemo(
     () => ({
       openUpgrade,
       handleLimitError,
       handleAuthClientError,
-      limits,
       plan: data?.plan,
       seats: data?.seats,
+      trial: data?.trial,
       subscription: data?.subscription,
       canInvite: data?.plan.canInvite ?? false,
-      isExhausted,
     }),
-    [openUpgrade, handleLimitError, handleAuthClientError, limits, data, isExhausted],
+    [openUpgrade, handleLimitError, handleAuthClientError, data],
   );
 
   return (
@@ -275,7 +251,6 @@ function UpgradeModal({
   const [busy, setBusy] = useState<PurchasablePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const copy = reason ? COPY[reason] : null;
-  const teamOnly = reason ? TEAM_ONLY.has(reason) : false;
 
   async function choose(plan: PurchasablePlan) {
     if (!reason) return;
@@ -311,24 +286,11 @@ function UpgradeModal({
           </h2>
           <p className="mt-1.5 text-[0.9rem] text-text-secondary">{copy.body}</p>
 
-          <div
-            className={
-              teamOnly ? "mt-5" : "mt-5 grid gap-3 sm:grid-cols-2"
-            }
-          >
-            {!teamOnly && (
-              <PlanCard
-                plan="pro"
-                reason={reason}
-                featured
-                busy={busy}
-                onChoose={choose}
-              />
-            )}
+          <div className="mt-5">
             <PlanCard
-              plan="team"
+              plan="pro"
               reason={reason}
-              featured={teamOnly}
+              featured
               busy={busy}
               onChoose={choose}
             />

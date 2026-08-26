@@ -72,14 +72,14 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
     ]);
   });
 
-  it("uses the Team product for Team", async () => {
+  it("refuses a plan that no longer exists", async () => {
     const { session } = await ownerSession();
-    await requestJson("/api/billing/checkout", {
+    const { status } = await requestJson("/api/billing/checkout", {
       as: session,
       json: { plan: "team" },
     });
-    const [args] = create.mock.calls[0]!;
-    expect(args.product_cart[0].product_id).toBe("pdt_test_team");
+    expect(status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
   });
 
   /**
@@ -129,7 +129,7 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
     const { orgId, ownerId, session } = await ownerSession();
     await requestJson("/api/billing/checkout", {
       as: session,
-      json: { plan: "team" },
+      json: { plan: "pro" },
     });
 
     const [row] = await db
@@ -139,8 +139,8 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
     expect(row).toMatchObject({
       organizationId: orgId,
       userId: ownerId,
-      plan: "team",
-      productId: "pdt_test_team",
+      plan: "pro",
+      productId: "pdt_test_pro",
       checkoutUrl: "https://checkout.test/session/cks_test_1",
     });
   });
@@ -191,23 +191,13 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
 
   it("refuses when the org is already on that plan", async () => {
     const { orgId, session } = await ownerSession();
-    await setSubscription(orgId, { plan: "team", status: "active" });
-    const { status } = await requestJson("/api/billing/checkout", {
-      as: session,
-      json: { plan: "team" },
-    });
-    expect(status).toBe(409);
-    expect(create).not.toHaveBeenCalled();
-  });
-
-  it("allows upgrading from Pro to Team", async () => {
-    const { orgId, session } = await ownerSession();
     await setSubscription(orgId, { plan: "pro", status: "active" });
     const { status } = await requestJson("/api/billing/checkout", {
       as: session,
-      json: { plan: "team" },
+      json: { plan: "pro" },
     });
-    expect(status).toBe(200);
+    expect(status).toBe(409);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("reports 503 when billing isn't configured", async () => {
@@ -290,40 +280,44 @@ describe.skipIf(!dbReady)("POST /api/billing/portal", () => {
 });
 
 describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
-  it("reports the Free plan with finite caps", async () => {
+  it("reports a new org as on trial and entitled", async () => {
     const { session } = await ownerSession();
     const { status, body } = await requestJson<{
       plan: { id: string; seats: number; canInvite: boolean };
-      limits: { projects: { unlimited: boolean; max: number | null } };
       seats: { used: number; max: number };
+      trial: { active: boolean; daysLeft: number; endsAt: string | null };
+      entitled: boolean;
       subscription: { manageable: boolean; paid: boolean };
     }>("/api/billing/limits", { as: session });
 
     expect(status).toBe(200);
     expect(body.plan.id).toBe("free");
     expect(body.plan.canInvite).toBe(false);
-    expect(body.limits.projects.unlimited).toBe(false);
     expect(body.seats).toEqual({ used: 1, max: 1 });
+    // A brand-new org is inside its free week, so it may work without paying.
+    expect(body.trial.active).toBe(true);
+    expect(body.trial.daysLeft).toBe(7);
+    expect(body.entitled).toBe(true);
     expect(body.subscription.paid).toBe(false);
     expect(body.subscription.manageable).toBe(false);
   });
 
-  it("reports Team with seat usage including pending invites", async () => {
+  it("reports seat usage including pending invites", async () => {
     const { orgId, ownerId, session } = await ownerSession();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
     await addMember(orgId, "member");
     const { createPendingInvitation } = await import("./helpers/factories");
     await createPendingInvitation(orgId, { inviterId: ownerId });
 
     const { body } = await requestJson<{
       plan: { id: string; canInvite: boolean; seats: number };
-      limits: { projects: { unlimited: boolean } };
       seats: { used: number; max: number };
+      entitled: boolean;
     }>("/api/billing/limits", { as: session });
 
-    expect(body.plan.id).toBe("team");
+    expect(body.plan.id).toBe("pro");
     expect(body.plan.canInvite).toBe(true);
-    expect(body.limits.projects.unlimited).toBe(true);
+    expect(body.entitled).toBe(true);
     expect(body.seats).toEqual({ used: 3, max: 10 });
   });
 

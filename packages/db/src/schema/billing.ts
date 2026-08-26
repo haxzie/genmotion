@@ -29,7 +29,7 @@ export const organizationSubscriptions = pgTable(
 
     // Mirrors PlanId in @genmotion/shared. Enumerated so a malformed webhook
     // can't invent a plan; unmapped products are ignored rather than stored.
-    plan: text("plan", { enum: ["free", "pro", "team"] })
+    plan: text("plan", { enum: ["free", "pro"] })
       .notNull()
       .default("free"),
     // The provider's lifecycle status, stored verbatim. Entitlement resolution

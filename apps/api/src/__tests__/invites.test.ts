@@ -57,7 +57,7 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
     const { status, body } = await invite(session.cookie, orgId);
 
     expect(status).toBe(403);
-    expect(String(body.message)).toContain("Team");
+    expect(String(body.message)).toContain("Pro");
     // The property that would break if better-auth stopped awaiting the hook
     // before writing the row.
     expect(await invitations(orgId)).toEqual([]);
@@ -67,21 +67,22 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
    * The case most likely to regress: Pro is paid and unlimited, but it is a
    * single seat, so it still cannot invite.
    */
-  it("refuses on Pro", async () => {
+  it("refuses on Pro once the bought seats are used up", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "pro", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 1 });
     const session = await createSession(ownerId, orgId);
 
     const { status, body } = await invite(session.cookie, orgId);
 
     expect(status).toBe(403);
-    expect(body.code).toBe("PLAN_REQUIRES_TEAM");
+    // The owner already occupies the only seat that was bought.
+    expect(body.code).toBe("SEAT_LIMIT_REACHED");
     expect(await invitations(orgId)).toEqual([]);
   });
 
-  it("allows on Team", async () => {
+  it("allows on Pro with a seat free", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
     const session = await createSession(ownerId, orgId);
 
     const { status } = await invite(session.cookie, orgId);
@@ -95,10 +96,11 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
     });
   });
 
-  it("refuses once a Team subscription has lapsed", async () => {
+  it("refuses once a Pro subscription has lapsed", async () => {
     const { orgId, ownerId } = await createOrg();
     await setSubscription(orgId, {
-      plan: "team",
+      plan: "pro",
+      seats: 10,
       status: "expired",
       currentPeriodEnd: new Date(Date.now() - 1000),
     });
@@ -111,7 +113,8 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
   it("still allows inviting during a cancellation grace period", async () => {
     const { orgId, ownerId } = await createOrg();
     await setSubscription(orgId, {
-      plan: "team",
+      plan: "pro",
+      seats: 10,
       status: "cancelled",
       cancelAtPeriodEnd: true,
       currentPeriodEnd: new Date(Date.now() + 7 * 24 * 3600 * 1000),
@@ -125,8 +128,8 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
 describe.skipIf(!dbReady)("seat cap", () => {
   it("refuses when every seat is taken", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
-    await addMembers(orgId, PLANS.team.seats - 1); // owner + 9 = 10
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
+    await addMembers(orgId, 9); // owner + 9 = 10, the seats bought above
     const session = await createSession(ownerId, orgId);
 
     const { status, body } = await invite(session.cookie, orgId);
@@ -138,7 +141,7 @@ describe.skipIf(!dbReady)("seat cap", () => {
 
   it("counts pending invitations against the cap", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
     await addMembers(orgId, 7); // owner + 7 = 8
     await createPendingInvitation(orgId, { inviterId: ownerId });
     await createPendingInvitation(orgId, { inviterId: ownerId });
@@ -149,7 +152,7 @@ describe.skipIf(!dbReady)("seat cap", () => {
 
   it("does not let expired invitations hold a seat", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
     await addMembers(orgId, 7);
     for (let i = 0; i < 2; i++) {
       await createPendingInvitation(orgId, {
@@ -164,8 +167,8 @@ describe.skipIf(!dbReady)("seat cap", () => {
 
   it("allows the last free seat", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
-    await addMembers(orgId, PLANS.team.seats - 2); // owner + 8 = 9
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
+    await addMembers(orgId, 8); // owner + 8 = 9, one seat spare
     const session = await createSession(ownerId, orgId);
 
     expect((await invite(session.cookie, orgId)).status).toBe(200);
@@ -188,7 +191,7 @@ describe.skipIf(!dbReady)("accepting an invitation", () => {
    */
   it("refuses acceptance once the plan has lapsed", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
 
     const invitee = await createUser({ email: "late@example.test" });
     const invitation = await createPendingInvitation(orgId, {
@@ -214,7 +217,7 @@ describe.skipIf(!dbReady)("accepting an invitation", () => {
 
   it("allows acceptance while the plan is active", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "team", status: "active" });
+    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
 
     const invitee = await createUser({ email: "welcome@example.test" });
     const invitation = await createPendingInvitation(orgId, {

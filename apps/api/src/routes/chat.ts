@@ -22,9 +22,8 @@ import {
   runCompaction,
   NAMING_PROMPT,
 } from "@genmotion/ai";
-import { COMPACTION_MESSAGE_LIMIT, LIMIT_STATUS } from "@genmotion/shared";
+import { COMPACTION_MESSAGE_LIMIT } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
-import { checkLimit } from "../limits";
 import { enqueueThumbnail } from "../queue";
 
 /** Keep this many trailing messages (~2 turns) at full tool-payload fidelity. */
@@ -284,16 +283,10 @@ chatRoutes.post("/:projectId", async (c) => {
     log("client disconnected — request aborted mid-stream"),
   );
 
-  // Checked before the user's message is persisted: a turn we refuse to answer
-  // must not be stored, and must not count toward the quota that blocked it.
-  // Only a genuine new turn is gated — a regenerate replays an existing message
-  // and would otherwise be charged twice.
+  // Turns are no longer metered — nothing of ours is consumed by one — so a
+  // new user message is simply persisted. A regenerate replays an existing
+  // message and must not be stored twice, hence the role check.
   if (lastMessage?.role === "user") {
-    const blocked = await checkLimit(c.get("organizationId"), "aiTurns");
-    if (blocked) {
-      log("blocked by aiTurns quota", blocked.limit);
-      return c.json(blocked, LIMIT_STATUS);
-    }
     await persistMessage(project.id, lastMessage);
   }
 

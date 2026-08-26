@@ -1,98 +1,80 @@
 import { describe, expect, it } from "vitest";
-import { FREE_LIMITS, type LimitKind } from "../limits";
 import {
-  LIMITS_LIVE_AT,
   PLANS,
   PLAN_IDS,
-  TEAM_SEATS,
+  SEAT_PRICE_USD,
+  TRIAL_DAYS,
   isPlanId,
-  isUnlimited,
-  planLimit,
+  isTrialActive,
+  monthlyTotalUsd,
+  planPrice,
+  trialDaysLeft,
+  trialEndsAt,
 } from "../plans";
 
-const KINDS = Object.keys(FREE_LIMITS) as LimitKind[];
+const DAY = 86_400_000;
+const CREATED = new Date("2026-08-01T00:00:00.000Z");
 
-describe("PLANS", () => {
-  it("defines every quota for every plan", () => {
-    for (const id of PLAN_IDS) {
-      for (const kind of KINDS) {
-        expect(PLANS[id].limits).toHaveProperty(kind);
-      }
-    }
+describe("plans", () => {
+  it("offers exactly one paid plan", () => {
+    expect(PLAN_IDS).toEqual(["free", "pro"]);
+    expect(PLAN_IDS.filter((id) => PLANS[id].purchasable)).toEqual(["pro"]);
   });
 
-  // Guards against the two exports drifting apart — PLANS.free is meant to be
-  // FREE_LIMITS wearing a different shape, not a second copy of the numbers.
-  it("keeps the free plan in step with FREE_LIMITS", () => {
-    for (const kind of KINDS) {
-      expect(PLANS.free.limits[kind]).toBe(FREE_LIMITS[kind]);
-    }
+  it("prices Pro per person", () => {
+    expect(PLANS.pro.priceUsd).toBe(SEAT_PRICE_USD);
+    expect(planPrice("pro")).toBe("$19");
+    expect(planPrice("free")).toBe("$0");
   });
 
-  it("makes every paid quota unlimited", () => {
-    for (const kind of KINDS) {
-      expect(PLANS.pro.limits[kind]).toBeNull();
-      expect(PLANS.team.limits[kind]).toBeNull();
-    }
+  it("carries one seat before add-ons", () => {
+    expect(PLANS.pro.includedSeats).toBe(1);
+    expect(PLANS.free.includedSeats).toBe(1);
   });
 
-  it("gives Pro a single seat and no invites", () => {
-    expect(PLANS.pro.seats).toBe(1);
-    expect(PLANS.pro.canInvite).toBe(false);
+  it("totals a team at the per-seat price", () => {
+    expect(monthlyTotalUsd(1)).toBe(19);
+    expect(monthlyTotalUsd(5)).toBe(95);
+    // A nonsensical seat count still costs at least one seat rather than zero.
+    expect(monthlyTotalUsd(0)).toBe(19);
   });
 
-  it("gives Team ten seats and invites", () => {
-    expect(PLANS.team.seats).toBe(10);
-    expect(PLANS.team.canInvite).toBe(true);
-    expect(PLANS.team.prioritySupport).toBe(true);
+  it("only lets Pro invite", () => {
+    expect(PLANS.free.canInvite).toBe(false);
+    expect(PLANS.pro.canInvite).toBe(true);
   });
 
-  it("only offers the paid plans for purchase", () => {
-    expect(PLANS.free.purchasable).toBe(false);
-    expect(PLANS.pro.purchasable).toBe(true);
-    expect(PLANS.team.purchasable).toBe(true);
-  });
-
-  it("exposes the membership ceiling as the largest plan's seats", () => {
-    expect(TEAM_SEATS).toBe(PLANS.team.seats);
-    for (const id of PLAN_IDS) {
-      expect(PLANS[id].seats).toBeLessThanOrEqual(TEAM_SEATS);
-    }
-  });
-
-  it("describes every plan with at least one feature bullet", () => {
-    for (const id of PLAN_IDS) {
-      expect(PLANS[id].features.length).toBeGreaterThan(0);
-    }
+  it("recognises plan ids and rejects the plan that no longer exists", () => {
+    expect(isPlanId("pro")).toBe(true);
+    expect(isPlanId("free")).toBe(true);
+    expect(isPlanId("team")).toBe(false);
+    expect(isPlanId(null)).toBe(false);
   });
 });
 
-describe("planLimit / isUnlimited", () => {
-  it("reports finite caps for free", () => {
-    expect(planLimit("free", "projects")).toBe(FREE_LIMITS.projects);
-    expect(isUnlimited("free", "projects")).toBe(false);
+describe("trial", () => {
+  it("runs for TRIAL_DAYS from when the org was created", () => {
+    expect(trialEndsAt(CREATED).toISOString()).toBe("2026-08-08T00:00:00.000Z");
+    expect(TRIAL_DAYS).toBe(7);
   });
 
-  it("reports unlimited for paid plans", () => {
-    expect(planLimit("team", "exports")).toBeNull();
-    expect(isUnlimited("team", "exports")).toBe(true);
-  });
-});
-
-describe("isPlanId", () => {
-  it("accepts the known plans", () => {
-    for (const id of PLAN_IDS) expect(isPlanId(id)).toBe(true);
+  it("is active right up to the boundary and not past it", () => {
+    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 6 * DAY))).toBe(true);
+    // One millisecond before expiry is still inside the trial.
+    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 7 * DAY - 1))).toBe(true);
+    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 7 * DAY))).toBe(false);
+    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 30 * DAY))).toBe(false);
   });
 
-  it("rejects anything else", () => {
-    for (const value of ["enterprise", "", null, undefined, 3, {}, []]) {
-      expect(isPlanId(value)).toBe(false);
-    }
+  it("rounds the days left up, so a part-day never reads as zero", () => {
+    expect(trialDaysLeft(CREATED, CREATED)).toBe(7);
+    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 6 * DAY))).toBe(1);
+    // Four hours left is still a day to a reader.
+    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 7 * DAY - 4 * 3600_000))).toBe(1);
   });
-});
 
-describe("LIMITS_LIVE_AT", () => {
-  it("is a valid instant", () => {
-    expect(Number.isNaN(LIMITS_LIVE_AT.getTime())).toBe(false);
+  it("floors at zero rather than counting backwards", () => {
+    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 7 * DAY))).toBe(0);
+    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 90 * DAY))).toBe(0);
   });
 });

@@ -142,7 +142,7 @@ export default function MembersPage() {
               // Kept visible rather than hidden when the plan can't invite:
               // discovering the capability is the point of the upsell.
               if (!canInvite) {
-                openUpgrade("invite");
+                openUpgrade("seats");
                 return;
               }
               if (seatsFull) {

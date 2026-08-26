@@ -34,13 +34,9 @@ const schema = z.object({
   GITHUB_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 
   // ── Desktop releases (GitHub) ───────────────────────────────────────
-  // Where the macOS build is published. The download endpoints read the
-  // latest release from here.
+  // Where the macOS build is published. The download endpoint reads the latest
+  // release from here — anonymously, because the repo is public.
   GITHUB_RELEASE_REPO: z.string().min(1).default("haxzie/genmotion"),
-  // Only needed while the repo is private: GitHub refuses both the release
-  // listing and the asset download to an anonymous caller. A public repo needs
-  // no token, and the endpoints work either way.
-  GITHUB_TOKEN: z.string().min(1).optional(),
 
   // ── Analytics ───────────────────────────────────────────────────────
   // Server-side analytics. Optional: unset means the API emits nothing, and
@@ -103,8 +99,11 @@ const schema = z.object({
   DODOPAYMENT_ENVIRONMENT: z
     .enum(["test_mode", "live_mode"])
     .default("test_mode"),
+  // The single paid product: Pro, one seat included.
   DODOPAYMENT_PRO_PRODUCT_ID: z.string().min(1).optional(),
-  DODOPAYMENT_TEAM_PRODUCT_ID: z.string().min(1).optional(),
+  // Every teammate beyond the first is a quantity on this add-on, at the same
+  // price as the base seat. See docs.dodopayments.com/features/seat-based-billing.
+  DODOPAYMENT_SEAT_ADDON_ID: z.string().min(1).optional(),
   // Standard Webhooks signing secret. Without it the receiver refuses every
   // delivery rather than trusting an unverified payload.
   DODOPAYMENT_WEBHOOK_KEY: z.string().min(1).optional(),

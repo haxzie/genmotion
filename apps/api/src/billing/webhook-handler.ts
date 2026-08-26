@@ -14,6 +14,26 @@ import { planForProduct } from "../dodo";
  */
 
 /** The subset of the envelope we rely on. */
+/**
+ * How many people the subscription covers.
+ *
+ * Pro carries one seat and every teammate past that is a quantity on the seat
+ * add-on, so the total is base + add-on. Read from the payload rather than
+ * from our plan table: the provider is the authority on what was actually
+ * bought, including a change made in their dashboard that we never initiated.
+ */
+function seatsFromPayload(
+  data: { addons?: { addon_id?: string; quantity?: number }[] | null },
+  plan: PlanId,
+): number {
+  const included = PLANS[plan].includedSeats;
+  const extra = (data.addons ?? []).reduce(
+    (total, addon) => total + (addon.quantity ?? 0),
+    0,
+  );
+  return included + extra;
+}
+
 export interface WebhookEnvelope {
   type: string;
   timestamp: string;
@@ -25,6 +45,8 @@ export interface WebhookEnvelope {
     customer?: { customer_id?: string } | null;
     next_billing_date?: string | null;
     cancel_at_next_billing_date?: boolean | null;
+    /** Seat add-on lines; their quantities are the teammates past the first. */
+    addons?: { addon_id?: string; quantity?: number }[] | null;
   } | null;
 }
 
@@ -92,7 +114,7 @@ export function transitionFor(
         ...common,
         plan,
         status,
-        seats: PLANS[plan].seats,
+        seats: seatsFromPayload(data, plan),
         dodoProductId: data.product_id ?? null,
         currentPeriodEnd: toDate(data.next_billing_date),
         cancelAtPeriodEnd: Boolean(data.cancel_at_next_billing_date),

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   PLANS,
   planPrice,
-  type LimitKind,
-  type LimitSnapshot,
+  SEAT_PRICE_USD,
+  TRIAL_DAYS,
   type PlanId,
 } from "@genmotion/shared";
 import { api } from "@/lib/api";
@@ -40,8 +40,8 @@ interface Subscription {
 
 interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
+  seats: { used: number; max: number };
   subscription: Subscription;
-  limits: LimitSnapshot;
   period: { start: string; end: string };
   totals: UsageTotals & { estimatedCostUsd: number };
   byModel: ModelUsage[];
@@ -79,37 +79,6 @@ function renewalLine(s: Subscription): string | null {
   return s.cancelAtPeriodEnd ? `Access ends ${when}` : `Renews ${when}`;
 }
 
-const LIMIT_ROWS: Array<{ kind: LimitKind; label: string; note: string }> = [
-  { kind: "projects", label: "Projects", note: "Total" },
-  { kind: "exports", label: "Exports", note: "This month" },
-  { kind: "aiTurns", label: "AI messages", note: "This month" },
-];
-
-/** A quota as a filled track. One hue, more-is-fuller — no colour coding until
- *  it's actually exhausted, where the state (not a series) earns a colour.
- *  An unlimited quota has no cap to fill, so it renders as a flat muted rail. */
-function LimitMeter({ used, max }: { used: number; max: number | null }) {
-  if (max === null) {
-    return <div className="mt-2 h-1.5 rounded-full bg-surface-hover" />;
-  }
-  const pct = max === 0 ? 0 : Math.min(100, (used / max) * 100);
-  const full = used >= max;
-  return (
-    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover">
-      <div
-        className={cx("h-full rounded-full", full ? "bg-warning" : "bg-accent")}
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
-}
-
-/**
- * Stack order is load-bearing, not decorative: these four hues were validated
- * for colour-vision separation in this order. Blue and purple adjacent are
- * nearly identical under deuteranopia, so green sits between them. Reordering
- * without re-validating will quietly break that.
- */
 const SEGMENTS = [
   {
     key: "uncachedInput",
@@ -193,8 +162,7 @@ function Stat({
   );
 }
 
-/** The plans a checkout can move this org to, cheapest first. */
-const PURCHASABLE = ["pro", "team"] as const;
+/** The plans a checkout can move this org to, cheapest first. */const PURCHASABLE = ["pro"] as const;
 
 /**
  * A single plan, priced and buyable on its own. The price is repeated in the
@@ -234,9 +202,7 @@ function PlanCard({
         </p>
       </div>
       <p className="mt-2 text-[0.9rem] text-text-secondary">
-        {plan === "pro"
-          ? "Every limit removed, for one person."
-          : `Everything in Pro, for up to ${def.seats} seats.`}
+        {`Everything, for one person. Add teammates at $${SEAT_PRICE_USD} each.`}
       </p>
       <ul className="mt-3 flex flex-1 flex-col gap-1.5">
         {def.features.map((f) => (
@@ -270,7 +236,7 @@ export default function BillingPage() {
   const [data, setData] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [checkoutBusy, setCheckoutBusy] = useState<"pro" | "team" | null>(null);
+  const [checkoutBusy, setCheckoutBusy] = useState<"pro" | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [activating, setActivating] = useState(false);
 
@@ -466,42 +432,25 @@ export default function BillingPage() {
               </>
             )}
 
-            {/* Plan allowances */}
+            {/* Seats — the only thing that scales with what you pay */}
             <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
-              Plan limits
+              Seats
             </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {LIMIT_ROWS.map(({ kind, label, note }) => {
-                const l = data.limits[kind];
-                return (
-                  <div
-                    key={kind}
-                    className="rounded-xl border border-border bg-surface-raised px-5 py-4"
-                  >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[0.857rem] text-text-tertiary">{label}</p>
-                      <p className="text-[0.786rem] text-text-tertiary">{note}</p>
-                    </div>
-                    <p className="mt-1 text-xl tabular-nums text-text-primary">
-                      {exact.format(l.used)}
-                      {!l.unlimited && (
-                        <span className="text-text-tertiary">
-                          {" "}
-                          / {exact.format(l.max ?? 0)}
-                        </span>
-                      )}
-                    </p>
-                    <LimitMeter used={l.used} max={l.max} />
-                    <p className="mt-2 text-[0.857rem] text-text-tertiary">
-                      {l.unlimited
-                        ? "Unlimited"
-                        : (l.remaining ?? 0) > 0
-                          ? `${exact.format(l.remaining ?? 0)} left`
-                          : "Limit reached"}
-                    </p>
-                  </div>
-                );
-              })}
+            <div className="rounded-xl border border-border bg-surface-raised px-5 py-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[0.857rem] text-text-tertiary">People in this organization</p>
+                <p className="text-xl tabular-nums text-text-primary">
+                  {exact.format(data.seats?.used ?? 0)}
+                  <span className="text-text-tertiary">
+                    {" "}/ {exact.format(data.seats?.max ?? 0)}
+                  </span>
+                </p>
+              </div>
+              <p className="mt-2 text-[0.857rem] text-text-tertiary">
+                Pricing is ${SEAT_PRICE_USD} per person a month. Inviting a
+                teammate adds a seat and is charged from the day they are
+                invited.
+              </p>
             </div>
 
             {/* Usage */}

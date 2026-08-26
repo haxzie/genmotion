@@ -72,7 +72,7 @@ function SkeletonCard() {
 export default function ProjectsHomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { openUpgrade, handleLimitError, isExhausted } = useUpgrade();
+  const { openUpgrade, handleLimitError } = useUpgrade();
 
   const createWithPrompt = useMutation({
     mutationFn: (vars: { prompt: string; width: number; height: number }) =>
@@ -96,10 +96,6 @@ export default function ProjectsHomePage() {
    * 402 path above still backstops a stale count or a second tab.
    */
   const startCreate = (vars: { prompt: string; width: number; height: number }) => {
-    if (isExhausted("projects")) {
-      openUpgrade("projects");
-      return;
-    }
     createWithPrompt.mutate(vars);
   };
 

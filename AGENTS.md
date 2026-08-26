@@ -85,11 +85,15 @@ pnpm db:push                          # sync schema to DEV only
   authenticates with `Authorization: Bearer <session token>` via the `bearer`
   plugin. Its token lives in the Electron main process — never the renderer.
 - **Downloads:** `/api/releases/latest` (JSON) and `/api/releases/latest/download`
-  (302) read the newest GitHub release, so no version number is ever written
-  into the web app. Both are public — asking someone to sign in before they can
-  try the app defeats the point of shipping a desktop app. `GITHUB_TOKEN` is
-  needed only while the repo is private; the redirect resolves to a signed URL
-  that needs no credentials either way.
+  (302 to GitHub) read the newest GitHub release, so no version number is ever
+  written into the web app. Both are public and anonymous — the repo is public,
+  so no token is involved, and the ten-minute cache keeps the server inside
+  GitHub's 60/hr unauthenticated budget at roughly six calls.
+- **Updates:** the desktop app checks at launch via electron-updater, reading
+  GitHub releases directly (`publish: github` in electron-builder.yml) so the
+  ~140MB comes off GitHub's CDN. Nothing downloads until the user asks; install
+  quits the app, so that is a second, separate press. A release without
+  `latest-mac.yml` is invisible to installed apps — CI fails if it is missing.
 - **Product events:** the desktop app has no analytics of its own (a bundled
   PostHog key is a write credential handed to every user). It posts to
   `/api/events` and the server forwards; identity comes from the session, never

@@ -3,10 +3,10 @@ import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, getTableColumns, db, schema } from "@genmotion/db";
-import { LIMIT_STATUS } from "@genmotion/shared";
+import { PAYWALL_STATUS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { getEntitlements } from "../entitlements";
-import { checkLimit } from "../limits";
+import { checkPaywall } from "../limits";
 import { getBoss, RENDER_QUEUE } from "../queue";
 
 export const exportRoutes = new Hono<AuthEnv>();
@@ -23,8 +23,8 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
 
-  const blocked = await checkLimit(organizationId, "exports");
-  if (blocked) return c.json(blocked, LIMIT_STATUS);
+  const blocked = await checkPaywall(organizationId);
+  if (blocked) return c.json(blocked, PAYWALL_STATUS);
 
   const { projectId, quality, format } = c.req.valid("json");
 

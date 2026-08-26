@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
-import type { LimitKind, LimitSnapshot, PlanId, UpgradeReason } from "@genmotion/shared";
+import type { PlanId, UpgradeReason } from "@genmotion/shared";
 
 /**
- * There are no quotas in the desktop app — the user pays their own model
- * provider — so this keeps the web components' contract while never gating
- * anything. Same exported surface as `@/components/upgrade-modal`.
+ * The web components' upgrade contract, wired to nothing.
+ *
+ * The desktop app's paywall is enforced at export, in the main process, where
+ * it can be checked against the API — not by the reused editor components. So
+ * this keeps the same exported surface and never gates anything.
  */
 export const limitsQueryKey = ["billing-limits"] as const;
 
@@ -13,13 +15,19 @@ export interface PlanPayload {
   name: string;
   seats: number;
   canInvite: boolean;
-  prioritySupport: boolean;
+}
+
+export interface TrialPayload {
+  active: boolean;
+  daysLeft: number;
+  endsAt: string | null;
 }
 
 export interface LimitsResponse {
   plan: PlanPayload;
-  limits: LimitSnapshot;
   seats: { used: number; max: number };
+  trial: TrialPayload;
+  entitled: boolean;
   subscription: {
     status: string;
     currentPeriodEnd: string | null;
@@ -37,12 +45,11 @@ interface UpgradeContextValue {
   openUpgrade: (reason: UpgradeReason) => void;
   handleLimitError: (err: unknown) => boolean;
   handleAuthClientError: (err: unknown) => boolean;
-  limits?: LimitSnapshot;
   plan?: PlanPayload;
   seats?: LimitsResponse["seats"];
+  trial?: TrialPayload;
   subscription?: LimitsResponse["subscription"];
   canInvite: boolean;
-  isExhausted: (kind: LimitKind) => boolean;
 }
 
 export function useUpgrade(): UpgradeContextValue {
@@ -50,11 +57,10 @@ export function useUpgrade(): UpgradeContextValue {
     openUpgrade: (_reason: UpgradeReason) => {},
     handleLimitError: (_err: unknown) => false,
     handleAuthClientError: (_err: unknown) => false,
-    limits: undefined,
     plan: undefined,
     seats: undefined,
+    trial: undefined,
     subscription: undefined,
     canInvite: false,
-    isExhausted: (_kind: LimitKind) => false,
   };
 }

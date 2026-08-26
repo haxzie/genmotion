@@ -16,10 +16,8 @@ import {
   resolveAudioTrack,
   clipsOverlap,
   MAX_AUDIO_TRACKS,
-  LIMIT_STATUS,
 } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
-import { checkLimit } from "../limits";
 import { enqueueThumbnail } from "../queue";
 
 export const projectRoutes = new Hono<AuthEnv>();
@@ -69,8 +67,6 @@ projectRoutes.post("/", zValidator("json", createProjectSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
 
-  const blocked = await checkLimit(organizationId, "projects");
-  if (blocked) return c.json(blocked, LIMIT_STATUS);
 
   const body = c.req.valid("json");
   const [project] = await db

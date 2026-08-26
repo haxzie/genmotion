@@ -1,72 +1,44 @@
-/**
- * Free-plan quotas, shared so the API enforces and the UI predicts the same
- * numbers. The API is always the authority — the client copy exists only to
- * avoid walking a user into a wall they could have been warned about.
- */
-export const FREE_LIMITS = {
-  /** Total projects that may exist at once. Deleting one frees a slot. */
-  projects: 5,
-  /** Exports started per calendar month. Failed exports don't count. */
-  exports: 10,
-  /** Chat turns sent to the agent per calendar month. */
-  aiTurns: 5,
-} as const;
-
-export type LimitKind = keyof typeof FREE_LIMITS;
-
-export interface LimitUsage {
-  used: number;
-  /** The org's cap, or null when its plan is unlimited for this quota. */
-  max: number | null;
-  /** How many more actions are allowed, or null when unlimited. */
-  remaining: number | null;
-  unlimited: boolean;
-}
-
-export type LimitSnapshot = Record<LimitKind, LimitUsage>;
+import type { UpgradeReason } from "./plans";
 
 /**
- * Body returned with HTTP 402 when a quota blocks an action. `max` stays a
- * plain number — you can only exceed a finite cap — so this contract is
- * unchanged by unlimited plans.
+ * What blocks an action, and how the client is told.
+ *
+ * There are no usage meters any more — no project, export or message quotas.
+ * The desktop app does the work on the user's own machine with their own
+ * agent, so there is nothing of ours being consumed to count. Two things gate:
+ * the trial running out, and an invite that would exceed the seats paid for.
  */
-export interface LimitExceededBody {
+
+/**
+ * Body returned with HTTP 402 when a paywall blocks an action.
+ *
+ * `reason` is what the upgrade modal opens for; `message` is what a client
+ * without a modal (the desktop app) can show verbatim.
+ */
+export interface PaywallBody {
   error: string;
-  limit: { kind: LimitKind; used: number; max: number };
+  paywall: {
+    reason: UpgradeReason;
+    message: string;
+    /** Present for `seats`: what they have, and what the action needed. */
+    seats?: { used: number; included: number };
+  };
 }
 
 /**
- * 402 Payment Required. Chosen over 403 so a quota block is never confused
- * with an auth failure — the client redirects on 401/403, but a quota should
- * open the upgrade modal and leave the user exactly where they were.
+ * 402 Payment Required. Chosen over 403 so a paywall is never confused with an
+ * auth failure — the client redirects on 401/403, but a paywall should open the
+ * upgrade path and leave the user exactly where they were.
  */
-export const LIMIT_STATUS = 402;
+export const PAYWALL_STATUS = 402;
 
-/** Narrow an arbitrary parsed response body to a quota rejection. */
-export function isLimitExceededBody(body: unknown): body is LimitExceededBody {
+/** Narrow an arbitrary parsed response body to a paywall rejection. */
+export function isPaywallBody(body: unknown): body is PaywallBody {
   if (!body || typeof body !== "object") return false;
-  const limit = (body as LimitExceededBody).limit;
+  const paywall = (body as PaywallBody).paywall;
   return (
-    !!limit &&
-    typeof limit === "object" &&
-    typeof limit.kind === "string" &&
-    limit.kind in FREE_LIMITS
+    !!paywall &&
+    typeof paywall === "object" &&
+    (paywall.reason === "trial" || paywall.reason === "seats")
   );
-}
-
-/**
- * Pull a quota rejection out of an opaque error string. The AI SDK's chat
- * transport surfaces a failed response as an Error whose message is the raw
- * body, so this is the only handle we get on the chat path.
- */
-export function parseLimitFromText(text: string): LimitExceededBody | null {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  try {
-    const parsed: unknown = JSON.parse(text.slice(start, end + 1));
-    return isLimitExceededBody(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
 }

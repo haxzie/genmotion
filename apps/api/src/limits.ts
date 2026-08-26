@@ -1,160 +1,84 @@
-import { and, count, eq, gte, inArray, not, db, schema } from "@genmotion/db";
-import {
-  FREE_LIMITS,
-  LIMITS_LIVE_AT,
-  type LimitKind,
-  type LimitSnapshot,
-  type LimitExceededBody,
-} from "@genmotion/shared";
-import { getEntitlements, type Entitlements } from "./entitlements";
+import { isTrialActive, trialDaysLeft, type PaywallBody } from "@genmotion/shared";
+import { eq, db, schema } from "@genmotion/db";
+import { getEntitlements } from "./entitlements";
 
 /**
- * Start of the current calendar month in UTC. Projects are a standing total,
- * but exports and AI turns are flows that refill monthly — the Free plan is
- * positioned as perpetual ("no time limit"), so a recurring allowance fits it
- * better than a one-off trial budget.
- */
-export function monthStart(now = new Date()): Date {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-}
-
-/**
- * Quotas only count activity from LIMITS_LIVE_AT onward. Orgs that predate
- * enforcement keep what they already had instead of waking up over quota; once
- * the cutoff is in the past, the month start always wins and this is inert.
- */
-function countsFrom(from: Date): Date {
-  return from.getTime() > LIMITS_LIVE_AT.getTime() ? from : LIMITS_LIVE_AT;
-}
-
-/**
- * The instant from which per-month quotas (exports, AI turns) start counting.
- * Exported so tests can place rows either side of the boundary without
- * hard-coding a date that would rot as the cutoff recedes into the past.
- */
-export function usageCountsFrom(now = new Date()): Date {
-  return countsFrom(monthStart(now));
-}
-
-async function countProjects(organizationId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(schema.projects)
-    .where(
-      and(
-        eq(schema.projects.organizationId, organizationId),
-        // Projects are a standing total, so the cutoff is absolute: one created
-        // before enforcement never occupies a slot.
-        gte(schema.projects.createdAt, LIMITS_LIVE_AT),
-      ),
-    );
-  return row?.n ?? 0;
-}
-
-async function countExports(organizationId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(schema.exportJobs)
-    .innerJoin(schema.projects, eq(schema.exportJobs.projectId, schema.projects.id))
-    .where(
-      and(
-        eq(schema.projects.organizationId, organizationId),
-        gte(schema.exportJobs.createdAt, countsFrom(monthStart())),
-        // A render that failed or was cancelled gave the user nothing, so it
-        // must not burn quota — 2 of the first 22 exports on this deployment
-        // failed, and charging for those would be indefensible.
-        not(inArray(schema.exportJobs.status, ["failed", "cancelled"])),
-      ),
-    );
-  return row?.n ?? 0;
-}
-
-async function countAiTurns(organizationId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(schema.chatMessages)
-    .innerJoin(schema.projects, eq(schema.chatMessages.projectId, schema.projects.id))
-    .where(
-      and(
-        eq(schema.projects.organizationId, organizationId),
-        gte(schema.chatMessages.createdAt, countsFrom(monthStart())),
-        // One turn = one message the user sent. Counting assistant messages
-        // instead would charge for retries and tool chatter the user didn't ask
-        // for; counting compactions would charge for our own housekeeping.
-        eq(schema.chatMessages.role, "user"),
-      ),
-    );
-  return row?.n ?? 0;
-}
-
-const COUNTERS: Record<LimitKind, (organizationId: string) => Promise<number>> = {
-  projects: countProjects,
-  exports: countExports,
-  aiTurns: countAiTurns,
-};
-
-/**
- * Current usage for every quota — powers the billing page and the client hints.
+ * The paywall.
  *
- * Usage is still counted on paid plans (people want to see "142 exports this
- * month"); only the cap differs. Accepts pre-resolved entitlements so callers
- * that already have them don't re-query.
+ * There is nothing metered any more. The desktop app runs the render on the
+ * user's own machine with their own agent, so there is no resource of ours
+ * being consumed — counting projects, exports or messages would be counting
+ * for its own sake. What remains is time: an organization gets a free week,
+ * and after that it pays per person.
  */
-export async function limitSnapshot(
-  organizationId: string,
-  entitlements?: Entitlements,
-): Promise<LimitSnapshot> {
-  const ent = entitlements ?? (await getEntitlements(organizationId));
-  const [projects, exports, aiTurns] = await Promise.all([
-    countProjects(organizationId),
-    countExports(organizationId),
-    countAiTurns(organizationId),
-  ]);
-  const used = { projects, exports, aiTurns };
-  return Object.fromEntries(
-    (Object.keys(FREE_LIMITS) as LimitKind[]).map((kind) => {
-      const max = ent.limits[kind];
-      return [
-        kind,
-        max === null
-          ? { used: used[kind], max: null, remaining: null, unlimited: true }
-          : {
-              used: used[kind],
-              max,
-              remaining: Math.max(0, max - used[kind]),
-              unlimited: false,
-            },
-      ];
-    }),
-  ) as LimitSnapshot;
+
+/** When the org was created — the instant the trial clock started. */
+async function organizationCreatedAt(organizationId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ createdAt: schema.organization.createdAt })
+    .from(schema.organization)
+    .where(eq(schema.organization.id, organizationId));
+  return row?.createdAt ?? null;
 }
 
-/**
- * Returns a 402 body when the org has no room left for one more action of this
- * kind, or null when it may proceed. Counts only the one quota being checked so
- * a chat turn doesn't pay for three COUNT queries.
- *
- * The paid short-circuit happens before the COUNT: an org on an unlimited plan
- * never pays for a query whose answer can't block it.
- */
-export async function checkLimit(
-  organizationId: string,
-  kind: LimitKind,
-): Promise<LimitExceededBody | null> {
-  const ent = await getEntitlements(organizationId);
-  const max = ent.limits[kind];
-  if (max === null) return null;
+export interface TrialState {
+  active: boolean;
+  endsAt: Date | null;
+  daysLeft: number;
+}
 
-  const used = await COUNTERS[kind](organizationId);
-  if (used < max) return null;
+export async function trialState(organizationId: string): Promise<TrialState> {
+  const createdAt = await organizationCreatedAt(organizationId);
+  // An org we cannot date is treated as out of trial rather than in one:
+  // failing closed costs someone a wrongly-shown upgrade prompt, while failing
+  // open gives away the product to anything that loses a row.
+  if (!createdAt) return { active: false, endsAt: null, daysLeft: 0 };
   return {
-    error: MESSAGES[kind],
-    limit: { kind, used, max },
+    active: isTrialActive(createdAt),
+    endsAt: new Date(createdAt.getTime() + 7 * 86_400_000),
+    daysLeft: trialDaysLeft(createdAt),
   };
 }
 
-const MESSAGES: Record<LimitKind, string> = {
-  projects: `You've reached the Free plan limit of ${FREE_LIMITS.projects} projects.`,
-  exports: `You've used all ${FREE_LIMITS.exports} exports included this month.`,
-  aiTurns: `You've used all ${FREE_LIMITS.aiTurns} AI messages included this month.`,
-};
+/**
+ * Whether the org may do paid-tier work right now.
+ *
+ * Returns the 402 body when it may not, so a route can hand it straight back.
+ * `null` means go ahead.
+ */
+export async function checkPaywall(
+  organizationId: string,
+): Promise<PaywallBody | null> {
+  const entitlements = await getEntitlements(organizationId);
+  if (entitlements.paid) return null;
+
+  const trial = await trialState(organizationId);
+  if (trial.active) return null;
+
+  return {
+    error: "Your free trial has ended.",
+    paywall: {
+      reason: "trial",
+      message:
+        "Your 7-day trial has ended. Upgrade to Pro to keep exporting — $19 a month.",
+    },
+  };
+}
+
+/**
+ * Whether one more person can be invited without buying a seat.
+ *
+ * Seats are bought by inviting: the invite hook resizes the subscription. This
+ * exists for the surfaces that want to say what the next invite will cost
+ * before it is sent.
+ */
+export function seatPaywall(used: number, included: number): PaywallBody {
+  return {
+    error: "That would exceed the seats on your plan.",
+    paywall: {
+      reason: "seats",
+      message: `Your plan covers ${included} ${included === 1 ? "seat" : "seats"}. Inviting another adds $19 a month.`,
+      seats: { used, included },
+    },
+  };
+}

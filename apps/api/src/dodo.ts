@@ -38,11 +38,48 @@ export function resetDodoClient(): void {
   client = null;
 }
 
-/** Which provider product backs each purchasable plan. */
+/** Which provider product backs each purchasable plan. Only Pro is buyable. */
 export function productForPlan(plan: PlanId): string | undefined {
-  if (plan === "pro") return env.DODOPAYMENT_PRO_PRODUCT_ID;
-  if (plan === "team") return env.DODOPAYMENT_TEAM_PRODUCT_ID;
-  return undefined;
+  return plan === "pro" ? env.DODOPAYMENT_PRO_PRODUCT_ID : undefined;
+}
+
+/** The add-on that carries every seat past the one Pro includes. */
+export function seatAddonId(): string | undefined {
+  return env.DODOPAYMENT_SEAT_ADDON_ID;
+}
+
+/**
+ * Add-on lines for a given headcount.
+ *
+ * Pro carries one seat, so the add-on quantity is everyone *else*. A solo org
+ * buys no add-on at all — an empty array rather than a zero quantity, which is
+ * also how Dodo wants seats removed.
+ */
+export function seatAddons(totalSeats: number): { addon_id: string; quantity: number }[] {
+  const addonId = seatAddonId();
+  const extra = Math.max(0, totalSeats - 1);
+  return addonId && extra > 0 ? [{ addon_id: addonId, quantity: extra }] : [];
+}
+
+/**
+ * Resize an active subscription to cover `totalSeats`.
+ *
+ * Prorated immediately: a teammate invited today should be paid for from
+ * today, and the alternative — billing at renewal — means carrying unbilled
+ * seats for up to a month.
+ */
+export async function changeSeats(
+  subscriptionId: string,
+  totalSeats: number,
+): Promise<void> {
+  const productId = env.DODOPAYMENT_PRO_PRODUCT_ID;
+  if (!productId) throw new Error("DODOPAYMENT_PRO_PRODUCT_ID is not set");
+  await dodoClient().subscriptions.changePlan(subscriptionId, {
+    product_id: productId,
+    quantity: 1,
+    proration_billing_mode: "prorated_immediately",
+    addons: seatAddons(totalSeats),
+  });
 }
 
 /**
@@ -55,6 +92,5 @@ export function planForProduct(
 ): PlanId | null {
   if (!productId) return null;
   if (productId === env.DODOPAYMENT_PRO_PRODUCT_ID) return "pro";
-  if (productId === env.DODOPAYMENT_TEAM_PRODUCT_ID) return "team";
   return null;
 }

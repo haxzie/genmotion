@@ -2,7 +2,6 @@ import { and, count, eq, gt, db, schema } from "@genmotion/db";
 import {
   PLANS,
   type PlanId,
-  type PlanLimits,
   type SubscriptionStatus,
 } from "@genmotion/shared";
 
@@ -25,10 +24,9 @@ export interface Entitlements {
   plan: PlanId;
   planName: string;
   status: SubscriptionStatus | string;
+  /** Seats the subscription currently covers — base plus add-on. */
   seats: number;
   canInvite: boolean;
-  prioritySupport: boolean;
-  limits: PlanLimits;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   /** A paid plan is currently in force. */
@@ -72,10 +70,8 @@ export function entitlementsFromRow(
     plan,
     planName: def.name,
     status,
-    seats: def.seats,
+    seats: row?.seats ?? def.includedSeats,
     canInvite: def.canInvite,
-    prioritySupport: def.prioritySupport,
-    limits: def.limits,
     currentPeriodEnd: row?.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
     paid: plan !== "free",
@@ -132,7 +128,7 @@ export async function countSeats(
   return (members[0]?.n ?? 0) + (pending[0]?.n ?? 0);
 }
 
-export type InviteGateCode = "PLAN_REQUIRES_TEAM" | "SEAT_LIMIT_REACHED";
+export type InviteGateCode = "PLAN_REQUIRES_PRO" | "SEAT_LIMIT_REACHED";
 
 export type InviteGate =
   | { ok: true }
@@ -157,10 +153,10 @@ export async function assertCanInvite(
   if (!ent.canInvite) {
     return {
       ok: false,
-      code: "PLAN_REQUIRES_TEAM",
+      code: "PLAN_REQUIRES_PRO",
       plan: ent.plan,
       seats: { used: await countSeats(organizationId, opts), max: ent.seats },
-      message: `Inviting teammates is part of the ${PLANS.team.name} plan. Upgrade to add up to ${PLANS.team.seats} people.`,
+      message: `Inviting teammates is part of ${PLANS.pro.name}. Upgrade to add your team at $${PLANS.pro.priceUsd} each.`,
     };
   }
 
