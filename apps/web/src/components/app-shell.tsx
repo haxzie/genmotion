@@ -104,27 +104,20 @@ function LogOutIcon({ className }: IconProps) {
  * The whole of the web app.
  *
  * Making a video happens in the desktop app now, so what is left here is
- * account management — and three items behind a single "Settings" entry is a
- * menu pretending to be a section. They are the top level instead.
+ * account management, and only two things in it are worth navigating to.
+ * "Organization" pointed at `/settings`, which redirects to Members — a row
+ * that led back to the row above it — and the account page is what the logo
+ * already goes to.
  *
- * Templates and the editor are still reachable by URL; this is the navigation,
- * not the routing table.
+ * The account page, templates and the editor are still reachable by URL; this
+ * is the navigation, not the routing table.
  */
 const NAV = [
-  { label: "Account", href: "/dashboard", Icon: UserIcon },
   { label: "Members", href: "/settings/members", Icon: UsersIcon },
   { label: "Billing", href: "/settings/billing", Icon: CreditCardIcon },
-  { label: "Organization", href: "/settings", Icon: SettingsIcon },
 ] as const;
 
-/**
- * Exact match for the two parents.
- *
- * `/settings` is a prefix of `/settings/billing`, so a `startsWith` test would
- * light both rows at once now that they sit side by side rather than nested.
- */
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/dashboard" || href === "/settings") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
