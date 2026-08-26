@@ -29,7 +29,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     links: [
       { label: "About", href: "/about" },
       { label: "Log in", href: "/login" },
-      { label: "Start free", href: "/signup" },
+      { label: "Download", href: "/download" },
     ],
   },
 ];

@@ -8,6 +8,7 @@ import {
   GradientBlobs,
   LinkButton,
 } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { FaqSection } from "@/components/marketing/faq";
 import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
@@ -131,9 +132,7 @@ export default async function UseCasePage({ params }: Params) {
             {useCase.description}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <LinkButton href="/signup" size="lg">
-              Start free
-            </LinkButton>
+            <DownloadButton size="lg" />
             <LinkButton href="/showcase" variant="secondary" size="lg">
               See the showcase
             </LinkButton>

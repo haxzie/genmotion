@@ -1,4 +1,5 @@
-import { Container, Section, LinkButton } from "@/components/marketing/primitives";
+import { Container, Section } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 
 /**
  * Closing call-to-action shown near the bottom of every marketing page.
@@ -13,13 +14,11 @@ export function CtaSection() {
             Ready to tell your story?
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-lg text-text-secondary sm:text-xl">
-            Start free — describe an idea and watch the agent animate it in
+            Describe an idea and watch the agent animate it — on your Mac, in
             minutes.
           </p>
           <div className="mt-10 flex justify-center">
-            <LinkButton href="/signup" size="lg">
-              Start creating free
-            </LinkButton>
+            <DownloadButton size="lg" />
           </div>
         </div>
       </Container>

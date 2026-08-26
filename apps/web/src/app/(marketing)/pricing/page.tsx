@@ -16,7 +16,7 @@ import { PLANS, planPrice } from "@genmotion/shared";
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
   description:
-    "Simple plans for every creator. Start free, upgrade when you need more renders, longer videos, and higher resolution.",
+    "Simple plans for every creator. Download the app free, upgrade when you need more renders, longer videos, and higher resolution.",
   path: "/pricing",
 });
 
@@ -41,7 +41,7 @@ const TIERS: Tier[] = [
     price: planPrice("free"),
     cadence: "forever",
     blurb: "Make your first videos and learn the workflow.",
-    cta: { label: "Start free", href: "/signup" },
+    cta: { label: "Download", href: "/download" },
     features: [
       "Up to 5 projects",
       "720p MP4 export with watermark",
@@ -137,7 +137,7 @@ export default function PricingPage() {
               Simple plans for every creator
             </h1>
             <p className="mt-5 text-lg text-text-secondary">
-              Start free. Upgrade when you need more renders, longer videos, and
+              Download free. Upgrade when you need more renders, longer videos, and
               higher resolution.
             </p>
           </div>

@@ -6,6 +6,7 @@ import {
   LinkButton,
   Card,
 } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { pageMetadata } from "@/lib/marketing/seo";
@@ -133,9 +134,7 @@ export default function AboutPage() {
               <LinkButton href="mailto:hello@genmotion.app" variant="secondary" size="lg">
                 Say hello
               </LinkButton>
-              <LinkButton href="/signup" size="lg">
-                Start free
-              </LinkButton>
+              <DownloadButton size="lg" />
             </div>
           </div>
         </Container>

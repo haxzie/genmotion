@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container, Section, LinkButton } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { Prose } from "@/components/marketing/prose";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
@@ -85,7 +86,7 @@ export default async function GlossaryTermPage({ params }: Params) {
           <p className="text-text-secondary">
             Put these ideas into motion.
           </p>
-          <LinkButton href="/signup">Start free</LinkButton>
+          <DownloadButton />
         </div>
       </Container>
     </Section>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container, Section, LinkButton } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { Prose } from "@/components/marketing/prose";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
@@ -125,7 +126,7 @@ export default async function BlogPostPage({ params }: Params) {
 
         <div className="mt-16 flex items-center justify-between gap-4 border-t border-border pt-10">
           <p className="text-text-secondary">Ready to make your own?</p>
-          <LinkButton href="/signup">Start free</LinkButton>
+          <DownloadButton />
         </div>
       </Container>
     </Section>

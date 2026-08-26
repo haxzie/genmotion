@@ -33,6 +33,15 @@ const schema = z.object({
   GITHUB_OAUTH_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 
+  // ── Desktop releases (GitHub) ───────────────────────────────────────
+  // Where the macOS build is published. The download endpoints read the
+  // latest release from here.
+  GITHUB_RELEASE_REPO: z.string().min(1).default("haxzie/genmotion"),
+  // Only needed while the repo is private: GitHub refuses both the release
+  // listing and the asset download to an anonymous caller. A public repo needs
+  // no token, and the endpoints work either way.
+  GITHUB_TOKEN: z.string().min(1).optional(),
+
   // ── Analytics ───────────────────────────────────────────────────────
   // Server-side analytics. Optional: unset means the API emits nothing, and
   // the desktop events endpoint accepts and discards.

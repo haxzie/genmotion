@@ -16,18 +16,23 @@ pnpm workspaces + Turbo. Node ≥ 22, pnpm@11.2.2.
 
 ```
 apps/
-  web/       Next.js 16 (App Router, React 19, Tailwind v4)   → :4000
-  api/       Hono API (better-auth, projects, AI chat,
-             assets, exports, admin, render control-plane)     → :4001
+  desktop/   Electron studio — the product. Local project folders, the
+             user's own agent CLI, loopback API speaking the hosted
+             routes, offscreen-window + ffmpeg export              → :4100
+  web/       Next.js 16 (App Router, React 19, Tailwind v4):
+             marketing, download, accounts, billing              → :4000
+  api/       Hono API (better-auth, billing, desktop device
+             sign-in, product events, release downloads)         → :4001
   renderer/  pg-boss worker → E2B sandbox (or local Playwright)
-             + ffmpeg; renders exports & thumbnails
-  desktop/   Electron app: local project folders, own agent,
-             loopback API speaking the hosted routes            → :4100
+             + ffmpeg. Hosted-only; being retired with the hosted
+             studio — the desktop app renders locally instead.
 packages/
   motion/    frame-deterministic animation runtime
   player/    composition player (drives BOTH editor preview and render page)
   compiler/  TSX → component (esbuild-wasm in browser, native esbuild on server)
-  ai/        editor agent: system prompt + tools (compile-validate before DB)
+  ai/        editor agent: system prompt + tools (compile-validate before DB).
+             `@genmotion/ai/prompt` is the prompt alone — no DB or provider
+             deps — which is what the desktop app imports
   db/        Drizzle schema + client (Postgres, node-postgres)
   storage/   S3 wrapper (MinIO dev / R2 prod)
   shared/    types + timeline frame math (+ render-token, subpath exports)
@@ -79,6 +84,16 @@ pnpm db:push                          # sync schema to DEV only
   opens `WEB_URL/device` in the real browser, polls for the session, and then
   authenticates with `Authorization: Bearer <session token>` via the `bearer`
   plugin. Its token lives in the Electron main process — never the renderer.
+- **Downloads:** `/api/releases/latest` (JSON) and `/api/releases/latest/download`
+  (302) read the newest GitHub release, so no version number is ever written
+  into the web app. Both are public — asking someone to sign in before they can
+  try the app defeats the point of shipping a desktop app. `GITHUB_TOKEN` is
+  needed only while the repo is private; the redirect resolves to a signed URL
+  that needs no credentials either way.
+- **Product events:** the desktop app has no analytics of its own (a bundled
+  PostHog key is a write credential handed to every user). It posts to
+  `/api/events` and the server forwards; identity comes from the session, never
+  the body, and names are prefixed `desktop_` server-side.
 - **Scenes (agent-authored TSX):** may import only `react`, `@genmotion/motion`,
   `gsap`, `lucide-react`. No `Math.random`/`Date.now`/timers/CSS transitions —
   everything is a pure function of the current frame. Inline styles only; never

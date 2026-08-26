@@ -6,6 +6,7 @@ import {
   Eyebrow,
   LinkButton,
 } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES } from "@/lib/marketing/features";
@@ -95,9 +96,7 @@ export default function FeaturesIndexPage() {
           </div>
 
           <div className="mt-16 flex justify-center">
-            <LinkButton href="/signup" size="lg">
-              Start creating free
-            </LinkButton>
+            <DownloadButton size="lg" />
           </div>
         </Container>
       </Section>

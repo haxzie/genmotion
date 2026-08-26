@@ -8,6 +8,7 @@ import {
   GradientBlobs,
   LinkButton,
 } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { FEATURES, getFeature } from "@/lib/marketing/features";
@@ -76,9 +77,7 @@ export default async function FeaturePage({ params }: Params) {
             {feature.description}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <LinkButton href="/signup" size="lg">
-              Start free
-            </LinkButton>
+            <DownloadButton size="lg" />
             <LinkButton href="/features" variant="secondary" size="lg">
               See all features
             </LinkButton>

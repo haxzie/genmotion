@@ -12,6 +12,7 @@ import { renderRoutes } from "./routes/render";
 import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
+import { releaseRoutes } from "./routes/releases";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -60,6 +61,8 @@ app.route("/api/billing", billingRoutes);
 app.route("/api/desktop", desktopRoutes);
 // Product analytics forwarded to PostHog; the key stays server-side.
 app.route("/api/events", eventRoutes);
+// Desktop download links for the marketing site — public, no session.
+app.route("/api/releases", releaseRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.

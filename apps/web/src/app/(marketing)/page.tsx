@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HomeComposer } from "@/components/marketing/home-composer";
+import { DownloadButton } from "@/components/marketing/download-button";
+import { getLatestRelease, formatSize } from "@/lib/marketing/latest-release";
 import {
   Container,
   Section,
@@ -107,6 +108,10 @@ export default async function HomePage() {
   // Resolved by slug rather than a bare href so it degrades to /blog if the
   // post is ever renamed, instead of linking to a 404.
   const launchPost = getPostBySlug(LAUNCH_POST_SLUG);
+  // Version and size under the download button. Null when GitHub is
+  // unreachable or nothing is published — the button still works, it just
+  // says less.
+  const release = await getLatestRelease();
   // Home shows only videos flagged `featured` in their frontmatter — latest 6
   // (getAllShowcaseVideos is already sorted newest-first).
   const showcaseVideos = getAllShowcaseVideos()
@@ -154,9 +159,17 @@ export default async function HomePage() {
             AI-powered motion graphics editor for your product videos.
           </p>
           <div className="mt-10 flex w-full flex-col items-center">
-            <HomeComposer />
+            <DownloadButton size="lg" />
             <p className="mt-4 text-[0.9rem] text-text-secondary">
-              Free to start · no credit card ·{" "}
+              {release ? (
+                <>
+                  macOS · Apple silicon · v{release.version} ·{" "}
+                  {formatSize(release.size)}
+                </>
+              ) : (
+                <>macOS · Apple silicon</>
+              )}{" "}
+              ·{" "}
               <Link
                 href="/features"
                 className="text-text-secondary underline underline-offset-2 hover:text-green"

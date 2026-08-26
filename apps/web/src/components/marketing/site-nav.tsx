@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { ColorIcon } from "@/components/marketing/icons";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 
@@ -102,15 +103,7 @@ function AuthCta({ stacked = false }: { stacked?: boolean }) {
       >
         Log in
       </Link>
-      <Link
-        href="/signup"
-        className={cx(
-          "inline-flex h-9 items-center justify-center rounded-md bg-cta px-4 text-[1rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover",
-          stacked && "w-full",
-        )}
-      >
-        Start free
-      </Link>
+      <DownloadButton className={cx(stacked && "w-full")} />
     </div>
   );
 }

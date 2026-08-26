@@ -6,6 +6,7 @@ import {
   Eyebrow,
   LinkButton,
 } from "@/components/marketing/primitives";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { FaqSection } from "@/components/marketing/faq";
 import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
@@ -62,9 +63,7 @@ export default function UseCasesIndexPage() {
               to see real examples.
             </p>
             <div className="mt-7 flex justify-center">
-              <LinkButton href="/signup" size="lg">
-                Start free
-              </LinkButton>
+              <DownloadButton size="lg" />
             </div>
           </div>
         </Container>
