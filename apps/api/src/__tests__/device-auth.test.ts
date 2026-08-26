@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, eq, schema } from "@genmotion/db";
 import { DESKTOP_CLIENT_ID, DESKTOP_SCOPE } from "@genmotion/shared";
-import { signAdminToken } from "../admin/token";
 import { env } from "../env";
 import { dbReady, truncateAll } from "./helpers/db";
 import { createSession, request, requestJson, type TestSession } from "./helpers/http";
@@ -215,10 +214,9 @@ describe.skipIf(!dbReady)("desktop session route", () => {
     expect((await requestJson("/api/desktop/session")).status).toBe(401);
   });
 
-  it("still refuses an admin token on a product route", async () => {
-    const user = await createUser({ email: `admin-${Date.now()}@genmotion.dev` });
+  it("refuses a bearer token that is not a session", async () => {
     const { status } = await requestJson("/api/desktop/session", {
-      headers: { authorization: `Bearer ${signAdminToken({ id: user.id, email: user.email })}` },
+      headers: { authorization: "Bearer not-a-session-token" },
     });
     expect(status).toBe(401);
   });

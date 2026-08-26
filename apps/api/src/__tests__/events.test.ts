@@ -41,7 +41,7 @@ describe("POST /api/events", () => {
     expect(res.status).toBe(401);
   });
 
-  it("refuses an admin token — it is not a product credential", async () => {
+  it("refuses a bearer token that is not a session", async () => {
     const res = await request("/api/events", {
       json: { events: [EVENT] },
       headers: { authorization: "Bearer not-a-session" },

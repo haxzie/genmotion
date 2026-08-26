@@ -33,14 +33,11 @@ const schema = z.object({
   GITHUB_OAUTH_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 
-  // ── Admin console (/admin) ──────────────────────────────────────────
-  // Comma-separated email domains allowed into the admin area (Google OAuth).
-  ADMIN_EMAIL_DOMAINS: z.string().min(1).default("sequel.sh,genmotion.dev"),
-  // Server-side analytics. Optional: unset means the API emits nothing.
+  // ── Analytics ───────────────────────────────────────────────────────
+  // Server-side analytics. Optional: unset means the API emits nothing, and
+  // the desktop events endpoint accepts and discards.
   POSTHOG_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().url().default("https://us.i.posthog.com"),
-  // Secret for the short-lived admin API tokens. Falls back to BETTER_AUTH_SECRET.
-  ADMIN_JWT_SECRET: z.string().min(1).optional(),
 
   // ── Email (Amazon SES) — optional ───────────────────────────────────
   EMAIL_FROM: z.email().optional(),

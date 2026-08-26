@@ -9,7 +9,6 @@ import { assetRoutes } from "./routes/assets";
 import { exportRoutes } from "./routes/exports";
 import { fileRoutes } from "./routes/files";
 import { renderRoutes } from "./routes/render";
-import { adminRoutes } from "./routes/admin";
 import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
@@ -65,5 +64,3 @@ app.route("/api/events", eventRoutes);
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.
 app.route("/api/webhooks/dodo", dodoWebhookRoutes);
-// Admin console — /session is session-gated; everything else needs an admin token.
-app.route("/api/admin", adminRoutes);
