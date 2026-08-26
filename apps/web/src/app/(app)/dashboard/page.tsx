@@ -160,7 +160,7 @@ export default function ProjectsHomePage() {
           transition={{ duration: 0.45, ease: enterEase }}
         >
           <h1 className="font-display text-3xl tracking-tight">
-            What do you want to create?
+            What do you want to animate?
           </h1>
         </motion.div>
         <motion.div
