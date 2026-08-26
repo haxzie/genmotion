@@ -60,6 +60,26 @@ function ChevronDownIcon({ className }: IconProps) {
     </svg>
   );
 }
+function UsersIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19" />
+      <circle cx="10" cy="8" r="3.2" />
+      <path d="M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.4 5.2a3.2 3.2 0 0 1 0 5.6" />
+    </svg>
+  );
+}
+
+function CreditCardIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <path d="M2.5 10h19" />
+      <path d="M6.5 15h3" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -80,16 +100,31 @@ function LogOutIcon({ className }: IconProps) {
   );
 }
 
+/**
+ * The whole of the web app.
+ *
+ * Making a video happens in the desktop app now, so what is left here is
+ * account management — and three items behind a single "Settings" entry is a
+ * menu pretending to be a section. They are the top level instead.
+ *
+ * Templates and the editor are still reachable by URL; this is the navigation,
+ * not the routing table.
+ */
 const NAV = [
-  { label: "Projects", href: "/dashboard", Icon: PlayIcon },
-  // Templates is hidden from the sidebar for now. The route and page are still
-  // there and reachable by URL — this only takes it out of the navigation.
-  // { label: "Templates", href: "/templates", Icon: Layers2Icon },
-  { label: "Settings", href: "/settings", Icon: SettingsIcon },
+  { label: "Account", href: "/dashboard", Icon: UserIcon },
+  { label: "Members", href: "/settings/members", Icon: UsersIcon },
+  { label: "Billing", href: "/settings/billing", Icon: CreditCardIcon },
+  { label: "Organization", href: "/settings", Icon: SettingsIcon },
 ] as const;
 
+/**
+ * Exact match for the two parents.
+ *
+ * `/settings` is a prefix of `/settings/billing`, so a `startsWith` test would
+ * light both rows at once now that they sit side by side rather than nested.
+ */
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/dashboard" || href === "/settings") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
