@@ -12,7 +12,7 @@
     "package": "pnpm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
     "dist": "pnpm run build && electron-builder",
     "typecheck": "tsc --noEmit",
-    "release:mac": "pnpm run build && electron-builder --mac",
+    "release:mac": "pnpm run build && electron-builder --mac --publish never",
     "verify:mac": "node scripts/verify-signing.mjs",
     "release:mac:sign-only": "pnpm run build && electron-builder --mac --config electron-builder.sign-only.yml"
   },

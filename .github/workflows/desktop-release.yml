@@ -1,0 +1,189 @@
+name: Release desktop (macOS)
+
+# Signed, notarized, stapled macOS build of apps/desktop.
+#
+# Tag prefix is `desktop-v`, not `v`, on purpose: docker-publish.yml claims
+# `v*` and force-builds the API and renderer images for any tag matching it.
+# The desktop app and the server version on their own schedules, so releasing
+# one should not redeploy the other.
+#
+# Secrets required (all of them; the build fails early and by name if any is
+# missing rather than producing an unsigned app nobody can open):
+#
+#   MACOS_CERTIFICATE           Developer ID Application .p12, base64 encoded:
+#                                 base64 -i cert.p12 | pbcopy
+#   MACOS_CERTIFICATE_PASSWORD  Password set when exporting that .p12
+#   APPLE_API_KEY_P8            Contents of the App Store Connect .p8 key file
+#   APPLE_API_KEY_ID            Key ID from App Store Connect → Integrations → Keys
+#   APPLE_API_ISSUER            Issuer UUID from the top of that same page
+#
+# Run it from the Actions tab (workflow_dispatch) to rehearse the whole thing —
+# build, sign, notarize, verify — without publishing anything.
+
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Must be an arm64 runner. `scripts/copy-esbuild-binary.mjs` resolves
+    # esbuild and ffmpeg for the HOST architecture, and electron-builder.yml
+    # ships arm64 only — so an x64 runner would produce a DMG labelled arm64
+    # with x64 binaries inside, which fails at the first scene compile rather
+    # than at build time. The guard below makes that impossible to ship.
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse a non-arm64 runner
+        run: |
+          arch="$(uname -m)"
+          echo "runner architecture: $arch"
+          if [ "$arch" != "arm64" ]; then
+            echo "::error::This build only produces arm64 artifacts, but the runner is $arch." \
+                 "It would ship $arch binaries inside an arm64 app. Pin an Apple-silicon runner."
+            exit 1
+          fi
+
+      - name: Check the signing secrets are present
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          missing=""
+          for name in MACOS_CERTIFICATE MACOS_CERTIFICATE_PASSWORD APPLE_API_KEY_P8 APPLE_API_KEY_ID APPLE_API_ISSUER; do
+            [ -z "${!name}" ] && missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            exit 1
+          fi
+          echo "all signing secrets present"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The DMG carries the version from package.json, and the release is named
+      # from the tag. Publishing a `desktop-v0.2.0` release containing a 0.1.0
+      # app is the kind of mistake nobody notices until a bug report cites a
+      # version that was never built.
+      - name: Check the tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag_version="${GITHUB_REF_NAME#desktop-v}"
+          app_version="$(node -p "require('./apps/desktop/package.json').version")"
+          echo "tag=$tag_version  package.json=$app_version"
+          if [ "$tag_version" != "$app_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME says $tag_version but apps/desktop/package.json says $app_version." \
+                 "Bump the package version and re-tag."
+            exit 1
+          fi
+
+      # The .p8 is a file path, not a value: electron-builder passes
+      # APPLE_API_KEY straight to notarytool, which wants a path. Written
+      # outside the workspace so it can never be picked up by a build glob.
+      - name: Stage the notarization key
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          key_dir="$RUNNER_TEMP/appstore"
+          mkdir -p "$key_dir"
+          printf '%s' "$APPLE_API_KEY_P8" > "$key_dir/AuthKey.p8"
+          chmod 600 "$key_dir/AuthKey.p8"
+          echo "APPLE_API_KEY=$key_dir/AuthKey.p8" >> "$GITHUB_ENV"
+
+      - name: Build, sign and notarize
+        env:
+          # electron-builder imports the certificate into a temporary keychain
+          # itself; CSC_LINK accepts base64-encoded p12 data directly.
+          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        working-directory: apps/desktop
+        # `release:mac` carries `--publish never`: the release step below owns
+        # publishing, so the two can never disagree about what shipped.
+        run: pnpm release:mac
+
+      # The project's own report: signature, hardened runtime, timestamp, and
+      # the two nested binaries (esbuild and ffmpeg arrive unsigned from npm,
+      # live outside the asar, and are spawned — the likely failure).
+      - name: Verify signing
+        working-directory: apps/desktop
+        run: pnpm verify:mac
+
+      # verify:mac exits 0 when signing is correct but notarization is missing,
+      # which is the right call locally and the wrong one here: a release must
+      # never go out un-notarized, because Gatekeeper refuses it on every Mac
+      # except the one that built it. So the ticket gets its own hard gate.
+      - name: Require a stapled notarization ticket
+        working-directory: apps/desktop
+        run: |
+          app="release/mac-arm64/GenMotion.app"
+          xcrun stapler validate "$app" \
+            || { echo "::error::$app has no notarization ticket stapled."; exit 1; }
+          spctl --assess --type execute --verbose=4 "$app" \
+            || { echo "::error::Gatekeeper rejects $app."; exit 1; }
+          echo "notarized and accepted by Gatekeeper"
+
+      - name: Delete the notarization key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/appstore/AuthKey.p8"
+
+      # Kept for a dispatch run too, so a rehearsal still leaves something to
+      # install and check by hand.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: genmotion-macos-arm64
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      # Draft, not published: the DMG should be opened on a Mac that never saw
+      # the certificate before anyone is told it exists. Publishing is one
+      # click once it has been.
+      - name: Draft the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(apps/desktop/release/*.dmg apps/desktop/release/*.zip apps/desktop/release/*.blockmap)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No artifacts to attach — the build produced nothing."
+            exit 1
+          fi
+          printf 'attaching %s\n' "${files[@]}"
+
+          printf '%s\n\n%s\n' \
+            "Signed and notarized for macOS (Apple silicon)." \
+            "Download the \`.dmg\`, open it, and drag GenMotion to Applications." \
+            > "$RUNNER_TEMP/notes.md"
+
+          gh release create "$GITHUB_REF_NAME" \
+            --draft \
+            --title "GenMotion ${GITHUB_REF_NAME#desktop-}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${files[@]}"
