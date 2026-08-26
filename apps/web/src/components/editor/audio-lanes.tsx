@@ -69,7 +69,7 @@ interface Draft {
   track: number;
 }
 
-/** Amplitude strip along the bottom of a clip, mirroring the scene waveform. */
+/** Filled amplitude waveform along the bottom of a clip, mirroring the scene one. */
 function ClipWaveform({
   url,
   widthPx,
@@ -94,8 +94,8 @@ function ClipWaveform({
       startSec={startSec}
       durationSec={durationSec}
       selected={selected}
-      selectedClassName="bg-orange"
-      inactiveClassName="bg-orange/55"
+      selectedClassName="text-orange"
+      inactiveClassName="text-orange/55"
       className={cx(
         "pointer-events-none mt-auto shrink-0",
         muted && "opacity-40",

@@ -121,8 +121,8 @@ function SceneWaveform({
       widthPx={widthPx}
       durationSec={durationSec}
       selected={selected}
-      selectedClassName="bg-purple"
-      inactiveClassName="bg-purple/60"
+      selectedClassName="text-purple"
+      inactiveClassName="text-purple/60"
       className={cx("pointer-events-none mt-auto shrink-0", muted && "opacity-40")}
     />
   );
