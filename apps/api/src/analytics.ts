@@ -39,6 +39,83 @@ function getClient(): PostHog | null {
 export type ServerAnalyticsEvent = "user_signed_up";
 
 /**
+ * Every event a client is allowed to report is published under this prefix.
+ *
+ * The prefix is applied here, server-side, and the name is slugified before it
+ * is used — so a caller cannot emit `user_signed_up`, cannot collide with any
+ * future server event, and cannot invent a name containing whatever PostHog
+ * treats as special. In a dashboard the origin of an event is then a property
+ * of its name rather than something you have to remember.
+ */
+const CLIENT_EVENT_PREFIX = "desktop_";
+
+/** Names are lowercase words joined by underscores; anything else is folded in. */
+function slugifyEvent(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64);
+}
+
+/** Reject values that would bloat the payload or nest without bound. */
+function sanitizeProperties(
+  properties: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!properties) return {};
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(properties).slice(0, MAX_PROPERTIES)) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === "string") clean[key] = value.slice(0, MAX_STRING_LENGTH);
+    else if (typeof value === "number" || typeof value === "boolean") clean[key] = value;
+    // Objects and arrays are dropped rather than serialised: nothing the app
+    // reports needs them, and accepting them invites unbounded payloads.
+  }
+  return clean;
+}
+
+const MAX_PROPERTIES = 40;
+const MAX_STRING_LENGTH = 500;
+
+/**
+ * Report an event a client asked us to record.
+ *
+ * `distinctId` is always taken from the caller's session, never from the
+ * request body — otherwise anyone with an account could write events onto
+ * someone else's timeline.
+ *
+ * Never throws, for the same reason `trackServer` does not: analytics must not
+ * be able to fail a request.
+ */
+export function trackClientEvent({
+  name,
+  distinctId,
+  properties,
+  timestamp,
+}: {
+  name: string;
+  distinctId: string;
+  properties?: Record<string, unknown>;
+  timestamp?: Date;
+}): void {
+  const posthog = getClient();
+  if (!posthog) return;
+  const slug = slugifyEvent(name);
+  if (!slug) return;
+  try {
+    posthog.capture({
+      distinctId,
+      event: `${CLIENT_EVENT_PREFIX}${slug}`,
+      properties: sanitizeProperties(properties),
+      ...(timestamp ? { timestamp } : {}),
+    });
+  } catch (err) {
+    console.error(`[analytics] failed to capture ${slug}:`, err);
+  }
+}
+
+/**
  * Capture an event against a user.
  *
  * `distinctId` is the user's id, which is also what the browser calls

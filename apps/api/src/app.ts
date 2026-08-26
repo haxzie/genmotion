@@ -12,6 +12,7 @@ import { renderRoutes } from "./routes/render";
 import { adminRoutes } from "./routes/admin";
 import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
+import { eventRoutes } from "./routes/events";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -58,6 +59,8 @@ app.route("/api/billing", billingRoutes);
 // Desktop app bootstrap — session-authed, but reached with a Bearer token
 // rather than a cookie (see the bearer plugin in auth.ts).
 app.route("/api/desktop", desktopRoutes);
+// Product analytics forwarded to PostHog; the key stays server-side.
+app.route("/api/events", eventRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.
