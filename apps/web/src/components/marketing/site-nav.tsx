@@ -75,34 +75,25 @@ function UseCasesMenu({ pathname }: { pathname: string }) {
   );
 }
 
+/** Download is the constant call to action; the account link beside it just
+ *  changes destination once we know whether anyone is signed in. Nothing is
+ *  rendered for it while the session resolves, so the label never flips. */
 function AuthCta({ stacked = false }: { stacked?: boolean }) {
   const { data: session, isPending } = useSession();
 
-  if (!isPending && session) {
-    return (
-      <Link
-        href="/dashboard"
-        className={cx(
-          "inline-flex h-9 items-center justify-center rounded-md bg-cta px-4 text-[1rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover",
-          stacked && "w-full",
-        )}
-      >
-        Go to dashboard
-      </Link>
-    );
-  }
-
   return (
     <div className={cx("flex items-center gap-2", stacked && "w-full flex-col")}>
-      <Link
-        href="/login"
-        className={cx(
-          "inline-flex h-9 items-center justify-center rounded-md px-3 text-[1rem] font-medium text-text-secondary transition-colors duration-150 hover:text-green",
-          stacked && "w-full",
-        )}
-      >
-        Log in
-      </Link>
+      {!isPending && (
+        <Link
+          href={session ? "/dashboard" : "/login"}
+          className={cx(
+            "inline-flex h-9 items-center justify-center rounded-md px-3 text-[1rem] font-medium text-text-secondary transition-colors duration-150 hover:text-green",
+            stacked && "w-full",
+          )}
+        >
+          {session ? "Go to dashboard" : "Sign in"}
+        </Link>
+      )}
       <DownloadButton className={cx(stacked && "w-full")} />
     </div>
   );
