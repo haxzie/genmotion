@@ -16,6 +16,88 @@ import type { DesktopProject, SceneBundle } from "./shared";
 const SETTLE_MS = 80;
 
 /**
+ * Messages per transcript page.
+ *
+ * Enough to fill the panel and then some, so opening a project never shows a
+ * gap that has to be filled before the conversation reads normally.
+ */
+export const TRANSCRIPT_PAGE = 30;
+
+/**
+ * How much of a tool payload the history keeps.
+ *
+ * Three quarters of a transcript's bytes are tool inputs and outputs — the
+ * full text of every file written, every file read. The card that displays
+ * them is collapsed by default and the current version of the file is on disk
+ * anyway, so shipping all of it to the renderer buys a scroll-back nobody
+ * reads. Live messages are never trimmed; this applies only to history.
+ */
+const MAX_PAYLOAD_CHARS = 2_000;
+
+export interface TranscriptPage {
+  messages: unknown[];
+  /** True when older messages remain before this page. */
+  hasMore: boolean;
+  /** Oldest id in this page — pass as `before` to fetch the page before it. */
+  cursor: string | null;
+}
+
+function parseLine(line: string): unknown {
+  try {
+    return JSON.parse(line);
+  } catch {
+    return undefined; // a torn line costs its own message, not the history
+  }
+}
+
+function messageId(line: string): string | null {
+  const parsed = parseLine(line) as { id?: unknown } | undefined;
+  return typeof parsed?.id === "string" ? parsed.id : null;
+}
+
+/** Cut a long string down, saying so rather than silently ending mid-word. */
+function clip(value: string): string {
+  if (value.length <= MAX_PAYLOAD_CHARS) return value;
+  const dropped = value.length - MAX_PAYLOAD_CHARS;
+  return `${value.slice(0, MAX_PAYLOAD_CHARS)}\n\n… ${dropped.toLocaleString()} more characters, trimmed from history`;
+}
+
+/** Walk a tool part's input/output, clipping any oversized string in it. */
+function clipDeep(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return clip(value);
+  if (depth > 4 || value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((entry) => clipDeep(entry, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = clipDeep(entry, depth + 1);
+  }
+  return out;
+}
+
+/**
+ * Trim a stored message for display.
+ *
+ * Only tool parts are touched: text is what the conversation actually reads
+ * back as, and it is an eighth of the bytes.
+ */
+function trimForHistory(message: unknown): unknown {
+  const msg = message as { parts?: unknown } | null;
+  if (!msg || !Array.isArray(msg.parts)) return message;
+  return {
+    ...(message as object),
+    parts: msg.parts.map((part) => {
+      const p = part as { type?: unknown; input?: unknown; output?: unknown };
+      if (typeof p?.type !== "string" || !p.type.startsWith("tool-")) return part;
+      return {
+        ...(part as object),
+        ...(p.input !== undefined ? { input: clipDeep(p.input) } : {}),
+        ...(p.output !== undefined ? { output: clipDeep(p.output) } : {}),
+      };
+    }),
+  };
+}
+
+/**
  * One open project: the manifest, an incremental bundler, and a watcher that
  * rebuilds whatever a change touched. Everything the renderer needs arrives as
  * one whole project payload, so the UI never reasons about partial state.
@@ -58,24 +140,60 @@ export class ProjectSession {
     return `gm-asset://${this.assetKey}/${file.split("/").map(encodeURIComponent).join("/")}`;
   }
 
-  /**
-   * The chat transcript, stored as JSONL beside the project so a conversation
-   * travels with the folder. Unparseable lines are skipped rather than taking
-   * the whole history down.
-   */
-  async readTranscript(): Promise<unknown[]> {
+  /** Raw lines of the transcript, newest last. Cheap: no JSON parsed. */
+  private async transcriptLines(): Promise<string[]> {
     const file = path.join(this.dir, ".genmotion", "chat.jsonl");
     const raw = await fs.readFile(file, "utf8").catch(() => "");
-    const messages: unknown[] = [];
-    for (const line of raw.split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        messages.push(JSON.parse(line));
-      } catch {
-        /* skip a torn line */
+    return raw.split("\n").filter((line) => line.trim());
+  }
+
+  /**
+   * A page of the chat transcript, newest last.
+   *
+   * The transcript is JSONL beside the project so a conversation travels with
+   * the folder — but it is not small. Measured on a real project: 50 messages,
+   * 388KB, three quarters of it tool payloads, with a single assistant message
+   * reaching 100KB across 75 parts. Handing all of that to the renderer on open
+   * costs more every time the project is used again.
+   *
+   * So it is read backwards, a page at a time, and only the lines in the page
+   * are parsed. The common case — opening a project, which wants the tail —
+   * parses `limit` lines no matter how long the history is.
+   *
+   * Unparseable lines are skipped rather than taking the whole history down.
+   */
+  async readTranscript({
+    before,
+    limit = TRANSCRIPT_PAGE,
+  }: { before?: string; limit?: number } = {}): Promise<TranscriptPage> {
+    const lines = await this.transcriptLines();
+
+    // Walk back to the cursor. Only the lines actually visited are parsed, so
+    // a first page never touches the rest of the file.
+    let end = lines.length;
+    if (before) {
+      end = 0;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (messageId(lines[i]!) === before) {
+          end = i;
+          break;
+        }
       }
     }
-    return messages;
+
+    const start = Math.max(0, end - limit);
+    const messages: unknown[] = [];
+    for (let i = start; i < end; i++) {
+      const parsed = parseLine(lines[i]!);
+      if (parsed !== undefined) messages.push(trimForHistory(parsed));
+    }
+
+    return {
+      messages,
+      hasMore: start > 0,
+      // The oldest id in this page is where the next one resumes from.
+      cursor: messages.length > 0 ? messageId(lines[start]!) : null,
+    };
   }
 
   /**
@@ -101,11 +219,11 @@ export class ProjectSession {
 
   private async transcriptIds(): Promise<Set<string>> {
     if (!this.seenTranscriptIds) {
-      const messages = await this.readTranscript();
+      // Every id, not a page: this is the dedupe set, and it is built once per
+      // session on the first append.
+      const lines = await this.transcriptLines();
       this.seenTranscriptIds = new Set(
-        messages
-          .map((m) => (m as { id?: unknown }).id)
-          .filter((id): id is string => typeof id === "string"),
+        lines.map(messageId).filter((id): id is string => id !== null),
       );
     }
     return this.seenTranscriptIds;

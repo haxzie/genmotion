@@ -155,8 +155,13 @@ export async function startLocalServer(
       // because the turn that asked is still streaming on another one.
       if (method === "POST" && tail.at(-1) === "answer") return answerQuestionRoute(req);
       // The transcript lives in the project folder, so a conversation travels
-      // with it.
-      if (method === "GET") return session.readTranscript();
+      // with it — a page at a time, newest first, so opening a long-running
+      // project costs the same as opening a new one.
+      if (method === "GET") {
+        const before = url.searchParams.get("before") ?? undefined;
+        const limit = Number(url.searchParams.get("limit")) || undefined;
+        return session.readTranscript({ before, limit });
+      }
       if (method === "POST") return chatTurn(session, req, mcpUrl);
     }
     return undefined;

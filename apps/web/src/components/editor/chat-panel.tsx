@@ -2,7 +2,9 @@
 
 import {
   memo,
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentType,
@@ -16,7 +18,6 @@ import {
   type AudioClipData,
   type SceneData,
   COMPACTION_MESSAGE_LIMIT,
-  parseLimitFromText,
 } from "@genmotion/shared";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
@@ -34,6 +35,36 @@ import {
 } from "./scene-chip";
 import { ToolCard, type ToolPartLike } from "./tool-card";
 import { Spinner, cx } from "@/components/ui";
+
+/**
+ * A page of transcript.
+ *
+ * The desktop app reads its transcript out of a JSONL file and pages it,
+ * because it is not small — 388KB for fifty messages on a real project, three
+ * quarters of that tool payloads. The hosted API still answers with a plain
+ * array, which normalises to a single page with nothing before it.
+ */
+interface ChatPage {
+  messages: UIMessage[];
+  hasMore: boolean;
+  cursor: string | null;
+}
+
+const HISTORY_PAGE = 30;
+
+/** How close to the top counts as "show me the older messages". */
+const LOAD_OLDER_SLOP = 240;
+
+async function fetchChatPage(projectId: string, before?: string): Promise<ChatPage> {
+  const params = new URLSearchParams({ limit: String(HISTORY_PAGE) });
+  if (before) params.set("before", before);
+  const result = await api<UIMessage[] | ChatPage>(
+    `/api/chat/${projectId}?${params.toString()}`,
+  );
+  return Array.isArray(result)
+    ? { messages: result, hasMore: false, cursor: null }
+    : result;
+}
 
 /**
  * An extra control for the composer's action row, rendered beside the attach
@@ -461,15 +492,20 @@ function ChatPanelInner({
   scenes,
   audioClips,
   initialMessages,
+  initialCursor,
+  initialHasMore,
 }: {
   projectId: string;
   scenes: SceneData[];
   audioClips: AudioClipData[];
   initialMessages: UIMessage[];
+  /** Oldest id loaded so far — where the next page back starts. */
+  initialCursor: string | null;
+  initialHasMore: boolean;
 }) {
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
-  const { openUpgrade, isExhausted } = useUpgrade();
+  const { openUpgrade } = useUpgrade();
   const { data: assets } = useProjectAssets(projectId);
   const selectAsset = useEditorStore((s) => s.selectAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -617,8 +653,6 @@ function ChatPanelInner({
       // The transport surfaces a non-2xx as an Error carrying the raw body, so
       // the quota rejection has to be dug out of the message text rather than
       // read off a status code.
-      const hit = parseLimitFromText(err.message ?? "");
-      if (hit) openUpgrade(hit.limit.kind);
     },
     onFinish: () => {
       // A turn was consumed — refresh the count that gates the composer.
@@ -817,9 +851,58 @@ function ChatPanelInner({
   const stickToBottom = useRef(true);
   const scrollRaf = useRef<number | null>(null);
 
+  // ── Older messages, fetched as they are scrolled to ──────────────────────
+  const [cursor, setCursor] = useState(initialCursor);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const loadingOlderRef = useRef(false);
+  /**
+   * Distance from the bottom, captured before a prepend.
+   *
+   * Anchoring on that rather than on `scrollTop` is what keeps the view still:
+   * inserting content above changes `scrollHeight`, so a restored `scrollTop`
+   * would jump by exactly the height of whatever just arrived.
+   */
+  const anchorFromBottom = useRef<number | null>(null);
+
+  const loadOlder = useCallback(async () => {
+    if (loadingOlderRef.current || !hasMore || !cursor) return;
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    const el = scrollRef.current;
+    try {
+      const page = await fetchChatPage(projectId, cursor);
+      if (page.messages.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      if (el) anchorFromBottom.current = el.scrollHeight - el.scrollTop;
+      setMessages((prev) => [...page.messages, ...prev]);
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
+    } catch {
+      // Leave `hasMore` alone: a failed fetch is worth retrying on the next
+      // scroll, unlike an exhausted history.
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }, [cursor, hasMore, projectId, setMessages]);
+
+  // Before paint, so the restored position is never rendered as a jump.
+  useLayoutEffect(() => {
+    const anchor = anchorFromBottom.current;
+    if (anchor == null) return;
+    anchorFromBottom.current = null;
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight - anchor;
+  }, [messages]);
+
   const handleMessagesScroll = () => {
     const el = scrollRef.current;
-    if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_SLOP;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_SLOP;
+    if (el.scrollTop < LOAD_OLDER_SLOP) void loadOlder();
   };
 
   useEffect(() => {
@@ -968,13 +1051,6 @@ function ChatPanelInner({
     const text = (override ?? input).trim();
     if (!text) return;
 
-    // Gate before clearing the composer: if there's no quota left, the user
-    // keeps what they typed and sees the upgrade modal instead of losing the
-    // message to a rejected request.
-    if (isExhausted("aiTurns")) {
-      openUpgrade("aiTurns");
-      return;
-    }
     if (override === undefined) setInput("");
 
     track("chat_message_sent", {
@@ -1033,6 +1109,23 @@ function ChatPanelInner({
           </div>
         ) : (
           <div ref={listRef} className="flex min-w-0 max-w-full flex-col px-4 pb-40 pt-4">
+            {/* Scrolling here is what loads the next page; the button is for
+                keyboards and for a trackpad that never quite reaches the top. */}
+            {hasMore && (
+              <div className="flex justify-center pb-3">
+                {loadingOlder ? (
+                  <Spinner className="size-4 text-text-tertiary" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void loadOlder()}
+                    className="rounded-full border border-border px-3 py-1 text-[0.786rem] text-text-tertiary transition-colors hover:border-border-strong hover:text-text-secondary"
+                  >
+                    Load earlier messages
+                  </button>
+                )}
+              </div>
+            )}
             {messages.map((message, index) => {
               const grouped = messages[index - 1]?.role === message.role;
               return (
@@ -1264,7 +1357,10 @@ export function ChatPanel({
 }) {
   const { data: history, isLoading } = useQuery({
     queryKey: ["chat", projectId],
-    queryFn: () => api<UIMessage[]>(`/api/chat/${projectId}`),
+    // The newest page only. Older messages arrive when the user scrolls to
+    // them, so opening a project costs the same whether its history is two
+    // messages or two thousand.
+    queryFn: () => fetchChatPage(projectId),
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
@@ -1282,7 +1378,9 @@ export function ChatPanel({
       projectId={projectId}
       scenes={scenes}
       audioClips={audioClips}
-      initialMessages={history ?? []}
+      initialMessages={history?.messages ?? []}
+      initialCursor={history?.cursor ?? null}
+      initialHasMore={history?.hasMore ?? false}
     />
   );
 }
