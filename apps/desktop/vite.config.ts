@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+import pkg from "./package.json" with { type: "json" };
+
 const root = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(root, "../web/src");
 const shim = (name: string) => path.resolve(root, "src/shims", name);
@@ -36,6 +38,9 @@ export default defineConfig({
     ],
   },
   define: {
+    // So the update modal can say which version you are on without a round
+    // trip to the main process for a string that is fixed at build time.
+    __APP_VERSION__: JSON.stringify(pkg.version),
     // `lib/api` reads this at module scope; the preload publishes the real
     // loopback URL (with its per-launch secret) on the window.
     "process.env.NEXT_PUBLIC_API_URL": "window.__GM_API_URL__",

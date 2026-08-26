@@ -170,9 +170,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(apps/desktop/release/*.dmg apps/desktop/release/*.zip apps/desktop/release/*.blockmap)
+          # latest-mac.yml is not decoration: electron-updater reads it to decide
+          # whether a newer build exists. A release without it is a release the
+          # installed app can never see.
+          files=(apps/desktop/release/*.dmg apps/desktop/release/*.zip \
+                 apps/desktop/release/*.blockmap apps/desktop/release/latest-mac.yml)
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::No artifacts to attach — the build produced nothing."
+            exit 1
+          fi
+          if [ ! -f apps/desktop/release/latest-mac.yml ]; then
+            echo "::error::latest-mac.yml is missing — installed apps would never" \
+                 "see this release. Check the publish block in electron-builder.yml."
             exit 1
           fi
           printf 'attaching %s\n' "${files[@]}"

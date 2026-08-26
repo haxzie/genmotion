@@ -11,6 +11,21 @@ files:
 # The browser returns from a desktop sign-in through this scheme. It only
 # raises the window — polling is what completes the login — but without the
 # registration the hand-off is silent.
+# Not for uploading — CI attaches artifacts itself, and every build here runs
+# `--publish never`. Declaring a provider is what makes electron-builder emit
+# `latest-mac.yml`, the manifest electron-updater reads to decide whether a
+# newer build exists. Without it there is nothing to update against.
+#
+# The repo is public, so the updater reads GitHub directly: releases and their
+# assets need no credential, and the download comes off GitHub's CDN rather
+# than through our API, which would otherwise carry ~140MB per update for no
+# benefit. The feed URL is baked into each build, so this choice is only free
+# to make while no `generic` build has shipped to anyone.
+publish:
+  provider: github
+  owner: haxzie
+  repo: genmotion
+
 protocols:
   - name: GenMotion
     schemes:
