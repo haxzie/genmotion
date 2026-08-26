@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 
 export function Topbar({
   projectName,
   onRename,
+  action,
 }: {
   projectName: string;
   onRename: (name: string) => void;
+  /**
+   * Trailing control for the header's right edge. The hosted editor has
+   * nothing to put there; the desktop app puts Delete project in it, which
+   * only means anything where a project is a folder you own.
+   */
+  action?: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(projectName);
@@ -63,6 +70,7 @@ export function Topbar({
           {projectName}
         </button>
       )}
+      {action && <div className="ml-auto flex items-center">{action}</div>}
     </header>
   );
 }

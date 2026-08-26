@@ -5,6 +5,8 @@ import { cx } from "@/components/ui";
 import { HarnessPicker } from "../harness-picker";
 import { api, type RecentProject } from "../api";
 import { AccountMenu } from "../components/account-menu";
+import { UpdateModal } from "../components/update-modal";
+import { hasUpdate, useUpdate } from "../lib/use-update";
 import type { AuthOrganization, AuthUser } from "../../electron/shared";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
@@ -58,6 +60,52 @@ function FilmIcon({ className }: { className?: string }) {
   );
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M4 7h16M10 4h4M9.5 7l.6 12M14.5 7l-.6 12M6.5 7l.8 13.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7" />
+    </svg>
+  );
+}
+
+/**
+ * Delete, revealed on hover.
+ *
+ * Kept visible on keyboard focus as well: a control that only exists under a
+ * pointer is a control a keyboard cannot reach.
+ */
+function DeleteButton({
+  name,
+  onDelete,
+  className,
+}: {
+  name: string;
+  onDelete: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Delete ${name}`}
+      title={`Delete ${name}`}
+      onClick={(event) => {
+        // The whole card and the whole row are click targets that open the
+        // project. Without this, deleting would open it first.
+        event.stopPropagation();
+        onDelete();
+      }}
+      className={cx(
+        "shrink-0 rounded p-1.5 text-text-tertiary opacity-0 transition-all duration-150",
+        "hover:bg-danger/10 hover:text-danger focus-visible:opacity-100",
+        "group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40",
+        className,
+      )}
+    >
+      <TrashIcon className="size-4" />
+    </button>
+  );
+}
+
 /**
  * The start screen, mirroring the web app's dashboard: the same drifting hue
  * blobs, the same composer, the same project cards.
@@ -88,6 +136,8 @@ export function Home({
   // failed to parse and it dropped out of its page.
   const cursorRef = useRef(0);
   const busyRef = useRef(false);
+  const update = useUpdate();
+  const [updateOpen, setUpdateOpen] = useState(false);
 
   const loadMore = useCallback(async () => {
     if (busyRef.current) return;
@@ -105,6 +155,22 @@ export function Home({
       busyRef.current = false;
       setLoading(false);
     }
+  }, []);
+
+  /**
+   * Drop the project from the list rather than refetching.
+   *
+   * The list is paged, so a refetch would mean replaying every page. The
+   * cursor steps back one because it counts what has been *asked* for: leave
+   * it, and the next page starts one entry late and silently skips a project.
+   */
+  const remove = useCallback(async (dir: string) => {
+    const { deleted } = await api.deleteProject(dir);
+    if (!deleted) return;
+    setProjects((prev) => prev?.filter((project) => project.dir !== dir) ?? prev);
+    setTotal((count) => Math.max(0, count - 1));
+    cursorRef.current = Math.max(0, cursorRef.current - 1);
+    setCursor(cursorRef.current);
   }, []);
 
   useEffect(() => {
@@ -134,10 +200,32 @@ export function Home({
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
+      {updateOpen && <UpdateModal state={update} onClose={() => setUpdateOpen(false)} />}
       <div className="titlebar-drag fixed inset-x-0 top-0 z-50 h-9" />
       {/* Above the drag strip, and outside it — a draggable region swallows
           clicks, so the button has to sit on top rather than inside. */}
-      <div className="fixed right-4 top-4 z-[60]">
+      <div className="no-drag fixed right-4 top-4 z-[60] flex items-center gap-2">
+        {hasUpdate(update) && (
+          <button
+            type="button"
+            onClick={() => setUpdateOpen(true)}
+            title={
+              update.status === "ready"
+                ? "Update downloaded — restart to install"
+                : `GenMotion ${"version" in update ? update.version : ""} is available`
+            }
+            className={cx(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.786rem] font-medium",
+              "transition-colors duration-150",
+              update.status === "ready"
+                ? "border-green/40 bg-green-muted text-green hover:border-green"
+                : "border-accent/40 bg-accent-muted text-accent hover:border-accent",
+            )}
+          >
+            <span className="size-1.5 rounded-full bg-current" />
+            {update.status === "downloading" ? `${update.percent}%` : "Update"}
+          </button>
+        )}
         <AccountMenu user={user} organization={organization} />
       </div>
 
@@ -249,13 +337,20 @@ export function Home({
                         <FilmIcon className="size-8 opacity-40" />
                       )}
                     </div>
-                    <div className="p-3">
-                      <div className="truncate text-[0.929rem] text-text-primary">{project.name}</div>
-                      <div className="mt-0.5 text-[0.786rem] text-text-tertiary">
-                        {project.sceneCount} {project.sceneCount === 1 ? "scene" : "scenes"}
-                        {project.totalFrames > 0 &&
-                          ` · ${formatDuration(project.totalFrames / project.fps)}`}
+                    <div className="flex items-start gap-2 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[0.929rem] text-text-primary">{project.name}</div>
+                        <div className="mt-0.5 text-[0.786rem] text-text-tertiary">
+                          {project.sceneCount} {project.sceneCount === 1 ? "scene" : "scenes"}
+                          {project.totalFrames > 0 &&
+                            ` · ${formatDuration(project.totalFrames / project.fps)}`}
+                        </div>
                       </div>
+                      <DeleteButton
+                        name={project.name}
+                        onDelete={() => void remove(project.dir)}
+                        className="-mr-1 -mt-0.5"
+                      />
                     </div>
                   </motion.div>
                 ))}
@@ -264,14 +359,20 @@ export function Home({
               {rows.length > 0 && (
                 <div className="mt-6 border-t border-border">
                   {rows.map((project) => (
-                    <button
+                    // A row, not a button: the delete control is a button of
+                    // its own and nesting one inside another is invalid, so the
+                    // open target is the button and the row is what holds them.
+                    <div
                       key={project.dir}
-                      type="button"
-                      onClick={() => onOpen(project.dir)}
                       className={cx(
-                        "flex w-full items-center gap-3 border-b border-border px-1 py-2.5 text-left",
+                        "group flex items-center gap-3 border-b border-border px-1",
                         "transition-colors duration-150 hover:bg-surface-hover",
                       )}
+                    >
+                    <button
+                      type="button"
+                      onClick={() => onOpen(project.dir)}
+                      className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
                     >
                       <span className="flex aspect-video w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-background text-text-tertiary">
                         {project.thumbnail ? (
@@ -299,6 +400,11 @@ export function Home({
                           ` · ${formatDuration(project.totalFrames / project.fps)}`}
                       </span>
                     </button>
+                      <DeleteButton
+                        name={project.name}
+                        onDelete={() => void remove(project.dir)}
+                      />
+                    </div>
                   ))}
                 </div>
               )}

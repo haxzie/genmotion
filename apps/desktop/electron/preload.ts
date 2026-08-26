@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { DesktopAuthProvider } from "@genmotion/shared";
-import { IPC, type AuthState, type DesktopApi, type DesktopProject } from "./shared";
+import {
+  IPC,
+  type AuthState,
+  type DesktopApi,
+  type DesktopProject,
+  type UpdateState,
+} from "./shared";
 
 /** Passed in as a launch argument because the port isn't known until runtime. */
 const apiUrl =
@@ -27,6 +33,7 @@ const api: DesktopApi = {
       ipcRenderer.off(IPC.projectChanged, handler);
     };
   },
+  deleteProject: (dir: string) => ipcRenderer.invoke(IPC.deleteProject, dir),
   openWeb: (path: string) => ipcRenderer.invoke(IPC.openWeb, path),
   auth: {
     state: () => ipcRenderer.invoke(IPC.authState),
@@ -40,6 +47,19 @@ const api: DesktopApi = {
       ipcRenderer.on(IPC.authChanged, handler);
       return () => {
         ipcRenderer.off(IPC.authChanged, handler);
+      };
+    },
+  },
+  update: {
+    state: () => ipcRenderer.invoke(IPC.updateState),
+    check: () => ipcRenderer.invoke(IPC.updateCheck),
+    download: () => ipcRenderer.invoke(IPC.updateDownload),
+    install: () => ipcRenderer.invoke(IPC.updateInstall),
+    onChanged: (listener) => {
+      const handler = (_event: unknown, state: UpdateState) => listener(state);
+      ipcRenderer.on(IPC.updateChanged, handler);
+      return () => {
+        ipcRenderer.off(IPC.updateChanged, handler);
       };
     },
   },

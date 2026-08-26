@@ -11,6 +11,7 @@ import { CodeView } from "@/components/editor/code-view";
 import { Button, Spinner, cx } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
 import { formatCompileError } from "@genmotion/compiler";
+import { api } from "../api";
 import type { DesktopProject } from "../../electron/shared";
 import { ProjectBundlesProvider } from "../lib/project-bundles";
 
@@ -197,7 +198,41 @@ function EditorBody({
       <div className="flex min-h-0 flex-1">
         {/* Left column: project header (over the chat) + chat */}
         <div className="relative flex shrink-0 flex-col" style={{ width: chatWidth }}>
-          <Topbar projectName={project.name} onRename={onRename} />
+          <Topbar
+            projectName={project.name}
+            onRename={onRename}
+            action={
+              <button
+                type="button"
+                aria-label="Delete project"
+                title="Delete project"
+                onClick={() => {
+                  void api.deleteProject(project.dir).then(({ deleted }) => {
+                    // The main process has already released the session; this
+                    // is only the renderer catching up to an editor whose
+                    // project no longer exists.
+                    if (deleted) void onClose();
+                  });
+                }}
+                className={cx(
+                  "rounded p-1.5 text-text-tertiary transition-colors duration-150",
+                  "hover:bg-danger/10 hover:text-danger",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40",
+                )}
+              >
+                <svg
+                  className="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M4 7h16M10 4h4M9.5 7l.6 12M14.5 7l-.6 12M6.5 7l.8 13.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7" />
+                </svg>
+              </button>
+            }
+          />
           <ChatPanel
             projectId={project.dir}
             scenes={project.scenes}

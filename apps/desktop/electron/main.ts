@@ -11,8 +11,15 @@ import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
 import { ProjectSession } from "./project-session";
 import { captureThumbnail, refreshThumbnail } from "./export/thumbnail";
-import { listRecents, rememberProject } from "./recents";
+import { forgetProject, listRecents, rememberProject } from "./recents";
 import { startLocalServer, type LocalServer } from "./local-server";
+import {
+  checkForUpdate,
+  downloadUpdate,
+  installUpdate,
+  onUpdateChange,
+  updateState,
+} from "./updater";
 import {
   IPC,
   type CreateProjectInput,
@@ -164,6 +171,47 @@ function registerIpc(): void {
   ipcMain.handle(IPC.revealProject, async (_event, dir: string) => {
     shell.openPath(dir);
   });
+
+  /**
+   * Delete a project, folder and all.
+   *
+   * The confirmation is raised here rather than in the renderer on purpose:
+   * this is the one action that destroys the user's work, and the renderer
+   * evaluates agent-authored scene code. A native dialog the main process owns
+   * cannot be skipped, styled into something misleading, or clicked by anything
+   * the page is running.
+   *
+   * `shell.trashItem` rather than `rm -rf`: the Trash is the difference between
+   * a mistake and a loss, and the OS already has the undo story.
+   */
+  ipcMain.handle(IPC.deleteProject, async (_event, dir: string) => {
+    const name = path.basename(dir);
+    const { response } = await dialog.showMessageBox({
+      type: "warning",
+      buttons: ["Move to Trash", "Cancel"],
+      defaultId: 1,
+      cancelId: 1,
+      message: `Delete “${name}”?`,
+      detail:
+        "The project folder — scenes, assets and exports — is moved to the Trash. " +
+        "You can put it back from there.",
+    });
+    if (response !== 0) return { deleted: false };
+
+    // Releasing the session first: it holds a bundler and a filesystem watcher
+    // on this folder, and a watcher firing on a directory that just went to the
+    // Trash is a stream of errors for a project nobody is looking at.
+    if (session?.dir === dir) await closeSession();
+
+    await shell.trashItem(dir);
+    await forgetProject(dir);
+    return { deleted: true };
+  });
+
+  ipcMain.handle(IPC.updateState, async () => updateState());
+  ipcMain.handle(IPC.updateCheck, async () => checkForUpdate());
+  ipcMain.handle(IPC.updateDownload, async () => downloadUpdate());
+  ipcMain.handle(IPC.updateInstall, async () => installUpdate());
 
   ipcMain.handle(IPC.openWeb, async (_event, target: string) => {
     // Pinned to our own origin. `new URL(target, base)` alone would not do it:
@@ -335,9 +383,13 @@ void app.whenReady().then(async () => {
 
   // Push every change to the renderer, so the login gate needs no polling.
   desktopAuth.onChange((state) => window?.webContents.send(IPC.authChanged, state));
+  onUpdateChange((state) => window?.webContents.send(IPC.updateChanged, state));
   // Not awaited: the window should paint its loading state rather than wait on
   // a network round-trip to the API.
   void desktopAuth.restore();
+  // Same reasoning — asking GitHub whether a newer build exists is not
+  // something the first frame should wait behind.
+  void checkForUpdate();
 
   const launchUrl = deepLinkFromArgv(process.argv);
   if (launchUrl) handleDeepLink(launchUrl);

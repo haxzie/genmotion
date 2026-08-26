@@ -117,6 +117,14 @@ export async function rememberProject(dir: string, name: string): Promise<void> 
   await fs.writeFile(recentsFile(), JSON.stringify(next, null, 2), "utf8");
 }
 
+/** Drop a project from the index. The folder itself is not this module's to touch. */
+export async function forgetProject(dir: string): Promise<void> {
+  const index = await readIndex();
+  const next = index.filter((entry) => entry.dir !== dir);
+  if (next.length === index.length) return;
+  await fs.writeFile(recentsFile(), JSON.stringify(next, null, 2), "utf8");
+}
+
 /**
  * When the project was made.
  *

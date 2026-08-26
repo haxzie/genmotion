@@ -30,6 +30,20 @@ export interface DesktopProject extends ProjectData {
   folderMissing: boolean;
 }
 
+/**
+ * Where the app is in the update cycle.
+ *
+ * `idle` covers both "no update" and "not checked yet" on purpose: from the
+ * UI's side they are the same thing — nothing to show.
+ */
+export type UpdateState =
+  | { status: "idle" }
+  | { status: "checking" }
+  | { status: "available"; version: string }
+  | { status: "downloading"; version: string; percent: number }
+  | { status: "ready"; version: string }
+  | { status: "error"; message: string };
+
 export interface RecentProject {
   dir: string;
   name: string;
@@ -130,6 +144,22 @@ export interface DesktopApi {
   closeProject(): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
   revealProject(dir: string): Promise<void>;
+  /**
+   * Confirm with the user, then move the project folder to the Trash and drop
+   * it from the recents index. `deleted: false` means they cancelled — the
+   * confirmation is native and lives in the main process, so a renderer that
+   * ran agent-authored code cannot fake or skip it.
+   */
+  deleteProject(dir: string): Promise<{ deleted: boolean }>;
+  /** Where the app is in the update cycle, and how to move it along. */
+  update: {
+    state(): Promise<UpdateState>;
+    check(): Promise<UpdateState>;
+    download(): Promise<UpdateState>;
+    /** Quits and relaunches on the new version. Only valid once `ready`. */
+    install(): Promise<void>;
+    onChanged(listener: (state: UpdateState) => void): () => void;
+  };
   /** Fires whenever the watcher rebuilds anything. */
   onProjectChanged(listener: (project: DesktopProject) => void): () => void;
   /**
@@ -151,6 +181,12 @@ export const IPC = {
   closeProject: "project:close",
   recentProjects: "project:recent",
   revealProject: "project:reveal",
+  deleteProject: "project:delete",
+  updateState: "update:state",
+  updateCheck: "update:check",
+  updateDownload: "update:download",
+  updateInstall: "update:install",
+  updateChanged: "update:changed",
   openWeb: "shell:open-web",
   projectChanged: "project:changed",
   authState: "auth:state",
