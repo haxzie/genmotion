@@ -9,6 +9,8 @@ import pkg from "./package.json" with { type: "json" };
 const root = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(root, "../web/src");
 const shim = (name: string) => path.resolve(root, "src/shims", name);
+/** The editor tree, moved out of the web app when the hosted studio was retired. */
+const editor = path.resolve(root, "src/editor");
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -32,8 +34,17 @@ export default defineConfig({
       // with esbuild-wasm in the browser: only the main process can resolve the
       // project's node_modules and sibling components.
       { find: /^@\/hooks\/use-compiled-scenes$/, replacement: shim("use-compiled-scenes.tsx") },
-      // Everything else — components, ui, stores, hooks — is the web app's own
-      // source, compiled straight into this renderer.
+      // The editor itself lives here now. It was the web app's until the
+      // hosted studio was retired; these keep the `@/` specifiers its own
+      // files use, so nothing inside the tree had to be rewritten to move it.
+      { find: /^@\/components\/editor\//, replacement: `${editor}/components/` },
+      { find: /^@\/components\/composer$/, replacement: `${editor}/components/composer.tsx` },
+      { find: /^@\/hooks\/use-assets$/, replacement: `${editor}/hooks/use-assets.ts` },
+      { find: /^@\/hooks\/use-project$/, replacement: `${editor}/hooks/use-project.ts` },
+      { find: /^@\/hooks\/use-waveform$/, replacement: `${editor}/hooks/use-waveform.ts` },
+      { find: /^@\/stores\/editor-store$/, replacement: `${editor}/stores/editor-store.ts` },
+      // Everything still shared — ui primitives, the API client, auth options —
+      // is the web app's own source, compiled straight into this renderer.
       { find: /^@\//, replacement: `${web}/` },
     ],
   },

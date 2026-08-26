@@ -14,6 +14,12 @@
       "@/lib/billing": ["./src/shims/billing.ts"],
       "@/components/upgrade-modal": ["./src/shims/upgrade-modal.tsx"],
       "@/hooks/use-compiled-scenes": ["./src/shims/use-compiled-scenes.tsx"],
+      "@/components/editor/*": ["./src/editor/components/*"],
+      "@/components/composer": ["./src/editor/components/composer.tsx"],
+      "@/hooks/use-assets": ["./src/editor/hooks/use-assets.ts"],
+      "@/hooks/use-project": ["./src/editor/hooks/use-project.ts"],
+      "@/hooks/use-waveform": ["./src/editor/hooks/use-waveform.ts"],
+      "@/stores/editor-store": ["./src/editor/stores/editor-store.ts"],
       "@/*": ["../web/src/*"]
     }
   },
