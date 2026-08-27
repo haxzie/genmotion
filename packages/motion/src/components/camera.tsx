@@ -31,7 +31,18 @@ const isBrowser = typeof window !== "undefined";
 // way, so fall back to useEffect there rather than emit React's SSR warning.
 const useIsomorphicLayoutEffect = isBrowser ? useLayoutEffect : useEffect;
 
-const isDev = process.env.NODE_ENV !== "production";
+/**
+ * Read through `globalThis` rather than the bare `process` identifier.
+ *
+ * This package is consumed by browser-targeted builds whose tsconfig has no
+ * node types — `@genmotion/compiler` among them, where the bare reference has
+ * been failing `tsc` since this file landed. Bundlers still substitute
+ * `process.env.NODE_ENV` here, and at runtime a missing `process` simply reads
+ * as development, which is the safe default for a dev-only warning.
+ */
+const isDev =
+  (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env
+    ?.NODE_ENV !== "production";
 
 export interface CameraProps {
   /**
