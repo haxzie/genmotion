@@ -18,7 +18,10 @@ env:
 
 concurrency:
   group: docker-${{ github.ref }}
-  cancel-in-progress: true
+  # Not cancel-in-progress: this workflow *publishes* images. Cancelling a run
+  # because a newer push arrived drops the image for the older commit entirely,
+  # which is how the pricing change ended up never being built.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -136,10 +139,30 @@ jobs:
             echo "Coolify secrets not set — skipping redeploy."
             exit 0
           fi
+          # Coolify's deploy endpoint has answered GET with 405 since 2026-08-12:
+          # the verb changed under us, and because this step is the last one,
+          # every push since built an image that nothing ever pulled. Rather
+          # than pin a guess, try POST and fall back to GET, reporting the code
+          # either way so a future change is visible instead of silent.
+          deploy() {
+            local uuid="$1" url code
+            url="${COOLIFY_URL%/}/api/v1/deploy?uuid=${uuid}&force=true"
+            for verb in POST GET; do
+              code=$(curl --silent --show-error --output /tmp/coolify.out \
+                --write-out '%{http_code}' --request "$verb" "$url" \
+                --header "Authorization: Bearer ${COOLIFY_API_TOKEN}") || code=000
+              echo "  $verb -> $code"
+              case "$code" in
+                2*) echo "redeploy accepted via $verb"; return 0 ;;
+              esac
+            done
+            echo "::error::Coolify refused both POST and GET. Last body:"
+            cat /tmp/coolify.out || true
+            return 1
+          }
+
           echo "Triggering Coolify redeploy for uuid=$COOLIFY_API_UUID …"
-          curl --fail --silent --show-error --request GET \
-            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_API_UUID}&force=true" \
-            --header "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+          deploy "$COOLIFY_API_UUID"
 
       # Same, for the renderer image (its own Coolify resource UUID).
       - name: Trigger Coolify redeploy (renderer)
@@ -153,7 +176,27 @@ jobs:
             echo "Coolify secrets not set — skipping redeploy."
             exit 0
           fi
+          # Coolify's deploy endpoint has answered GET with 405 since 2026-08-12:
+          # the verb changed under us, and because this step is the last one,
+          # every push since built an image that nothing ever pulled. Rather
+          # than pin a guess, try POST and fall back to GET, reporting the code
+          # either way so a future change is visible instead of silent.
+          deploy() {
+            local uuid="$1" url code
+            url="${COOLIFY_URL%/}/api/v1/deploy?uuid=${uuid}&force=true"
+            for verb in POST GET; do
+              code=$(curl --silent --show-error --output /tmp/coolify.out \
+                --write-out '%{http_code}' --request "$verb" "$url" \
+                --header "Authorization: Bearer ${COOLIFY_API_TOKEN}") || code=000
+              echo "  $verb -> $code"
+              case "$code" in
+                2*) echo "redeploy accepted via $verb"; return 0 ;;
+              esac
+            done
+            echo "::error::Coolify refused both POST and GET. Last body:"
+            cat /tmp/coolify.out || true
+            return 1
+          }
+
           echo "Triggering Coolify redeploy for uuid=$COOLIFY_RENDERER_UUID …"
-          curl --fail --silent --show-error --request GET \
-            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_RENDERER_UUID}&force=true" \
-            --header "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+          deploy "$COOLIFY_RENDERER_UUID"

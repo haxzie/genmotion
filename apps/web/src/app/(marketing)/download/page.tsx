@@ -33,7 +33,7 @@ export default async function DownloadPage() {
         </p>
 
         <div className="mt-10 flex flex-col items-center">
-          <DownloadButton size="lg" />
+          <DownloadButton size="lg" href={release?.downloadUrl} />
           <p className="mt-4 text-[0.9rem] text-text-secondary">
             {release ? (
               <>

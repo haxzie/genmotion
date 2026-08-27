@@ -1,4 +1,4 @@
-import { API_URL } from "@/lib/api";
+
 
 /**
  * Local, because `cx` lives in a "use client" module and this renders on the
@@ -11,14 +11,19 @@ function join(...parts: (string | false | undefined)[]): string {
 /**
  * The one call to action on the marketing site.
  *
- * It points at the API rather than at a GitHub URL: the API resolves whichever
- * release is current, so nothing here has to know a version number, and a
- * number written into the web app is a number that eventually goes stale.
+ * Points at our own /download by default, not at a resolver. The web app and
+ * the API deploy independently, so a button wired straight to the API has a
+ * primary call to action that breaks whenever the API is a deploy behind —
+ * which is exactly what happened. /download is served by the same deployment
+ * as the button, so the two can never be out of step, and that page resolves
+ * the actual file.
+ *
+ * `href` overrides it where the direct asset URL is already known.
  *
  * Not `target="_blank"` — a download is not a navigation, and a blank tab that
  * opens and immediately closes itself reads as a bug.
  */
-export const DOWNLOAD_URL = `${API_URL}/api/releases/latest/download`;
+export const DOWNLOAD_PAGE = "/download";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -43,8 +48,11 @@ export function DownloadButton({
   size = "md",
   variant = "primary",
   label = "Download",
+  href = DOWNLOAD_PAGE,
   className,
 }: {
+  /** The direct asset URL, where the caller has resolved one. */
+  href?: string;
   size?: "md" | "lg";
   variant?: keyof typeof variants;
   /** Override only where the surrounding copy would otherwise repeat itself. */
@@ -53,7 +61,7 @@ export function DownloadButton({
 }) {
   return (
     <a
-      href={DOWNLOAD_URL}
+      href={href}
       className={join(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         size === "lg" ? "h-12 px-6 text-[1.05rem]" : "h-9 px-4 text-[1rem]",

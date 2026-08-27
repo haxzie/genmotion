@@ -159,7 +159,7 @@ export default async function HomePage() {
             AI-powered motion graphics editor for your product videos.
           </p>
           <div className="mt-10 flex w-full flex-col items-center">
-            <DownloadButton size="lg" />
+            <DownloadButton size="lg" href={release?.downloadUrl} />
             <p className="mt-4 text-[0.9rem] text-text-secondary">
               {release ? (
                 <>
