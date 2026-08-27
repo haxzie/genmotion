@@ -38,7 +38,25 @@ const HANDLED = Symbol("handled");
 /** The agent turn currently running, so a new one can supersede it. */
 let inFlightTurn: AbortController | null = null;
 
-const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
+/**
+ * Cap for JSON bodies, which are read into memory.
+ *
+ * Generous because a chat turn posts its message history, and a turn with a
+ * few large tool payloads in it is bigger than it looks. Asset uploads are NOT
+ * bound by this — they stream to disk (see the upload route), because a video
+ * is routinely larger than any sane JSON cap and buffering one in the main
+ * process to write it straight back out helps nobody.
+ */
+const MAX_JSON_BYTES = 32 * 1024 * 1024;
+
+/**
+ * Cap for an asset.
+ *
+ * Generous rather than absent: the file is being copied into the project
+ * folder, and a mis-drop of something enormous should fail fast rather than
+ * fill the disk. 4GB is past any plausible b-roll clip.
+ */
+const MAX_ASSET_BYTES = 4 * 1024 * 1024 * 1024;
 
 const AUDIO_EXT = new Set([".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"]);
 const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v"]);
@@ -359,15 +377,15 @@ export async function startLocalServer(
 
     if (target === "upload" && method === "POST") {
       const filename = url.searchParams.get("filename") ?? `upload-${Date.now()}`;
-      const body = await readBody(req);
-      if (body.byteLength > MAX_UPLOAD_BYTES) {
-        throw new Error("File is larger than 200MB");
-      }
       const safe = path.basename(filename).replace(/[^\w.\- ]+/g, "_");
       const rel = await uniqueAssetPath(session.dir, safe);
       await fs.mkdir(path.join(session.dir, "assets"), { recursive: true });
-      await fs.writeFile(path.join(session.dir, rel), body);
-      return describeAsset(session, rel, body.byteLength);
+      // Streamed, not buffered: a dropped video is commonly hundreds of
+      // megabytes, and holding one in the main process only to write it back
+      // out is memory spent for nothing — and was where a large file used to
+      // fail with an unhelpful 500.
+      const written = await streamToFile(req, path.join(session.dir, rel));
+      return describeAsset(session, rel, written);
     }
 
     if (target && method === "DELETE") {
@@ -634,10 +652,38 @@ async function readBody(req: http.IncomingMessage): Promise<Buffer> {
   let total = 0;
   for await (const chunk of req) {
     total += (chunk as Buffer).byteLength;
-    if (total > MAX_UPLOAD_BYTES) throw new Error("Request body too large");
+    if (total > MAX_JSON_BYTES) throw new Error("Request body too large");
     chunks.push(chunk as Buffer);
   }
   return Buffer.concat(chunks);
+}
+
+/**
+ * Write a request body straight to disk, returning the bytes written.
+ *
+ * A partial file is removed rather than left behind: half a video that still
+ * appears in the assets list is worse than no video, because nothing about it
+ * looks wrong until it is used.
+ */
+async function streamToFile(
+  req: http.IncomingMessage,
+  destination: string,
+): Promise<number> {
+  const handle = await fs.open(destination, "w");
+  let total = 0;
+  try {
+    for await (const chunk of req) {
+      total += (chunk as Buffer).byteLength;
+      if (total > MAX_ASSET_BYTES) throw new Error("That file is larger than 4GB.");
+      await handle.write(chunk as Buffer);
+    }
+  } catch (err) {
+    await handle.close();
+    await fs.rm(destination, { force: true });
+    throw err;
+  }
+  await handle.close();
+  return total;
 }
 
 async function readJson<T>(req: http.IncomingMessage): Promise<T> {

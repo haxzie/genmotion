@@ -616,6 +616,43 @@ function ChatPanelInner({
     }
   }
 
+  /**
+   * Paste an image or a video straight into the chat.
+   *
+   * A screenshot lives on the clipboard as a file with no name — `image.png`
+   * for every one of them — so they are stamped with the time. Without that,
+   * pasting three screenshots produces three assets called `image.png`, and
+   * `uniqueAssetPath` silently turns them into image-1, image-2, image-3,
+   * which is unreadable in the assets panel a day later.
+   *
+   * Only files are intercepted. A paste carrying text is left entirely alone,
+   * so pasting a prompt still just types it.
+   */
+  function handlePaste(event: React.ClipboardEvent) {
+    const items = Array.from(event.clipboardData?.items ?? []);
+    const files = items
+      .filter((item) => item.kind === "file")
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => {
+        if (!file) return false;
+        return file.type.startsWith("image/") || file.type.startsWith("video/");
+      })
+      .map((file) => {
+        if (file.name && file.name !== "image.png") return file;
+        const stamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .slice(0, 19);
+        const ext = file.type.split("/")[1]?.split("+")[0] ?? "png";
+        return new File([file], `pasted-${stamp}.${ext}`, { type: file.type });
+      });
+
+    if (files.length === 0) return;
+    // Only now: a paste we are not handling must keep its default behaviour.
+    event.preventDefault();
+    handleFiles(files);
+  }
+
   const [transport] = useState(
     () =>
       new DefaultChatTransport({
@@ -1250,6 +1287,7 @@ function ChatPanelInner({
             e.preventDefault();
             submit();
           }}
+          onPaste={handlePaste}
           onDragOver={(e) => {
             if (e.dataTransfer.types.includes("Files")) {
               e.preventDefault();
