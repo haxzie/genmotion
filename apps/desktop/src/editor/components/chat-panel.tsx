@@ -661,7 +661,7 @@ function ChatPanelInner({
       }),
   );
 
-  const { messages, sendMessage, status, error, setMessages, regenerate } = useChat({
+  const { messages, sendMessage, status, error, setMessages, regenerate, stop } = useChat({
     id: projectId,
     transport,
     messages: initialMessages,
@@ -1364,18 +1364,56 @@ function ChatPanelInner({
                     : "⏎ to send"}
             </span>
             {messages.length > 0 && <CapacityRing count={messages.length} />}
-            <button
-              type="submit"
-              aria-label={busy ? "Queue message" : "Send"}
-              disabled={!input.trim()}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-cta text-background outline-none transition-all hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {busy && !input.trim() ? (
-                <Spinner className="size-4 text-background" />
-              ) : (
+            {/*
+              Three states in one slot. Idle: send. Busy with something typed:
+              queue it for the next turn — the button used to say so and still
+              does. Busy with an empty box: stop, which is where a plain
+              spinner used to sit doing nothing.
+            */}
+            {busy && !input.trim() ? (
+              <button
+                type="button"
+                aria-label="Stop generating"
+                title="Stop generating"
+                onClick={() => stop()}
+                className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-cta text-background outline-none transition-all hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                {/* The ring turns around the icon rather than replacing it, so
+                    the control reads as "working, and you may stop it" instead
+                    of flipping between two different buttons mid-turn. */}
+                <svg
+                  className="absolute inset-0 size-full animate-spin"
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="opacity-25"
+                  />
+                  <path
+                    d="M16 2a14 14 0 0 1 14 14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="size-2.5 rounded-[2px] bg-background" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                aria-label={busy ? "Queue message" : "Send"}
+                disabled={!input.trim()}
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-cta text-background outline-none transition-all hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-40"
+              >
                 <ArrowUpIcon className="size-[1.05rem]" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </form>
         </div>
