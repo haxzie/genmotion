@@ -82,12 +82,18 @@ async function closeSession(): Promise<void> {
   }
   await session?.dispose();
   session = null;
+  // A subprocess spawned in anticipation of a turn that never came.
+  void import("./agent/claude-code").then((m) => m.disposeWarmClaudeCode());
 }
 
 async function openSession(dir: string): Promise<DesktopProject> {
   await closeSession();
   const opened = await ProjectSession.open(dir, randomUUID());
   session = opened;
+  // Opening a project is the strongest signal that a turn is coming. Load the
+  // agent SDK and resolve the CLI now, so the first message does not pay for
+  // them — not awaited, because none of it gates the editor appearing.
+  void import("./agent/claude-code").then((m) => m.warmClaudeCode(opened));
   unsubscribe = opened.onChange((project) => {
     if (!window || window.isDestroyed()) return;
     window.webContents.send(IPC.projectChanged, project);

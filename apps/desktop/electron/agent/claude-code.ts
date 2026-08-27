@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { ProjectSession } from "../project-session";
 import { agentEnv, resolveExecutable } from "./detect";
-import { loadAgentSdk } from "./load-sdk";
+import { loadAgentSdk, type AgentSdkModule } from "./load-sdk";
 import { buildSystemPrompt } from "./prompt";
 import { waitForAnswer } from "./questions";
 import { ALLOWED_TOOLS, DISALLOWED_TOOLS, createGenmotionTools, isInsideProject } from "./tools";
@@ -62,6 +62,127 @@ function blocks(message: unknown): ContentBlock[] {
  * one. The SDK speaks the same `claude -p --output-format stream-json` protocol
  * the CLI does; we normalise its messages into `AgentEvent`s.
  */
+/**
+ * The SDK and the CLI path, resolved once.
+ *
+ * Loading the vendored SDK costs ~170ms and probing PATH costs a few more.
+ * Both answers are the same for the life of the process, and paying for them
+ * on every turn is time the user spends watching a spinner.
+ */
+let toolchain: Promise<[AgentSdkModule, string | null]> | null = null;
+
+function loadToolchain(): Promise<[AgentSdkModule, string | null]> {
+  toolchain ??= Promise.all([loadAgentSdk(), resolveExecutable("claude")]);
+  return toolchain;
+}
+
+/**
+ * The turn currently running, for callbacks that outlive a single `query()`.
+ *
+ * A pre-warmed subprocess is created before the turn that will use it exists,
+ * so its `canUseTool` cannot close over that turn's abort signal. It reads it
+ * from here instead.
+ */
+let activeTurn: { signal: AbortSignal } | null = null;
+
+/** Options a turn runs with. Shared so a warm spawn cannot drift from a cold one. */
+function turnOptions(
+  sdk: AgentSdkModule,
+  session: ProjectSession,
+  executable: string | null,
+) {
+  const projectDir = session.dir;
+  return {
+    cwd: projectDir,
+    // Use the CLI the user signed in with, not the SDK's bundled copy —
+    // which this build can't reach anyway (see resolveExecutable).
+    ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
+    env: agentEnv(),
+    systemPrompt: buildSystemPrompt(),
+    allowedTools: ALLOWED_TOOLS,
+    disallowedTools: DISALLOWED_TOOLS,
+    // "default", not "acceptEdits": an auto-approving mode would decide
+    // before canUseTool runs, and that callback is the containment check.
+    permissionMode: "default" as const,
+    // Don't inherit the user's own CLAUDE.md, skills, or hooks — this
+    // agent authors videos, and their coding setup would only confuse it.
+    settingSources: [] as [],
+    mcpServers: { genmotion: createGenmotionTools(sdk, session) },
+    includePartialMessages: true,
+    canUseTool: async (
+      toolName: string,
+      input: Record<string, unknown>,
+      { toolUseID }: { toolUseID: string },
+    ) => {
+      // The one tool whose "permission" is really its answer. The chat
+      // already has the card — the assistant block arrives before this
+      // callback — so block here until the user picks something, and
+      // hand the selection back on the input. Unanswered is a valid
+      // outcome: the model is told nobody replied.
+      if (toolName === "AskUserQuestion") {
+        const signal = activeTurn?.signal ?? AbortSignal.timeout(0);
+        const answers = await waitForAnswer(toolUseID, signal);
+        return {
+          behavior: "allow" as const,
+          updatedInput: answers ? { ...input, answers } : input,
+        };
+      }
+
+      const target = input.file_path ?? input.path ?? input.file;
+      if (typeof target === "string" && !isInsideProject(projectDir, target)) {
+        return {
+          behavior: "deny" as const,
+          message: `${toolName} was refused: ${target} is outside the project folder. Work inside the project.`,
+        };
+      }
+      return { behavior: "allow" as const, updatedInput: input };
+    },
+  };
+}
+
+/** A CLI already spawned and through its handshake, waiting for a prompt. */
+let warm: { dir: string; handle: Awaited<ReturnType<AgentSdkModule["startup"]>> } | null = null;
+
+/**
+ * Spawn the CLI before anyone asks for it.
+ *
+ * Most of a cold turn's first seconds go on starting a Node process and
+ * waiting out the initialize handshake. Measured: first token drops from
+ * ~3.2s to ~1.4s when the process is already up — so this is over half the
+ * wait before anything appears on screen.
+ *
+ * Only the *first* turn of a session can use it: `startup()` fixes its options
+ * at spawn time, and every later turn carries a `resume` id that was not known
+ * then. That is also the turn where the wait is most noticeable, since the
+ * editor has just opened.
+ *
+ * Best-effort throughout. A failure here is left for the real turn to surface
+ * properly, and a machine without Claude Code installed simply never warms.
+ */
+export function warmClaudeCode(session: ProjectSession): void {
+  void (async () => {
+    try {
+      await disposeWarmClaudeCode();
+      const [sdk, executable] = await loadToolchain();
+      const handle = await sdk.startup({ options: turnOptions(sdk, session, executable) });
+      warm = { dir: session.dir, handle };
+    } catch {
+      warm = null;
+    }
+  })();
+}
+
+/** Release a warm subprocess nobody used — closing a project must not leak one. */
+export async function disposeWarmClaudeCode(): Promise<void> {
+  const held = warm;
+  warm = null;
+  try {
+    held?.handle.close();
+  } catch {
+    /* already gone */
+  }
+}
+
 export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
   return {
     id: "claude-code",
@@ -75,60 +196,25 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
       // whole block only if this turn produced none.
       let sawDelta = false;
 
-      const [sdk, executable] = await Promise.all([
-        loadAgentSdk(),
-        resolveExecutable("claude"),
-      ]);
+      const [sdk, executable] = await loadToolchain();
 
-      const response = sdk.query({
-        prompt: text,
-        options: {
-          cwd: projectDir,
-          // Use the CLI the user signed in with, not the SDK's bundled copy —
-          // which this build can't reach anyway (see resolveExecutable).
-          ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
-          env: agentEnv(),
-          systemPrompt: buildSystemPrompt(),
-          allowedTools: ALLOWED_TOOLS,
-          disallowedTools: DISALLOWED_TOOLS,
-          // "default", not "acceptEdits": an auto-approving mode would decide
-          // before canUseTool runs, and that callback is the containment check.
-          permissionMode: "default",
-          // Don't inherit the user's own CLAUDE.md, skills, or hooks — this
-          // agent authors videos, and their coding setup would only confuse it.
-          settingSources: [],
-          mcpServers: { genmotion: createGenmotionTools(sdk, session) },
-          includePartialMessages: true,
-          ...(resumeSessionId ? { resume: resumeSessionId } : {}),
-          canUseTool: async (
-            toolName: string,
-            input: Record<string, unknown>,
-            { toolUseID }: { toolUseID: string },
-          ) => {
-            // The one tool whose "permission" is really its answer. The chat
-            // already has the card — the assistant block arrives before this
-            // callback — so block here until the user picks something, and
-            // hand the selection back on the input. Unanswered is a valid
-            // outcome: the model is told nobody replied.
-            if (toolName === "AskUserQuestion") {
-              const answers = await waitForAnswer(toolUseID, signal);
-              return {
-                behavior: "allow" as const,
-                updatedInput: answers ? { ...input, answers } : input,
-              };
-            }
+      // A warm subprocess is usable only for a turn that starts fresh: its
+      // options were fixed before this turn existed, and a resumed turn needs
+      // a `resume` id that was not known then. Claimed rather than borrowed —
+      // a WarmQuery is single-use.
+      const claimed = warm?.dir === projectDir && !resumeSessionId ? warm : null;
+      warm = null;
 
-            const target = input.file_path ?? input.path ?? input.file;
-            if (typeof target === "string" && !isInsideProject(projectDir, target)) {
-              return {
-                behavior: "deny" as const,
-                message: `${toolName} was refused: ${target} is outside the project folder. Work inside the project.`,
-              };
-            }
-            return { behavior: "allow" as const, updatedInput: input };
-          },
-        },
-      });
+      activeTurn = { signal };
+      const response = claimed
+        ? claimed.handle.query(text)
+        : sdk.query({
+            prompt: text,
+            options: {
+              ...turnOptions(sdk, session, executable),
+              ...(resumeSessionId ? { resume: resumeSessionId } : {}),
+            },
+          });
 
       const stop = () => {
         void response.interrupt?.();
@@ -231,6 +317,9 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
         };
       } finally {
         signal.removeEventListener("abort", stop);
+        // Leaving a finished turn's signal here would let a later callback
+        // park on an abort that can never fire again.
+        activeTurn = null;
       }
 
       yield { type: "done", sessionId };
