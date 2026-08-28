@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { AssetData } from "@genmotion/shared";
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
+import { laneTheme } from "./audio-lane-theme";
 import { SceneIcon } from "./scene-icon";
 import { AssetIcon } from "./asset-icon";
 
@@ -34,7 +35,8 @@ function RemoveX() {
 export interface MessageContextData {
   scenes?: { name: string }[];
   assets?: { filename: string }[];
-  audioClips?: { name: string }[];
+  /** `track` is the lane, and the colour with it. Absent on older messages. */
+  audioClips?: { name: string; track?: number }[];
   elements?: { label: string; sceneName: string; timecode: string }[];
 }
 
@@ -81,7 +83,7 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
         </span>
       ))}
       {audioClips.map((a, i) => (
-        <span key={`m${i}`} className={cx(pill, "border-orange/40 bg-orange-muted text-orange")}>
+        <span key={`m${i}`} className={cx(pill, laneTheme(a.track).chip)}>
           <MusicGlyph />
           <span className="max-w-[140px] truncate">{a.name}</span>
         </span>
@@ -174,7 +176,7 @@ export function SceneChips({
 export function AudioClipChips({
   clips,
 }: {
-  clips: { id: string; name: string }[];
+  clips: { id: string; name: string; track: number }[];
 }) {
   const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
   const deselectAudioClip = useEditorStore((s) => s.deselectAudioClip);
@@ -188,13 +190,16 @@ export function AudioClipChips({
           <motion.span
             key={clip.id}
             {...CHIP_ANIM}
-            className="inline-flex items-center gap-1 rounded-full border border-orange/40 bg-orange-muted py-0.5 pl-2 pr-1 text-[0.857rem] text-orange backdrop-blur-md"
+            className={cx(
+              "inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-[0.857rem] backdrop-blur-md",
+              laneTheme(clip.track).chip,
+            )}
           >
             <MusicGlyph className="size-3.5 shrink-0" />
             <span className="max-w-[140px] truncate">{clip.name}</span>
             <button
               onClick={() => deselectAudioClip(clip.id)}
-              className={cx(removeButton, "hover:bg-orange/25")}
+              className={cx(removeButton, laneTheme(clip.track).chipHover)}
               title="Remove from context"
             >
               <RemoveX />

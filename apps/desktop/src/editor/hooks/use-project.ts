@@ -114,6 +114,9 @@ export function useProjectMutations(projectId: string) {
       durationInFrames?: number;
       startFrom?: number;
       volume?: number;
+      fadeInFrames?: number;
+      fadeOutFrames?: number;
+      muted?: boolean;
       track?: number;
     }) =>
       api<AudioClipData>(`/api/projects/${projectId}/audio-clips`, {

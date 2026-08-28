@@ -31,7 +31,13 @@ export interface AudioClipData {
   startFrame: number;
   durationInFrames: number;
   startFrom: number;
+  /** Linear gain: 1 is unity, 2 is +6dB. */
   volume: number;
+  /** Ramp lengths in frames, measured from each end of the clip. */
+  fadeInFrames?: number;
+  fadeOutFrames?: number;
+  /** Silenced without discarding `volume`. */
+  muted?: boolean;
 }
 
 export interface ProjectData {

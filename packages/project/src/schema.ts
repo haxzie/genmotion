@@ -45,7 +45,29 @@ export const audioEntrySchema = z.object({
   durationInFrames: z.number().int().positive().max(MAX_DURATION_IN_FRAMES),
   /** Seconds into the source file where playback begins. */
   startFrom: z.number().min(0).default(0),
+  /**
+   * Linear gain. 1 is unity, 2 is +6dB — the ceiling exists because anything
+   * louder is clipping rather than mixing.
+   */
   volume: z.number().min(0).max(2).default(1),
+  /**
+   * Silence-to-full ramp at the head, and full-to-silence at the tail, in
+   * frames.
+   *
+   * Frames rather than seconds so a fade means the same thing after an fps
+   * change as the clip it belongs to, and so the timeline can draw it without
+   * converting. Clamped against the clip's own length at render time: two
+   * fades longer than the clip would otherwise overlap into silence.
+   */
+  fadeInFrames: z.number().int().min(0).default(0),
+  fadeOutFrames: z.number().int().min(0).default(0),
+  /**
+   * Silenced without losing the gain that was set.
+   *
+   * Separate from `volume: 0` so muting and unmuting round-trips — the editors
+   * all keep these apart, and folding them loses whatever was dialled in.
+   */
+  muted: z.boolean().default(false),
   name: z.string().min(1).optional(),
 });
 

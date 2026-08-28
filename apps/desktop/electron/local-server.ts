@@ -328,6 +328,9 @@ export async function startLocalServer(
             durationInFrames: Math.max(1, Math.round(body.durationInFrames ?? 90)),
             startFrom: body.startFrom ?? 0,
             volume: body.volume ?? 1,
+            fadeInFrames: Math.max(0, Math.round(body.fadeInFrames ?? 0)),
+            fadeOutFrames: Math.max(0, Math.round(body.fadeOutFrames ?? 0)),
+            muted: body.muted ?? false,
             ...(body.name ? { name: body.name } : {}),
           });
         });
@@ -345,7 +348,18 @@ export async function startLocalServer(
             clip.durationInFrames = Math.max(1, Math.round(body.durationInFrames));
           }
           if (typeof body.startFrom === "number") clip.startFrom = body.startFrom;
-          if (typeof body.volume === "number") clip.volume = body.volume;
+          if (typeof body.volume === "number") {
+            // The schema's ceiling, applied here too: a client sending 50 is a
+            // bug, and clamping beats writing a manifest that fails to parse.
+            clip.volume = Math.min(2, Math.max(0, body.volume));
+          }
+          if (typeof body.fadeInFrames === "number") {
+            clip.fadeInFrames = Math.max(0, Math.round(body.fadeInFrames));
+          }
+          if (typeof body.fadeOutFrames === "number") {
+            clip.fadeOutFrames = Math.max(0, Math.round(body.fadeOutFrames));
+          }
+          if (typeof body.muted === "boolean") clip.muted = body.muted;
           if (body.name) clip.name = body.name;
         });
         return { ok: true };
@@ -616,6 +630,9 @@ interface AudioClipInput {
   durationInFrames?: number;
   startFrom?: number;
   volume?: number;
+  fadeInFrames?: number;
+  fadeOutFrames?: number;
+  muted?: boolean;
   track?: number;
 }
 

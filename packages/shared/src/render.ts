@@ -14,6 +14,10 @@ export interface RenderAudioSource {
   startFromSec?: number;
   /** Length in seconds to play from the source (clips only; trims the tail). */
   durationSec?: number;
+  /** Seconds of ramp in from silence at the start of this source. */
+  fadeInSec?: number;
+  /** Seconds of ramp out to silence at the end of this source. */
+  fadeOutSec?: number;
 }
 
 export interface RenderScenePayload {
@@ -96,6 +100,29 @@ export interface RenderJobPayload {
 }
 
 /**
+ * Fit two fades inside the clip they belong to.
+ *
+ * Fades longer than the clip would overlap, and an overlap is not a longer
+ * fade — it is a clip that never reaches full volume, which nobody asks for by
+ * dragging a handle. They are scaled down together so their ratio survives.
+ */
+export function clampFades(
+  fadeInFrames: number,
+  fadeOutFrames: number,
+  durationInFrames: number,
+): { fadeInFrames: number; fadeOutFrames: number } {
+  const fadeIn = Math.max(0, Math.floor(fadeInFrames));
+  const fadeOut = Math.max(0, Math.floor(fadeOutFrames));
+  const total = fadeIn + fadeOut;
+  if (total <= durationInFrames) return { fadeInFrames: fadeIn, fadeOutFrames: fadeOut };
+  const scale = durationInFrames / total;
+  return {
+    fadeInFrames: Math.floor(fadeIn * scale),
+    fadeOutFrames: Math.floor(fadeOut * scale),
+  };
+}
+
+/**
  * Resolve scene voiceovers + project audio clips into flat, timed audio sources
  * for the render's ffmpeg mux. Pure — shared by the API (which reads the DB) and
  * the local renderer, so their timing math can never drift apart.
@@ -112,6 +139,9 @@ export function buildRenderAudioSources(
     durationInFrames: number;
     startFrom: number;
     volume: number;
+    fadeInFrames?: number;
+    fadeOutFrames?: number;
+    muted?: boolean;
   }[],
   fps: number,
 ): RenderAudioSource[] {
@@ -132,12 +162,23 @@ export function buildRenderAudioSources(
 
   // Project audio clips: trimmed to their window, delayed to their start.
   for (const clip of clips) {
+    // A muted clip is dropped rather than mixed at zero: ffmpeg would still
+    // decode it, and `amix` still counts it when dividing.
+    if (clip.muted) continue;
+
+    const { fadeInFrames, fadeOutFrames } = clampFades(
+      clip.fadeInFrames ?? 0,
+      clip.fadeOutFrames ?? 0,
+      clip.durationInFrames,
+    );
     sources.push({
       url: clip.url,
       delayMs: (clip.startFrame / fps) * 1000,
       volume: clip.volume,
       startFromSec: clip.startFrom,
       durationSec: clip.durationInFrames / fps,
+      ...(fadeInFrames > 0 ? { fadeInSec: fadeInFrames / fps } : {}),
+      ...(fadeOutFrames > 0 ? { fadeOutSec: fadeOutFrames / fps } : {}),
     });
   }
 

@@ -1,3 +1,7 @@
-# electron-builder output: packaged .app bundles, DMGs and zips.
-# Hundreds of megabytes of binaries rebuilt by `pnpm package` on demand.
-release/
+# electron-builder output: packaged .app bundles, DMGs and zips. Hundreds of
+# megabytes of binaries rebuilt by `pnpm package` on demand.
+#
+# Any `release*` directory, not just `release/`: a build run with a different
+# output dir once put a 167MB Electron Framework into a commit, which GitHub
+# refuses outright — and the failure lands at push time, long after the mistake.
+release*/

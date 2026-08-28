@@ -13,6 +13,7 @@ import { cx, Spinner } from "@/components/ui";
 import { useEditorStore } from "@/stores/editor-store";
 import { probeAudioDurationFromUrl, uploadProjectAsset } from "@/hooks/use-assets";
 import { useWaveform } from "@/hooks/use-waveform";
+import { laneTheme, type LaneTheme } from "./audio-lane-theme";
 import { Waveform } from "./waveform";
 
 export interface AudioAssetOption {
@@ -23,86 +24,42 @@ export interface AudioAssetOption {
 }
 
 /** Height of one audio lane row, in px. Tall enough for a header + waveform. */
+/** Linear gain to decibels, for display only. `0` has no dB value. */
+function toDb(volume: number): string {
+  if (volume <= 0) return "-\u221e";
+  const db = 20 * Math.log10(volume);
+  return `${db > 0 ? "+" : ""}${db.toFixed(1)}`;
+}
+
+/**
+ * Volume as a height inside the clip.
+ *
+ * Linear in dB rather than in gain, because gain is not how loudness is heard:
+ * a rubber band drawn linearly spends most of its travel in the top few dB and
+ * makes quiet adjustments impossible. -40dB is the floor — below it everything
+ * is inaudible and the extra travel buys nothing.
+ */
+const DB_FLOOR = -40;
+const DB_CEIL = 6;
+
+function volumeToFraction(volume: number): number {
+  if (volume <= 0) return 0;
+  const db = 20 * Math.log10(volume);
+  return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
+}
+
+function fractionToVolume(fraction: number): number {
+  const clamped = Math.min(1, Math.max(0, fraction));
+  if (clamped <= 0) return 0;
+  const db = DB_FLOOR + clamped * (DB_CEIL - DB_FLOOR);
+  return Math.min(2, Math.max(0, 10 ** (db / 20)));
+}
+
 export const AUDIO_LANE_HEIGHT = 36;
 /** Waveform strip inside a clip. Sized so header + strip fill the shorter row. */
 const CLIP_WAVEFORM_HEIGHT = 14;
 
 type DragMode = "move" | "resize-l" | "resize-r";
-
-/** Every colour a clip needs, as literal classes — Tailwind can't build them. */
-interface LaneTheme {
-  /** Border + fill while selected. */
-  selected: string;
-  /** Border + fill at rest, and on hover. */
-  idle: string;
-  /** Icon and label. */
-  text: string;
-  textIdle: string;
-  /** Waveform fill. */
-  wave: string;
-  waveIdle: string;
-  /** Alt-drag copy badge and the upload ghost. */
-  solid: string;
-  /** Mute toggle. */
-  button: string;
-}
-
-/**
- * One hue per lane.
- *
- * Every lane used to be orange, so four stacked clips read as one undivided
- * block and the only way to tell which lane a clip was on was to trace the row
- * it sat in. Lane 1 keeps the orange the timeline has always used for audio;
- * the rest are far enough apart in hue to separate at a glance and close enough
- * in brightness that none of them shouts.
- */
-const LANE_THEMES: LaneTheme[] = [
-  {
-    selected: "border-orange bg-orange-muted",
-    idle: "border-orange/25 bg-orange/[0.06] hover:border-orange/45 hover:bg-orange/12",
-    text: "text-orange",
-    textIdle: "text-orange/80",
-    wave: "text-orange",
-    waveIdle: "text-orange/55",
-    solid: "bg-orange",
-    button: "text-orange/70 hover:text-orange",
-  },
-  {
-    selected: "border-mint bg-mint-muted",
-    idle: "border-mint/25 bg-mint/[0.06] hover:border-mint/45 hover:bg-mint/12",
-    text: "text-mint",
-    textIdle: "text-mint/80",
-    wave: "text-mint",
-    waveIdle: "text-mint/55",
-    solid: "bg-mint",
-    button: "text-mint/70 hover:text-mint",
-  },
-  {
-    selected: "border-pink bg-pink-muted",
-    idle: "border-pink/25 bg-pink/[0.06] hover:border-pink/45 hover:bg-pink/12",
-    text: "text-pink",
-    textIdle: "text-pink/80",
-    wave: "text-pink",
-    waveIdle: "text-pink/55",
-    solid: "bg-pink",
-    button: "text-pink/70 hover:text-pink",
-  },
-  {
-    selected: "border-sky bg-sky-muted",
-    idle: "border-sky/25 bg-sky/[0.06] hover:border-sky/45 hover:bg-sky/12",
-    text: "text-sky",
-    textIdle: "text-sky/80",
-    wave: "text-sky",
-    waveIdle: "text-sky/55",
-    solid: "bg-sky",
-    button: "text-sky/70 hover:text-sky",
-  },
-];
-
-/** The lane's colours. Wraps, so it survives MAX_AUDIO_TRACKS growing. */
-function laneTheme(track: number): LaneTheme {
-  return LANE_THEMES[track % LANE_THEMES.length]!;
-}
 
 function MusicIcon({ className }: { className?: string }) {
   return (
@@ -220,7 +177,13 @@ function AudioClipBlock({
     mode: DragMode,
     sourceFrames: number | null,
   ) => void;
-  onUpdate: (input: { clipId: string; volume?: number }) => void;
+  onUpdate: (input: {
+    clipId: string;
+    volume?: number;
+    fadeInFrames?: number;
+    fadeOutFrames?: number;
+    muted?: boolean;
+  }) => void;
 }) {
   const { duration: sourceSeconds } = useWaveform(clip.url);
   const sourceFrames = sourceSeconds
@@ -234,7 +197,11 @@ function AudioClipBlock({
   // pointer rather than at the moment of the drop.
   const track = draft ? draft.track : clip.track;
   const theme = laneTheme(track);
-  const muted = clip.volume <= 0;
+  // `volume <= 0` kept as a fallback so clips written before `muted` existed
+  // still read as muted rather than silently coming back at full gain.
+  const muted = clip.muted ?? clip.volume <= 0;
+  const fadeIn = clip.fadeInFrames ?? 0;
+  const fadeOut = clip.fadeOutFrames ?? 0;
   const left = padding + startFrame * pxPerFrame;
   const width = Math.max(6, duration * pxPerFrame);
   const top = track * AUDIO_LANE_HEIGHT + 2;
@@ -266,6 +233,116 @@ function AudioClipBlock({
           +
         </span>
       )}
+      {/*
+        Gain and fades, drawn over the clip the way every timeline editor does
+        it: a line you drag, and a handle in each top corner. Pointer capture
+        rather than window listeners so a fast drag that leaves the clip keeps
+        working, and stopPropagation everywhere so none of it starts a move.
+      */}
+      <div className="pointer-events-none absolute inset-0 z-[5]">
+        {/* Fade ramps, as triangles from silence up to the gain line. */}
+        {(fadeIn > 0 || fadeOut > 0) && (
+          <svg className="absolute inset-0 size-full" preserveAspectRatio="none">
+            {fadeIn > 0 && (
+              <polygon
+                points={`0,100% ${fadeIn * pxPerFrame},100% ${fadeIn * pxPerFrame},${(1 - volumeToFraction(muted ? 0 : clip.volume)) * 100}%`}
+                className="fill-current opacity-25"
+              />
+            )}
+            {fadeOut > 0 && (
+              <polygon
+                points={`${width},100% ${width - fadeOut * pxPerFrame},100% ${width - fadeOut * pxPerFrame},${(1 - volumeToFraction(muted ? 0 : clip.volume)) * 100}%`}
+                className="fill-current opacity-25"
+              />
+            )}
+          </svg>
+        )}
+
+        {/* The rubber band. */}
+        <div
+          className={cx(
+            "pointer-events-auto absolute inset-x-0 h-3 -translate-y-1/2 cursor-ns-resize",
+            "opacity-0 transition-opacity group-hover:opacity-100",
+            selected && "opacity-100",
+          )}
+          style={{ top: `${(1 - volumeToFraction(muted ? 0 : clip.volume)) * 100}%` }}
+          title={`${toDb(muted ? 0 : clip.volume)} dB — drag to set the level`}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const host = e.currentTarget.parentElement!.parentElement!;
+            const rect = host.getBoundingClientRect();
+            e.currentTarget.setPointerCapture(e.pointerId);
+            const move = (ev: PointerEvent) => {
+              const fraction = 1 - (ev.clientY - rect.top) / rect.height;
+              onUpdate({ clipId: clip.id, volume: fractionToVolume(fraction), muted: false });
+            };
+            const up = (ev: PointerEvent) => {
+              (ev.target as Element).releasePointerCapture?.(ev.pointerId);
+              window.removeEventListener("pointermove", move);
+              window.removeEventListener("pointerup", up);
+            };
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", up);
+          }}
+        >
+          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current opacity-70" />
+        </div>
+
+        {/* Fade handles: drag inward from either top corner. */}
+        {(["in", "out"] as const).map((edge) => (
+          <div
+            key={edge}
+            className={cx(
+              "pointer-events-auto absolute top-0 z-20 size-3 cursor-ew-resize",
+              "opacity-0 transition-opacity group-hover:opacity-100",
+              selected && "opacity-100",
+            )}
+            // Centred on the fade's end, but never hanging off the clip: at 0
+            // an un-clamped handle is half outside and half under the trim
+            // strip, which is to say not grabbable at all.
+            style={{
+              left: Math.min(
+                Math.max(width - 12, 0),
+                Math.max(
+                  0,
+                  (edge === "in" ? fadeIn * pxPerFrame : width - fadeOut * pxPerFrame) - 6,
+                ),
+              ),
+            }}
+            title={`Fade ${edge} — drag to change`}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const startX = e.clientX;
+              const from = edge === "in" ? fadeIn : fadeOut;
+              e.currentTarget.setPointerCapture(e.pointerId);
+              const move = (ev: PointerEvent) => {
+                const deltaFrames = (ev.clientX - startX) / pxPerFrame;
+                // Dragging right lengthens a fade-in and shortens a fade-out.
+                const next = Math.round(from + (edge === "in" ? deltaFrames : -deltaFrames));
+                // Each fade may take at most the whole clip; the render clamps
+                // the pair, but stopping here keeps the drawing honest.
+                const clamped = Math.max(0, Math.min(duration, next));
+                onUpdate({
+                  clipId: clip.id,
+                  ...(edge === "in" ? { fadeInFrames: clamped } : { fadeOutFrames: clamped }),
+                });
+              };
+              const up = (ev: PointerEvent) => {
+                (ev.target as Element).releasePointerCapture?.(ev.pointerId);
+                window.removeEventListener("pointermove", move);
+                window.removeEventListener("pointerup", up);
+              };
+              window.addEventListener("pointermove", move);
+              window.addEventListener("pointerup", up);
+            }}
+          >
+            <div className="absolute inset-0 rounded-full border border-current bg-background/80" />
+          </div>
+        ))}
+      </div>
+
       {/* Header: music icon + name (mirrors the scene card) */}
       <div className="flex min-w-0 items-center gap-1 px-1.5 pt-0.5">
         <MusicIcon className={cx("size-3 shrink-0", label)} />
@@ -291,12 +368,15 @@ function AudioClipBlock({
 
       {/* Left trim handle */}
       <div
-        className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-ew-resize hover:bg-border-strong"
+        // Starts below the fade handle rather than spanning the full height: the
+        // two live in the same corner, and a full-height trim strip sits on top
+        // of the fade handle exactly when the fade is 0 and needs grabbing.
+        className="absolute bottom-0 left-0 top-3 z-10 w-1.5 cursor-ew-resize hover:bg-border-strong"
         onPointerDown={(e) => onBeginDrag(e, clip, "resize-l", sourceFrames)}
       />
       {/* Right trim handle */}
       <div
-        className="absolute inset-y-0 right-0 z-10 w-1.5 cursor-ew-resize hover:bg-border-strong"
+        className="absolute bottom-0 right-0 top-3 z-10 w-1.5 cursor-ew-resize hover:bg-border-strong"
         onPointerDown={(e) => onBeginDrag(e, clip, "resize-r", sourceFrames)}
       />
       {/* Mute/unmute toggle — same treatment as the scene voiceover. */}
@@ -305,7 +385,9 @@ function AudioClipBlock({
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
-          onUpdate({ clipId: clip.id, volume: muted ? 1 : 0 });
+          // Toggling the flag, not the gain — unmuting used to reset to 1 and
+          // throw away whatever level had been dialled in.
+          onUpdate({ clipId: clip.id, muted: !muted });
         }}
         title={muted ? "Unmute" : "Mute"}
         className={cx(
@@ -357,6 +439,9 @@ export function AudioLanes({
     durationInFrames?: number;
     startFrom?: number;
     volume?: number;
+    fadeInFrames?: number;
+    fadeOutFrames?: number;
+    muted?: boolean;
     track?: number;
   }) => void;
   onAdd: (input: {

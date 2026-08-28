@@ -473,6 +473,54 @@ function Playhead({
   );
 }
 
+/** Width of the hover timecode badge, near enough for the edge-flip test. */
+const HOVER_BADGE_WIDTH = 40;
+
+/**
+ * Ghost playhead: where the pointer is, in red, distinct from the accent-blue
+ * playhead that marks where time actually is. Quantised to the frame it names,
+ * so the line sits exactly on the frame the preview is showing.
+ *
+ * It subscribes to the store itself rather than taking the frame as a prop.
+ * Hovering crosses a frame boundary every couple of pixels, and reading it in
+ * Timeline would re-render every scene block and every audio clip that often —
+ * the same reason the playhead moves itself.
+ */
+function HoverIndicator({
+  pxPerFrame,
+  fps,
+  trackWidth,
+}: {
+  pxPerFrame: number;
+  fps: number;
+  trackWidth: number;
+}) {
+  const frame = usePlaybackStore((s) => s.hoverFrame);
+  if (frame === null) return null;
+
+  const x = TRACK_PADDING + frame * pxPerFrame;
+  // Near the right edge the badge would be cut off by the track, so it hangs
+  // off the other side of the line instead.
+  const flip = x + HOVER_BADGE_WIDTH + 6 > trackWidth;
+
+  return (
+    <div
+      className="pointer-events-none absolute left-0 top-0 z-10 h-full w-px bg-scrub"
+      style={{ transform: `translateX(${x}px)` }}
+    >
+      <div className="absolute -left-[4px] top-0 size-0 border-x-[4px] border-t-[5px] border-x-transparent border-t-scrub" />
+      {/* The time under the pointer, offset off the line so the cursor doesn't
+          cover it. */}
+      <span
+        className="absolute top-0 whitespace-nowrap rounded-sm bg-scrub px-1 font-mono text-[0.643rem] leading-[14px] text-background"
+        style={flip ? { right: 4 } : { left: 4 }}
+      >
+        {framesToTimecode(frame, fps).slice(0, 5)}
+      </span>
+    </div>
+  );
+}
+
 export function Timeline({
   projectId,
   scenes,
@@ -512,6 +560,9 @@ export function Timeline({
     durationInFrames?: number;
     startFrom?: number;
     volume?: number;
+    fadeInFrames?: number;
+    fadeOutFrames?: number;
+    muted?: boolean;
     track?: number;
   }) => void;
   onDeleteClip: (clipId: string) => void;
@@ -615,16 +666,29 @@ export function Timeline({
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const frameAt = useCallback(
+    (clientX: number): number | null => {
+      const content = contentRef.current;
+      if (!content || totalFrames === 0) return null;
+      const rect = content.getBoundingClientRect();
+      return Math.round((clientX - rect.left - TRACK_PADDING) / pxPerFrame);
+    },
+    [totalFrames, pxPerFrame],
+  );
+
   const scrub = useCallback(
     (clientX: number) => {
-      const content = contentRef.current;
-      if (!content || totalFrames === 0) return;
-      const rect = content.getBoundingClientRect();
-      const x = clientX - rect.left - TRACK_PADDING;
-      seek(Math.round(x / pxPerFrame));
+      const frame = frameAt(clientX);
+      if (frame !== null) seek(frame);
     },
-    [seek, totalFrames, pxPerFrame],
+    [seek, frameAt],
   );
+
+  const setHoverFrame = usePlaybackStore((s) => s.setHoverFrame);
+
+  // The pointer leaving the window (or the timeline unmounting mid-hover) never
+  // fires pointerleave, and a stale hover frame would pin the preview to it.
+  useEffect(() => () => setHoverFrame(null), [setHoverFrame]);
 
   return (
     <div
@@ -642,6 +706,8 @@ export function Timeline({
           ref={contentRef}
           className="relative isolate flex h-full min-w-full flex-col"
           style={{ width: trackWidth || undefined }}
+          onPointerMove={(e) => setHoverFrame(frameAt(e.clientX))}
+          onPointerLeave={() => setHoverFrame(null)}
         >
           {/* Selected-scene highlight: one persistent purple band spanning the
               scene's time range across every track (sits behind the rows via
@@ -748,6 +814,16 @@ export function Timeline({
             onUpdate={onUpdateClip}
             onAdd={onAddClip}
           />
+
+          {/* Ghost playhead under the pointer. Above the tracks, below the real
+              playhead — where they coincide, the one that owns the time wins. */}
+          {totalFrames > 0 && (
+            <HoverIndicator
+              pxPerFrame={pxPerFrame}
+              fps={fps}
+              trackWidth={trackWidth}
+            />
+          )}
 
           {/* Playhead — self-updating, no per-frame Timeline re-render. */}
           {totalFrames > 0 && (

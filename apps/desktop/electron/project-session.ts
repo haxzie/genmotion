@@ -331,6 +331,9 @@ export class ProjectSession {
       durationInFrames: clip.durationInFrames,
       startFrom: clip.startFrom,
       volume: clip.volume,
+      fadeInFrames: clip.fadeInFrames,
+      fadeOutFrames: clip.fadeOutFrames,
+      muted: clip.muted,
     }));
 
     return {

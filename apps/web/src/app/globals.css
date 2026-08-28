@@ -38,6 +38,11 @@
   /* Purple: tints the inactive scene card on the timeline (at low opacity). */
   --color-purple: #a78bfa;
   --color-purple-muted: rgba(167, 139, 250, 0.16);
+  /* Timeline hover/scrub indicator. Its own red rather than `danger`: it marks
+     a position you are only looking at, and a line the same colour as a compile
+     error reads as one. Distinct from the accent-blue playhead, which marks
+     where time actually is. */
+  --color-scrub: #ff5c5c;
   --color-danger: #f1646c;
   --color-success: #3fb96f;
   --color-warning: #d6a849;
@@ -269,6 +274,28 @@ body {
   100% {
     transform: translateX(100%);
   }
+}
+
+/*
+ * The editor's preview canvas — a recessed dotted field the video floats on.
+ *
+ * It covers the whole stage, whatever shape the window leaves it: the frame is
+ * letterboxed to the composition's aspect ratio, so on any window that isn't
+ * exactly that ratio there is leftover stage on two sides, and it used to be
+ * flat black — indistinguishable from the black inside the frame, which made
+ * the video's own edges impossible to find.
+ *
+ * One dot per 16px, dim: this sits UNDER a moving picture and must never
+ * compete with it.
+ */
+.gm-dot-canvas {
+  background-color: var(--color-background);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.085) 1px,
+    transparent 0
+  );
+  background-size: 16px 16px;
 }
 
 /* Lighter shimmer: muted peak (secondary, not primary) for a softer feel. */

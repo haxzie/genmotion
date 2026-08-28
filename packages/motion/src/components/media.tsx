@@ -61,6 +61,35 @@ interface MediaSyncOptions {
   playbackRate?: number;
 }
 
+/**
+ * Where in the source to sample for a composition frame — the MIDDLE of the
+ * frame's interval, not its leading edge.
+ *
+ * Composition frame `n` shows source time [n/fps, (n+1)/fps). Seeking to the
+ * leading edge lands exactly ON a source frame boundary, and which side of it
+ * the decoder picks is a floating-point coin toss: `2/30` is
+ * 0.06666666666666667, not 0.06666666666666666. Measured against the real
+ * render path over a 30fps clip in a 30fps composition, that produced 60
+ * distinct frames out of 90 — every third exported frame was its predecessor
+ * again, which is the "the video gets stuck" report. Sampling half a frame in
+ * is unambiguously inside the interval, and the same 90 came out distinct.
+ *
+ * Exported for the test that pins the invariant: never on a boundary.
+ */
+export function mediaTargetTime({
+  frame,
+  fps,
+  startFrom = 0,
+  playbackRate = 1,
+}: {
+  frame: number;
+  fps: number;
+  startFrom?: number;
+  playbackRate?: number;
+}): number {
+  return startFrom + ((frame + 0.5) / fps) * playbackRate;
+}
+
 function useMediaSync(
   ref: React.RefObject<HTMLVideoElement | HTMLAudioElement | null>,
   { startFrom = 0, volume = 1, muted = false, loop = false, playbackRate = 1 }: MediaSyncOptions,
@@ -71,7 +100,7 @@ function useMediaSync(
   const playing = useIsPlaying();
 
   const targetTime = (() => {
-    let t = startFrom + (frame / fps) * playbackRate;
+    let t = mediaTargetTime({ frame, fps, startFrom, playbackRate });
     const el = ref.current;
     if (loop && el && Number.isFinite(el.duration) && el.duration > 0) {
       t = t % el.duration;

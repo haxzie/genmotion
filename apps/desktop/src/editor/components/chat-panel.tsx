@@ -1063,7 +1063,7 @@ function ChatPanelInner({
     const ctx: MessageContextData = {
       scenes: selScenes.map((s) => ({ name: s.name })),
       assets: selAssets.map((a) => ({ filename: a.filename })),
-      audioClips: selClips.map((c) => ({ name: c.name })),
+      audioClips: selClips.map((c) => ({ name: c.name, track: c.track })),
       elements: selectedElements.map((e) => ({
         label: e.label,
         sceneName: e.sceneName,

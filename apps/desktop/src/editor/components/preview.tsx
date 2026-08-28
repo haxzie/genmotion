@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { Player, usePlaybackStore, type CompiledScene } from "@genmotion/player";
+import {
+  Player,
+  usePlaybackStore,
+  selectDisplayFrame,
+  type CompiledScene,
+} from "@genmotion/player";
 import { framesToTimecode, type AudioClipData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { PreviewInspector } from "./preview-inspector";
@@ -83,7 +88,10 @@ export function PreviewStage({
   audioClips?: AudioClipData[];
   initializing: boolean;
 }) {
-  const frame = usePlaybackStore((s) => s.frame);
+  // The readout describes the picture, so it follows a timeline hover along
+  // with it — a timecode that disagreed with the frame on screen would be
+  // worse than one that moves. The playhead itself stays put.
+  const frame = usePlaybackStore(selectDisplayFrame);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
   const totalFrames = usePlaybackStore((s) => s.totalFrames);
   const toggle = usePlaybackStore((s) => s.toggle);
@@ -114,33 +122,38 @@ export function PreviewStage({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1 p-4">
-        {initializing ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-text-tertiary">
-              <Spinner />
-              <span>Preparing compiler…</span>
+        {/* The stage. The dotted canvas lives here, not on the inspector, so it
+            backs every state — compiling, empty and playing alike — and fills
+            whatever the window leaves rather than only the frame's footprint. */}
+        <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+          {initializing ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="flex flex-col items-center gap-3 text-text-tertiary">
+                <Spinner />
+                <span>Preparing compiler…</span>
+              </div>
             </div>
-          </div>
-        ) : scenes.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center text-text-tertiary">
-              <p className="text-lg">No scenes yet</p>
-              <p className="mt-1">
-                Ask the AI to create your first scene from the chat panel.
-              </p>
+          ) : scenes.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center text-text-tertiary">
+                <p className="text-lg">No scenes yet</p>
+                <p className="mt-1">
+                  Ask the AI to create your first scene from the chat panel.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <PreviewInspector scenes={scenes} fps={fps} width={width} height={height}>
-            <Player
-              scenes={scenes}
-              fps={fps}
-              width={width}
-              height={height}
-              audioClips={audioClips}
-            />
-          </PreviewInspector>
-        )}
+          ) : (
+            <PreviewInspector scenes={scenes} fps={fps} width={width} height={height}>
+              <Player
+                scenes={scenes}
+                fps={fps}
+                width={width}
+                height={height}
+                audioClips={audioClips}
+              />
+            </PreviewInspector>
+          )}
+        </div>
       </div>
 
       <div className="relative flex shrink-0 items-center justify-between bg-surface px-4 pt-1 pb-4">

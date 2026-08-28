@@ -315,7 +315,10 @@ export function PreviewInspector({
   return (
     <div
       ref={ref}
-      className="relative h-full cursor-crosshair select-none overflow-hidden rounded-xl border border-border bg-black shadow-[0_8px_40px_rgba(20,20,40,0.16)]"
+      // Transparent: the dotted stage behind shows through wherever the frame
+      // doesn't reach, which on any window that isn't the composition's aspect
+      // ratio is most of two sides. The frame paints its own black.
+      className="relative h-full cursor-crosshair select-none overflow-hidden"
       onPointerDown={(e) => {
         if (e.button !== 0) return;
         startRef.current = relPoint(e.clientX, e.clientY);

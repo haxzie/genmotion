@@ -283,6 +283,9 @@ async function muxAudio(
       durationInFrames: clip.durationInFrames,
       startFrom: clip.startFrom,
       volume: clip.volume,
+      fadeInFrames: clip.fadeInFrames,
+      fadeOutFrames: clip.fadeOutFrames,
+      muted: clip.muted,
     })),
     manifest.fps,
   ).filter((source) => existsSync(source.url));
@@ -297,8 +300,19 @@ async function muxAudio(
     const stream = index + 1;
     const trim = source.durationSec ? `atrim=duration=${source.durationSec.toFixed(3)},` : "";
     const delay = Math.round(source.delayMs);
+    // Order matters. Trim first so the fades measure against the clip's own
+    // length, then fade, and only then delay — `adelay` prepends silence, and
+    // fading after it would ramp the silence instead of the audio. `volume`
+    // last so a gain change never rescales the fade's shape.
+    const fadeIn = source.fadeInSec
+      ? `afade=t=in:st=0:d=${source.fadeInSec.toFixed(3)},`
+      : "";
+    const fadeOut =
+      source.fadeOutSec && source.durationSec
+        ? `afade=t=out:st=${Math.max(0, source.durationSec - source.fadeOutSec).toFixed(3)}:d=${source.fadeOutSec.toFixed(3)},`
+        : "";
     filters.push(
-      `[${stream}:a]${trim}adelay=${delay}|${delay},volume=${source.volume ?? 1}[a${stream}]`,
+      `[${stream}:a]${trim}${fadeIn}${fadeOut}adelay=${delay}|${delay},volume=${source.volume ?? 1}[a${stream}]`,
     );
   });
 

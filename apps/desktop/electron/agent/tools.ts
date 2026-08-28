@@ -129,7 +129,20 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
             ? `\nListed in project.json but missing on disk: ${project.missing.join(", ")}`
             : "",
           project.audioClips.length
-            ? `\nAudio: ${project.audioClips.map((c) => `${c.name} (track ${c.track} @ ${c.startFrame}f)`).join(", ")}`
+            ? `\nAudio: ${project.audioClips
+                .map((c) => {
+                  const level = c.muted
+                    ? "muted"
+                    : `vol ${c.volume.toFixed(2)}`;
+                  const fades = [
+                    c.fadeInFrames ? `in ${c.fadeInFrames}f` : null,
+                    c.fadeOutFrames ? `out ${c.fadeOutFrames}f` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return `${c.name} (track ${c.track} @ ${c.startFrame}f, ${level}${fades ? `, fade ${fades}` : ""})`;
+                })
+                .join(", ")}`
             : "",
           failures.length ? `\nBuild errors:${failures.join("\n")}` : "",
         ]
@@ -261,6 +274,18 @@ function usageFor(rel: string): string {
       "This is audio, so put it on the TIMELINE — add an entry to project.json's",
       '`audio` array with a unique `id`, the `file` path, a `track` (0-3),',
       "`startFrame`, `durationInFrames`, `startFrom` and `volume`.",
+      "",
+      "`volume` is linear gain: 1 is unity, 0.5 is about -6dB, 2 is the ceiling.",
+      "Music under a voiceover usually wants 0.2-0.4 — at 1 it competes with the",
+      "narration instead of sitting behind it.",
+      "",
+      "`fadeInFrames` and `fadeOutFrames` ramp from and to silence. Give music a",
+      "fade out rather than letting it stop dead at the end of the video: half a",
+      "second (fps/2) is the smallest fade that does not sound like a cut, and a",
+      "second reads as deliberate. Both default to 0.",
+      "",
+      "`muted` silences a clip without discarding its volume. Prefer removing the",
+      "entry to muting one the user cannot see.",
       "",
       "Do NOT import it into a scene and render `<Audio>`: that plays in the",
       "preview but is dropped from the exported video, which only mixes audio",

@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { totalDurationInFrames, type AudioClipData } from "@genmotion/shared";
 import type { CompiledScene } from "./types";
 import { Composition } from "./composition";
-import { usePlaybackStore } from "./store";
+import { usePlaybackStore, selectDisplayFrame } from "./store";
 import type { SceneRuntimeError } from "./scene-boundary";
 
 export interface PlayerProps {
@@ -31,7 +31,10 @@ export function Player({
   audioClips,
   onSceneError,
 }: PlayerProps) {
-  const frame = usePlaybackStore((s) => s.frame);
+  // What to paint — the hovered frame while the timeline is being hovered,
+  // otherwise the playhead. The playback clock below deliberately reads the raw
+  // `frame` off the store instead: hovering previews, it never moves time.
+  const frame = usePlaybackStore(selectDisplayFrame);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
 
   const totalFrames = totalDurationInFrames(scenes);
