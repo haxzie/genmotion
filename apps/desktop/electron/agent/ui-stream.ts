@@ -98,6 +98,15 @@ export function runTurnAsUiStream(input: {
             break;
           }
 
+          case "context": {
+            writer.write({
+              type: "data-context-usage",
+              data: event.context,
+              transient: true,
+            });
+            break;
+          }
+
           case "status": {
             writer.write({ type: "data-status", data: { text: event.text }, transient: true });
             break;

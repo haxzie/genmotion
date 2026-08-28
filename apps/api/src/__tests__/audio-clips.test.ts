@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, schema } from "@genmotion/db";
+import { MAX_AUDIO_TRACKS } from "@genmotion/shared";
 import { dbReady, truncateAll } from "./helpers/db";
 import { createOrg, createProject } from "./helpers/factories";
 import { createSession, requestJson } from "./helpers/http";
@@ -7,11 +8,12 @@ import { createSession, requestJson } from "./helpers/http";
 /**
  * Timeline audio clips.
  *
- * The rule worth pinning down is the trim on create: a clip is cut off at the
- * end of the last scene, because an asset is usually far longer than the video
- * it is being dropped onto. It is a ceiling and nothing more — a short clip is
- * never stretched to reach the end, and with no end to trim to the asset keeps
- * its natural length.
+ * The rule worth pinning down is the trim on create: a clip arrives at its
+ * natural length and is only ever cut by something in its way. Two things can
+ * be: the end of the last scene, because an asset is usually far longer than
+ * the video it is dropped onto, and the next clip on the lane it lands on.
+ * Both are ceilings and nothing more — a short clip is never stretched to
+ * reach either, and with nothing in the way the asset keeps its full length.
  */
 
 const FPS = 30;
@@ -111,5 +113,90 @@ describe.skipIf(!dbReady)("POST /api/projects/:id/audio-clips", () => {
       },
     );
     expect(body.durationInFrames).toBe(5 * FPS);
+  });
+  it("opens a new lane rather than trimming a clip to fit beside one", async () => {
+    const { project, session } = await projectWithScenes(30);
+    await requestJson(`/api/projects/${project.id}/audio-clips`, {
+      as: session,
+      json: {
+        url: "https://example.test/first.mp3",
+        startFrame: 0,
+        durationInFrames: 20 * FPS,
+        track: 0,
+      },
+    });
+
+    const { body } = await requestJson<{
+      durationInFrames: number;
+      track: number;
+    }>(`/api/projects/${project.id}/audio-clips`, {
+      as: session,
+      json: {
+        url: "https://example.test/second.mp3",
+        startFrame: 0,
+        durationInFrames: 20 * FPS,
+      },
+    });
+    expect(body.track).toBe(1);
+    expect(body.durationInFrames).toBe(20 * FPS);
+  });
+
+  it("trims to the gap in front of the next clip once every lane is busy", async () => {
+    const { project, session } = await projectWithScenes(30);
+    // Something on every lane, all starting 5s in.
+    for (let track = 0; track < MAX_AUDIO_TRACKS; track++) {
+      await requestJson(`/api/projects/${project.id}/audio-clips`, {
+        as: session,
+        json: {
+          url: `https://example.test/lane-${track}.mp3`,
+          startFrame: 5 * FPS,
+          durationInFrames: 10 * FPS,
+          track,
+        },
+      });
+    }
+
+    // A 60s song dropped at the very start has 5s of room in front of them.
+    const { status, body } = await requestJson<{ durationInFrames: number }>(
+      `/api/projects/${project.id}/audio-clips`,
+      {
+        as: session,
+        json: {
+          url: "https://example.test/song.mp3",
+          startFrame: 0,
+          durationInFrames: 60 * FPS,
+        },
+      },
+    );
+    expect(status).toBe(201);
+    expect(body.durationInFrames).toBe(5 * FPS);
+  });
+
+  it("still refuses a start frame every lane is already playing over", async () => {
+    const { project, session } = await projectWithScenes(30);
+    for (let track = 0; track < MAX_AUDIO_TRACKS; track++) {
+      await requestJson(`/api/projects/${project.id}/audio-clips`, {
+        as: session,
+        json: {
+          url: `https://example.test/lane-${track}.mp3`,
+          startFrame: 0,
+          durationInFrames: 10 * FPS,
+          track,
+        },
+      });
+    }
+
+    const { status } = await requestJson(
+      `/api/projects/${project.id}/audio-clips`,
+      {
+        as: session,
+        json: {
+          url: "https://example.test/song.mp3",
+          startFrame: 2 * FPS,
+          durationInFrames: 5 * FPS,
+        },
+      },
+    );
+    expect(status).toBe(409);
   });
 });

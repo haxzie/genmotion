@@ -87,6 +87,38 @@ async function probeMedia(
   }
 }
 
+/** Answers per URL, so dropping the same track twice probes it once. */
+const urlDurations = new Map<string, number | null>();
+
+/**
+ * How long the audio at `url` actually runs, in seconds.
+ *
+ * The asset row usually knows already (`probeMedia` measured the file on the
+ * way up), but anything that arrived without being uploaded from here — AI
+ * generated music, an older asset — has no duration on it, and a clip placed
+ * from one of those would otherwise fall back to a fixed default length. Only
+ * metadata is fetched, not the samples.
+ */
+export async function probeAudioDurationFromUrl(
+  url: string,
+): Promise<number | null> {
+  const cached = urlDurations.get(url);
+  if (cached !== undefined) return cached;
+  const duration = await new Promise<number | null>((resolve) => {
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    audio.crossOrigin = "anonymous";
+    // A stream with no known length reports Infinity; treat it as unknown
+    // rather than handing a caller a clip an hour long.
+    audio.onloadedmetadata = () =>
+      resolve(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
+    audio.onerror = () => resolve(null);
+    audio.src = url;
+  });
+  urlDurations.set(url, duration);
+  return duration;
+}
+
 /**
  * Probe + upload one file to a project, reporting progress. Standalone (not a
  * hook) so callers that manage their own per-file state — the chat composer

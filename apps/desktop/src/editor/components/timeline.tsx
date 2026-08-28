@@ -45,9 +45,17 @@ const PX_PER_SECOND = 60;
 const TRACK_PADDING = 12;
 /** Row heights that make up the timeline's total height. */
 const RULER_HEIGHT = 18;
-const SCENE_TRACK_HEIGHT = 76;
-/** Tight bottom padding on the scene track so the audio lanes sit close under it. */
+/**
+ * Scene track. Short on purpose: the timeline competes with the preview and
+ * the chat for vertical space, and a scene card needs room for one line of
+ * title and a waveform strip — not the two-and-a-half lines it used to have.
+ */
+const SCENE_TRACK_HEIGHT = 54;
+/** Tight padding on the scene track so the audio lanes sit close under it. */
+const SCENE_TRACK_PAD_TOP = 6;
 const SCENE_TRACK_PAD_BOTTOM = 4;
+/** Voiceover strip inside a scene card — the same height as an audio clip's. */
+const SCENE_WAVEFORM_HEIGHT = 14;
 
 function SpeakerIcon({ className }: { className?: string }) {
   return (
@@ -120,6 +128,7 @@ function SceneWaveform({
       url={url}
       widthPx={widthPx}
       durationSec={durationSec}
+      heightPx={SCENE_WAVEFORM_HEIGHT}
       selected={selected}
       selectedClassName="text-purple"
       inactiveClassName="text-purple/60"
@@ -224,7 +233,7 @@ function SceneBlock({
         )}
       >
         {/* Title (left) + duration (top-right, aligned with the title) */}
-        <div className="flex items-center justify-between gap-2 px-2 pt-2">
+        <div className="flex items-center justify-between gap-2 px-2 pt-1">
           <span
             className={cx(
               "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
@@ -260,7 +269,7 @@ function SceneBlock({
               }}
               title={muted ? "Unmute voiceover" : "Mute voiceover"}
               className={cx(
-                "absolute right-2 top-2 z-10 flex items-center rounded text-purple/70 transition-opacity duration-150 hover:text-purple",
+                "absolute right-2 top-1 z-10 flex items-center rounded text-purple/70 transition-opacity duration-150 hover:text-purple",
                 muted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
               )}
             >
@@ -699,7 +708,7 @@ export function Timeline({
                     style={{
                       paddingLeft: TRACK_PADDING,
                       paddingRight: TRACK_PADDING,
-                      paddingTop: TRACK_PADDING,
+                      paddingTop: SCENE_TRACK_PAD_TOP,
                       paddingBottom: SCENE_TRACK_PAD_BOTTOM,
                     }}
                     onClick={(e) => {

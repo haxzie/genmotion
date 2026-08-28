@@ -50,3 +50,86 @@ export function resolveAudioTrack(
   }
   return null;
 }
+
+/**
+ * Frames a clip starting at `startFrame` on `track` may occupy before it runs
+ * into the next clip on that lane. `Infinity` when the lane is clear from there
+ * on, and 0 when a clip already covers `startFrame` — that lane has no room at
+ * this position at all.
+ */
+export function availableFramesAt(
+  existing: ClipPlacement[],
+  track: number,
+  startFrame: number,
+): number {
+  let room = Infinity;
+  for (const c of existing) {
+    if (c.track !== track) continue;
+    if (c.startFrame <= startFrame && startFrame < c.startFrame + c.durationInFrames) {
+      return 0;
+    }
+    if (c.startFrame > startFrame) {
+      room = Math.min(room, c.startFrame - startFrame);
+    }
+  }
+  return room;
+}
+
+export interface AudioPlacement {
+  track: number;
+  durationInFrames: number;
+}
+
+/**
+ * Where a new clip lands, and how long it is allowed to be there.
+ *
+ * A clip arrives at its whole natural length; the only thing that shortens it
+ * is something already in the way. In order:
+ *
+ * 1. The lane it was dropped on, if the whole clip fits there.
+ * 2. The lane it was dropped on, trimmed to the gap in front of the next clip
+ *    — dropping a song just before an existing one lays down the part that
+ *    fits, because where you put it is where you meant it to go.
+ * 3. Any lane that can hold the whole clip, opening a fresh one if need be —
+ *    nothing is cut while an empty lane is going spare.
+ * 4. Failing all that, the roomiest gap on offer.
+ *
+ * Returns null when every lane is already playing AT `startFrame`: there is no
+ * gap to trim to, and the caller should reject the placement.
+ */
+export function resolveAudioPlacement(
+  existing: ClipPlacement[],
+  startFrame: number,
+  durationInFrames: number,
+  requestedTrack?: number | null,
+): AudioPlacement | null {
+  const requested =
+    requestedTrack != null &&
+    Number.isInteger(requestedTrack) &&
+    requestedTrack >= 0 &&
+    requestedTrack < MAX_AUDIO_TRACKS
+      ? requestedTrack
+      : null;
+
+  if (requested !== null) {
+    const room = availableFramesAt(existing, requested, startFrame);
+    if (room >= 1) {
+      return {
+        track: requested,
+        durationInFrames: Math.min(durationInFrames, room),
+      };
+    }
+  }
+
+  const whole = resolveAudioTrack(existing, startFrame, durationInFrames);
+  if (whole !== null) return { track: whole, durationInFrames };
+
+  let best: AudioPlacement | null = null;
+  for (let track = 0; track < MAX_AUDIO_TRACKS; track++) {
+    const room = availableFramesAt(existing, track, startFrame);
+    if (room < 1) continue;
+    const frames = Math.min(durationInFrames, room);
+    if (!best || frames > best.durationInFrames) best = { track, durationInFrames: frames };
+  }
+  return best;
+}

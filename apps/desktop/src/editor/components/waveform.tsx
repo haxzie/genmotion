@@ -74,7 +74,8 @@ function envelopePath(levels: number[]): string {
 /**
  * One shared waveform so every strip in the editor — scene voiceovers and
  * project audio clips alike — renders identically. Only the tint differs per
- * context (purple for scenes, orange for audio), passed via `selectedClassName`.
+ * context (purple for scenes, the lane's own hue for audio), passed via
+ * `selectedClassName`.
  *
  * It draws a single-sided filled envelope planted on the card's bottom edge:
  * full-bleed horizontally, so a column's position is exactly its position in
@@ -88,6 +89,7 @@ export function Waveform({
   widthPx,
   startSec = 0,
   durationSec,
+  heightPx = 22,
   selected,
   selectedClassName,
   inactiveClassName = "text-text-tertiary",
@@ -100,6 +102,8 @@ export function Waveform({
   startSec?: number;
   /** Card length in seconds — waveform maps to real time, flat past the audio. */
   durationSec: number;
+  /** Strip height in px. The card owns it; the shape scales to whatever it is. */
+  heightPx?: number;
   selected: boolean;
   /** Fill color when selected, as a text color (e.g. "text-orange"). */
   selectedClassName: string;
@@ -125,10 +129,10 @@ export function Waveform({
   );
 
   return (
-    // The height lives HERE (not the callers) so every waveform — scene or
-    // audio — is the exact same strip. No padding: the shape is meant to sit
-    // flush in the card, which clips it to its own rounded corners.
-    <div className={cx("h-[22px]", className)}>
+    // No padding: the shape is meant to sit flush in the card, which clips it
+    // to its own rounded corners. The height is the card's call — the viewBox
+    // is stretched, so the shape reads the same at any strip height.
+    <div className={cx(className)} style={{ height: heightPx }}>
       <svg
         viewBox={`0 0 ${columns} ${VIEW_H}`}
         // The viewBox is in columns, not pixels: let it stretch to the card's

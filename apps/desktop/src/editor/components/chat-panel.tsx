@@ -103,14 +103,36 @@ function RetryIcon({ className }: { className?: string }) {
   );
 }
 
+export interface ContextUsage {
+  usedTokens: number;
+  maxTokens: number;
+}
+
+/** "29,938 / 1,000,000 tokens" reads worse than "30k / 1M". */
+function compactTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return String(n);
+}
+
 /**
- * Context-capacity ring left of the send button: fills as the live window
- * approaches COMPACTION_MESSAGE_LIMIT. When full, the next message auto-compacts
- * the earlier history (then it resets). Turns amber as it nears the limit.
+ * Context-capacity ring, left of the send button.
+ *
+ * Two very different numbers depending on who is answering. The hosted API
+ * keeps the conversation itself and folds it at COMPACTION_MESSAGE_LIMIT, so
+ * counting messages is exactly right there.
+ *
+ * The desktop app does not: it hands the harness one message and lets the CLI
+ * own the conversation, which compacts on its own schedule. Message count
+ * there is a number about our transcript, not about the model's context — it
+ * filled up and then nothing happened, because nothing was ever going to.
+ * `usage` is the harness's real answer, and it wins when present.
  */
-function CapacityRing({ count }: { count: number }) {
+function CapacityRing({ count, usage }: { count: number; usage?: ContextUsage | null }) {
   const limit = COMPACTION_MESSAGE_LIMIT;
-  const pct = Math.min(count / limit, 1);
+  const pct = usage
+    ? Math.min(usage.usedTokens / Math.max(1, usage.maxTokens), 1)
+    : Math.min(count / limit, 1);
   const r = 8.5;
   const circ = 2 * Math.PI * r;
   const near = pct >= 0.8;
@@ -118,8 +140,16 @@ function CapacityRing({ count }: { count: number }) {
   return (
     <div
       className="flex size-8 shrink-0 items-center justify-center"
-      title={`${count} / ${limit} messages in context — auto-compacts when full`}
-      aria-label={`Context capacity ${count} of ${limit} messages`}
+      title={
+        usage
+          ? `${compactTokens(usage.usedTokens)} / ${compactTokens(usage.maxTokens)} tokens of context — the agent compacts on its own when it fills`
+          : `${count} / ${limit} messages in context — auto-compacts when full`
+      }
+      aria-label={
+        usage
+          ? `Context ${compactTokens(usage.usedTokens)} of ${compactTokens(usage.maxTokens)} tokens`
+          : `Context capacity ${count} of ${limit} messages`
+      }
       role="img"
     >
       <svg viewBox="0 0 24 24" className="size-6 -rotate-90">
@@ -677,6 +707,10 @@ function ChatPanelInner({
         queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
       }
       // Live progress from a long-running tool (e.g. each parallel scene).
+      if (dataPart.type === "data-context-usage") {
+        const data = (dataPart as { data?: ContextUsage }).data;
+        if (data && typeof data.usedTokens === "number") setContextUsage(data);
+      }
       if (dataPart.type === "data-status") {
         const text = (dataPart as { data?: { text?: string } }).data?.text;
         if (text) setLiveStatus(text);
@@ -700,6 +734,9 @@ function ChatPanelInner({
   const pendingCompactionClear = useRef(false);
   // Latest live progress line streamed from a long-running tool this turn.
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
+  // Only the desktop harness reports this; the hosted API never sends it, so
+  // the ring falls back to counting messages there.
+  const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
   // Messages typed while a turn is streaming — sent one at a time as the stream
   // frees up. Each carries a `send` closure snapshotting its context.
   const [queue, setQueue] = useState<
@@ -1363,7 +1400,9 @@ function ChatPanelInner({
                     ? "⏎ to queue"
                     : "⏎ to send"}
             </span>
-            {messages.length > 0 && <CapacityRing count={messages.length} />}
+            {messages.length > 0 && (
+              <CapacityRing count={messages.length} usage={contextUsage} />
+            )}
             {/*
               Three states in one slot. Idle: send. Busy with something typed:
               queue it for the next turn — the button used to say so and still

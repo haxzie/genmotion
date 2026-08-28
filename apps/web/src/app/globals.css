@@ -25,6 +25,16 @@
      tints the inactive audio card (at low opacity). */
   --color-orange: #fb923c;
   --color-orange-muted: rgba(251, 146, 60, 0.16);
+  /* The rest of the audio lane hues. Every lane used to be orange, which made
+     a stack of them read as one block — the hue is how you tell at a glance
+     which row a clip is on. Lane 1 keeps the orange above. Each is picked to
+     sit at roughly the same brightness so no lane shouts over the others. */
+  --color-mint: #4ade80;
+  --color-mint-muted: rgba(74, 222, 128, 0.16);
+  --color-pink: #f472b6;
+  --color-pink-muted: rgba(244, 114, 182, 0.16);
+  --color-sky: #38bdf8;
+  --color-sky-muted: rgba(56, 189, 248, 0.16);
   /* Purple: tints the inactive scene card on the timeline (at low opacity). */
   --color-purple: #a78bfa;
   --color-purple-muted: rgba(167, 139, 250, 0.16);

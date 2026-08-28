@@ -40,6 +40,31 @@ function describeTool(name: string, input: unknown): string {
   }
 }
 
+/**
+ * The harness's own view of how full its context is.
+ *
+ * Never throws and never blocks a turn: a number for a status ring is not
+ * worth failing a message over.
+ */
+async function readContextUsage(
+  response: unknown,
+): Promise<{ usedTokens: number; maxTokens: number } | null> {
+  const query = response as { getContextUsage?: () => Promise<unknown> };
+  if (typeof query.getContextUsage !== "function") return null;
+  try {
+    const usage = (await query.getContextUsage()) as {
+      totalTokens?: number;
+      maxTokens?: number;
+    };
+    if (typeof usage?.totalTokens !== "number" || typeof usage?.maxTokens !== "number") {
+      return null;
+    }
+    return { usedTokens: usage.totalTokens, maxTokens: usage.maxTokens };
+  } catch {
+    return null;
+  }
+}
+
 interface ContentBlock {
   type: string;
   text?: string;
@@ -84,6 +109,9 @@ function loadToolchain(): Promise<[AgentSdkModule, string | null]> {
  * from here instead.
  */
 let activeTurn: { signal: AbortSignal } | null = null;
+
+/** The most recent context reading, carried between turns. */
+let lastContext: { usedTokens: number; maxTokens: number } | null = null;
 
 /** Options a turn runs with. Shared so a warm spawn cannot drift from a cold one. */
 function turnOptions(
@@ -195,6 +223,16 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
       // message repeats it. Emit deltas when we get them, and fall back to the
       // whole block only if this turn produced none.
       let sawDelta = false;
+      // Last turn's reading, so the ring is populated from the first frame
+      // rather than only once this turn produces its own.
+      if (lastContext) yield { type: "context", context: lastContext };
+      /**
+       * Set when the in-flight context request lands. Never awaited: the CLI
+       * answers it as it goes idle, so waiting would hold the turn open — and
+       * the spinner up — for a status number.
+       */
+      let contextResult: { usedTokens: number; maxTokens: number } | null = null;
+      let contextAsked = false;
 
       const [sdk, executable] = await loadToolchain();
 
@@ -248,6 +286,16 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
             }
 
             case "assistant": {
+              // Started, not awaited. The control request queues behind the
+              // model turn — measured at ~1.9s — so awaiting it here would
+              // stall every tool card behind a status number. It is asked for
+              // while the query is alive and collected once the turn is done.
+              if (!contextAsked) {
+                contextAsked = true;
+                void readContextUsage(response).then((usage) => {
+                  if (usage) contextResult = lastContext = usage;
+                });
+              }
               for (const block of blocks(message)) {
                 if (block.type === "text" && block.text && !sawDelta) {
                   yield { type: "text-delta", text: block.text };
@@ -321,6 +369,11 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
         // park on an abort that can never fire again.
         activeTurn = null;
       }
+
+      // Whatever landed before the turn ended. If it did not, the reading is
+      // kept and sent at the start of the next turn instead — a ring one turn
+      // stale is worth more than a turn held open to freshen it.
+      if (contextResult) yield { type: "context", context: contextResult };
 
       yield { type: "done", sessionId };
     },

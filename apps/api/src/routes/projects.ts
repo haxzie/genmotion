@@ -13,7 +13,7 @@ import {
   schema,
 } from "@genmotion/db";
 import {
-  resolveAudioTrack,
+  resolveAudioPlacement,
   clipsOverlap,
   MAX_AUDIO_TRACKS,
 } from "@genmotion/shared";
@@ -280,14 +280,26 @@ projectRoutes.post(
       durationInFrames = Math.min(durationInFrames, compositionEnd - startFrame);
     }
 
+    // The other ceiling: whatever clip comes next on the lane it lands on. The
+    // clip keeps its full length wherever a lane can hold it — a fresh lane is
+    // opened before anything is cut — so this only bites when every lane is
+    // already busy somewhere ahead, and then it lays down the part that fits
+    // rather than refusing the drop.
     const existing = await clipPlacements(project.id);
-    const track = resolveAudioTrack(existing, startFrame, durationInFrames, body.track);
-    if (track === null) {
+    const placement = resolveAudioPlacement(
+      existing,
+      startFrame,
+      durationInFrames,
+      body.track,
+    );
+    if (placement === null) {
       return c.json(
         { error: `No free audio track at this position (max ${MAX_AUDIO_TRACKS}).` },
         409,
       );
     }
+    const { track } = placement;
+    durationInFrames = placement.durationInFrames;
 
     const [clip] = await db
       .insert(schema.audioClips)

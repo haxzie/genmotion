@@ -13,8 +13,21 @@ export type AgentEvent =
   /** The project changed on disk; the editor should refetch. */
   | { type: "project-touched" }
   | { type: "usage"; usage: TokenUsage }
+  /**
+   * How full the harness's context window is.
+   *
+   * The desktop app sends the harness one message and lets it own the
+   * conversation, so our transcript length says nothing about how close the
+   * model is to compacting. This is the real number, read from the harness.
+   */
+  | { type: "context"; context: ContextUsage }
   | { type: "error"; message: string }
   | { type: "done"; sessionId: string | null };
+
+export interface ContextUsage {
+  usedTokens: number;
+  maxTokens: number;
+}
 
 export interface TokenUsage {
   inputTokens?: number;
