@@ -239,7 +239,14 @@ function AudioClipBlock({
         rather than window listeners so a fast drag that leaves the clip keeps
         working, and stopPropagation everywhere so none of it starts a move.
       */}
-      <div className="pointer-events-none absolute inset-0 z-[5]">
+      <div
+        className={cx(
+          "pointer-events-none absolute inset-0 z-[5]",
+          // Everything inside draws with `*-current`, so the hue is set once
+          // here rather than on each of the line, the ramps and the handles.
+          selected ? theme.handle : theme.handleIdle,
+        )}
+      >
         {/* Fade ramps, as triangles from silence up to the gain line. */}
         {(fadeIn > 0 || fadeOut > 0) && (
           <svg className="absolute inset-0 size-full" preserveAspectRatio="none">

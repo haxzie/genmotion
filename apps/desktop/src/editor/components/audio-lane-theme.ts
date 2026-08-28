@@ -25,6 +25,14 @@ export interface LaneTheme {
   solid: string;
   /** Mute toggle. */
   button: string;
+  /**
+   * `currentColor` for the gain line, its fade ramps and the fade handles —
+   * they all draw with `*-current`. Pitched at the clip's own border: `handle`
+   * matches the selected border, `handleIdle` the hover border, which is the
+   * only unselected state in which any of it is visible.
+   */
+  handle: string;
+  handleIdle: string;
   /** Context chip / pill: border, fill and text in one. */
   chip: string;
   /** The chip's remove button, on hover. */
@@ -50,6 +58,8 @@ export const LANE_THEMES: LaneTheme[] = [
     waveIdle: "text-orange/55",
     solid: "bg-orange",
     button: "text-orange/70 hover:text-orange",
+    handle: "text-orange",
+    handleIdle: "text-orange/45",
     chip: "border-orange/40 bg-orange-muted text-orange",
     chipHover: "hover:bg-orange/25",
   },
@@ -62,6 +72,8 @@ export const LANE_THEMES: LaneTheme[] = [
     waveIdle: "text-mint/55",
     solid: "bg-mint",
     button: "text-mint/70 hover:text-mint",
+    handle: "text-mint",
+    handleIdle: "text-mint/45",
     chip: "border-mint/40 bg-mint-muted text-mint",
     chipHover: "hover:bg-mint/25",
   },
@@ -74,6 +86,8 @@ export const LANE_THEMES: LaneTheme[] = [
     waveIdle: "text-pink/55",
     solid: "bg-pink",
     button: "text-pink/70 hover:text-pink",
+    handle: "text-pink",
+    handleIdle: "text-pink/45",
     chip: "border-pink/40 bg-pink-muted text-pink",
     chipHover: "hover:bg-pink/25",
   },
@@ -86,6 +100,8 @@ export const LANE_THEMES: LaneTheme[] = [
     waveIdle: "text-sky/55",
     solid: "bg-sky",
     button: "text-sky/70 hover:text-sky",
+    handle: "text-sky",
+    handleIdle: "text-sky/45",
     chip: "border-sky/40 bg-sky-muted text-sky",
     chipHover: "hover:bg-sky/25",
   },
