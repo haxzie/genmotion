@@ -13,6 +13,8 @@ import {
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
+import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
+import { AgentBadges } from "@/components/marketing/agent-badges";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug, getAllShowcaseVideos } from "@/lib/marketing/content";
@@ -158,7 +160,8 @@ export default async function HomePage() {
           <p className="mt-6 max-w-xl text-lg text-text-secondary">
             AI-powered motion graphics editor for your product videos.
           </p>
-          <div className="mt-10 flex w-full flex-col items-center">
+          <AgentBadges className="mt-6" />
+          <div className="mt-8 flex w-full flex-col items-center">
             <DownloadButton size="lg" href={release?.downloadUrl} />
             <p className="mt-4 text-[0.9rem] text-text-secondary">
               {release ? (
@@ -181,11 +184,22 @@ export default async function HomePage() {
         </Container>
       </div>
 
-      {/* Showcase gallery — pulled up with a negative margin so the card
-          overlaps the hero composer above, mirroring how the dashboard's
-          projects list overlaps its composer. z-10 keeps it over the blobs. */}
+      {/* The app itself, leaning back and standing up as you scroll onto it.
+          Pulled up into the room the hero's extra bottom padding leaves, the
+          way the showcase card used to be — this is the first thing under the
+          headline now, so it takes that slot. z-10 keeps it over the blobs. */}
+      <section className="relative z-10 -mt-20 sm:-mt-28">
+        <Container>
+          <TiltedScreenshot
+            src="/editor-screenshot.webp"
+            alt="The GenMotion editor: an AI chat panel on the left, a frame-accurate preview, and a timeline of scenes and audio tracks below."
+          />
+        </Container>
+      </section>
+
+      {/* Showcase gallery. */}
       {showcaseVideos.length > 0 && (
-        <section className="relative z-10 -mt-28 sm:-mt-36">
+        <section className="relative z-10 mt-24 sm:mt-32">
           <Container>
             <div className="rounded-2xl border border-border bg-background p-5 shadow-[0_-8px_40px_rgba(10,10,20,0.35)] sm:p-8">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
