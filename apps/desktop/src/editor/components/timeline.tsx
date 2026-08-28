@@ -426,6 +426,12 @@ function Playhead({
     apply(usePlaybackStore.getState().frame, false);
     if (playing) startLoop();
 
+    // Fires on EVERY store write, not just this component's slice of it — so
+    // the paused branch has to check that the frame actually moved. Hovering
+    // the timeline writes `hoverFrame` every couple of pixels, and without this
+    // each of those (and the reset when the pointer leaves) would scroll the
+    // playhead back into view, dragging the track out from under whatever the
+    // user had scrolled to look at.
     const unsubscribe = usePlaybackStore.subscribe((s) => {
       if (s.isPlaying && !playing) {
         playing = true;
@@ -434,9 +440,11 @@ function Playhead({
         playing = false;
         cancelAnimationFrame(raf);
         setMoving(false);
+        lastFrame = s.frame;
         apply(s.frame, true);
-      } else if (!s.isPlaying) {
+      } else if (!s.isPlaying && s.frame !== lastFrame) {
         // Paused scrubbing / jumps.
+        lastFrame = s.frame;
         apply(s.frame, true);
       }
     });
