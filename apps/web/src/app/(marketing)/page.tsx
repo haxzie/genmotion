@@ -7,12 +7,13 @@ import {
   Section,
   Eyebrow,
   GradientBlobs,
+  CoolGradientBlobs,
   LinkButton,
   Card,
 } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
-import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
+import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { AgentBadges } from "@/components/marketing/agent-badges";
 import { FEATURES } from "@/lib/marketing/features";
@@ -114,11 +115,12 @@ export default async function HomePage() {
   // unreachable or nothing is published — the button still works, it just
   // says less.
   const release = await getLatestRelease();
-  // Home shows only videos flagged `featured` in their frontmatter — latest 6
+  // Home shows only videos flagged `featured` in their frontmatter — the
+  // latest 3, which is what the card stack below fans out
   // (getAllShowcaseVideos is already sorted newest-first).
   const showcaseVideos = getAllShowcaseVideos()
     .filter((v) => v.featured)
-    .slice(0, 6);
+    .slice(0, 3);
 
   return (
     <>
@@ -199,36 +201,44 @@ export default async function HomePage() {
 
       {/* Showcase gallery. */}
       {showcaseVideos.length > 0 && (
-        <section className="relative z-10 mt-24 sm:mt-32">
+        // overflow-x-clip, not hidden: the fanned side cards reach past the
+        // gutter on narrow viewports, and clipping here keeps that from
+        // giving the document a horizontal scrollbar.
+        <section className="relative z-10 mt-24 overflow-x-clip sm:mt-32">
           <Container>
-            <div className="rounded-2xl border border-border bg-background p-5 shadow-[0_-8px_40px_rgba(10,10,20,0.35)] sm:p-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="max-w-2xl">
-                  <Eyebrow className="mb-4">Showcase</Eyebrow>
-                  <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Made with GenMotion
-                  </h2>
-                  <p className="mt-4 text-text-secondary">
-                    Real motion videos — teasers, explainers, data stories, and
-                    more — each one generated from a description.
-                  </p>
-                </div>
-                <Link
-                  href="/showcase"
-                  className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
-                >
-                  View all
-                  <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h13M13 6l6 6-6 6" />
-                  </svg>
-                </Link>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <Eyebrow className="mb-4">Showcase</Eyebrow>
+                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Made with GenMotion
+                </h2>
+                <p className="mt-4 text-text-secondary">
+                  Real motion videos — teasers, explainers, data stories, and
+                  more — each one generated from a description.
+                </p>
               </div>
-              <ShowcaseGrid videos={showcaseVideos} className="mt-8" />
-              <div className="mt-10 flex justify-center">
-                <LinkButton href="/showcase" variant="secondary" size="lg">
-                  View more videos
-                </LinkButton>
+              <Link
+                href="/showcase"
+                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
+              >
+                View all
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </Link>
+            </div>
+            {/* The glow sits in the stack's own box, first in DOM order, so
+                the cards (which carry z-indexes) paint over it. */}
+            <div className="relative mt-10">
+              <div className="pointer-events-none absolute -inset-x-40 -inset-y-48">
+                <CoolGradientBlobs />
               </div>
+              <ShowcaseStack videos={showcaseVideos} />
+            </div>
+            <div className="mt-10 flex justify-center">
+              <LinkButton href="/showcase" variant="secondary" size="lg">
+                View more videos
+              </LinkButton>
             </div>
           </Container>
         </section>

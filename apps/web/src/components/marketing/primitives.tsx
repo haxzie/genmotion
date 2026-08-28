@@ -124,6 +124,44 @@ export function VividGradientBlobs({ className }: { className?: string }) {
   );
 }
 
+// Radii of exactly 50% put the fade's zero point on the box edges, so the
+// glow ends in air rather than at a visible horizontal or vertical seam.
+const MASK = "radial-gradient(50% 50% at 50% 50%, black 25%, transparent 100%)";
+
+/**
+ * Cool-hued cousin of the blobs above — violet / azure / rose instead of the
+ * brand lime and teal, so the showcase reads as its own moment rather than a
+ * second hero. Roams its whole box (the drift-* keyframes) and is masked to a
+ * soft ellipse, so it can sit behind a card stack without a visible edge.
+ */
+export function CoolGradientBlobs({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cx("pointer-events-none absolute inset-0", className)}
+      style={{
+        maskImage: MASK,
+        WebkitMaskImage: MASK,
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+      }}
+    >
+      <div
+        className="absolute left-[2%] top-[2%] size-[36vw] max-w-[560px] rounded-full blur-[100px] animate-[drift-1_17s_ease-in-out_infinite]"
+        style={{ background: "#7C4DFF", opacity: 0.6 }}
+      />
+      <div
+        className="absolute right-[2%] top-[10%] size-[34vw] max-w-[540px] rounded-full blur-[100px] animate-[drift-2_21s_ease-in-out_infinite]"
+        style={{ background: "#FF4D9D", opacity: 0.5 }}
+      />
+      <div
+        className="absolute bottom-0 left-[30%] size-[32vw] max-w-[500px] rounded-full blur-[110px] animate-[drift-3_19s_ease-in-out_infinite]"
+        style={{ background: "#2E8BFF", opacity: 0.55 }}
+      />
+    </div>
+  );
+}
+
 type LinkButtonProps = {
   href: string;
   variant?: "primary" | "secondary" | "ghost";
