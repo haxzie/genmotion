@@ -63,7 +63,7 @@ export function DownloadButton({
     <a
       href={href}
       className={join(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         size === "lg" ? "h-12 px-6 text-[1.05rem]" : "h-9 px-4 text-[1rem]",
         variants[variant],
         className,
