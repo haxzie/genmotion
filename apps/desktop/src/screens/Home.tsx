@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { HeroComposer } from "@/components/composer";
 import { cx } from "@/components/ui";
 import { HarnessPicker } from "../harness-picker";
+import { FolderAccess } from "../folder-access";
 import { api, type RecentProject } from "../api";
 import { AccountMenu } from "../components/account-menu";
 import { UpdateModal } from "../components/update-modal";
@@ -276,8 +277,14 @@ export function Home({
             onSubmit={(prompt, dims) => onCreate({ prompt, ...dims })}
             pending={busy}
             // The first prompt goes straight to the agent, so which agent that
-            // is belongs here rather than only inside the editor.
-            accessory={<HarnessPicker placement="down" />}
+            // is belongs here rather than only inside the editor — and so does
+            // what it can see, which is where a `genmotion .` launch shows up.
+            accessory={
+              <>
+                <HarnessPicker placement="down" />
+                <FolderAccess placement="down" />
+              </>
+            }
           />
         </motion.div>
       </section>
@@ -289,16 +296,6 @@ export function Home({
             {total > 0 && (
               <span className="text-[0.857rem] text-text-tertiary">{total}</span>
             )}
-            <button
-              type="button"
-              onClick={async () => {
-                const dir = await api.pickProjectFolder();
-                if (dir) onOpen(dir);
-              }}
-              className="ml-auto text-[0.857rem] text-text-tertiary transition-colors hover:text-text-primary"
-            >
-              Open a folder…
-            </button>
           </div>
 
           {projects === null ? (

@@ -17,7 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type AudioClipData,
   type SceneData,
-  COMPACTION_MESSAGE_LIMIT,
+  type ChatPlugin,
 } from "@genmotion/shared";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
@@ -30,9 +30,12 @@ import {
   AssetChips,
   AudioClipChips,
   ElementChips,
+  PluginChips,
   MessageContextPills,
   type MessageContextData,
 } from "./scene-chip";
+import { PluginMenu } from "./plugin-menu";
+import { useShareFolder } from "../../folder-access";
 import { ToolCard, type ToolPartLike } from "./tool-card";
 import { Spinner, cx } from "@/components/ui";
 
@@ -48,6 +51,11 @@ interface ChatPage {
   messages: UIMessage[];
   hasMore: boolean;
   cursor: string | null;
+  /**
+   * Where the harness's context stood at the end of the last turn, sent with
+   * the newest page only. `usage: null` means it has never reported one.
+   */
+  context?: { usage: ContextUsage | null };
 }
 
 const HISTORY_PAGE = 30;
@@ -77,14 +85,6 @@ let ComposerAccessory: ComponentType | null = null;
 
 export function registerComposerAccessory(component: ComponentType | null): void {
   ComposerAccessory = component;
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
 }
 
 function ArrowUpIcon({ className }: { className?: string }) {
@@ -118,21 +118,17 @@ function compactTokens(n: number): string {
 /**
  * Context-capacity ring, left of the send button.
  *
- * Two very different numbers depending on who is answering. The hosted API
- * keeps the conversation itself and folds it at COMPACTION_MESSAGE_LIMIT, so
- * counting messages is exactly right there.
- *
- * The desktop app does not: it hands the harness one message and lets the CLI
- * own the conversation, which compacts on its own schedule. Message count
- * there is a number about our transcript, not about the model's context — it
- * filled up and then nothing happened, because nothing was ever going to.
- * `usage` is the harness's real answer, and it wins when present.
+ * It shows ONE number: how full the harness says its context is. It used to
+ * fall back to counting messages in our transcript against
+ * COMPACTION_MESSAGE_LIMIT, which the hosted API folded at — but the hosted
+ * studio is retired, and here the app hands the harness a single message and
+ * lets the CLI own the conversation. Our transcript length says nothing about
+ * the model's context, so a project with thirty-odd messages showed a full
+ * ring for ever, next to a tooltip promising an auto-compaction that was never
+ * ours to do. An unknown number now reads as unknown.
  */
-function CapacityRing({ count, usage }: { count: number; usage?: ContextUsage | null }) {
-  const limit = COMPACTION_MESSAGE_LIMIT;
-  const pct = usage
-    ? Math.min(usage.usedTokens / Math.max(1, usage.maxTokens), 1)
-    : Math.min(count / limit, 1);
+function CapacityRing({ usage }: { usage?: ContextUsage | null }) {
+  const pct = usage ? Math.min(usage.usedTokens / Math.max(1, usage.maxTokens), 1) : 0;
   const r = 8.5;
   const circ = 2 * Math.PI * r;
   const near = pct >= 0.8;
@@ -143,29 +139,31 @@ function CapacityRing({ count, usage }: { count: number; usage?: ContextUsage | 
       title={
         usage
           ? `${compactTokens(usage.usedTokens)} / ${compactTokens(usage.maxTokens)} tokens of context — the agent compacts on its own when it fills`
-          : `${count} / ${limit} messages in context — auto-compacts when full`
+          : "Context usage is reported by the agent after its next message"
       }
       aria-label={
         usage
           ? `Context ${compactTokens(usage.usedTokens)} of ${compactTokens(usage.maxTokens)} tokens`
-          : `Context capacity ${count} of ${limit} messages`
+          : "Context usage not reported yet"
       }
       role="img"
     >
       <svg viewBox="0 0 24 24" className="size-6 -rotate-90">
         <circle cx="12" cy="12" r={r} fill="none" stroke="var(--color-border)" strokeWidth="2.5" />
-        <circle
-          cx="12"
-          cy="12"
-          r={r}
-          fill="none"
-          stroke={stroke}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - pct)}
-          style={{ transition: "stroke-dashoffset 0.4s ease, stroke 0.3s ease" }}
-        />
+        {usage && (
+          <circle
+            cx="12"
+            cy="12"
+            r={r}
+            fill="none"
+            stroke={stroke}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - pct)}
+            style={{ transition: "stroke-dashoffset 0.4s ease, stroke 0.3s ease" }}
+          />
+        )}
       </svg>
     </div>
   );
@@ -183,8 +181,15 @@ function buildContextNote(
     sceneName: string;
     timecode: string;
   }[],
+  plugins: ChatPlugin[],
 ): string | null {
   const lines: string[] = [];
+  // First, because it says what to *do* — the rest of the note says what to do
+  // it to. A steer rather than a bypass: the agent still runs its own loop, so
+  // it can size a script to the scene and place the result on the timeline.
+  for (const plugin of plugins) {
+    if (plugin.directive) lines.push(plugin.directive);
+  }
   if (elements.length > 0) {
     lines.push(
       "Selected element(s) — my request is about these. Find each in its scene's code by id (else by tag + text) and change THAT element:",
@@ -524,6 +529,7 @@ function ChatPanelInner({
   initialMessages,
   initialCursor,
   initialHasMore,
+  initialContextUsage,
 }: {
   projectId: string;
   scenes: SceneData[];
@@ -532,8 +538,14 @@ function ChatPanelInner({
   /** Oldest id loaded so far — where the next page back starts. */
   initialCursor: string | null;
   initialHasMore: boolean;
+  /** Where the harness's context stood after the last turn, if it ever said. */
+  initialContextUsage: ContextUsage | null;
 }) {
   const [input, setInput] = useState("");
+  // Chat plugins attached to the message being written. Composer-local rather
+  // than in the editor store: every other kind of context is produced by
+  // another panel, but these are picked and consumed here and nowhere else.
+  const [plugins, setPlugins] = useState<ChatPlugin[]>([]);
   const queryClient = useQueryClient();
   const { openUpgrade } = useUpgrade();
   const { data: assets } = useProjectAssets(projectId);
@@ -542,6 +554,8 @@ function ChatPanelInner({
   // Files being uploaded from a chat-composer drop — shown as loading chips
   // until they resolve into real assets and land as context.
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  // Offered from the `+` as well as from the Folders control beside it.
+  const shareFolder = useShareFolder();
   // `windowDragActive`: a file is being dragged somewhere in the window (cue the
   // composer as a target). `chatDragOver`: it's directly over the composer.
   const [windowDragActive, setWindowDragActive] = useState(false);
@@ -705,6 +719,11 @@ function ChatPanelInner({
         dataPart.type === "data-scenes-updated"
       ) {
         queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
+        // The assets panel is a separate query over the assets/ directory, and
+        // nothing else invalidates it for an agent-written file — so a
+        // generated voiceover or image would sit on disk, in the timeline, and
+        // still be missing from the picker until something unrelated refreshed.
+        queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
       }
       // Live progress from a long-running tool (e.g. each parallel scene).
       if (dataPart.type === "data-context-usage") {
@@ -736,7 +755,11 @@ function ChatPanelInner({
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
   // Only the desktop harness reports this; the hosted API never sends it, so
   // the ring falls back to counting messages there.
-  const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
+  // Seeded from the stored end-of-last-turn reading, so the ring is right on
+  // open rather than a turn later.
+  const [contextUsage, setContextUsage] = useState<ContextUsage | null>(
+    initialContextUsage ?? null,
+  );
   // Messages typed while a turn is streaming — sent one at a time as the stream
   // frees up. Each carries a `send` closure snapshotting its context.
   const [queue, setQueue] = useState<
@@ -817,8 +840,9 @@ function ChatPanelInner({
     if (lastUserIdx > 0) setMessages(messages.slice(lastUserIdx));
   }, [messages, busy, setMessages]);
 
-  // Escape clears all attached context pills (scenes, assets, elements) —
-  // unless a modal is open, where Escape should close that instead.
+  // Escape clears everything attached to the message being written (scenes,
+  // assets, elements, plugins) — unless a modal is open, where Escape should
+  // close that instead.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -835,6 +859,7 @@ function ChatPanelInner({
         s.clearAudioClipSelection();
         s.clearElements();
       }
+      setPlugins([]);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -1069,6 +1094,7 @@ function ChatPanelInner({
         sceneName: e.sceneName,
         timecode: e.timecode,
       })),
+      plugins: plugins.map((p) => ({ id: p.id, label: p.label })),
     };
     // The note prepended to the message (model input); pills (above) are display.
     const note = buildContextNote(
@@ -1082,6 +1108,7 @@ function ChatPanelInner({
         sceneName: e.sceneName,
         timecode: e.timecode,
       })),
+      plugins,
     );
 
     const snapshotSceneIds = [...selectedSceneIds];
@@ -1140,6 +1167,7 @@ function ChatPanelInner({
     store.clearAssetSelection();
     store.clearAudioClipSelection();
     store.clearElements();
+    setPlugins([]);
 
     if (busy) {
       // A turn is in flight — queue this message and flush it when the stream
@@ -1352,6 +1380,16 @@ function ChatPanelInner({
                 : "border-[#1f1f24] focus-within:border-[#2a2a31]",
           )}
         >
+          {/* Inside the border, unlike the selection pills above the form: a
+              plugin is part of the message being written, not context picked
+              from another panel. */}
+          <PluginChips
+            plugins={plugins}
+            onRemove={(id) => {
+              setPlugins((list) => list.filter((p) => p.id !== id));
+              inputRef.current?.focus();
+            }}
+          />
           <textarea
             ref={inputRef}
             value={input}
@@ -1361,11 +1399,23 @@ function ChatPanelInner({
                 e.preventDefault();
                 submit();
               }
+              // Backspace against an empty box drops the last chip, the way it
+              // would if the chip were a character in the input.
+              if (
+                e.key === "Backspace" &&
+                !input &&
+                plugins.length > 0 &&
+                e.currentTarget.selectionStart === 0
+              ) {
+                e.preventDefault();
+                setPlugins((list) => list.slice(0, -1));
+              }
             }}
             placeholder={
-              scenes.length === 0
+              plugins.at(-1)?.placeholder ||
+              (scenes.length === 0
                 ? "Describe the video you want to make…"
-                : "Ask for changes or new scenes…"
+                : "Ask for changes or new scenes…")
             }
             rows={2}
             className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
@@ -1382,14 +1432,20 @@ function ChatPanelInner({
                 e.target.value = "";
               }}
             />
-            <button
-              type="button"
-              title="Attach image, video, or audio (or drag files here)"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
-            >
-              <PlusIcon className="size-[1.15rem]" />
-            </button>
+            <PluginMenu
+              disabledIds={plugins.map((p) => p.id)}
+              onPick={(plugin) => {
+                setPlugins((list) =>
+                  list.some((p) => p.id === plugin.id) ? list : [...list, plugin],
+                );
+                inputRef.current?.focus();
+              }}
+              onAttachFile={() => fileInputRef.current?.click()}
+              // Same request the Folders control beside it makes, so a folder
+              // added here appears there without a refetch.
+              onShareFolder={() => shareFolder.mutate()}
+              sharingFolder={shareFolder.isPending}
+            />
             {ComposerAccessory && <ComposerAccessory />}
             <span className="min-w-0 flex-1 truncate text-center text-[0.786rem] text-text-tertiary">
               {selectedSceneIds.length > 0
@@ -1401,7 +1457,7 @@ function ChatPanelInner({
                     : "⏎ to send"}
             </span>
             {messages.length > 0 && (
-              <CapacityRing count={messages.length} usage={contextUsage} />
+              <CapacityRing usage={contextUsage} />
             )}
             {/*
               Three states in one slot. Idle: send. Busy with something typed:
@@ -1496,6 +1552,7 @@ export function ChatPanel({
       initialMessages={history?.messages ?? []}
       initialCursor={history?.cursor ?? null}
       initialHasMore={history?.hasMore ?? false}
+      initialContextUsage={history?.context?.usage ?? null}
     />
   );
 }

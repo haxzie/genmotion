@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { projectQueryKey } from "@/hooks/use-project";
 import { UpgradeProvider } from "@/components/upgrade-modal";
-import { Spinner } from "@/components/ui";
 import { registerNavigate } from "./shims/next-link";
 import { api, type DesktopProject } from "./api";
 import { Home } from "./screens/Home";
 import { EditorScreen } from "./screens/EditorScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { useAuth } from "./lib/use-auth";
+import { DevPanel } from "./dev/dev-panel";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 0 } },
@@ -19,6 +19,12 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <UpgradeProvider>
         <Shell />
+        {/* The dev-only admin panel. `import.meta.env.DEV` is a literal by the
+            time Vite builds, so the branch and the import behind it are dropped
+            from the packaged renderer — the panel cannot reach a user even by
+            accident. Mounted here rather than inside Shell so it is there on
+            the login screen too. */}
+        {import.meta.env.DEV && <DevPanel />}
       </UpgradeProvider>
     </QueryClientProvider>
   );
@@ -90,6 +96,30 @@ function Shell() {
     [adopt],
   );
 
+  // `genmotion <path>` pointing at a project opens it, rather than landing on
+  // the start screen the user has already told us to skip. A folder that is
+  // *not* a project needs nothing here: the main process shares it with
+  // whichever project they open next, which is the whole of what it means.
+  useEffect(() => {
+    if (auth.status !== "signed-in") return;
+    let live = true;
+    void api.launchContext().then((context) => {
+      if (live && context.dir && context.isProject) void open(context.dir);
+    });
+    return () => {
+      live = false;
+    };
+  }, [auth.status, open]);
+
+  // The same command run again while the app is up.
+  useEffect(
+    () =>
+      api.onLaunchContext((context) => {
+        if (context.dir && context.isProject) void open(context.dir);
+      }),
+    [open],
+  );
+
   const close = useCallback(async () => {
     await api.closeProject();
     setProject(null);
@@ -110,8 +140,12 @@ function Shell() {
   // login screen while that happens would be a lie every time.
   if (auth.status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Spinner />
+      <div
+        className="flex h-screen items-center justify-center bg-background"
+        role="status"
+        aria-label="Loading"
+      >
+        <img src="/logo.svg" alt="" className="boot-mark size-12" />
       </div>
     );
   }

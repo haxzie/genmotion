@@ -4,6 +4,8 @@ import type { ProjectSession } from "../project-session";
 import { agentEnv, resolveExecutable } from "./detect";
 import { MCP_TOKEN, MCP_TOKEN_ENV } from "./mcp-http";
 import { buildCodexPreamble } from "./prompt";
+import { listReadRoots } from "./read-roots";
+import { getLaunchDir } from "../cli";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
 /**
@@ -255,8 +257,13 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
         );
 
       // The preamble rides along with the first message of a thread; a resumed
-      // thread already has it in history.
-      const opening = resumeSessionId ? text : `${buildCodexPreamble()}\n\n${text}`;
+      // thread already has it in history. Folders the user has shared go in it
+      // rather than into the sandbox config: `workspace-write` already lets
+      // Codex read outside the workspace — what it lacks is knowing where to
+      // look, and that writes stay in the project whatever it can see.
+      const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
+      const preamble = buildCodexPreamble(readRoots, getLaunchDir());
+      const opening = resumeSessionId ? text : `${preamble}\n\n${text}`;
 
       // A resume can fail for reasons the user can't act on — the session log
       // was pruned, or the folder was opened on another machine. Falling back
@@ -268,7 +275,7 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
       if (resumeSessionId && attempt.failed && !signal.aborted) {
         yield { type: "status", text: "Starting a new Codex session" };
         sessionId = null;
-        attempt = await collect(run(null), `${buildCodexPreamble()}\n\n${text}`, signal);
+        attempt = await collect(run(null), `${preamble}\n\n${text}`, signal);
       }
 
       // Read the thread id before emitting anything. An error event ends the

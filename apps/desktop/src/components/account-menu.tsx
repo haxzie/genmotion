@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/ui";
 import { api } from "../api";
-import type { AuthUser, AuthOrganization } from "../../electron/shared";
+import type { AuthUser, AuthOrganization, CliStatus } from "../../electron/shared";
 
 /**
  * The signed-in account, top right of the start screen.
@@ -21,24 +21,79 @@ function Item({
   children,
   onClick,
   tone = "default",
+  disabled = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   tone?: "default" | "danger";
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cx(
         "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[0.857rem] transition-colors duration-150",
-        tone === "danger"
-          ? "text-danger hover:bg-danger/10"
-          : "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
+        disabled
+          ? "cursor-default text-text-tertiary"
+          : tone === "danger"
+            ? "text-danger hover:bg-danger/10"
+            : "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
       )}
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * The `genmotion` command, offered where the rest of the app's own settings
+ * are. Installed state is shown rather than hidden: a command that is already
+ * there is the answer to "did that work?", and a command left over from an app
+ * that has since moved is worth saying out loud, since it opens nothing.
+ */
+function CommandLineItem() {
+  const [cli, setCli] = useState<CliStatus | null>(null);
+  const [installing, setInstalling] = useState(false);
+
+  useEffect(() => {
+    void api.cli.status().then(setCli);
+  }, []);
+
+  if (!cli?.supported) return null;
+
+  const ready = cli.installed && cli.current;
+
+  return (
+    <>
+      <Item
+        disabled={ready || installing}
+        onClick={() => {
+          if (ready || installing) return;
+          setInstalling(true);
+          void api.cli
+            .install()
+            .then(setCli)
+            .finally(() => setInstalling(false));
+        }}
+      >
+        {installing
+          ? "Installing…"
+          : ready
+            ? "Command line tool installed"
+            : cli.installed
+              ? "Update the ‘genmotion’ command"
+              : "Install the ‘genmotion’ command"}
+      </Item>
+      {cli.error ? (
+        <p className="px-2 pb-1 text-[0.786rem] leading-snug text-warning">{cli.error}</p>
+      ) : ready ? (
+        <p className="px-2 pb-1 text-[0.786rem] leading-snug text-text-tertiary">
+          Run <code>genmotion .</code> in a folder to open the app with it shared.
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -121,6 +176,7 @@ export function AccountMenu({
           </div>
 
           <div className="pt-1.5">
+            <CommandLineItem />
             <Item onClick={() => go("/settings")}>Account settings</Item>
             <Item onClick={() => go("/settings/billing")}>Billing</Item>
             <Item onClick={() => go("/dashboard")}>Open on the web</Item>

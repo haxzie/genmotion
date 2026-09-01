@@ -69,7 +69,8 @@ function assetKind(file: string): AssetData["kind"] {
   return IMAGE_EXT.has(ext) ? "image" : "export";
 }
 
-const MIME: Record<string, string> = {
+/** Content types for project assets — shared with the gm-asset protocol. */
+export const ASSET_MIME: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -82,7 +83,18 @@ const MIME: Record<string, string> = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".ogg": "audio/ogg",
+  ".avif": "image/avif",
+  ".m4v": "video/x-m4v",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
 };
+
+/** Content type for a project asset path, defaulting to a plain byte stream. */
+export function mimeForAsset(file: string): string {
+  return ASSET_MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+}
 
 export async function startLocalServer(
   getSession: SessionRef,
@@ -134,6 +146,27 @@ export async function startLocalServer(
       return;
     }
 
+    // Entitlement is a property of the account, not of a folder, so this sits
+    // above the "no project is open" check with the harness route.
+    if (rest[0] === "billing" && rest[1] === "limits") {
+      const limits = await billingLimitsRoute();
+      send(res, limits.status, limits.body);
+      return;
+    }
+
+    // Above the "no project is open" gate: the start screen shares folders
+    // too, and a folder picked there is held until a project exists to grant
+    // it against.
+    if (rest[0] === "read-roots") {
+      const result = await readRootRoutes(getSession(), method, url);
+      if (result === undefined) {
+        send(res, 404, { error: `No route for ${method} /${rest.join("/")}` });
+        return;
+      }
+      send(res, 200, result);
+      return;
+    }
+
     const session = getSession();
     if (!session) {
       send(res, 409, { error: "No project is open" });
@@ -178,11 +211,36 @@ export async function startLocalServer(
       if (method === "GET") {
         const before = url.searchParams.get("before") ?? undefined;
         const limit = Number(url.searchParams.get("limit")) || undefined;
-        return session.readTranscript({ before, limit });
+        const page = await session.readTranscript({ before, limit });
+        // Only on the newest page: this is the composer's opening state, and
+        // an older page is scrolled into a panel that already has a number.
+        // `usage` may be null — the harness has not reported yet — and the
+        // ring says "unknown" rather than inventing one from message count.
+        return before ? page : { ...page, context: { usage: await session.readAgentContext() } };
       }
       if (method === "POST") return chatTurn(session, req, mcpUrl);
     }
     return undefined;
+  }
+
+  /**
+   * The org's plan, proxied from the hosted API.
+   *
+   * The renderer cannot ask for this itself: the session token lives in the
+   * main process and the window carries no cookie, so the only way the editor
+   * learns whether chat plugins are available is through here. Passed straight
+   * back so the desktop upgrade modal reads the same `LimitsResponse` the web
+   * app's does.
+   */
+  async function billingLimitsRoute(): Promise<{ status: number; body: unknown }> {
+    const { desktopAuth } = await import("./auth");
+    const res = await desktopAuth
+      .request<unknown>("/api/billing/limits")
+      .catch(() => null);
+    // Unreachable is not unentitled: the menu should say it cannot tell, not
+    // wrongly offer an upgrade to someone who already pays.
+    if (!res) return { status: 503, body: { error: "Can't reach GenMotion." } };
+    return { status: res.status, body: res.body };
   }
 
   async function agentRoutes(method: string, req: http.IncomingMessage): Promise<unknown> {
@@ -245,6 +303,79 @@ export async function startLocalServer(
     // An id that isn't the folder path (a test, or a project addressed by name)
     // still occupies exactly one segment.
     return after.slice(1);
+  }
+
+  /**
+   * Folders outside the project that the agent may read.
+   *
+   * The picker is opened here, in the main process, rather than by handing the
+   * renderer a path: a grant has to come from the user choosing a folder in a
+   * native dialog, and a renderer that has just run agent-authored scene code
+   * is not something to take a filesystem path from.
+   *
+   * Works with no project open, because the start screen offers the same
+   * control: those picks are held for the run and applied to whatever project
+   * is opened next. `pending` is which of the two the caller is looking at, so
+   * the UI can say "shared with the project you create" rather than implying a
+   * grant that does not exist yet.
+   *
+   * Every change with a project open re-warms the harness: the pre-spawned CLI
+   * fixed its working roots and its system prompt when it started, and a folder
+   * shared after that would be denied by a process that never heard about it.
+   */
+  async function readRootRoutes(
+    session: ProjectSession | null,
+    method: string,
+    url: URL,
+  ): Promise<unknown | undefined> {
+    const roots = await import("./agent/read-roots");
+    const state = async () => ({
+      roots: session ? await roots.listReadRoots(session.dir) : roots.listSessionRoots(),
+      pending: !session,
+    });
+
+    if (method === "GET") return state();
+
+    if (method === "POST") {
+      const { dialog } = await import("electron");
+      const picked = await dialog.showOpenDialog({
+        title: "Share a folder with the agent",
+        message: "The agent can read this folder. It can still only write inside the project.",
+        buttonLabel: "Share folder",
+        properties: ["openDirectory"],
+      });
+      const dir = picked.canceled ? null : picked.filePaths[0];
+      if (!dir) return { ...(await state()), cancelled: true };
+      if (session) {
+        await roots.grantReadRoot(session.dir, dir);
+        await rewarm(session);
+      } else {
+        await roots.addSessionRoot(dir);
+      }
+      return state();
+    }
+
+    if (method === "DELETE") {
+      const dir = url.searchParams.get("path");
+      if (!dir) throw new Error("Missing path");
+      // Dropped from both lists: a folder revoked with a project open would
+      // otherwise come back the next time that project is opened, because the
+      // session list is re-applied on every open.
+      roots.removeSessionRoot(dir);
+      if (session) {
+        await roots.revokeReadRoot(session.dir, dir);
+        await rewarm(session);
+      }
+      return state();
+    }
+
+    return undefined;
+  }
+
+  /** Replace the pre-spawned Claude Code process so it picks up new grants. */
+  async function rewarm(session: ProjectSession): Promise<void> {
+    const { warmClaudeCode } = await import("./agent/claude-code");
+    warmClaudeCode(session);
   }
 
   async function projectRoutes(
@@ -484,7 +615,7 @@ export async function startLocalServer(
       id: rel,
       url: session.assetUrl(rel),
       kind: assetKind(rel),
-      mimeType: MIME[path.extname(rel).toLowerCase()] ?? "application/octet-stream",
+      mimeType: mimeForAsset(rel),
       sizeBytes: size,
       filename: path.basename(rel),
     };
@@ -584,10 +715,10 @@ async function chatTurn(
     text,
     resumeSessionId: await session.readAgentSession(backend.id),
     signal: controller.signal,
-    onFinish: async ({ message, sessionId }) => {
+    onFinish: async ({ message, sessionId, context }) => {
       if (inFlightTurn === controller) inFlightTurn = null;
       if (message) await session.appendTranscript(message);
-      await session.writeAgentSession(sessionId, backend.id);
+      await session.writeAgentSession(sessionId, backend.id, context);
     },
   });
 }

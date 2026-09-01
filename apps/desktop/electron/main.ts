@@ -3,16 +3,17 @@
 import "./esbuild-binary";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { pathToFileURL } from "node:url";
+import { createReadStream } from "node:fs";
+import { Readable } from "node:stream";
 import { randomUUID } from "node:crypto";
-import { BrowserWindow, app, dialog, ipcMain, net, protocol, shell } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, protocol, shell } from "electron";
 import { createProject } from "@genmotion/project";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
 import { ProjectSession } from "./project-session";
 import { captureThumbnail, refreshThumbnail } from "./export/thumbnail";
 import { forgetProject, listRecents, rememberProject } from "./recents";
-import { startLocalServer, type LocalServer } from "./local-server";
+import { mimeForAsset, startLocalServer, type LocalServer } from "./local-server";
 import {
   checkForUpdate,
   downloadUpdate,
@@ -24,8 +25,11 @@ import {
   IPC,
   type CreateProjectInput,
   type DesktopProject,
+  type LaunchContext,
   type RecentProjectRange,
 } from "./shared";
+import { cliStatus, getLaunchDir, installCli, launchDirFromArgv, setLaunchDir } from "./cli";
+import { applySessionRoots } from "./agent/read-roots";
 
 const DEV_SERVER = process.env.GM_DEV_SERVER_URL;
 // Electron's main process is bundled to CJS, so `__dirname` is the file's own
@@ -90,6 +94,11 @@ async function openSession(dir: string): Promise<DesktopProject> {
   await closeSession();
   const opened = await ProjectSession.open(dir, randomUUID());
   session = opened;
+  // Folders picked before this project existed — the launch folder, and
+  // anything added from the start screen — become grants against it. Awaited
+  // rather than fired off, so the subprocess warmed a line below starts with
+  // them already in place.
+  await applySessionRoots(opened.dir);
   // Opening a project is the strongest signal that a turn is coming. Load the
   // agent SDK and resolve the CLI now, so the first message does not pay for
   // them — not awaited, because none of it gates the editor appearing.
@@ -153,15 +162,21 @@ async function allocateProjectDir(name: string): Promise<string> {
   return path.join(root, `${slug}-${Date.now()}`);
 }
 
-function registerIpc(): void {
-  ipcMain.handle(IPC.pickProjectFolder, async () => {
-    const result = await dialog.showOpenDialog({
-      title: "Open GenMotion project",
-      properties: ["openDirectory"],
-    });
-    return result.canceled ? null : (result.filePaths[0] ?? null);
-  });
+/** Replace the pre-spawned agent process, which fixed its roots when it started. */
+function rewarmAgent(): void {
+  if (!session) return;
+  const opened = session;
+  void import("./agent/claude-code").then((m) => m.warmClaudeCode(opened));
+}
 
+/** The launch folder, and whether it is a project the app could just open. */
+async function launchContext(): Promise<LaunchContext> {
+  const dir = getLaunchDir();
+  if (!dir) return { dir: null, isProject: false };
+  return { dir, isProject: await exists(path.join(dir, "project.json")) };
+}
+
+function registerIpc(): void {
   ipcMain.handle(IPC.createProject, async (_event, input: CreateProjectInput) => {
     const name = input.name?.trim() || "Untitled";
     const dir = await allocateProjectDir(name);
@@ -211,8 +226,15 @@ function registerIpc(): void {
 
     await shell.trashItem(dir);
     await forgetProject(dir);
+    // Grants belong to a project. Leaving them behind would silently hand them
+    // to whatever project is later created at the same path.
+    await import("./agent/read-roots").then((m) => m.clearReadRoots(dir));
     return { deleted: true };
   });
+
+  ipcMain.handle(IPC.launchContext, async () => launchContext());
+  ipcMain.handle(IPC.cliStatus, async () => cliStatus());
+  ipcMain.handle(IPC.cliInstall, async () => installCli());
 
   ipcMain.handle(IPC.updateState, async () => updateState());
   ipcMain.handle(IPC.updateCheck, async () => checkForUpdate());
@@ -254,6 +276,67 @@ function assetPathFromUrl(raw: string): string | null {
   return path.relative(session.dir, target).startsWith("..") ? null : target;
 }
 
+/** `Range: bytes=a-b` → an inclusive [start, end] inside a file of `size`. */
+function parseRange(
+  header: string | null,
+  size: number,
+): { start: number; end: number } | null {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header?.trim() ?? "");
+  if (!match) return null;
+  const [, rawStart, rawEnd] = match;
+  // `bytes=-500` is the LAST 500 bytes, not the first 500.
+  const start = rawStart ? Number(rawStart) : Math.max(0, size - Number(rawEnd || 0));
+  const end = rawStart ? (rawEnd ? Math.min(Number(rawEnd), size - 1) : size - 1) : size - 1;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
+    return null;
+  }
+  return { start, end };
+}
+
+/**
+ * Serve one project file, with byte ranges.
+ *
+ * The ranges are the whole point. This used to hand the request to
+ * `net.fetch(file://…)` on the strength of that honouring `Range` — it does
+ * not. It answers **200** with no `Content-Range`, no `Content-Length` and no
+ * `Accept-Ranges`, while quietly returning only the requested bytes. Chromium's
+ * media loader reads that as a stream it cannot seek, so `video.seekable` stays
+ * empty and every `currentTime =` is dropped on the floor: measured on the real
+ * export path, a <Video> reported `currentTime` 0.000 for all 60 frames of a
+ * scene and decoded exactly one distinct frame — the clip frozen on the first
+ * frame it ever loaded, which is the "the video doesn't play in my export"
+ * report. Every render frame is a seek, so this is not a detail.
+ */
+async function serveAssetFile(target: string, request: Request): Promise<Response> {
+  let size: number;
+  try {
+    size = (await fs.stat(target)).size;
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const headers: Record<string, string> = {
+    "content-type": mimeForAsset(target),
+    "accept-ranges": "bytes",
+    "cache-control": "no-cache",
+  };
+  const range = parseRange(request.headers.get("range"), size);
+  const start = range?.start ?? 0;
+  const end = range?.end ?? size - 1;
+  headers["content-length"] = String(end - start + 1);
+  if (range) headers["content-range"] = `bytes ${start}-${end}/${size}`;
+
+  // HEAD and a zero-length file both want the headers and nothing else.
+  if (request.method === "HEAD" || size === 0) {
+    return new Response(null, { status: range ? 206 : 200, headers });
+  }
+  const stream = createReadStream(target, { start, end });
+  return new Response(Readable.toWeb(stream) as ReadableStream, {
+    status: range ? 206 : 200,
+    headers,
+  });
+}
+
 function registerAssetProtocol(): void {
   protocol.handle("gm-asset", async (request) => {
     if (!session) return new Response("No project open", { status: 404 });
@@ -267,11 +350,7 @@ function registerAssetProtocol(): void {
     if (path.relative(session.dir, target).startsWith("..")) {
       return new Response("Forbidden", { status: 403 });
     }
-    // net.fetch on a file URL honours Range, which media elements need to seek.
-    return net.fetch(pathToFileURL(target).toString(), {
-      headers: request.headers,
-      bypassCustomProtocolHandlers: true,
-    });
+    return serveAssetFile(target, request);
   });
 }
 
@@ -363,8 +442,24 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.on("second-instance", (_event, argv) => {
     const url = deepLinkFromArgv(argv);
-    if (url) handleDeepLink(url);
-    else if (window) {
+    if (url) {
+      handleDeepLink(url);
+      return;
+    }
+    // `genmotion <path>` while the app is already up. The new process exists
+    // only to carry this argument here before it quits.
+    const dir = launchDirFromArgv(argv);
+    if (dir) {
+      setLaunchDir(dir);
+      // A project open right now gets the folder too — the user ran the
+      // command from somewhere, and waiting until they open the next project
+      // to act on that would read as the command having done nothing.
+      if (session) void applySessionRoots(session.dir).then(rewarmAgent);
+      void launchContext().then((context) => {
+        window?.webContents.send(IPC.launchContextChanged, context);
+      });
+    }
+    if (window) {
       window.show();
       window.focus();
     }
@@ -379,6 +474,8 @@ app.on("open-url", (event, url) => {
 });
 
 void app.whenReady().then(async () => {
+  // Before anything else reads it: a project opened during startup shares it.
+  setLaunchDir(launchDirFromArgv(process.argv));
   registerProtocolClient();
   registerIpc();
   registerAssetProtocol();

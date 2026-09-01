@@ -85,6 +85,32 @@ export interface CreateProjectInput {
   height?: number;
 }
 
+/**
+ * What a launch carried with it.
+ *
+ * `genmotion .` starts the app with the shell's working directory attached;
+ * a plain launch from the Dock has none.
+ */
+export interface LaunchContext {
+  /** Absolute path the app was launched from, or null. */
+  dir: string | null;
+  /** True when that folder is itself a GenMotion project, so it can be opened. */
+  isProject: boolean;
+}
+
+/** Where the `genmotion` shell command stands. See electron/cli.ts. */
+export interface CliStatus {
+  /** False on platforms where nothing is written yet — Windows, Linux. */
+  supported: boolean;
+  installed: boolean;
+  /** True when an installed command points at *this* app rather than an old one. */
+  current: boolean;
+  /** Where the command is, or would go. */
+  path: string;
+  /** Present when installing failed, phrased for the menu. */
+  error?: string;
+}
+
 // ── Account ────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
@@ -137,7 +163,6 @@ export interface DesktopAuthApi {
 export interface DesktopApi {
   /** Base URL for the loopback API, secret prefix included. */
   readonly apiUrl: string;
-  pickProjectFolder(): Promise<string | null>;
   /** Creates in the app's own projects folder — the user is never asked where. */
   createProject(input: CreateProjectInput): Promise<DesktopProject>;
   openProject(dir: string): Promise<DesktopProject>;
@@ -170,12 +195,20 @@ export interface DesktopApi {
    * not something this window has.
    */
   openWeb(path: string): Promise<void>;
+  /** The folder this launch came from, as of now. */
+  launchContext(): Promise<LaunchContext>;
+  /** A later `genmotion <path>` reached the running app. */
+  onLaunchContext(listener: (context: LaunchContext) => void): () => void;
+  /** The `genmotion` shell command: whether it is there, and putting it there. */
+  cli: {
+    status(): Promise<CliStatus>;
+    install(): Promise<CliStatus>;
+  };
   /** Signing in against the hosted API; see electron/auth.ts. */
   auth: DesktopAuthApi;
 }
 
 export const IPC = {
-  pickProjectFolder: "dialog:pick-project",
   createProject: "project:create",
   openProject: "project:open",
   closeProject: "project:close",
@@ -188,6 +221,10 @@ export const IPC = {
   updateInstall: "update:install",
   updateChanged: "update:changed",
   openWeb: "shell:open-web",
+  launchContext: "launch:context",
+  launchContextChanged: "launch:changed",
+  cliStatus: "cli:status",
+  cliInstall: "cli:install",
   projectChanged: "project:changed",
   authState: "auth:state",
   authStart: "auth:start",

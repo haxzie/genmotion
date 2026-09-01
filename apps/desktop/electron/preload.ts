@@ -5,6 +5,7 @@ import {
   type AuthState,
   type DesktopApi,
   type DesktopProject,
+  type LaunchContext,
   type UpdateState,
 } from "./shared";
 
@@ -20,7 +21,6 @@ const apiUrl =
  */
 const api: DesktopApi = {
   apiUrl,
-  pickProjectFolder: () => ipcRenderer.invoke(IPC.pickProjectFolder),
   createProject: (input) => ipcRenderer.invoke(IPC.createProject, input),
   openProject: (dir) => ipcRenderer.invoke(IPC.openProject, dir),
   closeProject: () => ipcRenderer.invoke(IPC.closeProject),
@@ -35,6 +35,18 @@ const api: DesktopApi = {
   },
   deleteProject: (dir: string) => ipcRenderer.invoke(IPC.deleteProject, dir),
   openWeb: (path: string) => ipcRenderer.invoke(IPC.openWeb, path),
+  launchContext: () => ipcRenderer.invoke(IPC.launchContext),
+  onLaunchContext: (listener) => {
+    const handler = (_event: unknown, context: LaunchContext) => listener(context);
+    ipcRenderer.on(IPC.launchContextChanged, handler);
+    return () => {
+      ipcRenderer.off(IPC.launchContextChanged, handler);
+    };
+  },
+  cli: {
+    status: () => ipcRenderer.invoke(IPC.cliStatus),
+    install: () => ipcRenderer.invoke(IPC.cliInstall),
+  },
   auth: {
     state: () => ipcRenderer.invoke(IPC.authState),
     start: (provider: DesktopAuthProvider, email?: string) =>

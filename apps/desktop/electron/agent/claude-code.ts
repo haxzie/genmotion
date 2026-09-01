@@ -4,7 +4,15 @@ import { agentEnv, resolveExecutable } from "./detect";
 import { loadAgentSdk, type AgentSdkModule } from "./load-sdk";
 import { buildSystemPrompt } from "./prompt";
 import { waitForAnswer } from "./questions";
-import { ALLOWED_TOOLS, DISALLOWED_TOOLS, createGenmotionTools, isInsideProject } from "./tools";
+import {
+  ALLOWED_TOOLS,
+  DISALLOWED_TOOLS,
+  READ_ONLY_TOOLS,
+  createGenmotionTools,
+  isInsideProject,
+} from "./tools";
+import { isReadable, listReadRoots } from "./read-roots";
+import { getLaunchDir } from "../cli";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
 /** A human line for the status pill while a tool runs. */
@@ -110,23 +118,35 @@ function loadToolchain(): Promise<[AgentSdkModule, string | null]> {
  */
 let activeTurn: { signal: AbortSignal } | null = null;
 
-/** The most recent context reading, carried between turns. */
-let lastContext: { usedTokens: number; maxTokens: number } | null = null;
+/**
+ * The most recent context reading, per project, carried between turns.
+ *
+ * Keyed by project: one process serves every project the user opens, and a
+ * single shared slot meant the ring showed the last project's number until the
+ * new one answered.
+ */
+const lastContext = new Map<string, { usedTokens: number; maxTokens: number }>();
 
 /** Options a turn runs with. Shared so a warm spawn cannot drift from a cold one. */
-function turnOptions(
+async function turnOptions(
   sdk: AgentSdkModule,
   session: ProjectSession,
   executable: string | null,
 ) {
   const projectDir = session.dir;
+  const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
   return {
     cwd: projectDir,
     // Use the CLI the user signed in with, not the SDK's bundled copy —
     // which this build can't reach anyway (see resolveExecutable).
     ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
     env: agentEnv(),
-    systemPrompt: buildSystemPrompt(),
+    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir()),
+    // Folders the user has shared. The CLI refuses a path outside its working
+    // roots before `canUseTool` is ever consulted, so a grant has to be
+    // declared here too — this opens the door, and the callback below is what
+    // decides that only reads walk through it.
+    ...(readRoots.length ? { additionalDirectories: readRoots } : {}),
     allowedTools: ALLOWED_TOOLS,
     disallowedTools: DISALLOWED_TOOLS,
     // "default", not "acceptEdits": an auto-approving mode would decide
@@ -158,9 +178,18 @@ function turnOptions(
 
       const target = input.file_path ?? input.path ?? input.file;
       if (typeof target === "string" && !isInsideProject(projectDir, target)) {
+        // Outside the project, a read-only tool can still go ahead if the user
+        // has shared the folder it points into. Nothing that writes can, ever:
+        // the project folder is the only thing this agent may change, and a
+        // shared folder is somebody's own work, not a scratch space.
+        if (READ_ONLY_TOOLS.has(toolName) && (await isReadable(projectDir, target))) {
+          return { behavior: "allow" as const, updatedInput: input };
+        }
         return {
           behavior: "deny" as const,
-          message: `${toolName} was refused: ${target} is outside the project folder. Work inside the project.`,
+          message: READ_ONLY_TOOLS.has(toolName)
+            ? `${toolName} was refused: ${target} is outside the project and is not in a folder the user has shared. Ask them to add it with "Folders" in the composer, and carry on without it for now.`
+            : `${toolName} was refused: ${target} is outside the project folder. You can only write inside the project — copy what you need into it instead.`,
         };
       }
       return { behavior: "allow" as const, updatedInput: input };
@@ -192,7 +221,7 @@ export function warmClaudeCode(session: ProjectSession): void {
     try {
       await disposeWarmClaudeCode();
       const [sdk, executable] = await loadToolchain();
-      const handle = await sdk.startup({ options: turnOptions(sdk, session, executable) });
+      const handle = await sdk.startup({ options: await turnOptions(sdk, session, executable) });
       warm = { dir: session.dir, handle };
     } catch {
       warm = null;
@@ -225,7 +254,8 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
       let sawDelta = false;
       // Last turn's reading, so the ring is populated from the first frame
       // rather than only once this turn produces its own.
-      if (lastContext) yield { type: "context", context: lastContext };
+      const carried = lastContext.get(projectDir);
+      if (carried) yield { type: "context", context: carried };
       /**
        * Set when the in-flight context request lands. Never awaited: the CLI
        * answers it as it goes idle, so waiting would hold the turn open — and
@@ -249,7 +279,7 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
         : sdk.query({
             prompt: text,
             options: {
-              ...turnOptions(sdk, session, executable),
+              ...(await turnOptions(sdk, session, executable)),
               ...(resumeSessionId ? { resume: resumeSessionId } : {}),
             },
           });
@@ -267,6 +297,28 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
             case "system": {
               if (message.subtype === "init" && typeof message.session_id === "string") {
                 sessionId = message.session_id;
+              }
+              // The CLI folded its own history. Say so: this is the one moment
+              // the context ring drops on its own, and without a word for it
+              // that reads as the number being broken.
+              if (message.subtype === "compact_boundary") {
+                const meta = message.compact_metadata as
+                  | { trigger?: string; pre_tokens?: number; post_tokens?: number }
+                  | undefined;
+                const before = meta?.pre_tokens;
+                const after = meta?.post_tokens;
+                const size =
+                  typeof before === "number" && typeof after === "number"
+                    ? ` (${Math.round(before / 1000)}k → ${Math.round(after / 1000)}k tokens)`
+                    : "";
+                yield {
+                  type: "status",
+                  text: `${meta?.trigger === "manual" ? "Compacted" : "Auto-compacted"} the conversation${size}`,
+                };
+                // The carried reading is now stale by a long way, and the next
+                // one is a turn away. Drop it rather than show the old number.
+                lastContext.delete(projectDir);
+                contextAsked = false;
               }
               break;
             }
@@ -293,7 +345,9 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
               if (!contextAsked) {
                 contextAsked = true;
                 void readContextUsage(response).then((usage) => {
-                  if (usage) contextResult = lastContext = usage;
+                  if (!usage) return;
+                  contextResult = usage;
+                  lastContext.set(projectDir, usage);
                 });
               }
               for (const block of blocks(message)) {

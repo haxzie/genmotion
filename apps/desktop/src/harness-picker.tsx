@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cx, Spinner } from "@/components/ui";
-import { registerComposerAccessory } from "@/components/editor/chat-panel";
 
 type HarnessId = "claude-code" | "codex";
 
@@ -194,5 +193,3 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
     </div>
   );
 }
-
-registerComposerAccessory(() => <HarnessPicker placement="up" />);

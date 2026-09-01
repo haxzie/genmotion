@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 // Side-effect import: teaches the chat's tool cards this harness's vocabulary.
 import "./tool-presentation";
-import "./harness-picker";
+import "./composer-accessory";
 import { App } from "./App";
 import "./styles.css";
 

@@ -27,7 +27,9 @@ if (!url) throw new Error("vite did not report a local URL");
 let child = null;
 
 function launch() {
-  const proc = spawn(electronPath, [path.join(root, "dist/main/main.cjs")], {
+  // Anything after `pnpm dev` goes to the app, so a launch flag can be tried
+  // without installing the CLI shim: `pnpm dev --gm-cwd=/some/folder`.
+  const proc = spawn(electronPath, [path.join(root, "dist/main/main.cjs"), ...process.argv.slice(2)], {
     stdio: "inherit",
     env: { ...process.env, GM_DEV_SERVER_URL: url },
   });

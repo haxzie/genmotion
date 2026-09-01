@@ -2,6 +2,8 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { z } from "zod";
 import { readManifest, validateSceneFile } from "@genmotion/project";
+import { PAYWALL_STATUS } from "@genmotion/shared";
+import { desktopAuth } from "../auth";
 import type { ProjectSession } from "../project-session";
 import type { AgentSdkModule } from "./load-sdk";
 
@@ -167,15 +169,137 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       const { url, filename } = args as unknown as { url: string; filename?: string };
       try {
         const saved = await downloadAsset(session.dir, url, filename);
-        return text(
-          `Saved to ${saved}\n\nImport it: import asset from "../${saved}";  then <Img src={asset} />`,
-        );
+        return text(`Saved to ${saved}\n\n${usageFor(saved)}`);
       } catch (err) {
         return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
       }
     },
   },
+
+  {
+    name: "generate_voiceover",
+    description:
+      "Generate a spoken voiceover from a script and save it into the project's assets/, returning the path to place on the timeline. This is how you create narration: write the script, get back an mp3, then add it to project.json's audio array. Speech runs about 2.5 words per second, so size the script to the time you need to cover. Use the SAME voice across a project.",
+    shape: {
+      // Bounds match the API's schema, so the model is told the limit up front
+      // rather than discovering it as a rejected call.
+      text: z
+        .string()
+        .min(3)
+        .max(5000)
+        .describe(
+          "The script to speak. Speech runs ~2.5 words/second — size it to how long you need the audio.",
+        ),
+      voice: z
+        .string()
+        .max(64)
+        .optional()
+        .describe("Voice id. Omit for the default narrator, and keep it consistent across a project."),
+      filename: z
+        .string()
+        .optional()
+        .describe('Preferred filename, e.g. "intro-narration.mp3"'),
+    },
+    async run(session, args) {
+      const { text: script, voice, filename } = args as unknown as {
+        text: string;
+        voice?: string;
+        filename?: string;
+      };
+      return generateMedia(session, {
+        label: "Voiceover",
+        path: "/api/plugins/voiceover",
+        json: { text: script, ...(voice ? { voice } : {}) },
+        filename: filename ?? "narration",
+        fallbackExt: ".mp3",
+      });
+    },
+  },
+
+  {
+    name: "generate_image",
+    description:
+      "Generate a bespoke image from a text prompt and save it into the project's assets/, returning the path to import. Good for illustrations, backgrounds, textures, product shots, or icons a scene needs. Write a precise prompt: subject, art style, composition, colour palette, lighting, and background — specify a solid or plain background when the image will be composited into a scene. One image per call.",
+    shape: {
+      prompt: z
+        .string()
+        .min(3)
+        .max(2000)
+        .describe("Detailed description of the image to generate"),
+      filename: z.string().optional().describe('Preferred filename, e.g. "hero-bg.png"'),
+    },
+    async run(session, args) {
+      const { prompt, filename } = args as unknown as { prompt: string; filename?: string };
+      return generateMedia(session, {
+        label: "Image generation",
+        path: "/api/plugins/image",
+        json: { prompt },
+        filename: filename ?? "generated",
+        fallbackExt: ".png",
+      });
+    },
+  },
 ];
+
+/**
+ * Ask the hosted API for generated media and land it in `assets/`.
+ *
+ * The providers are ours, not the user's — we hold the ElevenLabs and Gemini
+ * keys and the signed-in session is the authorisation — so this is the one
+ * place a tool leaves the machine for anything but a plain file download. The
+ * bearer token stays inside `DesktopAuth`; this only ever hands it a path.
+ */
+async function generateMedia(
+  session: ProjectSession,
+  opts: {
+    label: string;
+    path: string;
+    json: Record<string, unknown>;
+    filename: string;
+    fallbackExt: string;
+  },
+): Promise<ToolResult> {
+  const res = await desktopAuth
+    .requestBinary(opts.path, { json: opts.json })
+    .catch((err: unknown) => ({
+      ok: false as const,
+      status: 0,
+      body: { error: err instanceof Error ? err.message : String(err) },
+    }));
+
+  if (!res.ok) return failure(describeGenerationFailure(opts.label, res.status, res.body));
+
+  const ext = ASSET_TYPES[res.mime] ?? opts.fallbackExt;
+  const saved = await saveAssetBytes(session.dir, res.bytes, opts.filename, ext);
+  return text(`Saved to ${saved}\n\n${usageFor(saved)}`);
+}
+
+/**
+ * Why a generation was refused, phrased so the model tells the user something
+ * actionable and then carries on rather than retrying a call that cannot work.
+ */
+function describeGenerationFailure(label: string, status: number, body: unknown): string {
+  const parsed = body as { error?: string; paywall?: { message?: string } } | null;
+  const detail = parsed?.error ?? (typeof body === "string" ? body : "");
+
+  if (status === 0) {
+    return `FAILED — could not reach GenMotion${detail ? `: ${detail}` : "."} Tell the user, and continue without the file.`;
+  }
+  if (status === 401) {
+    return `FAILED — ${label} needs a signed-in GenMotion account. Tell the user to sign in from the account menu, and continue without the file.`;
+  }
+  if (status === PAYWALL_STATUS) {
+    return `FAILED — ${parsed?.paywall?.message ?? `${label} is a Pro feature.`} Tell the user plainly and continue without the file; do not call this tool again this turn.`;
+  }
+  if (status === 503) {
+    return `FAILED — ${label} is not available on this server${detail ? `: ${detail}` : "."} Tell the user, and continue without the file.`;
+  }
+  if (status === 400) {
+    // The prompt or the voice is what is wrong, so a corrected retry can work.
+    return `FAILED — ${detail || "the request was rejected."} Adjust and try once more.`;
+  }
+  return `FAILED — ${detail || `${label} failed (${status}).`}`;
+}
 
 /** The Claude-side transport: the same tools as an in-process MCP server. */
 export function createGenmotionTools(sdk: AgentSdkModule, session: ProjectSession) {
@@ -206,6 +330,17 @@ export function createGenmotionTools(sdk: AgentSdkModule, session: ProjectSessio
  * the decision should be made. Availability is controlled by DISALLOWED_TOOLS.
  */
 export const ALLOWED_TOOLS: string[] = [];
+
+/**
+ * The harness tools that only ever look.
+ *
+ * This is the list that decides what a folder the user has shared outside the
+ * project buys them: a grant widens reading, so only a tool on this list can
+ * act on a path outside the project folder, and only within a granted root.
+ * Anything that can modify a file is absent on purpose — writes stay inside
+ * the project whatever the user has shared.
+ */
+export const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "NotebookRead"]);
 
 /**
  * Everything the video agent has no business reaching.
@@ -356,8 +491,26 @@ async function downloadAsset(
   }
 
   const fromUrl = path.basename(decodeURIComponent(parsed.pathname));
-  const base = (preferred || fromUrl || "asset").replace(/[^\w.\- ]+/g, "_").slice(0, 80);
-  const ext = path.extname(base) || known || "";
+  return saveAssetBytes(projectDir, body, preferred || fromUrl || "asset", known ?? "");
+}
+
+/**
+ * Write bytes into `assets/` under a free name, and return the project-relative
+ * path.
+ *
+ * Shared by everything that lands a file in the project — the downloader and
+ * both generators — so there is one containment check and one collision rule
+ * rather than three. `fallbackExt` is used only when the preferred name carries
+ * no extension of its own.
+ */
+async function saveAssetBytes(
+  projectDir: string,
+  body: Buffer,
+  preferred: string,
+  fallbackExt: string,
+): Promise<string> {
+  const base = (preferred || "asset").replace(/[^\w.\- ]+/g, "_").slice(0, 80);
+  const ext = path.extname(base) || fallbackExt || "";
   const stem = ext ? base.slice(0, base.length - path.extname(base).length) || "asset" : base;
 
   await fs.mkdir(path.join(projectDir, "assets"), { recursive: true });
