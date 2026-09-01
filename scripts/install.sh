@@ -22,6 +22,10 @@ APP="/Applications/GenMotion.app"
 BIN_DIR="/usr/local/bin"
 BIN="$BIN_DIR/genmotion"
 INSTALL_URL="https://genmotion.dev/install.sh"
+# A copy of the DMG on our own CDN, and a latest.json saying where it is.
+# GitHub stays the fallback and the source of truth — this is here because the
+# same bytes come off it an order of magnitude faster.
+MIRROR="https://assets.genmotion.dev/desktop"
 
 if [ -t 1 ]; then
   B=$(printf '\033[1m')
@@ -41,7 +45,13 @@ die() {
 
 tmp=""
 staging=""
+mounted=""
 cleanup() {
+  # Detached first: the mount point lives inside $tmp, and removing a directory
+  # a disk image is still attached to leaves the image attached.
+  if [ -n "$mounted" ]; then
+    hdiutil detach "$mounted" -quiet >/dev/null 2>&1 || true
+  fi
   [ -n "$tmp" ] && rm -rf "$tmp"
   # A staging copy only exists if the swap below failed halfway.
   if [ -n "$staging" ] && [ -e "$staging" ]; then
@@ -60,36 +70,87 @@ command -v curl >/dev/null 2>&1 || die "curl is required."
 
 # ── Which release ───────────────────────────────────────────────────────────
 
-# Tags are `desktop-v…`, not `v…`: the server images release under `v*` on their
-# own schedule. See .github/workflows/desktop-release.yml.
-if [ -n "${GENMOTION_VERSION:-}" ]; then
-  api="https://api.github.com/repos/$REPO/releases/tags/desktop-v${GENMOTION_VERSION#v}"
-else
-  api="https://api.github.com/repos/$REPO/releases/latest"
+# latest.json is written by our own release workflow, one key to a line, so a
+# line-wise read is enough — and does not put jq between somebody and an
+# install.
+json_string() {
+  printf '%s\n' "$1" | sed -n "s/.*\"$2\": *\"\([^\"]*\)\".*/\1/p" | head -n 1
+}
+json_number() {
+  printf '%s\n' "$1" | sed -n "s/.*\"$2\": *\([0-9][0-9]*\).*/\1/p" | head -n 1
+}
+
+url=""
+size=""
+sha256=""
+version=""
+
+# The mirror first, and only for the latest build: a pinned version predates
+# the mirror as often as not, and GitHub has every release either way.
+if [ -z "${GENMOTION_VERSION:-}" ]; then
+  latest=$(curl -fsSL --max-time 10 "$MIRROR/latest.json" 2>/dev/null) || latest=""
+  if [ -n "$latest" ]; then
+    version=$(json_string "$latest" version)
+    url=$(json_string "$latest" url)
+    size=$(json_number "$latest" size)
+    sha256=$(json_string "$latest" sha256)
+  fi
 fi
 
-release=$(curl -fsSL "$api") || die "could not reach GitHub to look up a release."
-# The zip rather than the dmg: mounting a disk image needs a window, and this
-# runs in a terminal. Both are the same signed, notarized app.
-url=$(printf '%s\n' "$release" | grep -oE 'https://[^"]+-arm64-mac\.zip' | head -n 1)
-[ -n "$url" ] || die "that release has no macOS build attached to it."
-version=$(printf '%s\n' "$release" |
-  grep -oE '"tag_name": *"[^"]+"' | head -n 1 |
-  sed -E 's/.*"([^"]+)"$/\1/; s/^desktop-v//')
+# GitHub: the fallback, and the only route to a pinned version. Tags are
+# `desktop-v…`, not `v…` — the server images release under `v*` on their own
+# schedule. See .github/workflows/desktop-release.yml.
+if [ -z "$url" ]; then
+  if [ -n "${GENMOTION_VERSION:-}" ]; then
+    api="https://api.github.com/repos/$REPO/releases/tags/desktop-v${GENMOTION_VERSION#v}"
+  else
+    api="https://api.github.com/repos/$REPO/releases/latest"
+  fi
+  release=$(curl -fsSL "$api") || die "could not reach GitHub to look up a release."
+  url=$(printf '%s\n' "$release" | grep -oE 'https://[^"]+-arm64\.dmg' | head -n 1)
+  [ -n "$url" ] || die "that release has no macOS build attached to it."
+  size=$(printf '%s\n' "$release" |
+    awk '/"name": *"[^"]*-arm64\.dmg"/ { found = 1 }
+         found && /"size":/ { gsub(/[^0-9]/, "", $0); print; exit }')
+  version=$(printf '%s\n' "$release" |
+    grep -oE '"tag_name": *"[^"]+"' | head -n 1 |
+    sed -E 's/.*"([^"]+)"$/\1/; s/^desktop-v//')
+fi
 [ -n "$version" ] || version="unknown"
 
 # ── Download ────────────────────────────────────────────────────────────────
 
 tmp=$(mktemp -d)
-say "${B}Installing GenMotion $version${R}"
-curl -fL --progress-bar -o "$tmp/GenMotion.zip" "$url" || die "the download failed."
+# The size is worth saying out loud: the download is the whole wait, and a
+# progress bar with no total behind it reads as a hang rather than as a big
+# file arriving.
+if [ -n "$size" ]; then
+  say "${B}Installing GenMotion $version${R} ${DIM}($((size / 1000000)) MB to download)${R}"
+else
+  say "${B}Installing GenMotion $version${R}"
+fi
+# Resumed rather than restarted on a retry: losing a connection near the end
+# and starting over is minutes gone. The stall guard is what makes that retry
+# happen — a transfer below 1KB/s for a minute is finished, not slow.
+curl -fL --progress-bar -C - --retry 3 --retry-delay 2 \
+  --speed-limit 1024 --speed-time 60 \
+  -o "$tmp/GenMotion.dmg" "$url" || die "the download failed."
 
-# ditto, not unzip: it is the extractor that keeps a signed bundle's symlinks
-# and extended attributes intact, and a broken signature is an app macOS
-# refuses to open at all.
-ditto -x -k "$tmp/GenMotion.zip" "$tmp/unpacked" || die "could not unpack the download."
-src="$tmp/unpacked/GenMotion.app"
-[ -d "$src" ] || die "the download did not contain GenMotion.app."
+# Worth the half second precisely because the download resumes: a truncated
+# file that a retry appended to would otherwise be installed without complaint.
+if [ -n "$sha256" ]; then
+  printf '%s  %s\n' "$sha256" "$tmp/GenMotion.dmg" | shasum -a 256 -c - >/dev/null 2>&1 ||
+    die "the download did not match its checksum — try again."
+fi
+
+# -nobrowse so no Finder window opens: this runs in a terminal, and a disk
+# image appearing on the desktop mid-install is somebody's next question.
+mkdir -p "$tmp/mnt"
+hdiutil attach -nobrowse -readonly -quiet -mountpoint "$tmp/mnt" "$tmp/GenMotion.dmg" ||
+  die "could not open the disk image."
+mounted="$tmp/mnt"
+src="$mounted/GenMotion.app"
+[ -d "$src" ] || die "the disk image did not contain GenMotion.app."
 
 # Releases are signed and notarized. Something that arrives over the network
 # failing this check is not something to move into /Applications.

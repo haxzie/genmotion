@@ -1,0 +1,179 @@
+name: Mirror release to R2
+
+# A second copy of the DMG on assets.genmotion.dev, and a latest.json that says
+# where it is.
+#
+# The GitHub release stays the source of truth and is untouched: electron-
+# updater reads latest-mac.yml from it, and every installed app checks there.
+# What this adds is a download that arrives at line speed. Measured from one
+# machine: 30 MB/s to Cloudflare against 0.3–1.5 MB/s for the same bytes off
+# GitHub's release CDN, which is the difference between a five second install
+# and a five minute one.
+#
+# Triggered by a release being *published*, not by the tag: a draft is a build
+# nobody has opened yet, and advertising it on our own CDN would undo the point
+# of drafting it.
+#
+# Repository secrets:
+#   R2_S3_ENDPOINT        https://<account id>.r2.cloudflarestorage.com
+#   R2_ACCESS_KEY_ID      R2 API token with object read+write on the bucket
+#   R2_SECRET_ACCESS_KEY
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to mirror, e.g. desktop-v0.0.3"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-mirror
+  cancel-in-progress: false
+
+env:
+  BUCKET: genmotion
+  PREFIX: desktop
+  PUBLIC_URL: https://assets.genmotion.dev
+  # The AWS CLI adds integrity headers R2 rejects unless they are asked for
+  # only where the protocol requires them.
+  AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+  AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+  AWS_DEFAULT_REGION: auto
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Resolve the release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -eu
+          case "$TAG" in
+            desktop-v*) ;;
+            *) echo "::error::$TAG is not a desktop release tag."; exit 1 ;;
+          esac
+          version="${TAG#desktop-v}"
+
+          # The DMG only. The zip and the blockmaps exist for electron-updater,
+          # which reads them from GitHub and should keep doing so.
+          mkdir -p dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.dmg' --dir dist
+          count=$(ls dist/*.dmg 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$count" != "1" ]; then
+            echo "::error::expected exactly one .dmg in $TAG, found $count."
+            exit 1
+          fi
+          file=$(basename "$(ls dist/*.dmg)")
+
+          # Read from the release rather than the event payload, so a manual
+          # re-run carries the same timestamp the automatic one would have.
+          published_at=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json publishedAt --jq .publishedAt)
+
+          {
+            echo "tag=$TAG"
+            echo "version=$version"
+            echo "file=$file"
+            echo "size=$(stat -c%s "dist/$file")"
+            echo "sha256=$(sha256sum "dist/$file" | cut -d' ' -f1)"
+            echo "published_at=$published_at"
+          } >> "$GITHUB_OUTPUT"
+
+      # Publishing an old draft — and there is one sitting there — would
+      # otherwise point every download at a build that predates the current one.
+      - name: Refuse to go backwards
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -eu
+          current=$(curl -fsSL "$PUBLIC_URL/$PREFIX/latest.json" 2>/dev/null |
+            sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -n 1) || current=""
+          if [ -z "$current" ]; then
+            echo "no latest.json yet — $VERSION will be the first."
+            exit 0
+          fi
+          newest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n 1)
+          if [ "$newest" != "$VERSION" ] && [ "$current" != "$VERSION" ]; then
+            echo "::error::latest.json already points at $current, which is newer than $VERSION."
+            exit 1
+          fi
+
+      - name: Upload the DMG
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          VERSION: ${{ steps.release.outputs.version }}
+          FILE: ${{ steps.release.outputs.file }}
+        run: |
+          set -eu
+          # Version-pinned key, so the object never changes and can be cached
+          # for as long as anyone will keep it.
+          aws s3 cp "dist/$FILE" "s3://$BUCKET/$PREFIX/$VERSION/$FILE" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type application/x-apple-diskimage \
+            --cache-control "public, max-age=31536000, immutable" \
+            --only-show-errors
+
+      - name: Update latest.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          FILE: ${{ steps.release.outputs.file }}
+          SIZE: ${{ steps.release.outputs.size }}
+          SHA256: ${{ steps.release.outputs.sha256 }}
+          PUBLISHED_AT: ${{ steps.release.outputs.published_at }}
+        run: |
+          set -eu
+          # One key per line, because the installer parses this with sed rather
+          # than a JSON parser it cannot assume is installed.
+          jq -n \
+            --arg version "$VERSION" \
+            --arg tag "$TAG" \
+            --arg publishedAt "$PUBLISHED_AT" \
+            --arg filename "$FILE" \
+            --arg url "$PUBLIC_URL/$PREFIX/$VERSION/$FILE" \
+            --arg sha256 "$SHA256" \
+            --argjson size "$SIZE" \
+            '{
+              version: $version,
+              tag: $tag,
+              publishedAt: $publishedAt,
+              platform: "darwin-arm64",
+              filename: $filename,
+              url: $url,
+              size: $size,
+              sha256: $sha256
+            }' > latest.json
+          cat latest.json
+
+          # Short TTL: this is the one object that changes, and a release
+          # nobody can see for an hour is a release that did not happen.
+          aws s3 cp latest.json "s3://$BUCKET/$PREFIX/latest.json" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type application/json \
+            --cache-control "public, max-age=60" \
+            --only-show-errors
+
+      - name: Check it is actually there
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          FILE: ${{ steps.release.outputs.file }}
+        run: |
+          set -eu
+          curl -fsSL "$PUBLIC_URL/$PREFIX/latest.json" | tee /dev/stderr | grep -q "\"version\": \"$VERSION\""
+          code=$(curl -sIL -o /dev/null -w '%{http_code}' "$PUBLIC_URL/$PREFIX/$VERSION/$FILE")
+          [ "$code" = "200" ] || { echo "::error::$PUBLIC_URL/$PREFIX/$VERSION/$FILE returned $code"; exit 1; }

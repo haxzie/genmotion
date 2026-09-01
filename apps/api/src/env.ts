@@ -37,6 +37,11 @@ const schema = z.object({
   // Where the macOS build is published. The download endpoint reads the latest
   // release from here — anonymously, because the repo is public.
   GITHUB_RELEASE_REPO: z.string().min(1).default("haxzie/genmotion"),
+  // A CDN copy of the DMG, written by .github/workflows/release-mirror.yml when
+  // a release is published. The download endpoint prefers it — the same bytes
+  // arrive an order of magnitude faster than from GitHub's release storage —
+  // and falls back to GitHub whenever it cannot be read.
+  RELEASE_MIRROR_URL: z.string().url().default("https://assets.genmotion.dev/desktop"),
 
   // ── Analytics ───────────────────────────────────────────────────────
   // Server-side analytics. Optional: unset means the API emits nothing, and

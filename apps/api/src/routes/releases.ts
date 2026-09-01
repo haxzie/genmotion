@@ -66,7 +66,47 @@ function headers(): Record<string, string> {
 }
 
 /** The newest published release carrying a .dmg, or null if there isn't one. */
-async function fetchLatest(): Promise<Release | null> {
+/**
+ * The mirrored build, if there is one.
+ *
+ * Same DMG as the GitHub release, on a CDN that hands it over at line speed
+ * rather than at whatever GitHub's release storage gives a particular visitor
+ * — measured at 0.3–1.5 MB/s against a 30 MB/s connection, which is the
+ * difference between a five second download and a five minute one.
+ *
+ * Written by .github/workflows/release-mirror.yml on a release being
+ * *published*, so it can only ever describe a build that has been through the
+ * draft check. Anything unreadable here is not an error: GitHub answers next.
+ */
+async function fetchMirrored(): Promise<Release | null> {
+  const res = await fetch(`${env.RELEASE_MIRROR_URL.replace(/\/$/, "")}/latest.json`, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!res.ok) return null;
+
+  const mirror = (await res.json()) as Partial<{
+    version: string;
+    tag: string;
+    publishedAt: string;
+    filename: string;
+    url: string;
+    size: number;
+  }>;
+  // A half-written mirror is worth ignoring rather than serving: the fields the
+  // page renders and the link it points at all have to be there.
+  if (!mirror.version || !mirror.url || !mirror.filename || !mirror.size) return null;
+
+  return {
+    version: mirror.version,
+    tag: mirror.tag ?? `desktop-v${mirror.version}`,
+    size: mirror.size,
+    publishedAt: mirror.publishedAt ?? "",
+    filename: mirror.filename,
+    browserUrl: mirror.url,
+  };
+}
+
+async function fetchFromGitHub(): Promise<Release | null> {
   const res = await fetch(
     `${GITHUB_API}/repos/${env.GITHUB_RELEASE_REPO}/releases/latest`,
     { headers: headers(), signal: AbortSignal.timeout(10_000) },
@@ -90,6 +130,13 @@ async function fetchLatest(): Promise<Release | null> {
     filename: dmg.name,
     browserUrl: dmg.browser_download_url,
   };
+}
+
+/** The mirror when it answers, GitHub when it does not. */
+async function fetchLatest(): Promise<Release | null> {
+  const mirrored = await fetchMirrored().catch(() => null);
+  if (mirrored) return mirrored;
+  return fetchFromGitHub();
 }
 
 async function latest(): Promise<Release | null> {
@@ -146,9 +193,9 @@ releaseRoutes.get("/latest", async (c) => {
  * the API would tie up a connection for the length of every download to save
  * nobody anything.
  *
- * Public repo, so this is a plain redirect to GitHub's own download URL — no
- * credential to resolve, and the bytes come off their CDN rather than through
- * us.
+ * A plain redirect to wherever the file actually is — the mirror when one has
+ * been published, GitHub otherwise. No credential to resolve either way, and
+ * the bytes never come through us.
  */
 releaseRoutes.get("/latest/download", async (c) => {
   let release: Release | null;
