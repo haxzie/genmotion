@@ -26,6 +26,27 @@ body,
   overflow: hidden;
 }
 
+/*
+ * Launch gate: the mark turns slowly while the stored token is checked over
+ * the network. Slow and linear on purpose — this is a "hold on" signal, not a
+ * "working hard" one, and it is the first thing the app ever shows.
+ */
+@keyframes boot-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.boot-mark {
+  animation: boot-mark-spin 3.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-mark {
+    animation: none;
+  }
+}
+
 /* Drag region for the frameless window; buttons inside opt back out. */
 .titlebar-drag {
   -webkit-app-region: drag;

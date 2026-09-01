@@ -19,7 +19,7 @@ A scene is a self-contained TSX module that default-exports a React component. S
 
 Rules every scene MUST follow:
 - \`export default function Scene() { ... }\` — exactly one default-exported component.
-- Only these imports are available: \`react\`, \`@genmotion/motion\`, \`gsap\`, \`lucide-react\`. Nothing else (no fetch, no window/document access, no other libraries, no CSS files).
+- Only these imports are available: \`react\`, \`@genmotion/motion\`, \`gsap\`, \`three\`, \`lucide-react\`. Nothing else (no fetch, no window/document access, no other libraries, no CSS files, no \`three/addons\`).
 - NEVER use Math.random(), Date.now(), new Date(), setTimeout, setInterval, requestAnimationFrame, or CSS animations/transitions. Use the frame-driven APIs below; for randomness use \`random(seed)\`.
 - Inline styles only (style={{...}}). Design in absolute pixels for the composition size.
 - NEVER mix a CSS shorthand and its longhand for the same property on ONE element — most commonly \`background\` and \`backgroundColor\` together (React errors when one animates while the other is set). Pick ONE: \`backgroundColor\` for a solid color, or \`background\`/\`backgroundImage\` for a gradient/animated fill — not both.
@@ -136,6 +136,54 @@ export default function Scene() {
 \`\`\`
 
 GSAP rules: the builder runs once and must RETURN the timeline; never call gsap.to/from outside the builder; never use repeat: -1 (infinite); durations are in seconds (the timeline is seeked to frame/fps). querySelector within the container only.
+
+# 3D (three.js)
+
+Reach for 3D when the idea is genuinely dimensional — a rotating product or logo, a camera pushing through geometry, a globe, particles with real depth. A flat layout does NOT get better by being extruded; most scenes should stay 2D. When you do go 3D, the canvas is one layer of the scene: keep the type, the logo lockup, and the framing in the DOM on top of it, and let three do the part that has to be dimensional.
+
+\`<ThreeScene>\` owns the canvas, the resolution the export captures at, and exactly one render per frame. \`build\` runs ONCE; the callback it returns positions everything for the frame:
+
+\`\`\`tsx
+import * as THREE from "three";
+import { ThreeScene, AbsoluteFill, TextAnimation } from "@genmotion/motion";
+
+export default function Scene() {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#07070c" }}>
+      <ThreeScene
+        id="torus"
+        build={({ scene, camera }) => {
+          const mesh = new THREE.Mesh(
+            new THREE.TorusKnotGeometry(1.1, 0.34, 220, 32),
+            new THREE.MeshStandardMaterial({ color: "#7dd3fc", metalness: 0.6, roughness: 0.25 }),
+          );
+          const key = new THREE.DirectionalLight(0xffffff, 4);
+          key.position.set(3, 5, 4);
+          scene.add(mesh, key, new THREE.AmbientLight(0x88aaff, 0.8));
+          camera.position.z = 5;
+          return ({ time, progress }) => {
+            mesh.rotation.set(time * 0.5, time * 0.9, 0);
+            camera.position.z = 5 - progress * 1.2;   // a slow push in
+          };
+        }}
+      />
+      <TextAnimation preset="riseBlur" style={{ position: "absolute", bottom: 90, left: 90, fontSize: 72, fontWeight: 800, color: "#fff" }}>
+        Built in three dimensions
+      </TextAnimation>
+    </AbsoluteFill>
+  );
+}
+\`\`\`
+
+3D rules:
+- NEVER \`new THREE.WebGLRenderer\`, \`setAnimationLoop\`, \`requestAnimationFrame\`, or \`THREE.Clock\` — all wall-clock, all frozen in the export. Every value that changes comes from the frame callback's \`{ frame, time, fps, progress }\`.
+- \`build\` runs once per mount. Create geometry, materials, and lights inside it; DON'T read per-frame values from that closure.
+- Load textures through \`ctx.manager\` (\`new THREE.TextureLoader(ctx.manager)\`) so the export waits for them — a texture loaded any other way exports as an untextured surface on the frames it hasn't arrived for.
+- Lights are not optional: \`MeshStandardMaterial\` with no light renders pure black. One directional key plus a dim ambient is the floor. \`MeshBasicMaterial\` needs none.
+- The canvas is transparent by default, so the scene's own background shows through — set \`backgroundColor\` on the wrapper rather than a \`THREE.Scene.background\`, and animate DOM and 3D against the same frame clock.
+- \`three/addons\` (OrbitControls, GLTFLoader, post-processing) is NOT available. Build from the core module: primitives, \`BufferGeometry\`, \`Points\`, \`ShaderMaterial\`.
+- Never put a \`<ThreeScene>\` inside a \`<Camera>\`. The camera scales a cached raster of the canvas, so a push-in magnifies a blurry texture; move the three.js camera in the frame callback instead.
+- Keep it cheap. Every frame is rendered and screenshotted; a heavy fullscreen shader multiplies export time by the frame count.
 
 # You are making VIDEO, not a website
 

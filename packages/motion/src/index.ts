@@ -87,6 +87,16 @@ export {
 } from "./camera";
 export { useGsapTimeline, gsap } from "./gsap";
 export {
+  useThreeScene,
+  ThreeScene,
+  THREE,
+  type ThreeSceneContext,
+  type ThreeSceneProps,
+  type ThreeSceneOptions,
+  type ThreeSceneUpdate,
+  type ThreeFrame,
+} from "./three";
+export {
   MediaReadinessContext,
   createMediaReadinessController,
   useMediaReadiness,

@@ -45,10 +45,9 @@ const TIERS: Tier[] = [
     name: PLANS.free.name,
     price: planPrice("free"),
     cadence: `${TRIAL_DAYS} days`,
-    blurb: "The whole app, for a week. No card, no watermark, nothing withheld.",
+    blurb: "The studio itself, for a week. No card, no watermark, no queue.",
     cta: { label: "Download", href: "/download" },
     features: [
-      "Every feature Pro has",
       "Unlimited projects and exports",
       "1080p & 4K export, no watermark",
       "Bring your own Claude Code or Codex",
@@ -65,6 +64,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
+      "Voiceover and image generation in chat",
       `Add teammates at $${SEAT_PRICE_USD} each`,
       "Renders on your machine — no queue",
       "Priority support",

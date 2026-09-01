@@ -16,6 +16,8 @@ export interface ScaffoldVersions {
   motion: string;
   react: string;
   gsap: string;
+  three: string;
+  threeTypes: string;
   lucide: string;
   typescript: string;
   reactTypes: string;
@@ -25,6 +27,8 @@ export const DEFAULT_VERSIONS: ScaffoldVersions = {
   motion: "^0.1.0",
   react: "^19.2.7",
   gsap: "^3.13.0",
+  three: "^0.185.1",
+  threeTypes: "^0.185.4",
   lucide: "^1.17.0",
   typescript: "^5.9.3",
   reactTypes: "^19.2.17",
@@ -46,9 +50,11 @@ export function renderPackageJson(
       gsap: versions.gsap,
       "lucide-react": versions.lucide,
       react: versions.react,
+      three: versions.three,
     },
     devDependencies: {
       "@types/react": versions.reactTypes,
+      "@types/three": versions.threeTypes,
       typescript: versions.typescript,
     },
   };
@@ -177,8 +183,14 @@ and encoded to MP4 — every frame must be a pure function of its frame index.
   it. Use the \`save_asset\` tool to copy a remote file in first.
 - **New packages** go through the \`add_package\` tool, not \`npm install\` — it
   screens for browser safety and installs without running lifecycle scripts.
-  \`react\`, \`@genmotion/motion\`, \`gsap\`, and \`lucide-react\` are already
-  available and supplied by the host at runtime.
+  \`react\`, \`@genmotion/motion\`, \`gsap\`, \`three\`, and \`lucide-react\` are
+  already available and supplied by the host at runtime.
+- **3D goes through \`<ThreeScene>\`** from \`@genmotion/motion\`, never a
+  hand-rolled \`WebGLRenderer\` and never \`setAnimationLoop\`. The component
+  owns the canvas, the pixel ratio the export captures at, and one render per
+  frame; a scene that starts its own loop animates in the preview and comes out
+  frozen. \`three/addons\` (OrbitControls, loaders) is NOT available — the host
+  supplies the main \`three\` module only.
 - **Check your work** with the \`validate_scene\` tool before you finish. It
   compiles the scene, loads it, and renders three frames.
 `;

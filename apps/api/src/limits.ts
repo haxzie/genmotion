@@ -82,3 +82,22 @@ export function seatPaywall(used: number, included: number): PaywallBody {
     },
   };
 }
+
+/**
+ * Why a chat plugin is refused.
+ *
+ * Deliberately not `checkPaywall`: that passes an org whose free week is still
+ * running, and plugins are the one feature where an unconverted trial costs us
+ * real provider credit. Everything else the trial includes is work the user's
+ * own machine does. See the note in @genmotion/shared's plans.ts.
+ */
+export function pluginPaywall(): PaywallBody {
+  return {
+    error: "Chat plugins are a Pro feature.",
+    paywall: {
+      reason: "plugin",
+      message:
+        "Voiceover and image generation are included with Pro. Upgrade to use them — $19 a month.",
+    },
+  };
+}

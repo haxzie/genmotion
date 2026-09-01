@@ -29,6 +29,13 @@ function str(part: ToolPartLike, ...keys: string[]): string | undefined {
   return undefined;
 }
 
+/** First `max` characters, with an ellipsis when there was more. */
+function truncate(value: string | undefined, max: number): string | undefined {
+  if (!value) return undefined;
+  const flat = value.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
 /** Project-relative where possible, basename otherwise — full paths are noise. */
 function shortPath(file: string | undefined): string | undefined {
   if (!file) return undefined;
@@ -142,6 +149,19 @@ const QuestionGlyph = ({ className }: { className?: string }) => (
     <circle cx="8" cy="8" r="6.2" />
     <path d="M6.2 6.1a1.85 1.85 0 1 1 2.3 1.85c-.4.12-.5.4-.5.75v.4" strokeLinecap="round" />
     <path d="M8 11.6h.01" strokeLinecap="round" />
+  </svg>
+);
+const MicGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="6" y="1.5" width="4" height="8" rx="2" />
+    <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" />
+  </svg>
+);
+const ImageGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+    <circle cx="5.5" cy="6.5" r="1" />
+    <path d="m2 11.5 3.5-3.5 2.5 2.5 2-2 4 4" />
   </svg>
 );
 const ListGlyph = ({ className }: { className?: string }) => (
@@ -565,5 +585,27 @@ registerToolPresentation({
     icon: ListGlyph,
     subject: () => undefined,
     body: (part) => <Text value={outputText(part)} />,
+  },
+
+  mcp__genmotion__generate_voiceover: {
+    labels: { active: "Recording voiceover", done: "Recorded voiceover" },
+    icon: MicGlyph,
+    // The script itself, trimmed — it is what the user actually wants to check,
+    // and a filename they did not choose tells them nothing.
+    subject: (part) => truncate(str(part, "text"), 60),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__generate_image: {
+    labels: { active: "Generating image", done: "Generated image" },
+    icon: ImageGlyph,
+    subject: (part) => truncate(str(part, "prompt"), 60),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
   },
 });

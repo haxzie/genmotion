@@ -1,12 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type { AssetData } from "@genmotion/shared";
+import type { AssetData, ChatPlugin, ChatPluginId } from "@genmotion/shared";
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { laneTheme } from "./audio-lane-theme";
 import { SceneIcon } from "./scene-icon";
 import { AssetIcon } from "./asset-icon";
+import { PluginIcon } from "./plugin-icon";
 
 /** Slide-up on add, slide-down on remove; siblings reflow via layout. */
 const CHIP_ANIM = {
@@ -38,7 +39,16 @@ export interface MessageContextData {
   /** `track` is the lane, and the colour with it. Absent on older messages. */
   audioClips?: { name: string; track?: number }[];
   elements?: { label: string; sceneName: string; timecode: string }[];
+  /** Chat plugins the message was sent with. Absent on older messages. */
+  plugins?: { id: ChatPluginId; label: string }[];
 }
+
+/**
+ * Plugin chips are an instruction, not context, so they take a hue no selection
+ * pill uses. One glance separates "about these scenes" from "and generate a
+ * voiceover" — which matters most in a sent message, where both appear together.
+ */
+const PLUGIN_PILL = "border-green/40 bg-green-muted text-green";
 
 const ClipGlyph = () => (
   <svg viewBox="0 0 24 24" className="size-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +74,14 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
   const assets = ctx.assets ?? [];
   const audioClips = ctx.audioClips ?? [];
   const elements = ctx.elements ?? [];
-  if (!scenes.length && !assets.length && !audioClips.length && !elements.length)
+  const plugins = ctx.plugins ?? [];
+  if (
+    !scenes.length &&
+    !assets.length &&
+    !audioClips.length &&
+    !elements.length &&
+    !plugins.length
+  )
     return null;
 
   const pill = "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.75rem]";
@@ -86,6 +103,12 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
         <span key={`m${i}`} className={cx(pill, laneTheme(a.track).chip)}>
           <MusicGlyph />
           <span className="max-w-[140px] truncate">{a.name}</span>
+        </span>
+      ))}
+      {plugins.map((p, i) => (
+        <span key={`p${i}`} className={cx(pill, PLUGIN_PILL)}>
+          <PluginIcon id={p.id} className="size-3 shrink-0" />
+          <span className="max-w-[140px] truncate">{p.label}</span>
         </span>
       ))}
       {elements.map((e, i) => (
@@ -236,6 +259,50 @@ export function AssetChips({
               onClick={() => deselectAsset(asset.id)}
               className={cx(removeButton, "hover:bg-accent/25")}
               title="Remove from context"
+            >
+              <RemoveX />
+            </button>
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * The plugins attached to the message being written.
+ *
+ * Unlike every other chip here, these render *inside* the composer's border:
+ * a plugin is part of the message, not context selected from another panel.
+ * The vocabulary is shared with the rest of this file so the two rows still
+ * look like siblings across that boundary.
+ */
+export function PluginChips({
+  plugins,
+  onRemove,
+}: {
+  plugins: ChatPlugin[];
+  onRemove: (id: ChatPluginId) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-1.5">
+      <AnimatePresence mode="popLayout">
+        {plugins.map((plugin) => (
+          <motion.span
+            key={plugin.id}
+            {...CHIP_ANIM}
+            className={cx(
+              "inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-[0.857rem]",
+              PLUGIN_PILL,
+            )}
+          >
+            <PluginIcon id={plugin.id} className="size-3.5 shrink-0" />
+            {plugin.label}
+            <button
+              type="button"
+              onClick={() => onRemove(plugin.id)}
+              className={cx(removeButton, "hover:bg-green/25")}
+              title="Remove"
             >
               <RemoveX />
             </button>

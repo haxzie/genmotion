@@ -24,6 +24,13 @@ process.env.DODOPAYMENT_WEBHOOK_KEY = "whsec_dGVzdHdlYmhvb2tzZWNyZXQ=";
 process.env.DODOPAYMENT_PRO_PRODUCT_ID = "pdt_test_pro";
 process.env.DODOPAYMENT_TEAM_PRODUCT_ID = "pdt_test_team";
 
+// Nor may a test reach a chat-plugin provider. Set rather than cleared: the
+// route answers 503 when a key is missing, which would hide the gate and the
+// bookkeeping behind a "not configured" branch. The suite stubs `fetch`, so
+// these are never sent anywhere.
+process.env.ELEVENLABS_API_KEY = "test_elevenlabs_api_key";
+process.env.GEMINI_API_KEY = "test_gemini_api_key";
+
 // better-auth refuses to construct without a secret; keep tests independent of
 // whether the developer has one set locally.
 process.env.BETTER_AUTH_SECRET ??= "test-better-auth-secret";

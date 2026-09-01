@@ -200,3 +200,42 @@ export const exportJobs = pgTable("export_jobs", {
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
 });
+
+/**
+ * One row per chat-plugin call, success or failure.
+ *
+ * Chat plugins are the only part of the product that spends money per use — the
+ * render runs on the user's own machine, but voiceover and image generation run
+ * against providers we hold the keys for. Nothing reads this table to gate: it
+ * exists so the real cost of a Pro seat is knowable from data rather than
+ * guessed at, before anyone invents a quota. `bytes` and `ms` are what make it
+ * answerable — a count alone says nothing about a 12-second narration versus a
+ * two-minute one.
+ *
+ * The organization is stamped from the session, never the request body, for the
+ * same reason product events are (see apps/api/src/routes/events.ts).
+ */
+export const pluginCalls = pgTable(
+  "plugin_calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** `ChatPluginId` from @genmotion/shared — text, so adding one is not a migration. */
+    plugin: text("plugin").notNull(),
+    /** `IntegrationId` — which provider was actually billed. */
+    integration: text("integration").notNull(),
+    ok: boolean("ok").notNull(),
+    /** Size of what the provider returned; 0 on failure. */
+    bytes: integer("bytes").notNull().default(0),
+    /** Round-trip to the provider, in milliseconds. */
+    ms: integer("ms").notNull().default(0),
+    error: text("error"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("plugin_calls_org_created_idx").on(t.organizationId, t.createdAt)],
+);

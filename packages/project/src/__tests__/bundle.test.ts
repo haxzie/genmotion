@@ -39,6 +39,24 @@ describe("createSceneBundler", () => {
     expect(result.code).not.toContain("useCurrentFrame = ");
   });
 
+  it("keeps three external — the host owns the one instance the hook renders with", async () => {
+    await write(
+      "scenes/01-intro.tsx",
+      `import * as THREE from "three";
+       import { ThreeScene } from "@genmotion/motion";
+       export default function Scene() {
+         return <ThreeScene build={({ scene }) => { scene.add(new THREE.AmbientLight(0xffffff)); }} />;
+       }`,
+    );
+    const result = await bundler.bundle("scenes/01-intro.tsx");
+    if (!result.ok) throw new Error("expected a bundle");
+
+    // A bundled second copy would be megabytes, and its classes would fail the
+    // instanceof checks the renderer makes against the host's.
+    expect(result.code).toContain('require("three")');
+    expect(result.code.length).toBeLessThan(20_000);
+  });
+
   it("resolves a shared component from components/", async () => {
     await write(
       "components/Title.tsx",
@@ -128,6 +146,34 @@ describe("validateSceneFile", () => {
        import { Bar } from "../components/Bar";
        export default function Scene() { return <AbsoluteFill><Bar w={10} /></AbsoluteFill>; }`,
     );
+    const result = await validate();
+    expect(result.error).toBeNull();
+  });
+
+  it("loads and server-renders a three.js scene", async () => {
+    await write(
+      "scenes/01-intro.tsx",
+      `import * as THREE from "three";
+       import { ThreeScene } from "@genmotion/motion";
+       export default function Scene() {
+         return (
+           <ThreeScene
+             id="cube"
+             build={({ scene, camera }) => {
+               const cube = new THREE.Mesh(
+                 new THREE.BoxGeometry(1, 1, 1),
+                 new THREE.MeshStandardMaterial({ color: "#6ee7ff" }),
+               );
+               scene.add(cube, new THREE.DirectionalLight(0xffffff, 3));
+               camera.position.z = 4;
+               return ({ time }) => { cube.rotation.y = time; };
+             }}
+           />
+         );
+       }`,
+    );
+    // The smoke render has no DOM and no GL: this passes only because the hook
+    // keeps every WebGL call inside a layout effect.
     const result = await validate();
     expect(result.error).toBeNull();
   });

@@ -7,12 +7,17 @@ import type { CompileSceneResult } from "./types";
 
 // gsap is re-exported by @genmotion/motion so there is exactly one instance.
 const gsapModule = { default: Motion.gsap, gsap: Motion.gsap };
+// Same reason gsap is re-exported by the motion package: the hook that drives a
+// three.js scene from the frame clock and the scene's own geometry must be
+// instanceof-compatible, which two copies of three would not be.
+const threeModule = Motion.THREE;
 
 const MODULES: Record<string, unknown> = {
   react: React,
   "react/jsx-runtime": JsxRuntime,
   "@genmotion/motion": Motion,
   gsap: gsapModule,
+  three: threeModule,
   "lucide-react": Lucide,
 };
 
@@ -28,7 +33,7 @@ function requireShim(id: string): unknown {
   const mod = MODULES[id];
   if (!mod) {
     throw new Error(
-      `Module "${id}" is not available in scenes. Allowed imports: react, @genmotion/motion, gsap, lucide-react`,
+      `Module "${id}" is not available in scenes. Allowed imports: react, @genmotion/motion, gsap, three, lucide-react`,
     );
   }
   return mod;

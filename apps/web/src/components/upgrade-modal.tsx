@@ -27,11 +27,15 @@ import { Spinner } from "@/components/ui";
 const COPY: Record<UpgradeReason, { title: string; body: string }> = {
   trial: {
     title: "Your free trial has ended",
-    body: `The ${TRIAL_DAYS}-day trial included everything. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting — unlimited projects, no watermark.`,
+    body: `The ${TRIAL_DAYS}-day trial covered the whole studio. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting — unlimited projects, no watermark.`,
   },
   seats: {
     title: "That needs another seat",
     body: `Your plan covers the people already in it. Adding a teammate costs $${SEAT_PRICE_USD} a month, charged from today.`,
+  },
+  plugin: {
+    title: `Chat plugins are part of ${PLANS.pro.name}`,
+    body: `Voiceover and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of the trial. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
   },
 };
 

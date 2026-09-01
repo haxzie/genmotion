@@ -83,6 +83,17 @@ const schema = z.object({
   CHAT_MODEL: z.string().min(1).default("kimi-k2.6"),
   SCENE_MODEL: z.string().min(1).default("kimi-k2.7-code-highspeed"),
 
+  // ── Chat plugins — the providers we pay per call for ────────────────
+  // Voiceover. Unset means the plugin answers 503 rather than failing at the
+  // provider, so an org that pays for Pro is told the feature is off here
+  // rather than that its own request was bad. Image generation reuses
+  // GEMINI_API_KEY above.
+  ELEVENLABS_API_KEY: z.string().min(1).optional(),
+  ELEVENLABS_MODEL: z.string().min(1).default("eleven_multilingual_v2"),
+  // Rachel, from the default voice library — a neutral narrator, and the one
+  // the agent gets when it does not name a voice.
+  ELEVENLABS_VOICE_ID: z.string().min(1).default("21m00Tcm4TlvDq8ikWAM"),
+
   // ── Renderer worker (apps/renderer) — where video exports run ───────
   RENDER_PROVIDER: z.enum(["local", "e2b", "docker"]).default("local"),
   E2B_RENDER_TEMPLATE: z.string().min(1).optional(),

@@ -12,16 +12,24 @@ export function runTurnAsUiStream(input: {
   text: string;
   resumeSessionId: string | null;
   signal: AbortSignal;
-  onFinish: (result: { message: UIMessage | null; sessionId: string | null }) => void | Promise<void>;
+  onFinish: (result: {
+    message: UIMessage | null;
+    sessionId: string | null;
+    /** The turn's last context reading, or null if it never reported one. */
+    context: { usedTokens: number; maxTokens: number } | null;
+  }) => void | Promise<void>;
 }): Response {
   let sessionId: string | null = input.resumeSessionId;
+  // Kept so the reading survives the turn: the ring needs a number when the
+  // project is next opened, long before another turn produces one.
+  let context: { usedTokens: number; maxTokens: number } | null = null;
 
   const stream = createUIMessageStream({
     // Without this the stream swallows the real failure and emits a bare
     // "An error occurred", which is useless in a chat transcript.
     onError: (error) => (error instanceof Error ? error.message : String(error)),
     onFinish: async ({ responseMessage }) => {
-      await input.onFinish({ message: responseMessage ?? null, sessionId });
+      await input.onFinish({ message: responseMessage ?? null, sessionId, context });
     },
     execute: async ({ writer }) => {
       // One text part per turn, opened lazily so a tool-only turn has none.
@@ -99,6 +107,7 @@ export function runTurnAsUiStream(input: {
           }
 
           case "context": {
+            context = event.context;
             writer.write({
               type: "data-context-usage",
               data: event.context,

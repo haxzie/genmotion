@@ -9,7 +9,14 @@
  * quotas — because the desktop app runs the work on the user's own machine
  * with their own agent, so there is nothing metered for us to meter.
  *
- * Free is a seven-day trial of everything, not a reduced tier.
+ * Chat plugins are the one exception, and the reason `UpgradeReason` has a
+ * third member. Rendering still happens on the user's machine, but voiceover
+ * and image generation run against providers we hold the keys for and pay per
+ * call — so they gate on a paid subscription rather than on the trial. Calls
+ * are logged, not counted: there is no quota, only a record of what a Pro seat
+ * actually costs.
+ *
+ * Free is a seven-day trial of everything else, not a reduced tier.
  */
 
 export type PlanId = "free" | "pro";
@@ -51,7 +58,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     canInvite: false,
     purchasable: false,
     features: [
-      `${TRIAL_DAYS} days, everything included`,
+      `${TRIAL_DAYS} days of the full studio`,
       "Unlimited projects and exports",
       "No watermark",
       "Bring your own coding agent",
@@ -67,6 +74,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     features: [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
+      "Voiceover and image generation in chat",
       "Invite teammates at $19 each",
       "Priority support",
     ],
@@ -95,9 +103,11 @@ export type SubscriptionStatus =
  * Every reason the upgrade modal can open for.
  *
  * `trial` is the expiry of the free week; `seats` is an invite that would
- * exceed what the subscription covers. There is nothing else left to gate.
+ * exceed what the subscription covers; `plugin` is a provider-backed feature
+ * the trial deliberately does not include, because each call spends money we
+ * would not get back from an org that never converts.
  */
-export type UpgradeReason = "trial" | "seats";
+export type UpgradeReason = "trial" | "seats" | "plugin";
 
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && value in PLANS;

@@ -12,6 +12,18 @@ import {
 } from "@genmotion/project";
 import type { DesktopProject, SceneBundle } from "./shared";
 
+export interface AgentContextUsage {
+  usedTokens: number;
+  maxTokens: number;
+}
+
+/** `.genmotion/session.json` — which harness owns the thread, and where it stands. */
+interface StoredAgentSession {
+  backend?: string;
+  sessionId?: string | null;
+  context?: Partial<AgentContextUsage> | null;
+}
+
 /** Debounce for filesystem events — editors and agents write in bursts. */
 const SETTLE_MS = 80;
 
@@ -239,24 +251,59 @@ export class ProjectSession {
    * unaffected, since that lives in the project folder rather than the harness.
    */
   async readAgentSession(backend: string): Promise<string | null> {
+    const stored = await this.readSessionFile();
+    if (!stored || stored.backend !== backend) return null;
+    return typeof stored.sessionId === "string" ? stored.sessionId : null;
+  }
+
+  /**
+   * How full the harness's context was at the end of the last turn.
+   *
+   * Persisted because the model's context outlives the app: the session is
+   * resumed on the next launch with everything still in it, so the ring has a
+   * true number to show from the first frame instead of waiting a whole turn
+   * for one — which is what made it read empty, or worse, fall back to counting
+   * our own transcript.
+   */
+  async readAgentContext(): Promise<AgentContextUsage | null> {
+    const stored = await this.readSessionFile();
+    const context = stored?.context;
+    if (
+      !context ||
+      typeof context.usedTokens !== "number" ||
+      typeof context.maxTokens !== "number"
+    ) {
+      return null;
+    }
+    return { usedTokens: context.usedTokens, maxTokens: context.maxTokens };
+  }
+
+  private async readSessionFile(): Promise<StoredAgentSession | null> {
     const file = path.join(this.dir, ".genmotion", "session.json");
     const raw = await fs.readFile(file, "utf8").catch(() => null);
     if (!raw) return null;
     try {
-      const parsed = JSON.parse(raw) as { sessionId?: unknown; backend?: unknown };
-      if (parsed.backend !== backend) return null;
-      return typeof parsed.sessionId === "string" ? parsed.sessionId : null;
+      return JSON.parse(raw) as StoredAgentSession;
     } catch {
       return null;
     }
   }
 
-  async writeAgentSession(sessionId: string | null, backend: string): Promise<void> {
+  async writeAgentSession(
+    sessionId: string | null,
+    backend: string,
+    /** Omitted when the turn never reported one — the stored reading stands. */
+    context?: AgentContextUsage | null,
+  ): Promise<void> {
     const dir = path.join(this.dir, ".genmotion");
     await fs.mkdir(dir, { recursive: true });
+    const previous = await this.readSessionFile();
+    // A reading only carries forward within the same harness: a Codex number
+    // says nothing about a Claude Code session, or the other way round.
+    const kept = previous?.backend === backend ? (previous.context ?? null) : null;
     await fs.writeFile(
       path.join(dir, "session.json"),
-      `${JSON.stringify({ backend, sessionId }, null, 2)}\n`,
+      `${JSON.stringify({ backend, sessionId, context: context ?? kept }, null, 2)}\n`,
       "utf8",
     );
   }

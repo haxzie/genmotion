@@ -4,6 +4,17 @@
  * Scene 03 of the reported project puts its video inside a Camera; scenes 04
  * and 06 do not, and 03 is the one that stalls. This renders both shapes over
  * the same clip and counts distinct frames for each.
+ *
+ * READ THE MOVING-CAMERA NUMBER WITH CARE. It repeats (68/120 measured), and
+ * the first reading of that was that a <Video> under a moving <Camera> gets its
+ * texture scaled instead of re-rasterised. `video-layer-probe` then measured
+ * the same camera move with NO video in the scene at all: 114/120. The repeats
+ * come in one run of 53 consecutive byte-identical FULL frames, while the
+ * element decodes 120 distinct ones — so what repeats is the screenshot, not
+ * the video, and it is the headless capture that goes stale when a <video> is
+ * on the page. Separate bug from the reported one, which was the desktop
+ * app serving media without byte ranges (see serveAssetFile in
+ * apps/desktop/electron/main.ts) and is fixed.
  */
 import { createHash } from "node:crypto";
 import { createReadStream, statSync } from "node:fs";

@@ -71,6 +71,13 @@
       "when": 1787066119826,
       "tag": "0009_seat_based_pricing",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787929179369,
+      "tag": "0010_cute_absorbing_man",
+      "breakpoints": true
     }
   ]
 }

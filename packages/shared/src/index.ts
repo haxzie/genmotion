@@ -5,4 +5,5 @@ export * from "./render";
 export * from "./chat";
 export * from "./limits";
 export * from "./plans";
+export * from "./plugins";
 export * from "./desktop";

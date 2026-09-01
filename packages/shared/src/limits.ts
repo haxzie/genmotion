@@ -3,10 +3,12 @@ import type { UpgradeReason } from "./plans";
 /**
  * What blocks an action, and how the client is told.
  *
- * There are no usage meters any more — no project, export or message quotas.
- * The desktop app does the work on the user's own machine with their own
- * agent, so there is nothing of ours being consumed to count. Two things gate:
- * the trial running out, and an invite that would exceed the seats paid for.
+ * There are still no usage meters — no project, export or message quotas. The
+ * desktop app does the work on the user's own machine with their own agent, so
+ * there is nothing of ours being consumed to count. Three things gate: the
+ * trial running out, an invite that would exceed the seats paid for, and a
+ * chat plugin, which spends provider credit we pay for and so needs a paid
+ * plan rather than merely an unexpired one.
  */
 
 /**
@@ -39,6 +41,8 @@ export function isPaywallBody(body: unknown): body is PaywallBody {
   return (
     !!paywall &&
     typeof paywall === "object" &&
-    (paywall.reason === "trial" || paywall.reason === "seats")
+    (paywall.reason === "trial" ||
+      paywall.reason === "seats" ||
+      paywall.reason === "plugin")
   );
 }

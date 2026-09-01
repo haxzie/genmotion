@@ -168,6 +168,70 @@ export class DesktopAuth {
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * An authenticated call to the hosted API, for main-process callers.
+   *
+   * The token never leaves this class — callers hand over a path, not a
+   * credential — which is what keeps it out of the agent tools that use this to
+   * reach the chat-plugin endpoints, and out of the renderer entirely.
+   *
+   * `binary` is for the plugin routes, which answer with the generated media
+   * rather than JSON.
+   */
+  async request<T>(
+    path: string,
+    init: { method?: string; json?: unknown } = {},
+  ): Promise<{ ok: boolean; status: number; body: T }> {
+    const token = await readStored();
+    if (!token) return { ok: false, status: 401, body: null as T };
+    return callApi<T>(path, { ...init, token });
+  }
+
+  /**
+   * The same, for a response whose body is a file rather than JSON.
+   *
+   * A failure still parses as JSON, because that is what the API answers with
+   * when it refuses — a paywall or a provider error — and the caller needs to
+   * read the message out of it.
+   */
+  async requestBinary(
+    path: string,
+    init: { method?: string; json?: unknown } = {},
+  ): Promise<
+    | { ok: true; status: number; bytes: Buffer; mime: string }
+    | { ok: false; status: number; body: unknown }
+  > {
+    const token = await readStored();
+    if (!token) return { ok: false, status: 401, body: { error: "Not signed in." } };
+
+    const res = await fetch(`${API_URL}${path}`, {
+      method: init.method ?? (init.json !== undefined ? "POST" : "GET"),
+      headers: {
+        ...(init.json !== undefined ? { "content-type": "application/json" } : {}),
+        authorization: `Bearer ${token}`,
+      },
+      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      let body: unknown = text;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        /* a non-JSON error body is still worth reporting verbatim */
+      }
+      return { ok: false, status: res.status, body };
+    }
+
+    return {
+      ok: true,
+      status: res.status,
+      bytes: Buffer.from(await res.arrayBuffer()),
+      mime: (res.headers.get("content-type") ?? "").split(";")[0]?.trim() ?? "",
+    };
+  }
+
   private set(state: AuthState): void {
     this.state = state;
     for (const listener of this.listeners) listener(state);

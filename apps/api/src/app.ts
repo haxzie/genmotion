@@ -9,6 +9,7 @@ import { assetRoutes } from "./routes/assets";
 import { exportRoutes } from "./routes/exports";
 import { fileRoutes } from "./routes/files";
 import { renderRoutes } from "./routes/render";
+import { pluginRoutes } from "./routes/plugins";
 import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
@@ -56,6 +57,8 @@ app.route("/api/chat", chatRoutes);
 app.route("/api/assets", assetRoutes);
 app.route("/api/exports", exportRoutes);
 app.route("/api/billing", billingRoutes);
+// Chat plugins — provider-backed media generation, gated on a paid plan.
+app.route("/api/plugins", pluginRoutes);
 // Desktop app bootstrap — session-authed, but reached with a Bearer token
 // rather than a cookie (see the bearer plugin in auth.ts).
 app.route("/api/desktop", desktopRoutes);
