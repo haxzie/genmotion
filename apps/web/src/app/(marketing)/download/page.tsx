@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container, Section, Card } from "@/components/marketing/primitives";
 import { DownloadButton } from "@/components/marketing/download-button";
+import { InstallCommand } from "@/components/marketing/install-command";
 import { pageMetadata } from "@/lib/marketing/seo";
 import { getLatestRelease, formatSize } from "@/lib/marketing/latest-release";
 
@@ -33,6 +34,16 @@ export default async function DownloadPage() {
         </p>
 
         <div className="mt-10 flex flex-col items-center">
+          {/* Above the button, as on the home page: the same release, and the
+              path that also leaves the `genmotion` command behind. */}
+          <InstallCommand />
+          {/* Two ways to the same build, so say so — without the "or" the pill
+              and the button read as one flow with a missing step. */}
+          <div className="my-4 flex w-full max-w-[15rem] items-center gap-3">
+            <span aria-hidden className="h-px flex-1 bg-border" />
+            <span className="text-[0.85rem] text-text-tertiary">or</span>
+            <span aria-hidden className="h-px flex-1 bg-border" />
+          </div>
           <DownloadButton size="lg" href={release?.downloadUrl} />
           <p className="mt-4 text-[0.9rem] text-text-secondary">
             {release ? (

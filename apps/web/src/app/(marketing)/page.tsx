@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DownloadButton } from "@/components/marketing/download-button";
+import { InstallCommand } from "@/components/marketing/install-command";
 import { getLatestRelease, formatSize } from "@/lib/marketing/latest-release";
 import {
   Container,
@@ -164,6 +165,10 @@ export default async function HomePage() {
           </p>
           <AgentBadges className="mt-6" />
           <div className="mt-8 flex w-full flex-col items-center">
+            {/* Above the button, deliberately quieter than it: the terminal
+                install is the faster path for the people it suits, and the
+                only one that leaves the `genmotion` command behind. */}
+            <InstallCommand className="mb-4" />
             <DownloadButton size="lg" href={release?.downloadUrl} />
             <p className="mt-4 text-[0.9rem] text-text-secondary">
               {release ? (

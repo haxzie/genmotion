@@ -11,4 +11,5 @@ coverage/
 test-results/
 playwright-report/
 public/esbuild.wasm
+apps/web/public/install.sh
 *.tsbuildinfo

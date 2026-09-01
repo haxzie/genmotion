@@ -9,7 +9,15 @@ credentials. There is no model subscription to buy here, and no prompt leaves
 for a server we run.
 
 **[Download for macOS](https://genmotion.dev/download)** · Apple silicon,
-signed and notarized.
+signed and notarized. Or from a terminal:
+
+```sh
+curl -fsSL https://genmotion.dev/install.sh | sh
+```
+
+That installs the app and the `genmotion` command — `genmotion .` opens the app
+with the current folder shared with the agent, and `genmotion upgrade` pulls the
+next release.
 
 ## Architecture
 
