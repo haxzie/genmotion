@@ -10,9 +10,13 @@ name: Mirror release to R2
 # GitHub's release CDN, which is the difference between a five second install
 # and a five minute one.
 #
-# Triggered by a release being *published*, not by the tag: a draft is a build
-# nobody has opened yet, and advertising it on our own CDN would undo the point
-# of drafting it.
+# Called by desktop-release.yml once the signed build is published, so the CDN
+# copy lands with the release rather than whenever someone remembers. It stays
+# separately dispatchable for re-mirroring an older tag.
+#
+# The `release: published` trigger is kept for a release published by hand —
+# that path still raises the event, whereas one created by the release
+# workflow's own GITHUB_TOKEN does not.
 #
 # Repository secrets:
 #   R2_S3_ENDPOINT        https://<account id>.r2.cloudflarestorage.com
@@ -20,6 +24,12 @@ name: Mirror release to R2
 #   R2_SECRET_ACCESS_KEY
 
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to mirror, e.g. desktop-v0.0.3"
+        required: true
+        type: string
   release:
     types: [published]
   workflow_dispatch:
@@ -27,6 +37,7 @@ on:
       tag:
         description: "Release tag to mirror, e.g. desktop-v0.0.3"
         required: true
+        type: string
 
 permissions:
   contents: read
@@ -54,7 +65,7 @@ jobs:
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
           set -eu
           case "$TAG" in
@@ -89,8 +100,8 @@ jobs:
             echo "published_at=$published_at"
           } >> "$GITHUB_OUTPUT"
 
-      # Publishing an old draft — and there is one sitting there — would
-      # otherwise point every download at a build that predates the current one.
+      # Guards a manual re-mirror of an older tag: pointing latest.json at a
+      # build that predates the current one would downgrade every download.
       - name: Refuse to go backwards
         env:
           VERSION: ${{ steps.release.outputs.version }}
