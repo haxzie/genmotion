@@ -1,6 +1,7 @@
 // Must be first: it configures where esbuild finds its executable, and the
 // project package pulls esbuild in as soon as it is imported.
 import "./esbuild-binary";
+import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -10,6 +11,7 @@ import { BrowserWindow, app, dialog, ipcMain, protocol, shell } from "electron";
 import { createProject } from "@genmotion/project";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
+import { flushAnalytics, startAnalytics, track } from "./analytics";
 import { ProjectSession } from "./project-session";
 import { captureThumbnail, refreshThumbnail } from "./export/thumbnail";
 import { forgetProject, listRecents, rememberProject } from "./recents";
@@ -176,11 +178,25 @@ async function launchContext(): Promise<LaunchContext> {
   return { dir, isProject: await exists(path.join(dir, "project.json")) };
 }
 
+/**
+ * Whether this is the first time this install has ever been run.
+ *
+ * A marker file rather than a preference: it must survive nothing else, and
+ * its absence is exactly the question being asked.
+ */
+async function isFirstLaunch(): Promise<boolean> {
+  const marker = path.join(app.getPath("userData"), "installed-at");
+  if (await exists(marker)) return false;
+  await fs.writeFile(marker, new Date().toISOString(), "utf8").catch(() => {});
+  return true;
+}
+
 function registerIpc(): void {
   ipcMain.handle(IPC.createProject, async (_event, input: CreateProjectInput) => {
     const name = input.name?.trim() || "Untitled";
     const dir = await allocateProjectDir(name);
     await createProject({ dir, name, width: input.width, height: input.height });
+    track("project_created", { width: input.width, height: input.height });
     return openSession(dir);
   });
 
@@ -248,6 +264,11 @@ function registerIpc(): void {
     const url = new URL(target, `${WEB_URL}/`);
     if (url.origin !== new URL(WEB_URL).origin) return;
     await shell.openExternal(url.toString());
+  });
+
+  // `on`, not `handle`: the renderer sends and forgets.
+  ipcMain.on(IPC.track, (_event, name: string, properties?: Record<string, unknown>) => {
+    if (typeof name === "string" && name) track(name, properties);
   });
 
   ipcMain.handle(IPC.authState, () => desktopAuth.current());
@@ -484,9 +505,31 @@ void app.whenReady().then(async () => {
   localServer = await startLocalServer(() => session, path.join(dirname, "../renderer"));
   createWindow();
 
+  // Delivery for anything recorded from here on, plus whatever last run left
+  // queued. The sender is handed over rather than imported by the analytics
+  // module so that module never has to know about auth.
+  startAnalytics((events) =>
+    desktopAuth.request("/api/events", { json: { events } }),
+  );
+
   // Push every change to the renderer, so the login gate needs no polling.
-  desktopAuth.onChange((state) => window?.webContents.send(IPC.authChanged, state));
+  desktopAuth.onChange((state) => {
+    window?.webContents.send(IPC.authChanged, state);
+    // A token just landed: everything queued while signed out can go now,
+    // carrying the timestamps it was recorded with.
+    if (state.status === "signed-in") flushAnalytics();
+  });
   onUpdateChange((state) => window?.webContents.send(IPC.updateChanged, state));
+  void isFirstLaunch().then((first) =>
+    track("app_launched", {
+      version: app.getVersion(),
+      platform: process.platform,
+      os_version: os.release(),
+      arch: process.arch,
+      first_launch: first,
+    }),
+  );
+
   // Not awaited: the window should paint its loading state rather than wait on
   // a network round-trip to the API.
   void desktopAuth.restore();

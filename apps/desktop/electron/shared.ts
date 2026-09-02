@@ -206,6 +206,14 @@ export interface DesktopApi {
   };
   /** Signing in against the hosted API; see electron/auth.ts. */
   auth: DesktopAuthApi;
+  /**
+   * Record a product event.
+   *
+   * Fire-and-forget by design: the renderer hands the name over and moves on.
+   * Queueing, batching, and the wait for a signed-in token all happen in the
+   * main process, which is the only side holding one. See electron/analytics.ts.
+   */
+  track(event: string, properties?: Record<string, unknown>): void;
 }
 
 export const IPC = {
@@ -232,4 +240,5 @@ export const IPC = {
   authCancel: "auth:cancel",
   authSignOut: "auth:sign-out",
   authChanged: "auth:changed",
+  track: "analytics:track",
 } as const;

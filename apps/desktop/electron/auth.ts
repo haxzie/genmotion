@@ -8,6 +8,7 @@ import {
   type DesktopAuthProvider,
 } from "@genmotion/shared";
 import type { AuthState, AuthUser, AuthOrganization } from "./shared";
+import { track } from "./analytics";
 
 /**
  * Signing the desktop app in, using the OAuth 2.0 Device Authorization Grant.
@@ -305,6 +306,8 @@ export class DesktopAuth {
       expiresAt: this.attempt.expiresAt,
     });
 
+    track("device_auth_started", { provider });
+
     await shell.openExternal(this.attempt.verificationUrl);
     this.schedule(this.attempt.intervalMs);
     return this.state;
@@ -431,6 +434,9 @@ export class DesktopAuth {
       this.set({ status: "signed-out", error: "Signed in, but couldn't load your account." });
       return;
     }
+    // The app is connected. Recorded after the profile loads, because a token
+    // that cannot fetch an account is not a completed sign-in.
+    track("device_auth_completed", {});
     this.set({ status: "signed-in", user: res.body.user, organization: res.body.organization });
   }
 }

@@ -62,6 +62,11 @@ const api: DesktopApi = {
       };
     },
   },
+  // `send`, not `invoke`: nothing comes back and no caller should be made to
+  // wait on analytics.
+  track: (event: string, properties?: Record<string, unknown>) => {
+    ipcRenderer.send(IPC.track, event, properties);
+  },
   update: {
     state: () => ipcRenderer.invoke(IPC.updateState),
     check: () => ipcRenderer.invoke(IPC.updateCheck),
