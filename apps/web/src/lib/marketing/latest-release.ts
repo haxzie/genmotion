@@ -10,19 +10,53 @@ export interface LatestRelease {
 const GITHUB_REPO = "haxzie/genmotion";
 
 /**
+ * The R2 mirror, and the manifest the release workflow writes to it.
+ *
+ * Same default as the API's `RELEASE_MIRROR_URL`, so a deployment that sets
+ * one variable moves both.
+ */
+const MIRROR_URL = (
+  process.env.RELEASE_MIRROR_URL ?? "https://assets.genmotion.dev/desktop"
+).replace(/\/$/, "");
+
+/**
  * What the current desktop build is, and where to get it.
  *
- * Two sources, in order. The API is preferred — it caches, and it is the place
- * to add per-platform logic later. GitHub is the fallback because the web app
- * and the API deploy independently: an API a deploy behind must not be able to
- * take the marketing site's primary call to action down with it, which is
- * exactly what it did the first time these shipped apart.
+ * Three sources, in order, because the four things that produce this answer —
+ * the mirror, the API, GitHub, and this site — all deploy independently, and
+ * the primary call to action must not depend on all four agreeing.
  *
- * Revalidated rather than fetched per request; the answer changes only when a
- * release is published.
+ * The mirror is first because it is the only one that answers both halves of
+ * the question at once: `latest.json` names the version *and* carries the URL
+ * of the file for that exact version, written by the same job that uploaded
+ * it. It is also the fast copy — 30 MB/s against GitHub's 0.3–1.5 MB/s, which
+ * on a 140MB build is the difference between a five second install and a five
+ * minute one.
  */
 export async function getLatestRelease(): Promise<LatestRelease | null> {
-  return (await fromApi()) ?? (await fromGitHub());
+  return (await fromMirror()) ?? (await fromApi()) ?? (await fromGitHub());
+}
+
+/**
+ * Revalidated rather than fetched per request. Sixty seconds matches the
+ * `cache-control` the mirror job puts on `latest.json` itself: that object is
+ * the one thing in this chain that changes, and it says how long it is good
+ * for. Anything longer here would ignore it.
+ */
+async function fromMirror(): Promise<LatestRelease | null> {
+  try {
+    const res = await fetch(`${MIRROR_URL}/latest.json`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      version?: string;
+      size?: number;
+      url?: string;
+    };
+    if (!body.version || !body.url) return null;
+    return { version: body.version, size: body.size ?? 0, downloadUrl: body.url };
+  } catch {
+    return null;
+  }
 }
 
 async function fromApi(): Promise<LatestRelease | null> {
@@ -33,14 +67,15 @@ async function fromApi(): Promise<LatestRelease | null> {
     if (!res.ok) return null;
     const body = (await res.json()) as {
       version?: string;
+      tag?: string;
       size?: number;
       filename?: string;
     };
-    if (!body.version || !body.filename) return null;
+    if (!body.version || !body.filename || !body.tag) return null;
     return {
       version: body.version,
       size: body.size ?? 0,
-      downloadUrl: assetUrl(body.filename),
+      downloadUrl: githubAssetUrl(body.tag, body.filename),
     };
   } catch {
     return null;
@@ -64,7 +99,7 @@ async function fromGitHub(): Promise<LatestRelease | null> {
     return {
       version: body.tag_name.replace(/^desktop-v/, "").replace(/^v/, ""),
       size: dmg.size,
-      downloadUrl: assetUrl(dmg.name),
+      downloadUrl: githubAssetUrl(body.tag_name, dmg.name),
     };
   } catch {
     return null;
@@ -72,11 +107,16 @@ async function fromGitHub(): Promise<LatestRelease | null> {
 }
 
 /**
- * GitHub resolves `releases/latest/download/<name>` to the newest release
- * carrying that filename, so this stays correct without a redirect of ours.
+ * Pinned to the tag, not to `latest`.
+ *
+ * `releases/latest/download/<name>` resolves the release at request time but
+ * takes the filename literally, and our filenames carry the version — so the
+ * moment the newest release stops holding that exact file, the link 404s while
+ * still looking correct. It shipped that way, and broke on the first release
+ * where the cached version and the real one disagreed.
  */
-function assetUrl(filename: string): string {
-  return `https://github.com/${GITHUB_REPO}/releases/latest/download/${filename}`;
+function githubAssetUrl(tag: string, filename: string): string {
+  return `https://github.com/${GITHUB_REPO}/releases/download/${tag}/${filename}`;
 }
 
 /** "137 MB" — one decimal reads as false precision at this size. */
