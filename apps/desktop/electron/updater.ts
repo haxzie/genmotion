@@ -4,16 +4,66 @@ import type { UpdateState } from "./shared";
 /**
  * Keeping the app current.
  *
- * electron-updater does the work — read a manifest, compare versions, fetch
- * the zip, swap the bundle on quit — reading GitHub releases directly. The
- * repo is public, so that needs no credential, and the ~140MB comes off
- * GitHub's CDN rather than through our API. The feed is configured at build
- * time by electron-builder.yml; nothing here has to name it.
+ * Split on purpose, because the two halves want different sources.
+ *
+ * The *check* reads `latest.json` off our own CDN — the same manifest the
+ * download page reads, written by the mirror job. It is one small object on a
+ * fast edge rather than a release feed, it means the app and the website can
+ * never disagree about what the current version is, and unlike electron-updater
+ * it answers in development too, where there is no packaged bundle.
+ *
+ * The *download and install* stay with electron-updater against GitHub. It
+ * needs `latest-mac.yml`, the zip and the blockmaps to do a differential
+ * update, and the mirror deliberately carries none of those — only the DMG a
+ * human downloads. Pointing the updater at the mirror would mean it had
+ * nothing to read.
+ *
+ * The ordering between the two is what makes the split safe: the mirror job
+ * runs after the GitHub release is published, so `latest.json` can only ever
+ * name a version GitHub already has. The check cannot promise a build the
+ * downloader is then unable to fetch.
  *
  * Nothing downloads on its own. The check runs at launch and the result turns
  * into a badge; bytes only move once the user asks for them, because a 137MB
  * download nobody consented to is a surprise on a metered connection.
  */
+
+/** Same default as the API and the web app, so one variable moves all three. */
+const MIRROR_URL = (
+  process.env.GM_RELEASE_MIRROR_URL ?? "https://assets.genmotion.dev/desktop"
+).replace(/\/$/, "");
+
+/**
+ * Whether `candidate` is a later release than `current`.
+ *
+ * Numeric x.y.z only, which is every version this app has ever had. Any
+ * pre-release suffix is dropped rather than ordered, so `0.1.0-beta.1` reads as
+ * `0.1.0` and does not count as newer than the released `0.1.0` — the safe
+ * direction to be wrong in, since the alternative offers people a build that
+ * was never published.
+ */
+function isNewer(candidate: string, current: string): boolean {
+  const parse = (v: string) =>
+    v.split("-")[0]!.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const a = parse(candidate);
+  const b = parse(current);
+  for (let i = 0; i < 3; i++) {
+    const left = a[i] ?? 0;
+    const right = b[i] ?? 0;
+    if (left !== right) return left > right;
+  }
+  return false;
+}
+
+/** The version the mirror is advertising, or null if it cannot be read. */
+async function mirroredVersion(): Promise<string | null> {
+  const res = await fetch(`${MIRROR_URL}/latest.json`, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { version?: unknown };
+  return typeof body.version === "string" && body.version ? body.version : null;
+}
 
 type Listener = (state: UpdateState) => void;
 
@@ -81,14 +131,35 @@ async function getUpdater() {
 /**
  * Ask whether a newer build exists.
  *
- * A no-op in development: there is no packaged bundle to replace, and
- * electron-updater's own answer to that is to throw about a missing
+ * The mirror answers first and answers in development too, which is the only
+ * reason the update surfaces can be looked at without cutting a release.
+ * electron-updater is the fallback for the case the mirror job failed and
+ * `latest.json` is behind the release it describes — and it stays a no-op when
+ * unpackaged, where its own answer is to throw about a missing
  * `dev-app-update.yml`, which is noise rather than information.
  */
 export async function checkForUpdate(): Promise<UpdateState> {
-  if (!app.isPackaged) return state;
+  set({ status: "checking" });
+
   try {
-    set({ status: "checking" });
+    const version = await mirroredVersion();
+    if (version) {
+      set(
+        isNewer(version, app.getVersion())
+          ? { status: "available", version }
+          : { status: "idle" },
+      );
+      return state;
+    }
+  } catch {
+    // Offline, or the mirror is having a moment. GitHub gets a turn.
+  }
+
+  if (!app.isPackaged) {
+    set({ status: "idle" });
+    return state;
+  }
+  try {
     const autoUpdater = await getUpdater();
     await autoUpdater.checkForUpdates();
   } catch (err) {
@@ -103,6 +174,11 @@ export async function downloadUpdate(): Promise<UpdateState> {
   if (!app.isPackaged) return state;
   try {
     const autoUpdater = await getUpdater();
+    // The mirror check tells electron-updater nothing, so it has no manifest
+    // and no idea what to fetch. Reading its own feed first is what makes the
+    // download possible at all — without this it throws on a state that only
+    // ever gets set from somewhere else.
+    await autoUpdater.checkForUpdates();
     await autoUpdater.downloadUpdate();
   } catch (err) {
     set({ status: "error", message: err instanceof Error ? err.message : String(err) });
