@@ -13,3 +13,11 @@ playwright-report/
 public/esbuild.wasm
 apps/web/public/install.sh
 *.tsbuildinfo
+
+# Build output that lands at the repo root when a desktop build is run from
+# here instead of apps/desktop. Anchored with a leading slash on purpose: the
+# real, tracked apps/desktop/index.html and apps/desktop/main.cjs share these
+# names, and an unanchored pattern matches at every depth — which would leave
+# them one `git rm --cached` away from being silently untrackable.
+/index.html
+/main.cjs
