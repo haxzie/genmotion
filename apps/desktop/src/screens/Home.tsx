@@ -8,7 +8,7 @@ import { api, type RecentProject } from "../api";
 import { AccountMenu } from "../components/account-menu";
 import { UpdateModal } from "../components/update-modal";
 import { hasUpdate, useUpdate } from "../lib/use-update";
-import type { AuthOrganization, AuthUser } from "../../electron/shared";
+import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
 const enter = {
@@ -18,6 +18,65 @@ const enter = {
 const enterEase = [0.25, 1, 0.5, 1] as const;
 
 const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
+
+/**
+ * The update, said again under the composer.
+ *
+ * There is already a pill for this in the top-right corner, and on a screen
+ * whose entire point is the box in the middle it goes unread — the corner is
+ * where the window controls and the avatar live, which is exactly the region
+ * people have learned to skip. This puts the same sentence where they are
+ * already looking, in the quietest form that still reads as a thing you can
+ * press.
+ *
+ * It opens the same dialog and does nothing else. Downloading is ~140MB and
+ * installing quits the app; neither belongs behind a hint someone glanced at
+ * on their way to typing a prompt.
+ */
+function UpdateHint({ state, onOpen }: { state: UpdateState; onOpen: () => void }) {
+  if (!hasUpdate(state)) return null;
+  const version = "version" in state ? state.version : "";
+  const ready = state.status === "ready";
+
+  return (
+    <motion.div
+      className="mt-3 flex justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      // Trailing the composer, which is itself trailing the heading: an update
+      // is the least urgent thing on this screen and should arrive last.
+      transition={{ duration: 0.4, ease: enterEase, delay: 0.35 }}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cx(
+          "group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
+          "text-[0.786rem] text-text-tertiary transition-colors duration-150",
+          "hover:text-text-secondary",
+          "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        )}
+      >
+        <span
+          className={cx("size-1.5 rounded-full", ready ? "bg-green" : "bg-accent")}
+          aria-hidden
+        />
+        {state.status === "downloading" ? (
+          <>
+            Downloading GenMotion {version} · {state.percent}%
+          </>
+        ) : (
+          <>
+            GenMotion {version} {ready ? "is ready to install" : "is available"} ·{" "}
+            <span className={cx("group-hover:underline", ready ? "text-green" : "text-accent")}>
+              {ready ? "Restart" : "Update"}
+            </span>
+          </>
+        )}
+      </button>
+    </motion.div>
+  );
+}
 
 /**
  * How the list is paged.
@@ -290,6 +349,7 @@ export function Home({
               </>
             }
           />
+          <UpdateHint state={update} onOpen={() => setUpdateOpen(true)} />
         </motion.div>
       </section>
 
