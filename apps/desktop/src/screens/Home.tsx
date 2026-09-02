@@ -230,11 +230,15 @@ export function Home({
         <AccountMenu user={user} organization={organization} />
       </div>
 
-      <section className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-6 pt-9">
+      {/* The section deliberately does NOT clip: the composer's menus open
+          downward from here, and an `overflow-hidden` on the section cut them
+          off with no way to scroll. Only the blob layer needs clipping, so
+          that is where it lives now. */}
+      <section className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 pt-9">
         {/* Lightweight animated hue blobs — large circles half-hidden below the
             section, heavily blurred, drifting slowly. */}
         <motion.div
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
           style={{ transformOrigin: "bottom" }}
           initial={{ opacity: 0, scaleY: 0.6 }}
           animate={{ opacity: 1, scaleY: 1 }}

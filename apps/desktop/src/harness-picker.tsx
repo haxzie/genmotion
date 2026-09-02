@@ -14,9 +14,19 @@ interface HarnessOption {
   unavailableReason: string | null;
 }
 
+interface AgentModel {
+  id: string;
+  label: string;
+  version: string | null;
+  detail: string;
+  harness: HarnessId;
+}
+
 interface HarnessState {
   active: HarnessId;
+  activeModel: string | null;
   options: HarnessOption[];
+  models: AgentModel[];
 }
 
 const harnessKey = ["harness"] as const;
@@ -70,11 +80,18 @@ function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
 }
 
 /**
- * The agent driving the chat, and what else this machine could use.
+ * The model driving the chat, and what else this machine could run.
  *
- * Sits beside the attach button in the composer, where the model picker lives
- * in most chat UIs. Harnesses this machine doesn't have are still listed, with
- * the reason — "install the Codex CLI" is more useful than an absence.
+ * Models rather than harnesses, because the model is the choice a user is
+ * actually making — "Sonnet or Opus" is a decision about cost and speed, while
+ * "Claude Code or Codex" is one about which subscription pays for it. Picking a
+ * model picks its harness, since no other combination means anything.
+ *
+ * Both lists come from the harnesses themselves (see electron/agent/models.ts),
+ * so a model released this week appears without a release of ours.
+ *
+ * A harness this machine doesn't have keeps its row, with the reason — "install
+ * the Codex CLI" is more useful than an absence.
  */
 export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" }) {
   const [open, setOpen] = useState(false);
@@ -88,7 +105,8 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
   });
 
   const choose = useMutation({
-    mutationFn: (id: HarnessId) => api<HarnessState>("/api/agents", { json: { id } }),
+    mutationFn: (model: AgentModel) =>
+      api<HarnessState>("/api/agents", { json: { id: model.harness, model: model.id } }),
     onSuccess: (next) => {
       queryClient.setQueryData(harnessKey, next);
       setOpen(false);
@@ -113,13 +131,20 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
   }, [open]);
 
   const active = data?.options.find((o) => o.id === data.active);
+  const activeModel = data?.models.find(
+    (m) => m.harness === data.active && m.id === data.activeModel,
+  );
 
   return (
     <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={active?.version ?? "Choose the agent"}
+        title={
+          activeModel
+            ? `${activeModel.label} · ${active?.label ?? ""} ${active?.version ?? ""}`.trim()
+            : (active?.version ?? "Choose the model")
+        }
         className={cx(
           "flex h-8 items-center gap-1.5 rounded-full pl-2 pr-2 text-[0.786rem] transition-colors",
           "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
@@ -131,7 +156,9 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
         ) : (
           <Spinner className="size-3" />
         )}
-        <span className="max-w-[110px] truncate">{active?.label ?? "Agent"}</span>
+        <span className="max-w-[130px] truncate">
+          {activeModel?.label ?? active?.label ?? "Agent"}
+        </span>
         <svg viewBox="0 0 16 16" className={cx("size-3 shrink-0 opacity-60 transition-transform", open && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M4 6.5L8 10.5 12 6.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -140,7 +167,10 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
       {open && data && (
         <div
           className={cx(
-            "absolute left-0 z-50 w-72 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-[0_16px_50px_rgba(0,0,0,0.5)]",
+            // Bounded and scrollable: these lists grow with whatever the
+            // harnesses and the filesystem report, and a menu taller than the
+            // window is one whose bottom the user can never reach.
+            "absolute left-0 z-50 max-h-[min(60vh,24rem)] w-72 overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-surface-raised shadow-[0_16px_50px_rgba(0,0,0,0.5)]",
             // In the editor the composer sits against the bottom of the panel,
             // so the menu has to open upward; on the start screen there is room
             // below, and opening down keeps the prompt in view.
@@ -148,41 +178,66 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
           )}
         >
           <p className="px-3 pb-1 pt-2.5 text-[0.72rem] uppercase tracking-wider text-text-tertiary">
-            Agent
+            Model
           </p>
-          {data.options.map((option) => {
-            const selectable = option.supported && option.installed;
-            const isActive = option.id === data.active;
+          {/* Grouped by harness so a locked one can say why once, under its own
+              rows, instead of repeating itself on every line. */}
+          {data.options.map((harness) => {
+            const models = data.models.filter((m) => m.harness === harness.id);
+            if (models.length === 0) return null;
+            const locked = !harness.installed || !harness.supported;
             return (
-              <button
-                key={option.id}
-                type="button"
-                disabled={!selectable || choose.isPending}
-                onClick={() => selectable && !isActive && choose.mutate(option.id)}
-                className={cx(
-                  "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors",
-                  selectable ? "hover:bg-surface-hover" : "cursor-default opacity-55",
+              <div key={harness.id}>
+                {models.map((model) => {
+                  // An empty id is "let the harness choose", which is also what
+                  // no stored model means — so they are the same row.
+                  const isActive =
+                    model.harness === data.active && model.id === (data.activeModel ?? "");
+                  return (
+                    <button
+                      key={`${model.harness}:${model.id}`}
+                      type="button"
+                      role="menuitem"
+                      // The model's own one-liner, which the row has no space
+                      // for and the harness name has earned instead.
+                      title={model.detail}
+                      disabled={locked || choose.isPending}
+                      onClick={() => !isActive && choose.mutate(model)}
+                      className={cx(
+                        "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors",
+                        locked ? "cursor-default opacity-55" : "hover:bg-surface-hover",
+                      )}
+                    >
+                      <HarnessIcon id={model.harness} className="mt-0.5 size-4 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate text-[0.929rem] text-text-primary">
+                            {model.label}
+                          </span>
+                          {isActive && (
+                            <svg viewBox="0 0 16 16" className="size-3 shrink-0 text-success" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[0.786rem] leading-snug text-text-tertiary">
+                          {/* "Claude Code · Fable 5.1" — which harness pays for
+                              the turn, and which generation it runs. */}
+                          {model.version ? `${harness.label} · ${model.version}` : harness.label}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+                {locked && (
+                  <p className="px-3 pb-2 pl-[2.375rem] text-[0.786rem] leading-snug text-text-tertiary">
+                    {harness.unavailableReason ?? `${harness.label} is not available.`}
+                  </p>
                 )}
-              >
-                <HarnessIcon id={option.id} className="mt-0.5 size-4 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-[0.929rem] text-text-primary">
-                      {option.label}
-                    </span>
-                    {isActive && (
-                      <svg viewBox="0 0 16 16" className="size-3 shrink-0 text-success" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </span>
-                  <span className="mt-0.5 block text-[0.786rem] leading-snug text-text-tertiary">
-                    {option.unavailableReason ?? option.version ?? "Ready"}
-                  </span>
-                </span>
-              </button>
+              </div>
             );
           })}
+
           {choose.error && (
             <p className="border-t border-border px-3 py-2 text-[0.786rem] text-warning">
               {choose.error instanceof Error ? choose.error.message : "Couldn't switch"}

@@ -13,6 +13,7 @@ import {
 } from "./tools";
 import { isReadable, listReadRoots } from "./read-roots";
 import { getLaunchDir } from "../cli";
+import { activeModel } from "./registry";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
 /** A human line for the status pill while a tool runs. */
@@ -135,12 +136,16 @@ async function turnOptions(
 ) {
   const projectDir = session.dir;
   const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
+  // Null when the user has not chosen one, which leaves the CLI on whatever it
+  // considers default — the same thing they would get in a terminal.
+  const model = await activeModel("claude-code").catch(() => null);
   return {
     cwd: projectDir,
     // Use the CLI the user signed in with, not the SDK's bundled copy —
     // which this build can't reach anyway (see resolveExecutable).
     ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
     env: agentEnv(),
+    ...(model ? { model } : {}),
     systemPrompt: buildSystemPrompt(readRoots, getLaunchDir()),
     // Folders the user has shared. The CLI refuses a path outside its working
     // roots before `canUseTool` is ever consulted, so a grant has to be

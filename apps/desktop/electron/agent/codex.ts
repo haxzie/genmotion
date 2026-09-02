@@ -5,6 +5,7 @@ import { agentEnv, resolveExecutable } from "./detect";
 import { MCP_TOKEN, MCP_TOKEN_ENV } from "./mcp-http";
 import { buildCodexPreamble } from "./prompt";
 import { listReadRoots } from "./read-roots";
+import { activeModel } from "./registry";
 import { getLaunchDir } from "../cli";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
@@ -236,11 +237,19 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
       let wroteText = false;
       const started = new Set<string>();
 
+      // Config rather than `--model`, for the same reason as everything else in
+      // CONFIG: `exec resume` accepts a much smaller set of flags than `exec`,
+      // and one arg list that works for both is worth more than the shorter
+      // spelling. Absent when the user has not chosen, leaving Codex on its own
+      // default.
+      const model = await activeModel("codex").catch(() => null);
+      const modelConfig = model ? [`model="${model}"`] : [];
+
       const baseArgs = [
         "--json",
         // A video project is a folder, not necessarily a repo.
         "--skip-git-repo-check",
-        ...[...CONFIG, ...mcpConfig(mcpUrl)].flatMap((entry) => ["-c", entry]),
+        ...[...CONFIG, ...modelConfig, ...mcpConfig(mcpUrl)].flatMap((entry) => ["-c", entry]),
       ];
 
       const run = (resume: string | null) =>

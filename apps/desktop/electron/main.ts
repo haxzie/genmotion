@@ -490,6 +490,9 @@ void app.whenReady().then(async () => {
   // Not awaited: the window should paint its loading state rather than wait on
   // a network round-trip to the API.
   void desktopAuth.restore();
+  // Same idea for the model list: asking the harnesses costs a subprocess, and
+  // paying for it now means the picker opens instantly later.
+  void import("./agent/models").then((m) => m.warmModels());
   // Same reasoning — asking GitHub whether a newer build exists is not
   // something the first frame should wait behind.
   void checkForUpdate();

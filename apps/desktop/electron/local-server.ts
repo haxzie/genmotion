@@ -246,9 +246,9 @@ export async function startLocalServer(
   async function agentRoutes(method: string, req: http.IncomingMessage): Promise<unknown> {
     const { harnessState, setHarness } = await import("./agent/registry");
     if (method === "POST") {
-      const body = await readJson<{ id?: string }>(req);
+      const body = await readJson<{ id?: string; model?: string }>(req);
       if (!body.id) throw new Error("Missing harness id");
-      return setHarness(body.id as Parameters<typeof setHarness>[0]);
+      return setHarness(body.id as Parameters<typeof setHarness>[0], body.model ?? null);
     }
     return harnessState();
   }

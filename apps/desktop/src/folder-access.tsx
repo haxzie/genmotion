@@ -126,7 +126,10 @@ export function FolderAccess({ placement = "up" }: { placement?: "up" | "down" }
       {open && (
         <div
           className={cx(
-            "absolute left-0 z-50 w-80 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-[0_16px_50px_rgba(0,0,0,0.5)]",
+            // Bounded and scrollable: these lists grow with whatever the
+            // harnesses and the filesystem report, and a menu taller than the
+            // window is one whose bottom the user can never reach.
+            "absolute left-0 z-50 max-h-[min(60vh,24rem)] w-80 overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-surface-raised shadow-[0_16px_50px_rgba(0,0,0,0.5)]",
             // In the editor the composer sits at the bottom of the panel, so
             // the menu opens upward; on the start screen there is room below.
             placement === "up" ? "bottom-full mb-2" : "top-full mt-2",

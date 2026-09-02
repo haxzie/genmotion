@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { app } from "electron";
 import { detectAgents } from "./detect";
+import { listModels, type AgentModel } from "./models";
 import type { AgentAvailability } from "./types";
 
 export type HarnessId = "claude-code" | "codex";
@@ -15,7 +16,23 @@ export interface HarnessOption extends AgentAvailability {
 
 export interface HarnessState {
   active: HarnessId;
+  /** The model driving the chat, or null to let the harness pick its default. */
+  activeModel: string | null;
   options: HarnessOption[];
+  /** Every model the picker can offer, across harnesses. */
+  models: AgentModel[];
+}
+
+/**
+ * What settings.json holds.
+ *
+ * The model is kept per harness rather than as one value: switching to Codex
+ * and back should not lose which Claude model was chosen, and the two have no
+ * ids in common anyway.
+ */
+interface Settings {
+  harness?: unknown;
+  models?: Record<string, string>;
 }
 
 const DEFAULT: HarnessId = "claude-code";
@@ -24,17 +41,20 @@ function settingsFile(): string {
   return path.join(app.getPath("userData"), "settings.json");
 }
 
-async function readSetting(): Promise<HarnessId | null> {
+async function readSettings(): Promise<Settings> {
   const raw = await fs.readFile(settingsFile(), "utf8").catch(() => null);
-  if (!raw) return null;
+  if (!raw) return {};
   try {
-    const parsed = JSON.parse(raw) as { harness?: unknown };
-    return parsed.harness === "claude-code" || parsed.harness === "codex"
-      ? parsed.harness
-      : null;
+    return JSON.parse(raw) as Settings;
   } catch {
-    return null;
+    return {};
   }
+}
+
+function storedHarness(settings: Settings): HarnessId | null {
+  return settings.harness === "claude-code" || settings.harness === "codex"
+    ? settings.harness
+    : null;
 }
 
 /**
@@ -56,18 +76,54 @@ export async function harnessState(): Promise<HarnessState> {
     unavailableReason: agent.installed ? null : (missing[agent.id] ?? agent.detail),
   }));
 
-  const stored = await readSetting();
+  const settings = await readSettings();
+  const stored = storedHarness(settings);
   const usable = options.find((o) => o.id === stored && o.supported && o.installed);
   const fallback = options.find((o) => o.supported && o.installed);
-  return { active: usable?.id ?? fallback?.id ?? DEFAULT, options };
+  const active = usable?.id ?? fallback?.id ?? DEFAULT;
+
+  const models = await listModels().catch(() => []);
+  // A stored model that the harness no longer lists — renamed, retired, or
+  // chosen on another machine — falls back to the harness's own default rather
+  // than being sent as-is and failing at the first turn.
+  const chosen = settings.models?.[active];
+  const activeModel =
+    chosen && models.some((m) => m.harness === active && m.id === chosen) ? chosen : null;
+
+  return { active, activeModel, options, models };
 }
 
-export async function setHarness(id: HarnessId): Promise<HarnessState> {
+/**
+ * Pick what drives the chat.
+ *
+ * Model and harness move together because the picker presents them together:
+ * choosing "Sonnet" is choosing Claude Code, and there is no sensible state
+ * where the harness is Codex and the model is a Claude one.
+ */
+export async function setHarness(id: HarnessId, model?: string | null): Promise<HarnessState> {
   const state = await harnessState();
   const option = state.options.find((o) => o.id === id);
   if (!option?.supported || !option.installed) {
     throw new Error(option?.unavailableReason ?? `Unknown harness ${id}`);
   }
-  await fs.writeFile(settingsFile(), `${JSON.stringify({ harness: id }, null, 2)}\n`, "utf8");
-  return { ...state, active: id };
+  if (model && !state.models.some((m) => m.harness === id && m.id === model)) {
+    throw new Error(`${option.label} does not offer a model called ${model}.`);
+  }
+
+  const settings = await readSettings();
+  const models = { ...settings.models };
+  if (model) models[id] = model;
+  await fs.writeFile(
+    settingsFile(),
+    `${JSON.stringify({ ...settings, harness: id, models }, null, 2)}\n`,
+    "utf8",
+  );
+  return { ...state, active: id, activeModel: model ?? state.activeModel };
+}
+
+/** The model the next turn should run on, or null for the harness's default. */
+export async function activeModel(harness: HarnessId): Promise<string | null> {
+  const state = await harnessState();
+  if (state.active !== harness) return null;
+  return state.activeModel;
 }
