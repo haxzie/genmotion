@@ -144,6 +144,17 @@ const TerminalGlyph = ({ className }: { className?: string }) => (
     <path d="M4.5 6l2 2-2 2M8.5 10.5h3.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+// Heroicons "command-line" (solid) — used for the Bash tool specifically, so
+// it reads distinctly from Codex's Shell (TerminalGlyph, above).
+const CommandLineGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="currentColor">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2.22 1.97a.75.75 0 0 0 0 1.06l.97.97l-.97.97a.75.75 0 1 0 1.06 1.06l1.5-1.5a.75.75 0 0 0 0-1.06l-1.5-1.5a.75.75 0 0 0-1.06 0M8.75 8.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5z"
+    />
+  </svg>
+);
 const QuestionGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4">
     <circle cx="8" cy="8" r="6.2" />
@@ -509,6 +520,48 @@ registerToolPresentation({
       }
     },
     body: (part) => <Text value={outputText(part)} />,
+  },
+
+  /**
+   * The command itself is rarely the news — the model's own `description` of
+   * what it does (see `BashInput`) is, so that's what shows both collapsed
+   * (as the subject, in place of the raw command) and first in the expanded
+   * body, with the actual command right under it for anyone who wants the
+   * literal invocation.
+   */
+  Bash: {
+    labels: { active: "Running a command", done: "Ran a command" },
+    icon: CommandLineGlyph,
+    subject: (part) =>
+      str(part, "description") ?? str(part, "command")?.split("\n")[0]?.slice(0, 80),
+    body: (part) => {
+      const description = str(part, "description");
+      const command = str(part, "command");
+      const output = [part.output?.stdout, part.output?.stderr].filter(Boolean).join("\n");
+      return (
+        <Body>
+          <div className="divide-y divide-border">
+            {description && (
+              <p className="px-3 py-2 text-[0.786rem] leading-relaxed text-text-secondary">
+                {description}
+              </p>
+            )}
+            {command && (
+              <pre className="whitespace-pre-wrap px-3 py-2 font-mono text-[0.786rem] text-text-primary">
+                {command}
+              </pre>
+            )}
+            {output.trim() ? (
+              <pre className="whitespace-pre-wrap px-3 py-2 font-mono text-[0.786rem] leading-relaxed text-text-secondary">
+                {output}
+              </pre>
+            ) : (
+              <p className="px-3 py-2 text-[0.786rem] text-text-tertiary">No output.</p>
+            )}
+          </div>
+        </Body>
+      );
+    },
   },
 
   /**
