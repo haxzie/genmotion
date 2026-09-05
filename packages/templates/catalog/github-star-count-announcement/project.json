@@ -1,0 +1,14 @@
+{
+  "name": "firecrawl/firecrawl — 176,599 stars",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-stars.tsx",
+      "durationInFrames": 360,
+      "name": "Star count"
+    }
+  ],
+  "audio": []
+}

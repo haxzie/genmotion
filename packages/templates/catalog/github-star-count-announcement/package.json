@@ -1,0 +1,20 @@
+{
+  "name": "firecrawl-firecrawl-176-599-stars",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genmotion/motion": "^0.1.0",
+    "gsap": "^3.13.0",
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.7",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/three": "^0.185.4",
+    "typescript": "^5.9.3"
+  }
+}
