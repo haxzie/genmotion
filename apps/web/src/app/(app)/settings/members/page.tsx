@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { PLANS, SEAT_PRICE_USD } from "@genmotion/shared";
 import { useSession, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
-import { useUpgrade } from "@/components/upgrade-modal";
+import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 
 interface OrgMember {
   id: string;
@@ -44,7 +46,9 @@ export default function MembersPage() {
   const meId = data?.user.id;
   const orgId = data?.session.activeOrganizationId ?? null;
   const { openUpgrade, handleAuthClientError, canInvite, seats } = useUpgrade();
+  // Every bought seat is taken — the next invite buys another one.
   const seatsFull = seats ? seats.used >= seats.max : false;
+  const queryClient = useQueryClient();
 
   const [org, setOrg] = useState<FullOrg | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,9 +93,11 @@ export default function MembersPage() {
     });
     setInviting(false);
     if (res.error) {
-      // A plan/seat refusal opens the upgrade modal instead of showing a dead
+      // A Free org's refusal opens the upgrade modal instead of showing a dead
       // end in the form — the auth client returns {error}, so it never reaches
-      // handleLimitError.
+      // handleLimitError. On a paid plan the invite buys the seat itself, so a
+      // refusal there is a real message (payment problem, provider down) that
+      // belongs in the form.
       if (handleAuthClientError(res.error)) {
         setInviteOpen(false);
         return;
@@ -99,9 +105,19 @@ export default function MembersPage() {
       setError(res.error.message ?? "Couldn't send the invitation.");
       return;
     }
-    setNotice(`Invitation sent to ${email.trim()}.`);
+    setNotice(
+      seatsFull
+        ? `Invitation sent to ${email.trim()}. A seat was added to your subscription.`
+        : `Invitation sent to ${email.trim()}.`,
+    );
     setEmail("");
+    refresh();
+  }
+
+  /** Members and seats move together, so reload both. */
+  function refresh() {
     load();
+    queryClient.invalidateQueries({ queryKey: limitsQueryKey });
   }
 
   async function changeRole(memberId: string, role: string) {
@@ -121,14 +137,14 @@ export default function MembersPage() {
     setBusyId(memberId);
     await organization.removeMember({ memberIdOrEmail: memberId, organizationId: orgId });
     setBusyId(null);
-    load();
+    refresh();
   }
 
   async function cancelInvite(invitationId: string) {
     setBusyId(invitationId);
     await organization.cancelInvitation({ invitationId });
     setBusyId(null);
-    load();
+    refresh();
   }
 
   return (
@@ -140,12 +156,10 @@ export default function MembersPage() {
             variant="primary"
             onClick={() => {
               // Kept visible rather than hidden when the plan can't invite:
-              // discovering the capability is the point of the upsell.
+              // discovering the capability is the point of the upsell. A full
+              // plan is not a wall — inviting buys the seat — so it opens the
+              // form, which says what the invite will cost.
               if (!canInvite) {
-                openUpgrade("seats");
-                return;
-              }
-              if (seatsFull) {
                 openUpgrade("seats");
                 return;
               }
@@ -158,7 +172,7 @@ export default function MembersPage() {
             Invite members
             {!canInvite && (
               <span className="rounded-full bg-background/15 px-1.5 py-0.5 text-[0.714rem] font-medium">
-                Team
+                {PLANS.pro.name}
               </span>
             )}
           </Button>
@@ -317,9 +331,12 @@ export default function MembersPage() {
           </select>
 
           {seatsFull && seats && (
-            <p className="mt-3 text-[0.857rem] text-warning">
-              All {seats.max} seats are in use. Remove a member or cancel a
-              pending invitation to free one up.
+            <p className="mt-3 text-[0.857rem] text-text-secondary">
+              {seats.max === 1
+                ? "Your plan covers one seat and you're in it."
+                : `All ${seats.max} seats are in use.`}{" "}
+              Sending this invite adds a seat to your subscription — $
+              {SEAT_PRICE_USD} a month, prorated from today.
             </p>
           )}
           {error && <p className="mt-3 text-[0.857rem] text-danger">{error}</p>}
@@ -337,10 +354,16 @@ export default function MembersPage() {
             <Button
               type="submit"
               variant="primary"
-              disabled={inviting || !email.trim() || seatsFull}
+              disabled={inviting || !email.trim()}
               className="h-10"
             >
-              {inviting ? <Spinner className="text-background" /> : "Send invite"}
+              {inviting ? (
+                <Spinner className="text-background" />
+              ) : seatsFull ? (
+                `Add seat & send invite`
+              ) : (
+                "Send invite"
+              )}
             </Button>
           </div>
         </form>

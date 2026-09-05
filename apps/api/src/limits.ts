@@ -1,4 +1,12 @@
-import { isTrialActive, trialDaysLeft, trialEndedPaywall, type PaywallBody } from "@genmotion/shared";
+import {
+  isTrialActive,
+  planPrice,
+  SEAT_PRICE_USD,
+  trialDaysLeft,
+  trialEndedPaywall,
+  TRIAL_DAYS,
+  type PaywallBody,
+} from "@genmotion/shared";
 import { eq, db, schema } from "@genmotion/db";
 import { getEntitlements } from "./entitlements";
 
@@ -35,7 +43,7 @@ export async function trialState(organizationId: string): Promise<TrialState> {
   if (!createdAt) return { active: false, endsAt: null, daysLeft: 0 };
   return {
     active: isTrialActive(createdAt),
-    endsAt: new Date(createdAt.getTime() + 7 * 86_400_000),
+    endsAt: new Date(createdAt.getTime() + TRIAL_DAYS * 86_400_000),
     daysLeft: trialDaysLeft(createdAt),
   };
 }
@@ -61,16 +69,16 @@ export async function checkPaywall(
 /**
  * Whether one more person can be invited without buying a seat.
  *
- * Seats are bought by inviting: the invite hook resizes the subscription. This
- * exists for the surfaces that want to say what the next invite will cost
- * before it is sent.
+ * Seats are bought by inviting: the invite hook resizes the subscription (see
+ * billing/seats.ts). This exists for the surfaces that want to say what the
+ * next invite will cost before it is sent.
  */
 export function seatPaywall(used: number, included: number): PaywallBody {
   return {
     error: "That would exceed the seats on your plan.",
     paywall: {
       reason: "seats",
-      message: `Your plan covers ${included} ${included === 1 ? "seat" : "seats"}. Inviting another adds $19 a month.`,
+      message: `Your plan covers ${included} ${included === 1 ? "seat" : "seats"}. Inviting another adds $${SEAT_PRICE_USD} a month.`,
       seats: { used, included },
     },
   };
@@ -89,8 +97,7 @@ export function pluginPaywall(): PaywallBody {
     error: "Chat plugins are a Pro feature.",
     paywall: {
       reason: "plugin",
-      message:
-        "Voiceover and image generation are included with Pro. Upgrade to use them — $19 a month.",
+      message: `Voiceover and image generation are included with Pro. Upgrade to use them — ${planPrice("pro")} a month.`,
     },
   };
 }

@@ -1,10 +1,33 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, db, schema } from "@genmotion/db";
-import { getEntitlements } from "../entitlements";
-import { checkPaywall } from "../limits";
-import { dbReady, truncateAll } from "./helpers/db";
-import { createOrg, createProject } from "./helpers/factories";
-import { postWebhook, signWebhook, subscriptionEvent } from "./helpers/dodo";
+
+/**
+ * `planForProduct` is the one step of processing that can be made to throw on
+ * demand, so it stands in for "the database fell over half-way" in the
+ * failure-and-retry tests. Everything else on the `../dodo` seam is real.
+ */
+let failNext: Error | null = null;
+
+vi.mock("../dodo", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../dodo")>();
+  return {
+    ...actual,
+    planForProduct: (productId: string | null | undefined) => {
+      if (failNext) {
+        const err = failNext;
+        failNext = null;
+        throw err;
+      }
+      return actual.planForProduct(productId);
+    },
+  };
+});
+
+const { getEntitlements } = await import("../entitlements");
+const { checkPaywall } = await import("../limits");
+const { dbReady, truncateAll } = await import("./helpers/db");
+const { createOrg } = await import("./helpers/factories");
+const { postWebhook, signWebhook, subscriptionEvent } = await import("./helpers/dodo");
 
 const PRO = "pdt_test_pro";
 
@@ -272,6 +295,84 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
     );
     expect((await subscriptionRow(orgId))!.status).toBe("on_hold");
   });
+
+  /**
+   * A snapshot that does not carry the add-on lines says nothing about seats.
+   * Treating "no array" as "no add-ons" would shrink every team to one seat on
+   * the next routine update.
+   */
+  it("leaves the seat count alone when an update carries no add-on lines", async () => {
+    const { orgId } = await createOrg();
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", {
+          organizationId: orgId,
+          productId: PRO,
+          extraSeats: 3,
+        }),
+      ),
+    );
+    expect((await subscriptionRow(orgId))!.seats).toBe(4);
+
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.updated", {
+          organizationId: orgId,
+          productId: PRO,
+          withAddons: false,
+          timestamp: new Date(Date.now() + 1000),
+        }),
+      ),
+    );
+    expect((await subscriptionRow(orgId))!.seats).toBe(4);
+  });
+
+  it("does shrink the seats when the add-on lines say so", async () => {
+    const { orgId } = await createOrg();
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", {
+          organizationId: orgId,
+          productId: PRO,
+          extraSeats: 3,
+        }),
+      ),
+    );
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.plan_changed", {
+          organizationId: orgId,
+          productId: PRO,
+          extraSeats: 0, // an empty array: the add-ons were removed
+          timestamp: new Date(Date.now() + 1000),
+        }),
+      ),
+    );
+    expect((await subscriptionRow(orgId))!.seats).toBe(1);
+  });
+
+  it("keeps entitlement through a pause until the paid period ends", async () => {
+    const { orgId } = await createOrg();
+    await pastTrial(orgId);
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
+      ),
+    );
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.paused", {
+          organizationId: orgId,
+          productId: PRO,
+          timestamp: new Date(Date.now() + 1000),
+        }),
+      ),
+    );
+
+    expect((await subscriptionRow(orgId))!.status).toBe("paused");
+    expect((await getEntitlements(orgId)).plan).toBe("pro");
+    expect(await checkPaywall(orgId)).toBeNull();
+  });
 });
 
 describe.skipIf(!dbReady)("delivery semantics", () => {
@@ -404,6 +505,105 @@ describe.skipIf(!dbReady)("delivery semantics", () => {
     expect((await subscriptionRow(orgId))!.currentPeriodEnd?.toISOString()).toBe(
       later.toISOString(),
     );
+  });
+
+  /**
+   * The failure that would otherwise be silent and permanent: a delivery is
+   * claimed, processing blows up, the provider retries — and the retry must
+   * NOT be waved through as a duplicate of the attempt that never applied.
+   */
+  it("lets a retry re-process a delivery that failed half-way", async () => {
+    const { orgId } = await createOrg();
+    const delivery = signWebhook(
+      subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
+    );
+
+    failNext = new Error("connection reset");
+    const first = await postWebhook(delivery);
+    expect(first.status).toBe(500);
+    expect(await subscriptionRow(orgId)).toBeNull();
+    const [failed] = await eventRows();
+    expect(failed).toMatchObject({ status: "failed", detail: "connection reset" });
+
+    const retry = await postWebhook(delivery);
+    expect(retry.status).toBe(200);
+    expect(retry.body.status).toBe("processed");
+    expect((await subscriptionRow(orgId))!.plan).toBe("pro");
+    const rows = await eventRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.status).toBe("processed");
+  });
+
+  it("still dedupes a redelivery of a successfully processed event", async () => {
+    const { orgId } = await createOrg();
+    const delivery = signWebhook(
+      subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
+    );
+    await postWebhook(delivery);
+    expect((await postWebhook(delivery)).body.status).toBe("deduped");
+  });
+
+  // An org that no longer exists can never be entitled; retrying is pointless.
+  it("acknowledges an event for an organization that has been deleted", async () => {
+    const { orgId } = await createOrg();
+    await db.delete(schema.organization).where(eq(schema.organization.id, orgId));
+
+    const { status, body } = await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
+      ),
+    );
+    expect(status).toBe(200);
+    expect(body.status).toBe("ignored");
+    expect((await eventRows())[0]!.detail).toBe("no organization");
+  });
+
+  /**
+   * An org that lapsed and bought again has two subscriptions at the provider.
+   * The old one keeps emitting — its eventual `expired` carries the org's
+   * checkout metadata and a fresh timestamp — and must not touch the new one.
+   */
+  it("ignores trailing events from a subscription the org has moved on from", async () => {
+    const { orgId } = await createOrg();
+    await pastTrial(orgId);
+    const t0 = new Date(Date.now() - 3000);
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", {
+          organizationId: orgId,
+          productId: PRO,
+          subscriptionId: "sub_old",
+          timestamp: t0,
+        }),
+      ),
+    );
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", {
+          organizationId: orgId,
+          productId: PRO,
+          subscriptionId: "sub_new",
+          timestamp: new Date(t0.getTime() + 1000),
+        }),
+      ),
+    );
+
+    const { body } = await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.expired", {
+          organizationId: orgId,
+          productId: PRO,
+          subscriptionId: "sub_old",
+          timestamp: new Date(t0.getTime() + 2000),
+        }),
+      ),
+    );
+
+    expect(body.status).toBe("ignored");
+    expect(String(body.detail)).toContain("superseded");
+    const row = await subscriptionRow(orgId);
+    expect(row).toMatchObject({ plan: "pro", status: "active", dodoSubscriptionId: "sub_new" });
+    expect(await checkPaywall(orgId)).toBeNull();
   });
 
   it("ignores a product it can't map to a plan", async () => {

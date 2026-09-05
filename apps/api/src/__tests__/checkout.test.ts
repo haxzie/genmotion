@@ -192,12 +192,106 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
   it("refuses when the org is already on that plan", async () => {
     const { orgId, session } = await ownerSession();
     await setSubscription(orgId, { plan: "pro", status: "active" });
+    const { status, body } = await requestJson<{ action: string }>(
+      "/api/billing/checkout",
+      { as: session, json: { plan: "pro" } },
+    );
+    expect(status).toBe(409);
+    expect(body.action).toBe("none");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A second live subscription would bill twice. Dunning and pauses are fixed
+   * at the provider, so the answer points at the portal rather than a new cart.
+   */
+  it("refuses while the subscription is on hold and points at the portal", async () => {
+    const { orgId, session } = await ownerSession();
+    await setSubscription(orgId, {
+      plan: "pro",
+      status: "on_hold",
+      dodoSubscriptionId: "sub_held",
+      currentPeriodEnd: new Date(Date.now() + 7 * 86_400_000),
+    });
+    const { status, body } = await requestJson<{ action: string }>(
+      "/api/billing/checkout",
+      { as: session, json: { plan: "pro" } },
+    );
+    expect(status).toBe(409);
+    expect(body.action).toBe("portal");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // A cancelled subscription cannot be revived at the provider; buying again
+  // is the only way back, even while the old period is still running.
+  it("allows a fresh checkout after cancellation", async () => {
+    const { orgId, session } = await ownerSession();
+    await setSubscription(orgId, {
+      plan: "pro",
+      status: "cancelled",
+      cancelAtPeriodEnd: true,
+      dodoSubscriptionId: "sub_old",
+      currentPeriodEnd: new Date(Date.now() + 7 * 86_400_000),
+    });
     const { status } = await requestJson("/api/billing/checkout", {
       as: session,
       json: { plan: "pro" },
     });
-    expect(status).toBe(409);
-    expect(create).not.toHaveBeenCalled();
+    expect(status).toBe(200);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Pro includes one seat. An org that already has people in it must buy the
+   * rest as add-on lines in the same cart, or it is over its seats the moment
+   * it pays. Pending invitations count: they will become members.
+   */
+  it("buys add-on seats for the current headcount", async () => {
+    const { orgId, ownerId, session } = await ownerSession();
+    await addMember(orgId, "member");
+    await addMember(orgId, "member");
+    const { createPendingInvitation } = await import("./helpers/factories");
+    await createPendingInvitation(orgId, { inviterId: ownerId });
+
+    await requestJson("/api/billing/checkout", { as: session, json: { plan: "pro" } });
+
+    const [args] = create.mock.calls[0]!;
+    // Owner + 2 members + 1 pending = 4 people; one is included in Pro.
+    expect(args.product_cart).toEqual([
+      {
+        product_id: "pdt_test_pro",
+        quantity: 1,
+        addons: [{ addon_id: "adn_test_seat", quantity: 3 }],
+      },
+    ]);
+    expect(args.metadata.seats).toBe("4");
+  });
+
+  // The upgrade modal opened for an invite asks for the seat that invite needs.
+  it("honours a requested seat count above the headcount", async () => {
+    const { session } = await ownerSession();
+    await requestJson("/api/billing/checkout", {
+      as: session,
+      json: { plan: "pro", seats: 3 },
+    });
+    const [args] = create.mock.calls[0]!;
+    expect(args.product_cart[0].addons).toEqual([
+      { addon_id: "adn_test_seat", quantity: 2 },
+    ]);
+    expect(args.metadata.seats).toBe("3");
+  });
+
+  it("never buys fewer seats than there are people", async () => {
+    const { orgId, session } = await ownerSession();
+    await addMember(orgId, "member");
+    await requestJson("/api/billing/checkout", {
+      as: session,
+      json: { plan: "pro", seats: 1 },
+    });
+    const [args] = create.mock.calls[0]!;
+    expect(args.product_cart[0].addons).toEqual([
+      { addon_id: "adn_test_seat", quantity: 1 },
+    ]);
   });
 
   it("reports 503 when billing isn't configured", async () => {

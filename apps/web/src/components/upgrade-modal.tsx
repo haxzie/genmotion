@@ -20,7 +20,7 @@ import {
 } from "@genmotion/shared";
 import { ApiError, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { startCheckout, type PurchasablePlan } from "@/lib/billing";
+import { openBillingPortal, startCheckout, type PurchasablePlan } from "@/lib/billing";
 import { Modal } from "@/components/modal";
 import { Spinner } from "@/components/ui";
 
@@ -46,7 +46,6 @@ export interface PlanPayload {
   name: string;
   seats: number;
   canInvite: boolean;
-  prioritySupport: boolean;
 }
 
 export interface TrialPayload {
@@ -128,14 +127,16 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
     [openUpgrade],
   );
 
+  /**
+   * Only the Free gate is an upsell. On a paid plan, inviting buys the seat
+   * itself, so a refusal there (`SEAT_LIMIT_REACHED` when the subscription
+   * can't be resized, `SEAT_PURCHASE_FAILED` when the provider said no) is a
+   * message for the form, not a reason to sell a plan the org already has.
+   */
   const handleAuthClientError = useCallback(
     (err: unknown) => {
       const code = (err as { code?: string } | null)?.code;
       if (code === "PLAN_REQUIRES_PRO") {
-        openUpgrade("seats");
-        return true;
-      }
-      if (code === "SEAT_LIMIT_REACHED") {
         openUpgrade("seats");
         return true;
       }
@@ -161,7 +162,12 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   return (
     <UpgradeContext.Provider value={value}>
       {children}
-      <UpgradeModal reason={reason} onClose={() => setReason(null)} />
+      <UpgradeModal
+        reason={reason}
+        planName={data?.plan.name}
+        seatsUsed={data?.seats.used}
+        onClose={() => setReason(null)}
+      />
     </UpgradeContext.Provider>
   );
 }
@@ -247,9 +253,13 @@ function PlanCard({
 
 function UpgradeModal({
   reason,
+  planName,
+  seatsUsed,
   onClose,
 }: {
   reason: UpgradeReason | null;
+  planName?: string;
+  seatsUsed?: number;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState<PurchasablePlan | null>(null);
@@ -261,9 +271,26 @@ function UpgradeModal({
     setBusy(plan);
     setError(null);
     try {
-      // Navigates away on success, so there's no success state to render.
-      await startCheckout(plan, reason);
+      // Opened for an invite, the checkout should cover the person being
+      // invited as well as everyone already here. Navigates away on success,
+      // so there's no success state to render.
+      const seats = reason === "seats" ? (seatsUsed ?? 1) + 1 : undefined;
+      await startCheckout(plan, reason, seats);
     } catch (err) {
+      // A subscription that exists but is stuck (dunning, paused) is fixed in
+      // the provider's portal, not by buying a second one.
+      if (
+        err instanceof ApiError &&
+        err.status === 409 &&
+        (err.body as { action?: string } | undefined)?.action === "portal"
+      ) {
+        try {
+          await openBillingPortal();
+          return;
+        } catch {
+          // Fall through to the message below.
+        }
+      }
       setError(
         err instanceof Error ? err.message : "Couldn't start checkout.",
       );
@@ -280,7 +307,7 @@ function UpgradeModal({
       {copy && reason && (
         <div className="p-6">
           <span className="inline-flex items-center rounded-full bg-accent-muted px-2.5 py-1 text-[0.786rem] font-medium text-accent">
-            Free plan
+            {planName ?? PLANS.free.name}
           </span>
           <h2
             id="upgrade-title"

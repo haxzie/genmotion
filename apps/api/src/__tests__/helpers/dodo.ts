@@ -87,6 +87,8 @@ export function subscriptionEvent(
     withMetadata?: boolean;
     /** Extra seats bought as add-on quantity, on top of the one Pro includes. */
     extraSeats?: number;
+    /** Omit the `addons` array entirely, as a snapshot that doesn't carry it. */
+    withAddons?: boolean;
   } = {},
 ) {
   const {
@@ -100,7 +102,18 @@ export function subscriptionEvent(
     timestamp = new Date(),
     withMetadata = true,
     extraSeats = 0,
+    withAddons = true,
   } = opts;
+
+  const addons =
+    extraSeats > 0
+      ? [
+          {
+            addon_id: process.env.DODOPAYMENT_SEAT_ADDON_ID ?? "adn_test_seat",
+            quantity: extraSeats,
+          },
+        ]
+      : [];
 
   return {
     business_id: "biz_test",
@@ -116,15 +129,7 @@ export function subscriptionEvent(
         withMetadata && organizationId ? { organizationId, plan: "pro" } : {},
       next_billing_date: nextBillingDate?.toISOString() ?? null,
       cancel_at_next_billing_date: cancelAtNextBillingDate,
-      addons:
-        extraSeats > 0
-          ? [
-              {
-                addon_id: process.env.DODOPAYMENT_SEAT_ADDON_ID ?? "adn_test_seat",
-                quantity: extraSeats,
-              },
-            ]
-          : [],
+      ...(withAddons ? { addons } : {}),
     },
   };
 }

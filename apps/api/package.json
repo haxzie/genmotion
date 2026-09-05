@@ -11,7 +11,9 @@
     "migrate:docker": "tsx --tsconfig ../../tsconfig.tsx-runtime.json src/migrate.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed": "tsx --env-file=../../.env scripts/seed-scenes.ts"
+    "seed": "tsx --env-file=../../.env scripts/seed-scenes.ts",
+    "dodo:setup": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env scripts/dodo-setup.ts",
+    "replay-webhook": "tsx --tsconfig ../../tsconfig.tsx-runtime.json --env-file=../../.env scripts/replay-webhook.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.82",

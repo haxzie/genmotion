@@ -35,8 +35,12 @@ export interface Entitlements {
   manageable: boolean;
 }
 
-/** Statuses that entitle the org for as long as the paid period has left. */
-const GRACE_STATUSES = new Set(["cancelled", "on_hold"]);
+/**
+ * Statuses that entitle the org for as long as the paid period has left.
+ * `paused` is a customer-initiated pause; like dunning, what was paid for
+ * stays usable until the period it covered runs out.
+ */
+const GRACE_STATUSES = new Set(["cancelled", "on_hold", "paused"]);
 
 /**
  * Resolve a subscription row to what the org may actually do.
@@ -162,12 +166,14 @@ export async function assertCanInvite(
 
   const used = await countSeats(organizationId, opts);
   if (used >= ent.seats) {
+    // The invite hook treats this as "buy one more" when the subscription can
+    // be resized; the message is for the cases where it cannot.
     return {
       ok: false,
       code: "SEAT_LIMIT_REACHED",
       plan: ent.plan,
       seats: { used, max: ent.seats },
-      message: `Your ${ent.planName} plan includes ${ent.seats} seats and all of them are taken. Remove a member or cancel a pending invitation to free one up.`,
+      message: `Your ${ent.planName} plan covers ${ent.seats} ${ent.seats === 1 ? "seat" : "seats"} and all of them are taken. Remove a member or cancel a pending invitation to free one up.`,
     };
   }
 

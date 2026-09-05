@@ -11,29 +11,43 @@ import { planForProduct } from "../dodo";
  *    envelope timestamp;
  *  - anything we don't handle must still be acknowledged, or it is retried
  *    for hours.
+ *
+ * And one our own failure modes force: the claim and the state change happen
+ * in ONE transaction. A delivery that was claimed and then failed to apply
+ * must be re-processable by the retry, otherwise the retry is "deduped" and the
+ * org that just paid never becomes entitled.
  */
 
-/** The subset of the envelope we rely on. */
+/** The transaction handle every step below runs on. */
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /**
- * How many people the subscription covers.
+ * How many people the subscription covers, or `undefined` when the payload
+ * does not say.
  *
  * Pro carries one seat and every teammate past that is a quantity on the seat
  * add-on, so the total is base + add-on. Read from the payload rather than
  * from our plan table: the provider is the authority on what was actually
  * bought, including a change made in their dashboard that we never initiated.
+ *
+ * A payload with no `addons` array at all is not "zero add-ons" — a snapshot
+ * that omits the lines must leave the stored count alone, or a routine
+ * `subscription.updated` would silently shrink a ten-seat team to one.
  */
 function seatsFromPayload(
   data: { addons?: { addon_id?: string; quantity?: number }[] | null },
   plan: PlanId,
-): number {
+): number | undefined {
+  if (!Array.isArray(data.addons)) return undefined;
   const included = PLANS[plan].includedSeats;
-  const extra = (data.addons ?? []).reduce(
+  const extra = data.addons.reduce(
     (total, addon) => total + (addon.quantity ?? 0),
     0,
   );
   return included + extra;
 }
 
+/** The subset of the envelope we rely on. */
 export interface WebhookEnvelope {
   type: string;
   timestamp: string;
@@ -73,6 +87,7 @@ const PLAN_BEARING = new Set([
 /** Events that only move the lifecycle forward and need no product mapping. */
 const STATUS_ONLY: Record<string, string> = {
   "subscription.on_hold": "on_hold",
+  "subscription.paused": "paused",
   "subscription.cancelled": "cancelled",
   "subscription.failed": "failed",
   "subscription.expired": "expired",
@@ -108,13 +123,14 @@ export function transitionFor(
     // than inferred from the event name.
     const status =
       event.type === "subscription.updated" ? (data.status ?? "active") : "active";
+    const seats = seatsFromPayload(data, plan);
 
     return {
       patch: {
         ...common,
         plan,
         status,
-        seats: seatsFromPayload(data, plan),
+        ...(seats !== undefined ? { seats } : {}),
         dodoProductId: data.product_id ?? null,
         currentPeriodEnd: toDate(data.next_billing_date),
         cancelAtPeriodEnd: Boolean(data.cancel_at_next_billing_date),
@@ -137,17 +153,30 @@ export function transitionFor(
   return { ignore: `unhandled event ${event.type}` };
 }
 
-/** Resolve the org: checkout metadata first, then the subscription we stored. */
+/**
+ * Resolve the org: checkout metadata first, then the subscription we stored.
+ *
+ * The metadata org is checked for existence rather than trusted: an org deleted
+ * after it paid would otherwise fail the foreign key on insert, and a delivery
+ * that can never succeed must be acknowledged, not retried.
+ */
 async function resolveOrganizationId(
+  tx: Tx,
   event: WebhookEnvelope,
 ): Promise<string | null> {
   const fromMetadata = event.data?.metadata?.organizationId;
-  if (typeof fromMetadata === "string" && fromMetadata) return fromMetadata;
+  if (typeof fromMetadata === "string" && fromMetadata) {
+    const [org] = await tx
+      .select({ id: schema.organization.id })
+      .from(schema.organization)
+      .where(eq(schema.organization.id, fromMetadata));
+    if (org) return org.id;
+  }
 
   const subscriptionId = event.data?.subscription_id;
   if (!subscriptionId) return null;
 
-  const [row] = await db
+  const [row] = await tx
     .select({ organizationId: schema.organizationSubscriptions.organizationId })
     .from(schema.organizationSubscriptions)
     .where(eq(schema.organizationSubscriptions.dodoSubscriptionId, subscriptionId));
@@ -155,30 +184,33 @@ async function resolveOrganizationId(
 }
 
 async function finish(
+  tx: Tx,
   webhookId: string,
-  status: "processed" | "ignored" | "stale" | "failed",
+  status: "processed" | "ignored" | "stale",
   detail?: string,
   organizationId?: string | null,
 ): Promise<void> {
-  await db
+  await tx
     .update(schema.billingWebhookEvents)
     .set({ status, detail: detail ?? null, organizationId: organizationId ?? null })
     .where(eq(schema.billingWebhookEvents.id, webhookId));
 }
 
 /**
- * Process one verified delivery. Callers must have already checked the
- * signature — this function trusts its input.
+ * Record a delivery that blew up mid-way, so the retry can re-claim it.
+ *
+ * Runs outside the (rolled-back) transaction and swallows its own errors: if
+ * the database is the thing that is down, there is nothing left to record
+ * with, and the route's 500 already buys us the retry.
  */
-export async function handleWebhookEvent(
+async function recordFailure(
   webhookId: string,
   event: WebhookEnvelope,
-): Promise<WebhookOutcome> {
-  const eventAt = toDate(event.timestamp) ?? new Date();
-
-  // Atomic claim. The webhook id is the primary key, so two concurrent
-  // redeliveries of the same event cannot both get past this insert.
-  const claimed = await db
+  eventAt: Date,
+  err: unknown,
+): Promise<void> {
+  const detail = (err instanceof Error ? err.message : String(err)).slice(0, 500);
+  await db
     .insert(schema.billingWebhookEvents)
     .values({
       id: webhookId,
@@ -186,60 +218,132 @@ export async function handleWebhookEvent(
       dodoSubscriptionId: event.data?.subscription_id ?? null,
       eventAt,
       payload: event as unknown as Record<string, unknown>,
-      status: "processed",
+      status: "failed",
+      detail,
     })
-    .onConflictDoNothing({ target: schema.billingWebhookEvents.id })
-    .returning({ id: schema.billingWebhookEvents.id });
-
-  if (claimed.length === 0) return { status: "deduped" };
-
-  const organizationId = await resolveOrganizationId(event);
-  if (!organizationId) {
-    // Never retryable: an unattributable event will not become attributable.
-    await finish(webhookId, "ignored", "no organization");
-    return { status: "ignored", detail: "no organization" };
-  }
-
-  const transition = transitionFor(event);
-  if ("ignore" in transition) {
-    await finish(webhookId, "ignored", transition.ignore, organizationId);
-    return { status: "ignored", detail: transition.ignore };
-  }
-
-  const values = {
-    organizationId,
-    ...transition.patch,
-    lastEventAt: eventAt,
-    lastWebhookId: webhookId,
-  };
-
-  const applied = await db
-    .insert(schema.organizationSubscriptions)
-    .values(values)
     .onConflictDoUpdate({
-      target: schema.organizationSubscriptions.organizationId,
-      set: { ...transition.patch, lastEventAt: eventAt, lastWebhookId: webhookId, updatedAt: new Date() },
-      // The out-of-order defence, in the WHERE clause rather than application
-      // code so concurrent deliveries can't interleave around it. `<=` keeps
-      // same-timestamp deliveries working; exact duplicates are already gone.
-      //
-      // The bound value is an ISO string, NOT a Date. Drizzle's column mapper
-      // writes timestamps as UTC ISO strings, but a Date interpolated into a
-      // raw `sql` fragment is serialised by the driver in local time — and
-      // because the column is `timestamp` without time zone, Postgres silently
-      // drops the offset. The two would then be compared across a timezone
-      // shift, which quietly lets stale deliveries through.
-      setWhere: sql`${schema.organizationSubscriptions.lastEventAt} is null or ${schema.organizationSubscriptions.lastEventAt} <= ${eventAt.toISOString()}`,
+      target: schema.billingWebhookEvents.id,
+      set: { status: "failed", detail },
     })
-    .returning({ id: schema.organizationSubscriptions.id });
+    .catch((recordErr) => {
+      console.error("[billing] could not record failed webhook:", recordErr);
+    });
+}
 
-  if (applied.length === 0) {
-    await finish(webhookId, "stale", "older than applied state", organizationId);
-    return { status: "stale" };
+/**
+ * Process one verified delivery. Callers must have already checked the
+ * signature — this function trusts its input.
+ *
+ * Throws when the state change could not be applied; the route turns that into
+ * a 500 and the provider redelivers, at which point the `failed` row lets the
+ * same webhook id through the claim again.
+ */
+export async function handleWebhookEvent(
+  webhookId: string,
+  event: WebhookEnvelope,
+): Promise<WebhookOutcome> {
+  const eventAt = toDate(event.timestamp) ?? new Date();
+
+  try {
+    return await db.transaction(async (tx) => {
+      // Atomic claim. The webhook id is the primary key, so two concurrent
+      // deliveries of the same event cannot both get past this insert: the
+      // second blocks on the first's row lock, then finds the conflict. The
+      // one row that may be claimed twice is a `failed` one — that is a retry
+      // of a delivery whose first attempt rolled back, and it must re-run.
+      const claimed = await tx
+        .insert(schema.billingWebhookEvents)
+        .values({
+          id: webhookId,
+          type: event.type,
+          dodoSubscriptionId: event.data?.subscription_id ?? null,
+          eventAt,
+          payload: event as unknown as Record<string, unknown>,
+          status: "processed",
+        })
+        .onConflictDoUpdate({
+          target: schema.billingWebhookEvents.id,
+          set: { status: "processed", detail: null, receivedAt: new Date() },
+          setWhere: sql`${schema.billingWebhookEvents.status} = 'failed'`,
+        })
+        .returning({ id: schema.billingWebhookEvents.id });
+
+      if (claimed.length === 0) return { status: "deduped" } as const;
+
+      const organizationId = await resolveOrganizationId(tx, event);
+      if (!organizationId) {
+        // Never retryable: an unattributable event will not become attributable.
+        await finish(tx, webhookId, "ignored", "no organization");
+        return { status: "ignored", detail: "no organization" } as const;
+      }
+
+      // An org has one subscription. Once it is on a newer one — it lapsed and
+      // bought again — the old subscription's trailing events (its eventual
+      // `expired`, say) still carry this org in their checkout metadata and a
+      // newer timestamp, and would downgrade the org that just paid. Only a
+      // fresh `subscription.active` may move the org to a different
+      // subscription; everything else about another subscription is history.
+      const incomingSubscription = event.data?.subscription_id;
+      if (incomingSubscription && event.type !== "subscription.active") {
+        const [current] = await tx
+          .select({ dodoSubscriptionId: schema.organizationSubscriptions.dodoSubscriptionId })
+          .from(schema.organizationSubscriptions)
+          .where(eq(schema.organizationSubscriptions.organizationId, organizationId));
+        if (
+          current?.dodoSubscriptionId &&
+          current.dodoSubscriptionId !== incomingSubscription
+        ) {
+          const detail = `superseded subscription ${incomingSubscription}`;
+          await finish(tx, webhookId, "ignored", detail, organizationId);
+          return { status: "ignored", detail } as const;
+        }
+      }
+
+      const transition = transitionFor(event);
+      if ("ignore" in transition) {
+        await finish(tx, webhookId, "ignored", transition.ignore, organizationId);
+        return { status: "ignored", detail: transition.ignore } as const;
+      }
+
+      const values = {
+        organizationId,
+        ...transition.patch,
+        lastEventAt: eventAt,
+        lastWebhookId: webhookId,
+      };
+
+      const applied = await tx
+        .insert(schema.organizationSubscriptions)
+        .values(values)
+        .onConflictDoUpdate({
+          target: schema.organizationSubscriptions.organizationId,
+          set: { ...transition.patch, lastEventAt: eventAt, lastWebhookId: webhookId, updatedAt: new Date() },
+          // The out-of-order defence, in the WHERE clause rather than application
+          // code so concurrent deliveries can't interleave around it. `<=` keeps
+          // same-timestamp deliveries working; exact duplicates are already gone.
+          //
+          // The bound value is an ISO string, NOT a Date. Drizzle's column mapper
+          // writes timestamps as UTC ISO strings, but a Date interpolated into a
+          // raw `sql` fragment is serialised by the driver in local time — and
+          // because the column is `timestamp` without time zone, Postgres silently
+          // drops the offset. The two would then be compared across a timezone
+          // shift, which quietly lets stale deliveries through.
+          setWhere: sql`${schema.organizationSubscriptions.lastEventAt} is null or ${schema.organizationSubscriptions.lastEventAt} <= ${eventAt.toISOString()}`,
+        })
+        .returning({ id: schema.organizationSubscriptions.id });
+
+      if (applied.length === 0) {
+        await finish(tx, webhookId, "stale", "older than applied state", organizationId);
+        return { status: "stale" } as const;
+      }
+
+      await finish(tx, webhookId, "processed", undefined, organizationId);
+      return { status: "processed" } as const;
+    });
+  } catch (err) {
+    await recordFailure(webhookId, event, eventAt, err);
+    throw err;
   }
-
-  await finish(webhookId, "processed", undefined, organizationId);
-  return { status: "processed" };
 }
 
 export type { PlanId };

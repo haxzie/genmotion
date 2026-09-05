@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   PLANS,
   planPrice,
   SEAT_PRICE_USD,
-  TRIAL_DAYS,
   type PlanId,
 } from "@genmotion/shared";
 import { api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { openBillingPortal, startCheckout } from "@/lib/billing";
+import { limitsQueryKey } from "@/components/upgrade-modal";
 import { Spinner, cx } from "@/components/ui";
 
 interface UsageTotals {
@@ -38,28 +39,66 @@ interface Subscription {
   paid: boolean;
 }
 
+interface Trial {
+  active: boolean;
+  daysLeft: number;
+  endsAt: string | null;
+}
+
 interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
   seats: { used: number; max: number };
   subscription: Subscription;
+  trial: Trial;
+  entitled: boolean;
   period: { start: string; end: string };
   totals: UsageTotals & { estimatedCostUsd: number };
   byModel: ModelUsage[];
   byProject: ProjectUsage[];
 }
 
-/** Status pill — colour follows the state, not the plan. */
-function PlanStatusPill({ subscription }: { subscription: Subscription }) {
-  const dunning = subscription.status === "on_hold";
-  const ending = subscription.cancelAtPeriodEnd;
-  const label = dunning ? "Payment issue" : ending ? "Ending" : "Active";
+/**
+ * Status pill — colour follows the state, not the plan. An org with no
+ * subscription is on its trial (or past it), never "Active": that word belongs
+ * to a subscription that is being paid for.
+ */
+function PlanStatusPill({
+  subscription,
+  trial,
+}: {
+  subscription: Subscription;
+  trial: Trial;
+}) {
+  let label: string;
+  let tone: "good" | "warn" | "muted";
+  if (!subscription.paid) {
+    if (trial.active) {
+      label = `${trial.daysLeft} ${trial.daysLeft === 1 ? "day" : "days"} left`;
+      tone = "muted";
+    } else {
+      label = "Trial ended";
+      tone = "warn";
+    }
+  } else if (subscription.status === "on_hold" || subscription.status === "failed") {
+    label = "Payment issue";
+    tone = "warn";
+  } else if (subscription.status === "paused") {
+    label = "Paused";
+    tone = "muted";
+  } else if (subscription.cancelAtPeriodEnd || subscription.status === "cancelled") {
+    label = "Ending";
+    tone = "muted";
+  } else {
+    label = "Active";
+    tone = "good";
+  }
   return (
     <span
       className={cx(
         "rounded-full px-2 py-0.5 text-[0.786rem]",
-        dunning
+        tone === "warn"
           ? "bg-orange-muted text-warning"
-          : ending
+          : tone === "muted"
             ? "bg-surface-hover text-text-secondary"
             : "bg-green-muted text-success",
       )}
@@ -69,14 +108,32 @@ function PlanStatusPill({ subscription }: { subscription: Subscription }) {
   );
 }
 
-function renewalLine(s: Subscription): string | null {
-  if (!s.paid || !s.currentPeriodEnd) return null;
-  const when = new Date(s.currentPeriodEnd).toLocaleDateString("en-US", {
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
-  return s.cancelAtPeriodEnd ? `Access ends ${when}` : `Renews ${when}`;
+}
+
+/** The one line under the plan name that says what happens next. */
+function statusLine(s: Subscription, trial: Trial): string | null {
+  if (!s.paid) {
+    if (trial.active && trial.endsAt) return `Trial ends ${shortDate(trial.endsAt)}`;
+    if (!trial.active) {
+      return `Your trial${trial.endsAt ? ` ended ${shortDate(trial.endsAt)}` : " has ended"}. Upgrade to keep exporting.`;
+    }
+    return null;
+  }
+  if (!s.currentPeriodEnd) return null;
+  const when = shortDate(s.currentPeriodEnd);
+  if (s.status === "on_hold" || s.status === "failed") {
+    return `We couldn't collect the last payment. Access continues until ${when} — update your payment method to keep it.`;
+  }
+  if (s.status === "paused") return `Paused. Access continues until ${when}.`;
+  return s.cancelAtPeriodEnd || s.status === "cancelled"
+    ? `Access ends ${when}`
+    : `Renews ${when}`;
 }
 
 const SEGMENTS = [
@@ -162,7 +219,16 @@ function Stat({
   );
 }
 
-/** The plans a checkout can move this org to, cheapest first. */const PURCHASABLE = ["pro"] as const;
+/** The plans a checkout can move this org to. There is one. */
+const PURCHASABLE = ["pro"] as const;
+
+/**
+ * How long to wait for the subscription webhook after checkout. It usually
+ * lands within a second or two; a minute covers a slow provider without
+ * leaving the page spinning indefinitely.
+ */
+const ACTIVATION_POLL_MS = 2000;
+const ACTIVATION_ATTEMPTS = 30;
 
 /**
  * A single plan, priced and buyable on its own. The price is repeated in the
@@ -238,7 +304,10 @@ export default function BillingPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState<"pro" | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
-  const [activating, setActivating] = useState(false);
+  // "polling" while we wait for the webhook after checkout; "slow" once we've
+  // given up waiting but the payment may still be landing.
+  const [activation, setActivation] = useState<"idle" | "polling" | "slow">("idle");
+  const queryClient = useQueryClient();
 
   const load = useCallback(
     () =>
@@ -269,26 +338,31 @@ export default function BillingPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") !== "success") return;
 
-    setActivating(true);
+    setActivation("polling");
     let attempts = 0;
     const timer = setInterval(async () => {
       attempts += 1;
       const fresh = await load();
       const done = fresh ? fresh.plan.id !== "free" : false;
-      if (done || attempts >= 15) {
+      if (done || attempts >= ACTIVATION_ATTEMPTS) {
         clearInterval(timer);
-        setActivating(false);
-        if (done) track("upgrade_plan_activated", { plan: fresh!.plan.id });
+        setActivation(done ? "idle" : "slow");
+        if (done) {
+          track("upgrade_plan_activated", { plan: fresh!.plan.id });
+          // The sidebar and dashboard read the plan through react-query; this
+          // page's own fetch does not update them.
+          queryClient.invalidateQueries({ queryKey: limitsQueryKey });
+        }
         // Drop the query param so a refresh doesn't poll again.
         window.history.replaceState({}, "", window.location.pathname);
       }
-    }, 2000);
+    }, ACTIVATION_POLL_MS);
     return () => clearInterval(timer);
-  }, [load]);
+  }, [load, queryClient]);
 
   const totals = data?.totals;
   const hasUsage = (totals?.totalTokens ?? 0) > 0;
-  // Never offer the plan they're already on; on Team there's nothing above it.
+  // Never offer the plan they're already on.
   const upgradable = PURCHASABLE.filter((p) => p !== data?.plan.id);
 
   return (
@@ -309,9 +383,28 @@ export default function BillingPage() {
       ) : (
         data && (
           <>
-            {activating && (
-              <div className="mb-4 rounded-xl border border-accent/40 bg-accent-muted/40 px-5 py-4 text-[0.9rem] text-text-secondary">
+            {activation === "polling" && (
+              <div className="mb-4 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent-muted/40 px-5 py-4 text-[0.9rem] text-text-secondary">
+                <Spinner />
                 Activating your plan… this usually takes a few seconds.
+              </div>
+            )}
+            {activation === "slow" && data.plan.id === "free" && (
+              <div className="mb-4 rounded-xl border border-warning/40 bg-orange-muted/40 px-5 py-4 text-[0.9rem] text-text-secondary">
+                Your payment went through but the plan hasn&apos;t activated
+                here yet. This can take a minute —{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    load();
+                    queryClient.invalidateQueries({ queryKey: limitsQueryKey });
+                  }}
+                  className="cursor-pointer underline underline-offset-2 hover:text-text-primary"
+                >
+                  refresh
+                </button>
+                , or contact support if it still shows the trial.
               </div>
             )}
 
@@ -328,7 +421,7 @@ export default function BillingPage() {
                   <span className="text-[0.857rem] text-text-tertiary">
                     Current plan
                   </span>
-                  <PlanStatusPill subscription={data.subscription} />
+                  <PlanStatusPill subscription={data.subscription} trial={data.trial} />
                 </div>
                 <div className="mt-1.5 flex items-baseline gap-2">
                   <p className="font-display text-xl font-semibold tracking-tight">
@@ -350,9 +443,14 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                {renewalLine(data.subscription) && (
-                  <p className="mt-3 text-[0.857rem] text-text-tertiary">
-                    {renewalLine(data.subscription)}
+                {statusLine(data.subscription, data.trial) && (
+                  <p
+                    className={cx(
+                      "mt-3 text-[0.857rem]",
+                      !data.entitled ? "text-warning" : "text-text-tertiary",
+                    )}
+                  >
+                    {statusLine(data.subscription, data.trial)}
                   </p>
                 )}
               </div>
@@ -398,7 +496,7 @@ export default function BillingPage() {
             {upgradable.length > 0 && (
               <>
                 <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
-                  {data.subscription.paid ? "Change plan" : "Upgrade"}
+                  {data.subscription.status !== "none" ? "Resubscribe" : "Upgrade"}
                 </h2>
                 <div
                   className={cx(
@@ -448,8 +546,8 @@ export default function BillingPage() {
               </div>
               <p className="mt-2 text-[0.857rem] text-text-tertiary">
                 Pricing is ${SEAT_PRICE_USD} per person a month. Inviting a
-                teammate adds a seat and is charged from the day they are
-                invited.
+                teammate adds a seat, prorated from the day they are invited;
+                removing one takes it off the bill.
               </p>
             </div>
 

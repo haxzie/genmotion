@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -51,6 +53,16 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
   },
 };
 
+/**
+ * The export dialog offers an upgrade while the trial is still running — to
+ * drop the badge, not because anything is blocked — so "your trial has ended"
+ * would be a lie there.
+ */
+const TRIAL_STILL_ACTIVE = {
+  title: "Export without the GenMotion badge",
+  body: `Your trial has everything else. ${PLANS.pro.name} removes the badge from exports and keeps the studio going after the ${TRIAL_DAYS} days — $${SEAT_PRICE_USD} a month.`,
+};
+
 export const limitsQueryKey = ["billing-limits"] as const;
 
 export interface PlanPayload {
@@ -94,18 +106,52 @@ interface UpgradeContextValue {
 
 const UpgradeContext = createContext<UpgradeContextValue | null>(null);
 
+/**
+ * How long to keep re-reading the plan after the user has been sent to the
+ * browser to pay. Checkout plus the webhook takes a minute or two; ten covers a
+ * user who stops to find their card.
+ */
+const UPGRADE_WATCH_MS = 10 * 60_000;
+const UPGRADE_WATCH_INTERVAL_MS = 5_000;
+
 export function UpgradeProvider({ children }: { children: ReactNode }) {
   const [reason, setReason] = useState<UpgradeReason | null>(null);
   const queryClient = useQueryClient();
+  // Set when the user leaves for the browser to upgrade; while it's in the
+  // future the plan is polled, so the app notices the purchase without a
+  // restart.
+  const [watchUntil, setWatchUntil] = useState<number | null>(null);
 
   const { data } = useQuery({
     queryKey: limitsQueryKey,
     queryFn: () => api<LimitsResponse>("/api/billing/limits"),
     staleTime: 30_000,
+    // The upgrade happens in the browser, so coming back to this window is the
+    // moment the plan is most likely to have changed. The app-wide default is
+    // off; this query is the exception.
+    refetchOnWindowFocus: "always",
+    refetchInterval: watchUntil !== null && Date.now() < watchUntil ? UPGRADE_WATCH_INTERVAL_MS : false,
     // Signed out, or the API is unreachable. Neither is worth retrying into a
     // login screen the app already handles elsewhere.
     retry: false,
   });
+
+  // Stop watching as soon as the purchase shows up, or when the window closes.
+  const paid = data?.subscription.paid ?? false;
+  const wasPaid = useRef(paid);
+  useEffect(() => {
+    if (paid && !wasPaid.current) setWatchUntil(null);
+    wasPaid.current = paid;
+  }, [paid]);
+  useEffect(() => {
+    if (watchUntil === null) return;
+    const t = setTimeout(() => setWatchUntil(null), Math.max(0, watchUntil - Date.now()));
+    return () => clearTimeout(t);
+  }, [watchUntil]);
+
+  const watchForUpgrade = useCallback(() => {
+    setWatchUntil(Date.now() + UPGRADE_WATCH_MS);
+  }, []);
 
   const openUpgrade = useCallback(
     (next: UpgradeReason) => {
@@ -160,7 +206,12 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   return (
     <UpgradeContext.Provider value={value}>
       {children}
-      <UpgradeModal reason={reason} onClose={() => setReason(null)} />
+      <UpgradeModal
+        reason={reason}
+        trialActive={data?.trial.active ?? false}
+        onClose={() => setReason(null)}
+        onLeaveForBrowser={watchForUpgrade}
+      />
     </UpgradeContext.Provider>
   );
 }
@@ -182,19 +233,25 @@ export function useUpgrade(): UpgradeContextValue {
 
 function UpgradeModal({
   reason,
+  trialActive,
   onClose,
+  onLeaveForBrowser,
 }: {
   reason: UpgradeReason | null;
+  trialActive: boolean;
   onClose: () => void;
+  onLeaveForBrowser: () => void;
 }) {
   const [opening, setOpening] = useState(false);
-  const copy = reason ? COPY[reason] : null;
+  const copy =
+    reason === "trial" && trialActive ? TRIAL_STILL_ACTIVE : reason ? COPY[reason] : null;
 
   async function openBilling() {
     setOpening(true);
     // Billing needs the browser's session cookie, which this window does not
     // have — so the upgrade always finishes outside the app.
     await desktop.openWeb("/settings/billing").catch(() => undefined);
+    onLeaveForBrowser();
     setOpening(false);
     onClose();
   }

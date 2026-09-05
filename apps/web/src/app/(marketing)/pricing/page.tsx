@@ -20,8 +20,7 @@ import {
 
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
-  description:
-    "Simple plans for every creator. Download the app free, upgrade when you need more renders, longer videos, and higher resolution.",
+  description: `One plan, priced per person. Try the whole studio free for ${TRIAL_DAYS} days, then ${planPrice("pro")} a month per seat for unlimited, watermark-free exports.`,
   path: "/pricing",
 });
 
@@ -44,12 +43,12 @@ const TIERS: Tier[] = [
   {
     name: PLANS.free.name,
     price: planPrice("free"),
-    cadence: `${TRIAL_DAYS} days`,
-    blurb: "The studio itself, for a week. No card, no watermark, no queue.",
+    cadence: `for ${TRIAL_DAYS} days`,
+    blurb: "The whole studio for a week. No card, no queue — exports carry a small GenMotion badge.",
     cta: { label: "Download", href: "/download" },
     features: [
       "Unlimited projects and exports",
-      "1080p & 4K export, no watermark",
+      "1080p & 4K export, with a GenMotion badge",
       "Bring your own Claude Code or Codex",
       "No credit card",
     ],
@@ -64,6 +63,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
+      "Exports with no GenMotion badge",
       "Voiceover and image generation in chat",
       `Add teammates at $${SEAT_PRICE_USD} each`,
       "Renders on your machine — no queue",
@@ -90,16 +90,20 @@ const pricingJsonLd = {
 
 const FAQ: Faq[] = [
   {
-    q: "Is there really a free plan?",
-    a: "Yes. The Free plan lets you create projects, preview frame-accurately, and export watermarked 720p MP4s with no time limit. Upgrade only when you need higher resolution, no watermark, or more capacity.",
+    q: "Is there a free plan?",
+    a: `There's a free ${TRIAL_DAYS}-day trial of the whole studio: unlimited projects, exports at any resolution, your own coding agent. No card. The only difference from Pro is a small GenMotion badge on exports, and that voiceover and image generation in chat are Pro-only. After the week, it's ${planPrice("pro")} a month per person to keep exporting.`,
+  },
+  {
+    q: "How does pricing work for a team?",
+    a: `Pro is ${planPrice("pro")} per person per month. Your subscription covers one seat; inviting a teammate adds one at the same price, prorated from the day you invite them, and removing someone takes their seat off the bill.`,
   },
   {
     q: "How does rendering work?",
-    a: "Exports are rendered on a headless worker that shares the same deterministic runtime as the in-browser preview, so the MP4 is pixel-identical to what you reviewed. Paid plans get a priority queue.",
+    a: "Videos render on your own machine, in the desktop app, using the same deterministic runtime as the preview — so the MP4 is pixel-identical to what you reviewed and there is no render queue on any plan.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Absolutely. Plans are month-to-month and you can cancel or downgrade at any time — your projects stay accessible on the Free plan.",
+    a: "Yes. Pro is month-to-month; cancel from the billing page and you keep access until the end of the period you've paid for. Your projects are folders on your own disk, so they stay yours either way.",
   },
   {
     q: "Do I own what I create?",
@@ -124,11 +128,11 @@ export default function PricingPage() {
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow className="mb-4">Pricing</Eyebrow>
             <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              Simple plans for every creator
+              One plan, priced per person
             </h1>
             <p className="mt-5 text-lg text-text-secondary">
-              Download free. Upgrade when you need more renders, longer videos, and
-              higher resolution.
+              Try everything free for {TRIAL_DAYS} days. Then {planPrice("pro")} a
+              month per seat, and nothing is metered.
             </p>
           </div>
         </Container>
@@ -136,7 +140,7 @@ export default function PricingPage() {
 
       <Section className="pt-0">
         <Container>
-          <div className="grid gap-5 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-2">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}

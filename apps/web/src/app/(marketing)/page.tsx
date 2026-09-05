@@ -89,7 +89,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. You can start free with no credit card — describe an idea and watch the agent animate it in minutes. Paid plans add higher resolution, no watermark, and more capacity.",
+    a: "Yes. The first week is free with no credit card — the whole studio, unlimited exports at any resolution, with a small GenMotion badge on the video. Pro removes the badge, adds voiceover and image generation in chat, and keeps everything going after the trial.",
   },
 ];
 

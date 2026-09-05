@@ -104,7 +104,9 @@ export const billingCheckoutSessions = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("user_id").notNull(),
-    plan: text("plan", { enum: ["pro", "team"] }).notNull(),
+    // Only Pro is purchasable. A TS-level enum on a plain text column, so
+    // narrowing it is not a schema change.
+    plan: text("plan", { enum: ["pro"] }).notNull(),
     productId: text("product_id").notNull(),
     checkoutUrl: text("checkout_url").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -19,7 +19,7 @@ import {
   type SceneData,
   type ChatPlugin,
 } from "@genmotion/shared";
-import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
+import { limitsQueryKey } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { useEditorStore } from "@/stores/editor-store";
@@ -547,7 +547,6 @@ function ChatPanelInner({
   // another panel, but these are picked and consumed here and nowhere else.
   const [plugins, setPlugins] = useState<ChatPlugin[]>([]);
   const queryClient = useQueryClient();
-  const { openUpgrade } = useUpgrade();
   const { data: assets } = useProjectAssets(projectId);
   const selectAsset = useEditorStore((s) => s.selectAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -739,10 +738,11 @@ function ChatPanelInner({
         pendingCompactionClear.current = true;
       }
     },
-    onError: (err) => {
-      // The transport surfaces a non-2xx as an Error carrying the raw body, so
-      // the quota rejection has to be dug out of the message text rather than
-      // read off a status code.
+    onError: () => {
+      // Nothing to do here: `error` from useChat is rendered under the thread.
+      // This chat runs against the loopback server and the user's own agent,
+      // so it is never paywalled — the plugin 402s surface inside the agent's
+      // tool results, not as a failed turn.
     },
     onFinish: () => {
       // A turn was consumed — refresh the count that gates the composer.

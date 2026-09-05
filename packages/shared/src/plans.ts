@@ -75,7 +75,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion watermark",
       "Voiceover and image generation in chat",
-      "Invite teammates at $19 each",
+      `Invite teammates at $${SEAT_PRICE_USD} each`,
       "Priority support",
     ],
   },
@@ -95,6 +95,7 @@ export type SubscriptionStatus =
   | "pending"
   | "active"
   | "on_hold"
+  | "paused"
   | "cancelled"
   | "failed"
   | "expired";

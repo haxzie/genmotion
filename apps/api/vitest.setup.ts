@@ -22,7 +22,7 @@ process.env.DODOPAYMENT_API_KEY = "test_dodo_api_key";
 process.env.DODOPAYMENT_ENVIRONMENT = "test_mode";
 process.env.DODOPAYMENT_WEBHOOK_KEY = "whsec_dGVzdHdlYmhvb2tzZWNyZXQ=";
 process.env.DODOPAYMENT_PRO_PRODUCT_ID = "pdt_test_pro";
-process.env.DODOPAYMENT_TEAM_PRODUCT_ID = "pdt_test_team";
+process.env.DODOPAYMENT_SEAT_ADDON_ID = "adn_test_seat";
 
 // Nor may a test reach a chat-plugin provider. Set rather than cleared: the
 // route answers 503 when a key is missing, which would hide the gate and the

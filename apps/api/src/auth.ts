@@ -10,6 +10,7 @@ import { APIError } from "better-auth/api";
 import { db, schema, eq, asc } from "@genmotion/db";
 import { DESKTOP_CLIENT_ID, TEAM_SEATS } from "@genmotion/shared";
 import { assertCanInvite } from "./entitlements";
+import { releaseSeats, syncSeats } from "./billing/seats";
 import { env } from "./env";
 import { trackServer } from "./analytics";
 import { sendEmail, emailEnabled } from "./mailer";
@@ -218,18 +219,59 @@ export const auth = betterAuth({
 
       organizationHooks: {
         /**
-         * The invite gate. better-auth awaits this inline — before the
-         * invitation row is written and before the email is sent — so throwing
-         * here rejects the invite cleanly, leaving no row and sending nothing.
+         * The invite gate, and where seats are bought. better-auth awaits this
+         * inline — before the invitation row is written and before the email
+         * is sent — so throwing here rejects the invite cleanly, leaving no
+         * row and sending nothing.
+         *
+         * A Pro org whose seats are all taken is not refused: the invite IS
+         * the purchase. The subscription is resized to cover one more person
+         * (prorated from today) and the invite goes ahead. Only when there is
+         * nothing to resize — trial, on hold, ending — or the provider says no
+         * does the invite fail, and then nothing has been charged.
          */
         beforeCreateInvitation: async ({ invitation }) => {
           const gate = await assertCanInvite(invitation.organizationId);
-          if (!gate.ok) {
-            throw APIError.from("FORBIDDEN", {
-              code: gate.code,
-              message: gate.message,
+          if (gate.ok) return;
+
+          if (gate.code === "SEAT_LIMIT_REACHED") {
+            const bought = await syncSeats(invitation.organizationId, {
+              minimum: gate.seats.used + 1,
+              reason: "invite",
             });
+            if (bought.ok) return;
+            throw APIError.from(
+              bought.code === "PROVIDER_ERROR" ? "BAD_GATEWAY" : "FORBIDDEN",
+              {
+                code:
+                  bought.code === "PROVIDER_ERROR"
+                    ? "SEAT_PURCHASE_FAILED"
+                    : "SEAT_LIMIT_REACHED",
+                message: bought.message,
+              },
+            );
           }
+
+          throw APIError.from("FORBIDDEN", {
+            code: gate.code,
+            message: gate.message,
+          });
+        },
+
+        /**
+         * The other direction: someone leaving frees their seat, and the
+         * subscription shrinks to match so the org stops paying for it. All
+         * three are after-hooks and best-effort — the person is already gone,
+         * and a provider hiccup must not fail the removal.
+         */
+        afterRemoveMember: async ({ member }) => {
+          await releaseSeats(member.organizationId, "remove-member");
+        },
+        afterCancelInvitation: async ({ invitation }) => {
+          await releaseSeats(invitation.organizationId, "cancel-invitation");
+        },
+        afterRejectInvitation: async ({ invitation }) => {
+          await releaseSeats(invitation.organizationId, "reject-invitation");
         },
 
         /**

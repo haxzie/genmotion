@@ -1,17 +1,30 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { eq, db, schema } from "@genmotion/db";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { and, eq, db, schema } from "@genmotion/db";
 import { PLANS } from "@genmotion/shared";
-import { app } from "../app";
-import { dbReady, truncateAll } from "./helpers/db";
-import {
+
+/**
+ * The provider is stubbed at its single boundary (`../dodo`), as in
+ * checkout.test.ts: the seat purchase the invite hook makes must be observable
+ * without a network, and must never reach a real account from the suite.
+ */
+const changeSeats = vi.fn();
+
+vi.mock("../dodo", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../dodo")>();
+  return { ...actual, changeSeats };
+});
+
+const { app } = await import("../app");
+const { dbReady, truncateAll } = await import("./helpers/db");
+const {
   addMember,
   addMembers,
   createOrg,
   createPendingInvitation,
   createUser,
   setSubscription,
-} from "./helpers/factories";
-import { createSession } from "./helpers/http";
+} = await import("./helpers/factories");
+const { createSession } = await import("./helpers/http");
 
 /**
  * These drive better-auth's real organization endpoints rather than calling the
@@ -47,7 +60,19 @@ async function invitations(organizationId: string) {
     .where(eq(schema.invitation.organizationId, organizationId));
 }
 
-beforeEach(truncateAll);
+async function subscriptionRow(organizationId: string) {
+  const [row] = await db
+    .select()
+    .from(schema.organizationSubscriptions)
+    .where(eq(schema.organizationSubscriptions.organizationId, organizationId));
+  return row!;
+}
+
+beforeEach(async () => {
+  await truncateAll();
+  changeSeats.mockReset();
+  changeSeats.mockResolvedValue(undefined);
+});
 
 describe.skipIf(!dbReady)("invite gating by plan", () => {
   it("refuses on Free and writes no invitation", async () => {
@@ -64,10 +89,10 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
   });
 
   /**
-   * The case most likely to regress: Pro is paid and unlimited, but it is a
-   * single seat, so it still cannot invite.
+   * A Pro org with no subscription to resize — a row set by hand, or billing
+   * switched off — cannot buy a seat, so a full plan still refuses.
    */
-  it("refuses on Pro once the bought seats are used up", async () => {
+  it("refuses on Pro when the seats are used up and nothing can be resized", async () => {
     const { orgId, ownerId } = await createOrg();
     await setSubscription(orgId, { plan: "pro", status: "active", seats: 1 });
     const session = await createSession(ownerId, orgId);
@@ -77,6 +102,7 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
     expect(status).toBe(403);
     // The owner already occupies the only seat that was bought.
     expect(body.code).toBe("SEAT_LIMIT_REACHED");
+    expect(changeSeats).not.toHaveBeenCalled();
     expect(await invitations(orgId)).toEqual([]);
   });
 
@@ -125,7 +151,210 @@ describe.skipIf(!dbReady)("invite gating by plan", () => {
   });
 });
 
-describe.skipIf(!dbReady)("seat cap", () => {
+/**
+ * Seats are bought by inviting. With a live subscription to resize, a full
+ * plan does not refuse — it grows by one and the invite goes ahead.
+ */
+describe.skipIf(!dbReady)("buying a seat by inviting", () => {
+  const LIVE = { plan: "pro", status: "active", dodoSubscriptionId: "sub_live" } as const;
+
+  it("buys a seat when Pro is full", async () => {
+    const { orgId, ownerId } = await createOrg();
+    const before = await setSubscription(orgId, {
+      ...LIVE,
+      seats: 1,
+      lastEventAt: new Date(Date.now() - 60_000),
+    });
+    const session = await createSession(ownerId, orgId);
+
+    const { status } = await invite(session.cookie, orgId);
+
+    expect(status).toBe(200);
+    // Owner + the invitee = two people, so the subscription grows to two.
+    expect(changeSeats).toHaveBeenCalledWith("sub_live", 2, "grow");
+    expect(await invitations(orgId)).toHaveLength(1);
+
+    const after = await subscriptionRow(orgId);
+    expect(after.seats).toBe(2);
+    // The provider's own delivery for this change must still apply, so the
+    // ordering key is left alone.
+    expect(after.lastEventAt?.toISOString()).toBe(before.lastEventAt?.toISOString());
+  });
+
+  it("buys the eleventh seat when ten are taken", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 10 });
+    await addMembers(orgId, 9); // owner + 9 = 10, the seats bought above
+    const session = await createSession(ownerId, orgId);
+
+    expect((await invite(session.cookie, orgId)).status).toBe(200);
+    expect(changeSeats).toHaveBeenCalledWith("sub_live", 11, "grow");
+    expect((await subscriptionRow(orgId)).seats).toBe(11);
+  });
+
+  // Pending invitations will become members, so they are paid for too.
+  it("counts pending invitations when sizing the purchase", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 10 });
+    await addMembers(orgId, 7); // owner + 7 = 8
+    await createPendingInvitation(orgId, { inviterId: ownerId });
+    await createPendingInvitation(orgId, { inviterId: ownerId }); // = 10
+    const session = await createSession(ownerId, orgId);
+
+    expect((await invite(session.cookie, orgId)).status).toBe(200);
+    expect(changeSeats).toHaveBeenCalledWith("sub_live", 11, "grow");
+  });
+
+  it("does not touch the provider while a bought seat is free", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 3 });
+    const session = await createSession(ownerId, orgId);
+
+    expect((await invite(session.cookie, orgId)).status).toBe(200);
+    expect(changeSeats).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The property that matters most: a refused purchase leaves nothing behind.
+   * The hook runs before the invitation row exists, so a provider failure
+   * means no row, no email and no seat.
+   */
+  it("writes nothing when the provider refuses the seat", async () => {
+    changeSeats.mockRejectedValue(new Error("card declined"));
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 1 });
+    const session = await createSession(ownerId, orgId);
+
+    const { status, body } = await invite(session.cookie, orgId);
+
+    expect(status).toBe(502);
+    expect(body.code).toBe("SEAT_PURCHASE_FAILED");
+    expect(await invitations(orgId)).toEqual([]);
+    expect((await subscriptionRow(orgId)).seats).toBe(1);
+  });
+
+  // Dunning and cancellation are fixed at the provider, not by buying more.
+  it("refuses without a provider call while the subscription is on hold", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, {
+      ...LIVE,
+      status: "on_hold",
+      seats: 1,
+      currentPeriodEnd: new Date(Date.now() + 7 * 86_400_000),
+    });
+    const session = await createSession(ownerId, orgId);
+
+    const { status, body } = await invite(session.cookie, orgId);
+
+    expect(status).toBe(403);
+    expect(body.code).toBe("SEAT_LIMIT_REACHED");
+    expect(String(body.message)).toContain("payment");
+    expect(changeSeats).not.toHaveBeenCalled();
+    expect(await invitations(orgId)).toEqual([]);
+  });
+
+  // Dodo refuses a plan change once a cancellation is scheduled, even though
+  // the subscription is still active — so don't ask, and say what to do.
+  it("refuses without a provider call once cancellation is scheduled", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, {
+      ...LIVE,
+      cancelAtPeriodEnd: true,
+      seats: 1,
+      currentPeriodEnd: new Date(Date.now() + 7 * 86_400_000),
+    });
+    const session = await createSession(ownerId, orgId);
+
+    const { status, body } = await invite(session.cookie, orgId);
+
+    expect(status).toBe(403);
+    expect(body.code).toBe("SEAT_LIMIT_REACHED");
+    expect(String(body.message)).toContain("Revoke the cancellation");
+    expect(changeSeats).not.toHaveBeenCalled();
+  });
+
+  it("refuses without a provider call while the subscription is ending", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, {
+      ...LIVE,
+      status: "cancelled",
+      cancelAtPeriodEnd: true,
+      seats: 1,
+      currentPeriodEnd: new Date(Date.now() + 7 * 86_400_000),
+    });
+    const session = await createSession(ownerId, orgId);
+
+    expect((await invite(session.cookie, orgId)).status).toBe(403);
+    expect(changeSeats).not.toHaveBeenCalled();
+  });
+});
+
+describe.skipIf(!dbReady)("releasing seats", () => {
+  const LIVE = { plan: "pro", status: "active", dodoSubscriptionId: "sub_live" } as const;
+
+  /** better-auth addresses members by member id (or email), not user id. */
+  async function removeMember(cookie: string, organizationId: string, userId: string) {
+    const [member] = await db
+      .select({ id: schema.member.id })
+      .from(schema.member)
+      .where(and(eq(schema.member.organizationId, organizationId), eq(schema.member.userId, userId)));
+    const res = await app.request("/api/auth/organization/remove-member", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ memberIdOrEmail: member!.id, organizationId }),
+    });
+    if (res.status !== 200) console.error("remove-member:", await res.text());
+    return res.status;
+  }
+
+  it("shrinks the subscription when a member is removed", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 3 });
+    await addMember(orgId, "member");
+    const leaver = await addMember(orgId, "member"); // 3 people, 3 seats
+    const session = await createSession(ownerId, orgId);
+
+    expect(await removeMember(session.cookie, orgId, leaver)).toBe(200);
+    // Shrinking is not billed: the seat comes off at the next renewal.
+    expect(changeSeats).toHaveBeenCalledWith("sub_live", 2, "shrink");
+    expect((await subscriptionRow(orgId)).seats).toBe(2);
+  });
+
+  // The person is already gone; billing trouble must not undo that.
+  it("does not fail the removal when the provider refuses to shrink", async () => {
+    changeSeats.mockRejectedValue(new Error("provider down"));
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 2 });
+    const leaver = await addMember(orgId, "member");
+    const session = await createSession(ownerId, orgId);
+
+    expect(await removeMember(session.cookie, orgId, leaver)).toBe(200);
+    const members = await db
+      .select()
+      .from(schema.member)
+      .where(eq(schema.member.organizationId, orgId));
+    expect(members).toHaveLength(1);
+    expect((await subscriptionRow(orgId)).seats).toBe(2); // corrected next time
+  });
+
+  it("shrinks when a pending invitation is cancelled", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { ...LIVE, seats: 2 });
+    const invitation = await createPendingInvitation(orgId, { inviterId: ownerId });
+    const session = await createSession(ownerId, orgId);
+
+    const res = await app.request("/api/auth/organization/cancel-invitation", {
+      method: "POST",
+      headers: { cookie: session.cookie, "content-type": "application/json" },
+      body: JSON.stringify({ invitationId: invitation.id }),
+    });
+    expect(res.status).toBe(200);
+    expect(changeSeats).toHaveBeenCalledWith("sub_live", 1, "shrink");
+    expect((await subscriptionRow(orgId)).seats).toBe(1);
+  });
+});
+
+describe.skipIf(!dbReady)("seat cap without a resizable subscription", () => {
   it("refuses when every seat is taken", async () => {
     const { orgId, ownerId } = await createOrg();
     await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });

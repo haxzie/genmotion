@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, gte, isNotNull, sql, db, schema } from "@genmotion/db";
 import { CHAT_MODEL_ID } from "@genmotion/ai";
+import { PLANS, TEAM_SEATS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { trialState } from "../limits";
 import {
@@ -11,7 +12,7 @@ import {
   getSubscriptionRow,
   type Entitlements,
 } from "../entitlements";
-import { dodoClient, dodoEnabled, productForPlan } from "../dodo";
+import { dodoClient, dodoEnabled, productForPlan, seatAddons } from "../dodo";
 import { env } from "../env";
 
 export const billingRoutes = new Hono<AuthEnv>();
@@ -99,7 +100,38 @@ billingRoutes.get("/limits", async (c) => {
   });
 });
 
-const checkoutSchema = z.object({ plan: z.literal("pro") });
+const checkoutSchema = z.object({
+  plan: z.literal("pro"),
+  /**
+   * Seats to buy, when the caller knows it wants more than the headcount —
+   * the upgrade modal opened for an invite passes the count that invite
+   * needs. Never fewer than the people already in the org.
+   */
+  seats: z.number().int().min(1).max(TEAM_SEATS).optional(),
+});
+
+/**
+ * Whether a new checkout makes sense given the subscription the org already
+ * has. A second live subscription would double-bill, so the states that can
+ * still be fixed at the provider are pointed at the portal instead; the states
+ * Dodo cannot revive (cancelled, expired, failed) get a fresh checkout.
+ */
+function checkoutConflict(
+  status: string,
+  planName: string,
+): { error: string; action: "none" | "portal" } | null {
+  if (status === "active") {
+    return { error: `You're already on the ${planName} plan.`, action: "none" };
+  }
+  if (status === "on_hold" || status === "pending" || status === "paused") {
+    return {
+      error:
+        "Your subscription has a payment problem or is paused. Update it in the billing portal instead of starting a new one.",
+      action: "portal",
+    };
+  }
+  return null;
+}
 
 /** Only an owner or admin may commit the organization to a charge. */
 async function isBillingAdmin(
@@ -127,7 +159,7 @@ async function isBillingAdmin(
 billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
-  const { plan } = c.req.valid("json");
+  const { plan, seats } = c.req.valid("json");
 
   const productId = productForPlan(plan);
   if (!dodoEnabled || !productId) {
@@ -140,15 +172,28 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
     );
   }
 
-  const ent = await getEntitlements(organizationId);
-  if (ent.plan === plan && ent.status === "active") {
-    return c.json({ error: `You're already on the ${ent.planName} plan.` }, 409);
-  }
+  const row = await getSubscriptionRow(organizationId);
+  const conflict = row?.plan !== "free" && row
+    ? checkoutConflict(row.status, PLANS[row.plan].name)
+    : null;
+  if (conflict) return c.json(conflict, 409);
+
+  // Pro carries one seat; everyone already in the org (members and open
+  // invitations) needs one too, or the org is over its seats the moment it
+  // pays and cannot invite. A lapsed team resubscribing lands here.
+  const totalSeats = Math.max(await countSeats(organizationId), seats ?? 1);
+  const addons = seatAddons(totalSeats);
 
   let session: { session_id: string; checkout_url?: string | null };
   try {
     session = await dodoClient().checkoutSessions.create({
-      product_cart: [{ product_id: productId, quantity: 1 }],
+      product_cart: [
+        {
+          product_id: productId,
+          quantity: 1,
+          ...(addons.length > 0 ? { addons } : {}),
+        },
+      ],
       customer: { email: user.email, name: user.name || user.email },
       return_url: `${env.WEB_URL}/settings/billing?checkout=success&plan=${plan}`,
       // Keys ≤40 chars and string values ≤500 — well inside the provider's
@@ -156,6 +201,7 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
       metadata: {
         organizationId,
         plan,
+        seats: String(totalSeats),
         userId: user.id,
         source: "genmotion-app",
       },
@@ -367,12 +413,24 @@ billingRoutes.get("/usage", async (c) => {
 
   // Same resolver as /limits, so the two endpoints can never disagree about
   // which plan an org is on.
-  const ent = await getEntitlements(organizationId);
+  const [ent, seatsUsed, trial] = await Promise.all([
+    getEntitlements(organizationId),
+    countSeats(organizationId),
+    trialState(organizationId),
+  ]);
 
   return c.json({
     plan: planPayload(ent),
     // Seats are what the bill scales with now, so the usage page needs them.
-    seats: { used: await countSeats(organizationId), max: ent.seats },
+    seats: { used: seatsUsed, max: ent.seats },
+    // The billing page is where an org learns its trial is over, so it needs
+    // the same trial block /limits carries.
+    trial: {
+      active: trial.active,
+      daysLeft: trial.daysLeft,
+      endsAt: trial.endsAt?.toISOString() ?? null,
+    },
+    entitled: ent.paid || trial.active,
     subscription: subscriptionPayload(ent),
     period: { start: start.toISOString(), end: now.toISOString() },
     totals: {

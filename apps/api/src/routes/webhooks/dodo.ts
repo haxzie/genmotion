@@ -14,7 +14,13 @@ export const dodoWebhookRoutes = new Hono();
 
 dodoWebhookRoutes.post("/", async (c) => {
   if (!dodoWebhooksEnabled) {
-    // Refuse rather than trust an unverifiable payload.
+    // Refuse rather than trust an unverifiable payload. 503 on purpose: the
+    // provider retries a 5xx for hours, so once the key is set the deliveries
+    // that arrived meanwhile still land. Loud, because until then every
+    // purchase looks like it never happened.
+    console.error(
+      "[billing] webhook delivery refused: DODOPAYMENT_WEBHOOK_KEY is not set",
+    );
     return c.json({ error: "Webhooks are not configured." }, 503);
   }
 
@@ -46,6 +52,13 @@ dodoWebhookRoutes.post("/", async (c) => {
     const outcome = await handleWebhookEvent(webhookId, event);
     // Every outcome is a 2xx: processed, replayed, superseded and unhandled are
     // all final. Only an infrastructure failure below is worth a retry.
+    if (outcome.status !== "processed") {
+      console.log(
+        `[billing] webhook ${event.type} ${webhookId}: ${outcome.status}${
+          "detail" in outcome ? ` (${outcome.detail})` : ""
+        }`,
+      );
+    }
     return c.json({ ok: true, ...outcome });
   } catch (err) {
     console.error("[billing] webhook processing failed:", err);

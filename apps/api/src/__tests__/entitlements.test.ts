@@ -99,6 +99,15 @@ describe("entitlementsFromRow", () => {
     ).toBe("free");
   });
 
+  it("keeps a paused plan until the paid period ends", () => {
+    expect(
+      entitlementsFromRow("o", row({ plan: "pro", status: "paused", currentPeriodEnd: FUTURE }), NOW).plan,
+    ).toBe("pro");
+    expect(
+      entitlementsFromRow("o", row({ plan: "pro", status: "paused", currentPeriodEnd: PAST }), NOW).plan,
+    ).toBe("free");
+  });
+
   it("drops terminal and pre-activation statuses immediately", () => {
     for (const status of ["expired", "failed", "pending", "none"]) {
       const ent = entitlementsFromRow(
