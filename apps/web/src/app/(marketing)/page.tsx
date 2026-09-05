@@ -17,9 +17,11 @@ import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { AgentBadges } from "@/components/marketing/agent-badges";
+import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug, getAllShowcaseVideos } from "@/lib/marketing/content";
+import { getTemplatesPage } from "@/lib/marketing/templates";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
@@ -122,6 +124,12 @@ export default async function HomePage() {
   const showcaseVideos = getAllShowcaseVideos()
     .filter((v) => v.featured)
     .slice(0, 3);
+  // The catalog's own `order` is the curation — the first page of it is
+  // already "the top 6" by construction, not something picked here. Two full
+  // rows at the section's 3-column width — a single row of 3 read as sparse
+  // against the section's width once the catalog grew past a handful.
+  const templatesPage = await getTemplatesPage({ limit: 6 });
+  const templates = templatesPage?.templates ?? [];
 
   return (
     <>
@@ -203,6 +211,43 @@ export default async function HomePage() {
           />
         </Container>
       </section>
+
+      {/* Templates teaser — the catalog's top few, by its own curated order. */}
+      {templates.length > 0 && (
+        <section className="relative z-10 mt-24 sm:mt-32">
+          <Container>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <Eyebrow className="mb-4">Templates</Eyebrow>
+                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Templates to pick from
+                </h2>
+                <p className="mt-4 text-text-secondary">
+                  Finished videos you can take apart — remix one and it becomes
+                  a project of your own.
+                </p>
+              </div>
+              <Link
+                href="/templates"
+                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
+              >
+                View all
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </Link>
+            </div>
+            <div className="mt-10">
+              <TemplateMasonry templates={templates} />
+            </div>
+            <div className="mt-10 flex justify-center">
+              <LinkButton href="/templates" variant="secondary" size="lg">
+                Browse all templates
+              </LinkButton>
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Showcase gallery. */}
       {showcaseVideos.length > 0 && (

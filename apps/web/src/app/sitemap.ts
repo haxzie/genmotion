@@ -8,6 +8,7 @@ import {
   getAllTerms,
 } from "@/lib/marketing/content";
 import { getAllTemplateSummaries } from "@/lib/marketing/templates";
+import { TEMPLATE_CATEGORIES } from "@/lib/marketing/template-categories";
 import { SITE_URL } from "@/lib/marketing/site";
 
 const BASE = SITE_URL;
@@ -58,8 +59,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
   }));
 
-  const templateRoutes = (await getAllTemplateSummaries()).map((t) => ({
+  const templateSummaries = await getAllTemplateSummaries();
+  const templateRoutes = templateSummaries.map((t) => ({
     url: `${BASE}/templates/${t.id}`,
+    changeFrequency: "monthly" as const,
+  }));
+
+  // Same "don't list an empty page" rule as generateStaticParams on the
+  // category route itself.
+  const templateCategoryRoutes = TEMPLATE_CATEGORIES.filter((c) =>
+    templateSummaries.some((t) => t.tags.includes(c.tag)),
+  ).map((c) => ({
+    url: `${BASE}/templates/category/${c.slug}`,
     changeFrequency: "monthly" as const,
   }));
 
@@ -72,5 +83,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...termRoutes,
     ...showcaseRoutes,
     ...templateRoutes,
+    ...templateCategoryRoutes,
   ];
 }

@@ -20,6 +20,20 @@ export const OG_IMAGE = {
   alt: "GenMotion — create product launch videos using AI",
 } as const;
 
+/**
+ * Social card for the templates section — the index, every category page,
+ * and every template's own detail page all share this one rather than a
+ * per-template poster: a template's poster is designed to read at gallery-
+ * card size (its own aspect ratio, no room for a headline), not cropped into
+ * a 1200×630 link preview.
+ */
+export const TEMPLATES_OG_IMAGE = {
+  url: "/templates-og.png",
+  width: 1200,
+  height: 630,
+  alt: "GenMotion — motion graphics video templates",
+} as const;
+
 export type SeoImage = {
   url: string;
   width?: number;

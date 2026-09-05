@@ -1,0 +1,53 @@
+{
+  "name": "Don't Blink — GPT-6 Astra",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-ready.tsx",
+      "durationInFrames": 160,
+      "name": "Ready?"
+    },
+    {
+      "file": "scenes/02-computer-use.tsx",
+      "durationInFrames": 100,
+      "name": "Computer use"
+    },
+    {
+      "file": "scenes/03-long-horizon.tsx",
+      "durationInFrames": 90,
+      "name": "Long horizon"
+    },
+    {
+      "file": "scenes/04-builds.tsx",
+      "durationInFrames": 90,
+      "name": "Builds"
+    },
+    {
+      "file": "scenes/05-math-cyber.tsx",
+      "durationInFrames": 90,
+      "name": "Math & cyber"
+    },
+    {
+      "file": "scenes/06-astra.tsx",
+      "durationInFrames": 70,
+      "name": "Astra"
+    }
+  ],
+  "audio": [
+    {
+      "id": "5dde966e-98cd-4834-a6d5-74f87e1a30cc",
+      "file": "assets/prettyjohn1-fast-dynamic-rhythmic-music-499977.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 617,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false,
+      "name": "prettyjohn1-fast-dynamic-rhythmic-music-499977"
+    }
+  ]
+}

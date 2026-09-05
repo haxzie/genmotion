@@ -7,7 +7,7 @@ import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatePlayer } from "@/components/marketing/template-player";
 import { TemplateRemixButton } from "@/components/marketing/template-remix-button";
 import { getAllTemplateSummaries, getTemplateSummary, templateApiUrl } from "@/lib/marketing/templates";
-import { pageMetadata } from "@/lib/marketing/seo";
+import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -50,12 +50,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     path: `/templates/${summary.id}`,
     type: "video.other",
     ogTitle: summary.title,
-    image: {
-      url: templateApiUrl(summary.posterPath),
-      width: summary.width,
-      height: summary.height,
-      alt: summary.title,
-    },
+    // Not the template's own poster: that's designed to read at gallery-card
+    // size, in the template's own aspect ratio — cropping it into a 1200×630
+    // link preview would cut off exactly the parts that make it legible.
+    image: TEMPLATES_OG_IMAGE,
   });
 }
 

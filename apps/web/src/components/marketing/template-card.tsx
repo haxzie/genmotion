@@ -14,9 +14,12 @@ function formatDuration(seconds: number): string {
 /**
  * A single template tile: poster at its real aspect ratio, title, tags.
  *
- * Sits inside a CSS-columns masonry layout rather than a uniform grid — a
+ * Sits inside `TemplateMasonry`'s own columns rather than a uniform grid — a
  * template's own aspect ratio (16:9, 9:16, 1:1) is part of what it's
- * showing, and letterboxing every card to one shape would hide that.
+ * showing, and letterboxing every card to one shape would hide that. Not
+ * `break-inside-avoid`/margin-based spacing: that was for CSS's own
+ * `columns-*`, which `TemplateMasonry` replaced — its flex columns own
+ * spacing via `gap` instead.
  *
  * Hovering plays the template's own rendered video, muted and looping, the
  * same as the desktop app's gallery — debounced so a pointer just passing
@@ -40,7 +43,7 @@ export function TemplateCard({ template }: { template: TemplateSummary }) {
         setHovered(false);
         setPreviewing(false);
       }}
-      className="group mb-5 block w-full break-inside-avoid overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
+      className="group block w-full overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
     >
       <div
         className="relative overflow-hidden bg-surface-raised"

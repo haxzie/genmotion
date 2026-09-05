@@ -21,6 +21,23 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
 /**
  * The web site's equivalent of the in-app Remix button.
  *
@@ -78,26 +95,33 @@ export function TemplateRemixButton({
             href={desktopRemixUrl(templateId)}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
+            className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
           >
-            <span className="block text-[0.95rem] font-medium text-text-primary">
-              Open in the app
-            </span>
-            <span className="block text-[0.8rem] text-text-tertiary">
-              Already have GenMotion installed
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="mt-0.5 size-5 shrink-0 rounded-[4px]" />
+            <span className="min-w-0">
+              <span className="block text-[0.95rem] font-medium text-text-primary">
+                Open in the app
+              </span>
+              <span className="block text-[0.8rem] text-text-tertiary">
+                Already have GenMotion installed
+              </span>
             </span>
           </a>
           <a
             href={DOWNLOAD_PAGE}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
+            className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
           >
-            <span className="block text-[0.95rem] font-medium text-text-primary">
-              Download GenMotion
-            </span>
-            <span className="block text-[0.8rem] text-text-tertiary">
-              Get the app, then come back to remix
+            <DownloadIcon className="mt-0.5 size-5 shrink-0 text-text-tertiary" />
+            <span className="min-w-0">
+              <span className="block text-[0.95rem] font-medium text-text-primary">
+                Download GenMotion
+              </span>
+              <span className="block text-[0.8rem] text-text-tertiary">
+                Get the app, then come back to remix
+              </span>
             </span>
           </a>
         </div>

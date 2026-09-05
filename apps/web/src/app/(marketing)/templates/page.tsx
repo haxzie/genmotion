@@ -4,7 +4,8 @@ import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatesBrowser } from "@/components/marketing/templates-browser";
 import { getAllTemplateSummaries, getTemplatesPage, templateApiUrl } from "@/lib/marketing/templates";
-import { pageMetadata } from "@/lib/marketing/seo";
+import { TEMPLATE_CATEGORIES } from "@/lib/marketing/template-categories";
+import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
 import type { Faq } from "@/lib/marketing/faq";
 
@@ -29,6 +30,7 @@ export const metadata: Metadata = pageMetadata({
     "Finished motion videos you can take apart — launch videos, announcements, and social ads. Remix one and it becomes a project of your own.",
   path: "/templates",
   ogDescription: "Finished motion videos, ready to remix into a project of your own.",
+  image: TEMPLATES_OG_IMAGE,
 });
 
 export default async function TemplatesIndexPage() {
@@ -38,6 +40,14 @@ export default async function TemplatesIndexPage() {
   ]);
   const initialTemplates = firstPage?.templates ?? [];
   const initialCursor = firstPage?.nextCursor ?? null;
+  // Same "only link what isn't empty" rule as the category route's own
+  // generateStaticParams — these are real, crawlable links, not the client-
+  // side filter pills below, which is why they're worth having at all.
+  const categories = TEMPLATE_CATEGORIES.filter((c) =>
+    allSummaries.some((t) => t.tags.includes(c.tag)),
+  );
+  // Independent of `initialTemplates`/pagination on purpose: the pill row
+  // reflects the whole catalog, not just whatever page happened to load.
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -65,7 +75,7 @@ export default async function TemplatesIndexPage() {
           <div className="max-w-2xl">
             <Eyebrow className="mb-4">Templates</Eyebrow>
             <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              Start from a finished video
+              Start with a template
             </h1>
             <p className="mt-5 text-lg text-text-secondary">
               Real projects — real scenes, real assets — that you can watch, take apart, and
@@ -73,16 +83,13 @@ export default async function TemplatesIndexPage() {
             </p>
           </div>
 
-          {initialTemplates.length > 0 ? (
-            <div className="mt-14">
-              <TemplatesBrowser
-                initialTemplates={initialTemplates}
-                initialCursor={initialCursor}
-              />
-            </div>
-          ) : (
-            <p className="mt-14 text-text-tertiary">No templates yet — check back soon.</p>
-          )}
+          <div className="mt-14">
+            <TemplatesBrowser
+              initialTemplates={initialTemplates}
+              initialCursor={initialCursor}
+              categories={categories}
+            />
+          </div>
         </Container>
       </Section>
       <FaqSection items={FAQS} />
