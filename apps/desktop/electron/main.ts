@@ -521,11 +521,28 @@ function createWindow(): void {
   // On the web that saves a copy; here the file is already on disk inside the
   // project, so reveal it instead — and never let the link navigate the editor
   // away from itself.
+  //
+  // Nothing else may navigate this window either. The renderer is a single
+  // page; a plain `<a href="/settings/billing">` inherited from the web app
+  // would otherwise unload the editor onto a loopback URL that serves nothing.
+  // Links to our own web app open in the real browser (where the session
+  // cookie is); anything else is dropped.
+  const ownDocument = DEV_SERVER ?? (localServer ? `${localServer.origin}/index.html` : null);
   window.webContents.on("will-navigate", (event, url) => {
-    const target = assetPathFromUrl(url);
-    if (!url.startsWith("gm-asset:")) return;
+    if (url.startsWith("gm-asset:")) {
+      event.preventDefault();
+      const target = assetPathFromUrl(url);
+      if (target) shell.showItemInFolder(target);
+      return;
+    }
+    if (ownDocument && url.split("#")[0] === ownDocument.split("#")[0]) return;
     event.preventDefault();
-    if (target) shell.showItemInFolder(target);
+    try {
+      const parsed = new URL(url);
+      if (parsed.origin === new URL(WEB_URL).origin) void shell.openExternal(parsed.toString());
+    } catch {
+      // Not a URL we can reason about — dropping it is the safe outcome.
+    }
   });
 
   window.on("closed", () => {

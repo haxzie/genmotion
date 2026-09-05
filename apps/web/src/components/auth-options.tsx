@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { track } from "@/lib/analytics";
+import { safeNext } from "@/lib/safe-next";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 
 export function GoogleIcon() {
@@ -52,17 +53,20 @@ export function AuthOptions({
   const [pending, setPending] = useState<null | "google" | "github" | "magic">(null);
   const [sent, setSent] = useState(false);
 
-  const resolvedCallback =
+  /**
+   * Resolved at click time, not render time: it reads the page URL (`?next=`,
+   * set by the app layout when it bounced an unauthenticated visit here), and
+   * the sign-in page is prerendered, so there is no window during render.
+   */
+  const resolveCallback = () =>
     callbackURL ??
-    (typeof window !== "undefined"
-      ? `${window.location.origin}/dashboard`
-      : "/dashboard");
+    `${window.location.origin}${safeNext(new URLSearchParams(window.location.search).get("next"))}`;
 
   async function handleSocial(provider: "google" | "github") {
     setError(null);
     setPending(provider);
     track(startEvent, { provider });
-    const result = await signIn.social({ provider, callbackURL: resolvedCallback });
+    const result = await signIn.social({ provider, callbackURL: resolveCallback() });
     // On success the browser redirects to the provider; only errors return here.
     if (result?.error) {
       setError(result.error.message ?? "Couldn't start sign-in. Try again.");
@@ -75,7 +79,7 @@ export function AuthOptions({
     setError(null);
     setPending("magic");
     track(startEvent, { provider: "magic" });
-    const result = await signIn.magicLink({ email, callbackURL: resolvedCallback });
+    const result = await signIn.magicLink({ email, callbackURL: resolveCallback() });
     setPending(null);
     if (result.error) {
       setError(result.error.message ?? "Couldn't send the link. Try again.");

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession, updateUser, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { identify, track } from "@/lib/analytics";
+import { safeNext } from "@/lib/safe-next";
 
 const ROLES = [
   "Founder / CEO",
@@ -38,11 +39,8 @@ function teamNameFrom(name: string): string {
  * back on the approval page instead of being stranded on the dashboard.
  *
  * Only same-origin relative paths are honoured — this value comes from a URL.
+ * See `safeNext` in lib/safe-next.ts, shared with the sign-in flow.
  */
-function safeNext(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/dashboard";
-  return next;
-}
 
 export default function OnboardingPage() {
   // useSearchParams opts the route out of prerendering unless it sits behind a
