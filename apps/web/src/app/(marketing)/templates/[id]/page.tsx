@@ -7,9 +7,9 @@ import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatePlayer } from "@/components/marketing/template-player";
 import { TemplateRemixButton } from "@/components/marketing/template-remix-button";
 import { getAllTemplateSummaries, getTemplateSummary, templateApiUrl } from "@/lib/marketing/templates";
+import { templateFaqs } from "@/lib/marketing/template-faq";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
-import type { Faq } from "@/lib/marketing/faq";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -18,17 +18,6 @@ function formatDuration(seconds: number): string {
   if (total < 60) return `${total}s`;
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
-
-const FAQS: Faq[] = [
-  {
-    q: "How do I remix this template?",
-    a: "Press Remix this template above. If GenMotion is already installed, Open in the app hands off straight to it; otherwise, download the app first and come back. Either way it creates a new project with the same scenes and assets, ready to edit by chat.",
-  },
-  {
-    q: "Is this exactly what remixing gives me?",
-    a: "Yes. What plays above is the same bundle a remix writes to disk — there's no separate, lower-fidelity preview.",
-  },
-];
 
 export async function generateStaticParams() {
   try {
@@ -142,7 +131,7 @@ export default async function TemplateDetailPage({ params }: Params) {
           </div>
         </Container>
       </Section>
-      <FaqSection items={FAQS} />
+      <FaqSection items={templateFaqs(summary)} />
     </>
   );
 }

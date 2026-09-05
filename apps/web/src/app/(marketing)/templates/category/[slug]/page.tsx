@@ -7,28 +7,11 @@ import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatesBrowser } from "@/components/marketing/templates-browser";
 import { getAllTemplateSummaries, templateApiUrl } from "@/lib/marketing/templates";
 import { TEMPLATE_CATEGORIES, getTemplateCategory } from "@/lib/marketing/template-categories";
+import { categoryFaqs } from "@/lib/marketing/template-faq";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
-import type { Faq } from "@/lib/marketing/faq";
 
 type Params = { params: Promise<{ slug: string }> };
-
-// Same questions as the main gallery — a category page is that same gallery,
-// scoped, not a different product.
-const FAQS: Faq[] = [
-  {
-    q: "What is a GenMotion template?",
-    a: "A finished, working video — real scenes, real assets, nothing stubbed out. Open one, watch it play, and Remix it into a project of your own.",
-  },
-  {
-    q: "Can I edit a template after remixing it?",
-    a: "Yes. A remix is an ordinary GenMotion project from the moment it lands — edit it by chat, on the timeline, or scene by scene, exactly like a project you started from scratch.",
-  },
-  {
-    q: "Do I need the desktop app to use a template?",
-    a: "You can preview and read about every template right here. Remixing one into an editable project happens in the GenMotion desktop app.",
-  },
-];
 
 export async function generateStaticParams() {
   try {
@@ -138,7 +121,7 @@ export default async function TemplateCategoryPage({ params }: Params) {
           </div>
         </Container>
       </Section>
-      <FaqSection items={FAQS} />
+      <FaqSection items={categoryFaqs(category)} />
     </>
   );
 }
