@@ -14,6 +14,7 @@ import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
 import { releaseRoutes } from "./routes/releases";
+import { templateRoutes } from "./routes/templates";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -66,6 +67,10 @@ app.route("/api/desktop", desktopRoutes);
 app.route("/api/events", eventRoutes);
 // Desktop download links for the marketing site — public, no session.
 app.route("/api/releases", releaseRoutes);
+// Starter templates. Public and anonymous like /api/releases — the files ship
+// in the image, and the desktop app browses the gallery before it has a
+// project (or, on a fresh install, before it has a session).
+app.route("/api/templates", templateRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.

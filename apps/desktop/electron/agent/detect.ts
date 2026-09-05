@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { bundledBinDir } from "../bundled-bin";
 import type { AgentAvailability } from "./types";
 
 const run = promisify(execFile);
@@ -7,6 +8,13 @@ const run = promisify(execFile);
 /**
  * GUI apps on macOS don't inherit a login shell's PATH, so a CLI installed by
  * a version manager or into ~/.local/bin is invisible unless we look there.
+ *
+ * `bundledBinDir()` is what puts this app's own ffmpeg on the agent's shell —
+ * both harnesses now have Bash, and without this a scene-processing request
+ * only works on a machine where the user happens to have ffmpeg installed
+ * themselves. Prepended, not appended: the shipped copy should win over a
+ * stray system one so the model always gets the version this app was built
+ * against.
  */
 function searchPath(): string {
   const extra = [
@@ -16,7 +24,9 @@ function searchPath(): string {
     "/usr/local/bin",
     "/usr/bin",
   ];
-  return [...new Set([...(process.env.PATH ?? "").split(":"), ...extra])].filter(Boolean).join(":");
+  return [...new Set([bundledBinDir(), ...(process.env.PATH ?? "").split(":"), ...extra])]
+    .filter(Boolean)
+    .join(":");
 }
 
 async function probe(command: string): Promise<{ version: string | null }> {

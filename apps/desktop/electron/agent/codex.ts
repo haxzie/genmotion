@@ -20,13 +20,14 @@ import type { AgentBackend, AgentEvent, TurnInput } from "./types";
  * the chat UI can't tell which harness answered.
  *
  * Containment works differently here, and better. The Claude backend vets every
- * file path in `canUseTool`, because that agent has no sandbox. Codex has one:
- * `--sandbox workspace-write` with the project as the working root means the OS
- * refuses writes outside the folder, whatever the model asks for. That also
- * settles the shell question — Claude's Bash tool is disabled because there is
- * no sanctioned way to install packages, and Codex reaches the same place from
- * the other side: its sandbox denies network access to commands, so `npm
- * install` fails on its own.
+ * file path in `canUseTool`, because that agent has no sandbox — its Bash tool
+ * has no path input for that callback to check, so a shell command runs
+ * ungoverned by anything GenMotion adds. Codex has an actual sandbox instead:
+ * `--sandbox workspace-write` with the project as the working root means the
+ * OS refuses writes outside the folder, whatever the model asks for, and
+ * `network_access=false` below denies the network to every command it runs —
+ * `npm install` and `curl` both fail on their own, with no `add_package`
+ * approval flow standing behind either backend's shell.
  */
 
 /**
@@ -39,9 +40,11 @@ import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 const CONFIG: string[] = [
   'sandbox_mode="workspace-write"',
   // Pinned rather than left to default: this is what stops the agent reaching
-  // the network from a shell — `npm install` and `curl` both fail — which is
-  // the same stance the Claude backend takes by disabling Bash outright.
-  // Research still works, through the model's own web search and `save_asset`.
+  // the network from a shell — `npm install` and `curl` both fail. Research
+  // still works, through the model's own web search and `save_asset`. Local
+  // tools still work: `agentEnv()` puts this app's own ffmpeg on PATH (see
+  // `agent/detect.ts`), so media work the network ban doesn't touch — trim,
+  // transcode, mix — runs fine.
   "sandbox_workspace_write.network_access=false",
   // Non-interactive: nothing can answer a prompt, so an approval request would
   // simply hang until it timed out and came back as "user cancelled".

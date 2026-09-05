@@ -9,12 +9,15 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
+    "build:local": "node scripts/build-local.mjs",
     "package": "pnpm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
+    "package:local": "node scripts/build-local.mjs && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
     "dist": "pnpm run build && electron-builder",
     "typecheck": "tsc --noEmit",
     "release:mac": "pnpm run build && electron-builder --mac --publish never",
     "verify:mac": "node scripts/verify-signing.mjs",
-    "release:mac:sign-only": "pnpm run build && electron-builder --mac --config electron-builder.sign-only.yml"
+    "release:mac:sign-only": "pnpm run build && electron-builder --mac --config electron-builder.sign-only.yml",
+    "test": "vitest run"
   },
   "//": "Everything is compiled into dist by esbuild and Vite, so the packaged app has no runtime dependencies. Keeping this list empty is what stops electron-builder from trying to walk pnpm's symlinked node_modules.",
   "devDependencies": {
@@ -31,6 +34,7 @@
     "@genmotion/player": "workspace:*",
     "@genmotion/project": "workspace:*",
     "@genmotion/shared": "workspace:*",
+    "@genmotion/templates": "workspace:*",
     "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.101.0",
@@ -55,6 +59,7 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
     "vite": "^7.2.0",
+    "vitest": "^3.2.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   }

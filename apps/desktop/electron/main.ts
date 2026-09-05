@@ -29,8 +29,11 @@ import {
   type DesktopProject,
   type LaunchContext,
   type RecentProjectRange,
+  type RemixTemplateInput,
 } from "./shared";
 import { cliStatus, getLaunchDir, installCli, launchDirFromArgv, setLaunchDir } from "./cli";
+import { fetchRemixBundle, writeRemix } from "./remix";
+import { projectDefaults } from "./preferences";
 import { applySessionRoots } from "./agent/read-roots";
 
 const DEV_SERVER = process.env.GM_DEV_SERVER_URL;
@@ -120,6 +123,32 @@ async function openSession(dir: string): Promise<DesktopProject> {
 }
 
 /**
+ * Copy a template into a new project and open it.
+ *
+ * Shared by the IPC handler (the in-app Remix button) and the `genmotion://`
+ * deep link (the web site's "Open in the app" button) — same steps either
+ * way. Every network step happens before a folder exists, so a download that
+ * fails leaves nothing behind. Once the directory is allocated the rest is
+ * wrapped: on any error it is removed, because `allocateProjectDir` had just
+ * confirmed the path was free and `createProject` refuses a folder that
+ * already holds a manifest — so this can only ever delete what we just made.
+ * (`rm` rather than the Trash: a failed scaffold is not the user's work.)
+ */
+async function remixTemplateAndOpen(templateId: string, name?: string): Promise<DesktopProject> {
+  const bundle = await fetchRemixBundle(templateId);
+  const resolvedName = name?.trim() || bundle.manifest.name;
+  const dir = await allocateProjectDir(resolvedName);
+  try {
+    await writeRemix(dir, resolvedName, bundle);
+  } catch (err) {
+    await fs.rm(dir, { recursive: true, force: true });
+    throw err;
+  }
+  track("template_remixed", { templateId, revision: bundle.revision });
+  return openSession(dir);
+}
+
+/**
  * Re-capture the project's card image once its edits settle.
  *
  * Long after the change, and only when nothing else has landed since: an agent
@@ -195,10 +224,20 @@ function registerIpc(): void {
   ipcMain.handle(IPC.createProject, async (_event, input: CreateProjectInput) => {
     const name = input.name?.trim() || "Untitled";
     const dir = await allocateProjectDir(name);
-    await createProject({ dir, name, width: input.width, height: input.height });
-    track("project_created", { width: input.width, height: input.height });
+    // The composer sends dimensions with every create, but fps is a setting
+    // rather than something the start screen asks about — so it comes from the
+    // stored defaults, along with either dimension the caller omitted.
+    const defaults = await projectDefaults();
+    const width = input.width ?? defaults.width;
+    const height = input.height ?? defaults.height;
+    await createProject({ dir, name, width, height, fps: defaults.fps });
+    track("project_created", { width, height });
     return openSession(dir);
   });
+
+  ipcMain.handle(IPC.remixTemplate, async (_event, input: RemixTemplateInput) =>
+    remixTemplateAndOpen(input.templateId, input.name),
+  );
 
   ipcMain.handle(IPC.openProject, async (_event, dir: string) => openSession(dir));
   ipcMain.handle(IPC.closeProject, async () => closeSession());
@@ -207,6 +246,24 @@ function registerIpc(): void {
   );
   ipcMain.handle(IPC.revealProject, async (_event, dir: string) => {
     shell.openPath(dir);
+  });
+
+  ipcMain.handle(IPC.paths, async () => ({ projectsRoot: projectsRoot() }));
+
+  /**
+   * Show a folder the app owns.
+   *
+   * Scoped to the projects root rather than opening whatever it is handed: the
+   * renderer runs agent-authored code, and `shell.openPath` on an arbitrary
+   * path is a way to launch things.
+   */
+  ipcMain.handle(IPC.revealPath, async (_event, target: string) => {
+    const root = projectsRoot();
+    const resolved = path.resolve(target);
+    const inside = path.relative(root, resolved);
+    if (resolved !== root && (inside.startsWith("..") || path.isAbsolute(inside))) return;
+    await fs.mkdir(root, { recursive: true });
+    shell.openPath(resolved);
   });
 
   /**
@@ -376,11 +433,18 @@ function registerAssetProtocol(): void {
 }
 
 /**
- * The browser's way of saying "approval is done, come to the front".
+ * `genmotion://…` links the app answers to. Two shapes today:
  *
- * Nothing depends on it: the app is polling for the token either way, so an
- * unregistered scheme — which is every dev run and any unsigned build — only
- * costs the user the rest of the poll interval.
+ * - `genmotion://auth/done` — the browser's way of saying "approval is done,
+ *   come to the front". Nothing actually depends on the link itself: the app
+ *   is polling for the token either way, so an unregistered scheme — every
+ *   dev run, and any unsigned build — only costs the rest of the poll
+ *   interval.
+ * - `genmotion://templates/<id>/remix` — the web site's "Open in the app"
+ *   button. Runs the exact same remix the in-app button does.
+ *
+ * Either way the window comes to the front first, so a slow remix is at
+ * least visibly the foreground app rather than a background surprise.
  */
 function handleDeepLink(url: string): void {
   if (!url.startsWith(`${DESKTOP_PROTOCOL}://`)) return;
@@ -389,6 +453,19 @@ function handleDeepLink(url: string): void {
     window.show();
     window.focus();
   }
+
+  const parsed = new URL(url);
+  const [, templateId, action] = parsed.pathname.split("/");
+  if (parsed.hostname === "templates" && templateId && action === "remix") {
+    remixTemplateAndOpen(templateId).catch((err: unknown) => {
+      dialog.showErrorBox(
+        "Couldn’t open that template",
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    });
+    return;
+  }
+
   desktopAuth.pollNow();
 }
 

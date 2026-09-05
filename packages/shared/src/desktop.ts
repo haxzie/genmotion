@@ -17,6 +17,15 @@ export const DESKTOP_PROTOCOL = "genmotion";
 /** Where the browser lands after approval — raises the window, nothing more. */
 export const DESKTOP_AUTH_DONE_URL = `${DESKTOP_PROTOCOL}://auth/done`;
 
+/**
+ * "Open in the app" from a template's web page — raises the window (or
+ * launches the app, if the OS starts it fresh to handle the link) and remixes
+ * the template exactly as pressing Remix inside the app would.
+ */
+export function desktopRemixUrl(templateId: string): string {
+  return `${DESKTOP_PROTOCOL}://templates/${templateId}/remix`;
+}
+
 /** Sign-in methods the desktop login screen offers, mirroring the web app. */
 export type DesktopAuthProvider = "google" | "github" | "magic";
 

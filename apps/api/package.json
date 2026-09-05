@@ -20,6 +20,7 @@
     "@genmotion/db": "workspace:^",
     "@genmotion/shared": "workspace:*",
     "@genmotion/storage": "workspace:^",
+    "@genmotion/templates": "workspace:*",
     "@hono/node-server": "^1.14.0",
     "@hono/zod-validator": "^0.8.0",
     "ai": "^6.0.199",

@@ -7,11 +7,12 @@ import {
   getAllShowcaseVideos,
   getAllTerms,
 } from "@/lib/marketing/content";
+import { getAllTemplateSummaries } from "@/lib/marketing/templates";
 import { SITE_URL } from "@/lib/marketing/site";
 
 const BASE = SITE_URL;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/pricing",
@@ -22,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/glossary",
     "/tools",
     "/showcase",
+    "/templates",
   ].map((path) => ({ url: `${BASE}${path}`, changeFrequency: "weekly" as const }));
 
   const featureRoutes = FEATURES.map((f) => ({
@@ -56,6 +58,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly" as const,
   }));
 
+  const templateRoutes = (await getAllTemplateSummaries()).map((t) => ({
+    url: `${BASE}/templates/${t.id}`,
+    changeFrequency: "monthly" as const,
+  }));
+
   return [
     ...staticRoutes,
     ...featureRoutes,
@@ -64,5 +71,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...postRoutes,
     ...termRoutes,
     ...showcaseRoutes,
+    ...templateRoutes,
   ];
 }

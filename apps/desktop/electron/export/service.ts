@@ -9,7 +9,13 @@ import {
   type ExportJobData,
 } from "@genmotion/shared";
 import { readManifest } from "@genmotion/project";
+// Its own subpath: the barrel also exports Composition/Player (React) and
+// the zustand store, none of which the main process needs — pulling them in
+// through the barrel added 1.5MB to main.cjs for a badge that is one string.
+import { watermarkHtml } from "@genmotion/player/watermark";
 import type { ProjectSession } from "../project-session";
+import { bundledBinary } from "../bundled-bin";
+import { checkExportEntitlement } from "./entitlement";
 
 /** Encoder quality knob, matching the hosted renderer's mapping. */
 const QUALITY = 80;
@@ -45,16 +51,9 @@ function update(patch: Partial<ExportJobData>): void {
   if (snapshot) for (const listener of listeners) listener(snapshot);
 }
 
-/** A shipped binary, unpacked from the asar so it can be executed. */
-function binary(name: string): string {
-  const packed = path.join(__dirname, "../bin", name);
-  const unpacked = packed.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
-  return existsSync(unpacked) ? unpacked : packed;
-}
-
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(binary("ffmpeg"), args);
+    const proc = spawn(bundledBinary("ffmpeg"), args);
     let stderr = "";
     proc.stderr.on("data", (d: Buffer) => {
       stderr += d.toString();
@@ -122,6 +121,13 @@ export async function startExport(
     throw new Error("An export is already running");
   }
 
+  // Checked before anything else — including before a job exists to be queued
+  // — so a trial that has ended refuses the same way the hosted API's own
+  // `POST /api/exports` does: nothing starts, and `ExportPaywallError`
+  // propagates out for the loopback route to turn into the same 402 shape the
+  // export button's `handleLimitError` already knows how to catch.
+  const entitlement = await checkExportEntitlement();
+
   const manifest = await readManifest(session.dir);
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
   if (totalFrames === 0) throw new Error("Nothing to export — the project has no scenes");
@@ -139,7 +145,7 @@ export async function startExport(
 
   // Run detached: the HTTP response returns the queued job immediately and the
   // client follows progress over the event stream.
-  void run(session, manifest, input.format).catch((err) => {
+  void run(session, manifest, input.format, entitlement.watermark).catch((err) => {
     update({ status: "failed", error: err instanceof Error ? err.message : String(err) });
   });
 
@@ -150,6 +156,7 @@ async function run(
   session: ProjectSession,
   manifest: Awaited<ReturnType<typeof readManifest>>,
   format: ExportFormat,
+  watermark: boolean,
 ): Promise<void> {
   const { fps, width, height } = manifest;
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
@@ -194,6 +201,21 @@ async function run(
 
   try {
     await win.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(PAGE_SHELL)}`);
+
+    // Appended before the host mounts, so the badge is present on every
+    // captured frame — it lives outside #root, so the composition can't paint
+    // over it. Same markup and the same rule the hosted renderer uses.
+    if (watermark) {
+      await win.webContents.executeJavaScript(
+        `(() => {
+           const holder = document.createElement("div");
+           holder.innerHTML = ${JSON.stringify(watermarkHtml(width, height))};
+           const badge = holder.firstElementChild;
+           if (badge) document.body.appendChild(badge);
+         })()`,
+      );
+    }
+
     await win.webContents.executeJavaScript(hostBundle);
     const init = (await win.webContents.executeJavaScript(
       `window.__gmInit(${JSON.stringify({ scenes, fps, width, height })})`,
@@ -201,7 +223,7 @@ async function run(
     if (init?.error) throw new Error(init.error);
 
     // 3. Frame loop → ffmpeg stdin.
-    const ffmpeg = spawn(binary("ffmpeg"), [
+    const ffmpeg = spawn(bundledBinary("ffmpeg"), [
       "-y",
       "-f", "image2pipe",
       "-framerate", String(fps),

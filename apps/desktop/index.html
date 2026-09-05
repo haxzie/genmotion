@@ -1,11 +1,18 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!--
+      The loopback server is named explicitly in img-src and media-src, not
+      just connect-src. In a packaged build it *is* 'self' — it serves the
+      renderer too — but in dev the page comes from Vite, so a template poster
+      or an audio track fetched from the loopback API is a different origin and
+      would be blocked with nothing in the UI to say why.
+    -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' http://127.0.0.1:* gm-asset: data: blob:; img-src 'self' https: data: blob: gm-asset:; media-src 'self' data: blob: gm-asset:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-eval'"
+      content="default-src 'self'; connect-src 'self' http://127.0.0.1:* gm-asset: data: blob:; img-src 'self' http://127.0.0.1:* https: data: blob: gm-asset:; media-src 'self' http://127.0.0.1:* data: blob: gm-asset:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-eval'"
     />
     <title>GenMotion</title>
   </head>

@@ -37,7 +37,12 @@ packages/
   storage/   S3 wrapper (MinIO dev / R2 prod)
   shared/    types + timeline frame math (+ render-token, subpath exports)
   project/   a project as a folder on disk: manifest, scaffold,
-             scene bundler, validation (used by apps/desktop)
+             scene bundler, validation (used by apps/desktop).
+             `@genmotion/project/validate` is a subpath: it renders scenes
+             with react-dom/server, which the API has no reason to install
+  templates/ the starter templates. Each is a real project folder under
+             `catalog/`, plus a `template.json` sidecar and a `poster.jpg`.
+             Also the catalog reader the API serves from
 ```
 
 ## Setup & run
@@ -51,6 +56,17 @@ pnpm dev                      # web :4000 · api :4001 · renderer worker
 ```
 
 Ports are non-standard on purpose (4000/4001/5433) to avoid local collisions.
+
+`pnpm dev` already points the desktop app's Electron process at the local
+stack — it loads root `.env` before spawning it. A **packaged** desktop build
+is different: launched from Finder it sees an empty `process.env`, so
+`GM_CLOUD_API_URL`/`GM_CLOUD_WEB_URL` have to be baked in at build time
+(`build-main.mjs`'s `cloudDefines()`). `pnpm --filter @genmotion/desktop
+build:local` / `package:local` do that — load `.env`, then build — so a local
+`.app` talks to `localhost:4001` instead of the hosted API. The ordinary
+`build`/`package`/`dist`/`release:mac` scripts are untouched by this on
+purpose: a real release must never pick up a developer's local `.env` by
+accident.
 
 ## Commands
 
@@ -77,7 +93,20 @@ pnpm db:push                          # sync schema to DEV only
 - **API:** Hono routes under `apps/api/src/routes/*`, mounted in `app.ts`.
   Product routes use the `requireAuth` middleware (session cookie, org-scoped);
   admin routes use `requireAdmin` (Bearer admin token). The two are mutually
-  exclusive — don't cross them.
+  exclusive — don't cross them. `/api/templates` and `/api/releases` are the
+  exceptions: both are public and anonymous, because nothing they serve is
+  anyone's private data and the desktop app reads them before it has a session.
+- **Templates:** a template is an ordinary project folder in
+  `packages/templates/catalog/<id>/` — open one with `genmotion .` and edit it
+  like any video. `template.json` carries the catalog metadata and `poster.jpg`
+  the card image (`pnpm --filter @genmotion/templates poster <id>` recaptures
+  it through headless Chromium; `scaffold` rewrites the package.json/tsconfig
+  from `@genmotion/project`'s own renderers). The API bundles a template's
+  scenes on demand — the renderer has no TSX compiler — and **Remix** ships
+  the files to the desktop main process, which scaffolds a fresh project and
+  writes them in. Every path in that bundle is re-validated on the desktop side
+  before it touches disk. The catalog test compiles and smoke-renders every
+  scene, so a template that rots fails CI.
 - **Auth:** better-auth (magic link + Google/GitHub OAuth + organization
   plugin). Every product request is scoped to `organizationId`. The desktop app
   signs in through the device-authorization grant (`/api/auth/device/*`): it
@@ -98,6 +127,17 @@ pnpm db:push                          # sync schema to DEV only
   PostHog key is a write credential handed to every user). It posts to
   `/api/events` and the server forwards; identity comes from the session, never
   the body, and names are prefixed `desktop_` server-side.
+- **The desktop chat agent has a real shell.** Both harnesses' Bash tool is on,
+  with this app's own `ffmpeg` prepended to its `PATH` (`bundledBinDir()` in
+  `apps/desktop/electron/bundled-bin.ts`, wired into `agentEnv()` in
+  `agent/detect.ts`) — for media work `save_asset`/`generate_image`/
+  `generate_voiceover` don't cover. Containment differs sharply by harness:
+  Codex is OS-sandboxed (`workspace-write`, `network_access=false`), so its
+  shell is genuinely contained; Claude Code has no sandbox at all, and its
+  `canUseTool` path check has nothing to inspect on a shell command — a Bash
+  call there is ungoverned by anything this app adds. Accepted deliberately
+  (see the comment above `DISALLOWED_TOOLS` in `agent/tools.ts`), not a gap to
+  quietly close.
 - **Scenes (agent-authored TSX):** may import only `react`, `@genmotion/motion`,
   `gsap`, `lucide-react`. No `Math.random`/`Date.now`/timers/CSS transitions —
   everything is a pure function of the current frame. Inline styles only; never

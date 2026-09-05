@@ -181,6 +181,13 @@ async function turnOptions(
         };
       }
 
+      // Bash has no `file_path`/`path`/`file` input to check — a shell command
+      // is a string, not a declared path — so it falls straight through to the
+      // `allow` at the bottom of this function, ungoverned by anything here.
+      // That is a real gap, accepted deliberately when Bash was allowed back
+      // onto this harness (see the comment above `DISALLOWED_TOOLS`): unlike
+      // Codex, this CLI has no OS-level sandbox, so there is nothing this
+      // callback can do to contain a shell the way it contains a file tool.
       const target = input.file_path ?? input.path ?? input.file;
       if (typeof target === "string" && !isInsideProject(projectDir, target)) {
         // Outside the project, a read-only tool can still go ahead if the user

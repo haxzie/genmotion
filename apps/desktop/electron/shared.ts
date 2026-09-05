@@ -85,6 +85,19 @@ export interface CreateProjectInput {
   height?: number;
 }
 
+/** Which template to copy, and what to call the copy. */
+export interface RemixTemplateInput {
+  templateId: string;
+  /** Defaults to the template's own name. */
+  name?: string;
+}
+
+/** Where a project folder lives, and what a new one starts as. */
+export interface DesktopPaths {
+  /** The folder the app allocates projects in. */
+  projectsRoot: string;
+}
+
 /**
  * What a launch carried with it.
  *
@@ -165,6 +178,15 @@ export interface DesktopApi {
   readonly apiUrl: string;
   /** Creates in the app's own projects folder — the user is never asked where. */
   createProject(input: CreateProjectInput): Promise<DesktopProject>;
+  /**
+   * Copy a template into a brand-new project and open it.
+   *
+   * The bundle is fetched, checked, and written in the main process: the
+   * renderer evaluates agent-authored scene code and has no business reaching
+   * the filesystem. Returns the same value `createProject` does, so the
+   * renderer navigates identically after either.
+   */
+  remixTemplate(input: RemixTemplateInput): Promise<DesktopProject>;
   openProject(dir: string): Promise<DesktopProject>;
   closeProject(): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
@@ -204,6 +226,10 @@ export interface DesktopApi {
     status(): Promise<CliStatus>;
     install(): Promise<CliStatus>;
   };
+  /** Folders the app owns, for the Settings screen. */
+  paths(): Promise<DesktopPaths>;
+  /** Open a folder in the OS file manager. */
+  revealPath(target: string): Promise<void>;
   /** Signing in against the hosted API; see electron/auth.ts. */
   auth: DesktopAuthApi;
   /**
@@ -218,6 +244,9 @@ export interface DesktopApi {
 
 export const IPC = {
   createProject: "project:create",
+  remixTemplate: "template:remix",
+  paths: "app:paths",
+  revealPath: "shell:reveal",
   openProject: "project:open",
   closeProject: "project:close",
   recentProjects: "project:recent",

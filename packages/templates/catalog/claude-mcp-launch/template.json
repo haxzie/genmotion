@@ -1,0 +1,14 @@
+{
+  "id": "claude-mcp-launch",
+  "title": "Claude MCP Launch",
+  "description": "A product launch for an MCP integration: ask Claude a question, watch it call out to a real data source, connect a shelf of tools and agents, then land on the product mark.",
+  "metaTitle": "Product Launch Video Template — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "order": 6,
+  "sampleAt": 0.8,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/claude-mcp-launch/video.mp4"
+}

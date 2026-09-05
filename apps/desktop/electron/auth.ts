@@ -26,6 +26,21 @@ import { track } from "./analytics";
  */
 
 const API_URL = (process.env.GM_CLOUD_API_URL ?? "https://api.genmotion.dev").replace(/\/$/, "");
+
+/**
+ * A request to the hosted API with no credential attached.
+ *
+ * For the public routes only — templates, releases. Deliberately not
+ * `desktopAuth.request()`: that answers 401 with no body when nothing is
+ * stored, so a signed-out user browsing the template gallery would get an
+ * error rather than the gallery. It also parses JSON, which is wrong for a
+ * poster. Node's `fetch` rather than Electron's for the same reason the rest
+ * of this file uses it — no cookie jar, no Origin header.
+ */
+export function cloudFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${API_URL}${path}`, init);
+}
+
 /** The hosted web app. Also where account pages (billing, settings) live. */
 export const WEB_URL = (process.env.GM_CLOUD_WEB_URL ?? "https://genmotion.dev").replace(
   /\/$/,

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import { HeroComposer } from "@/components/composer";
+import { api as loopback } from "@/lib/api";
 import { cx } from "@/components/ui";
 import { HarnessPicker } from "../harness-picker";
 import { FolderAccess } from "../folder-access";
 import { api, type RecentProject } from "../api";
-import { AccountMenu } from "../components/account-menu";
-import { UpdateModal } from "../components/update-modal";
 import { hasUpdate, useUpdate } from "../lib/use-update";
-import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
+import type { UpdateState } from "../../electron/shared";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
 const enter = {
@@ -167,25 +167,26 @@ function DeleteButton({
 }
 
 /**
- * The start screen, mirroring the web app's dashboard: the same drifting hue
- * blobs, the same composer, the same project cards.
+ * The Create tab: drifting hue blobs, the composer, and the projects list.
  *
  * Creating a project never asks where to put it — a prompt is enough. The app
  * allocates a folder, opens the editor, and the chat panel sends that first
  * message itself (it already looks for `gm-initial-prompt-<id>`).
+ *
+ * The window chrome — drag strip, account menu, update pill — belongs to
+ * `HomeShell` now, since Templates and Settings need the same and only one of
+ * them can own it.
  */
 export function Home({
   busy,
   onOpen,
   onCreate,
-  user,
-  organization,
+  onOpenUpdate,
 }: {
   busy: boolean;
   onOpen: (dir: string) => void;
   onCreate: (input: { prompt: string; width: number; height: number }) => void;
-  user: AuthUser;
-  organization: AuthOrganization | null;
+  onOpenUpdate: () => void;
 }) {
   const [projects, setProjects] = useState<RecentProject[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -197,7 +198,14 @@ export function Home({
   const cursorRef = useRef(0);
   const busyRef = useRef(false);
   const update = useUpdate();
-  const [updateOpen, setUpdateOpen] = useState(false);
+
+  // Seeds the composer's aspect picker. Its own query rather than a prop, so
+  // changing the default in Settings is reflected the next time this mounts
+  // without the shell having to carry the value through.
+  const { data: defaults } = useQuery({
+    queryKey: ["preferences"],
+    queryFn: () => loopback<{ width: number; height: number; fps: number }>("/api/preferences"),
+  });
 
   const loadMore = useCallback(async () => {
     if (busyRef.current) return;
@@ -259,41 +267,12 @@ export function Home({
   const rows = projects?.slice(GRID_COUNT) ?? [];
 
   return (
-    <div className="h-screen overflow-y-auto bg-background">
-      {updateOpen && <UpdateModal state={update} onClose={() => setUpdateOpen(false)} />}
-      <div className="titlebar-drag fixed inset-x-0 top-0 z-50 h-9" />
-      {/* Above the drag strip, and outside it — a draggable region swallows
-          clicks, so the button has to sit on top rather than inside. */}
-      <div className="no-drag fixed right-4 top-4 z-[60] flex items-center gap-2">
-        {hasUpdate(update) && (
-          <button
-            type="button"
-            onClick={() => setUpdateOpen(true)}
-            title={
-              update.status === "ready"
-                ? "Update downloaded — restart to install"
-                : `GenMotion ${"version" in update ? update.version : ""} is available`
-            }
-            className={cx(
-              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.786rem] font-medium",
-              "transition-colors duration-150",
-              update.status === "ready"
-                ? "border-green/40 bg-green-muted text-green hover:border-green"
-                : "border-accent/40 bg-accent-muted text-accent hover:border-accent",
-            )}
-          >
-            <span className="size-1.5 rounded-full bg-current" />
-            {update.status === "downloading" ? `${update.percent}%` : "Update"}
-          </button>
-        )}
-        <AccountMenu user={user} organization={organization} />
-      </div>
-
+    <div className="h-full overflow-y-auto">
       {/* The section deliberately does NOT clip: the composer's menus open
           downward from here, and an `overflow-hidden` on the section cut them
           off with no way to scroll. Only the blob layer needs clipping, so
           that is where it lives now. */}
-      <section className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 pt-9">
+      <section className="relative flex min-h-[68vh] flex-col items-center justify-center px-6 pt-6">
         {/* Lightweight animated hue blobs — large circles half-hidden below the
             section, heavily blurred, drifting slowly. */}
         <motion.div
@@ -317,7 +296,7 @@ export function Home({
           />
         </motion.div>
         {/* Fades the hue down into the background toward the projects card. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface" />
 
         <motion.div
           className="relative mb-8 text-center"
@@ -339,6 +318,7 @@ export function Home({
           <HeroComposer
             onSubmit={(prompt, dims) => onCreate({ prompt, ...dims })}
             pending={busy}
+            defaultAspect={defaults}
             // The first prompt goes straight to the agent, so which agent that
             // is belongs here rather than only inside the editor — and so does
             // what it can see, which is where a `genmotion .` launch shows up.
@@ -349,7 +329,7 @@ export function Home({
               </>
             }
           />
-          <UpdateHint state={update} onOpen={() => setUpdateOpen(true)} />
+          <UpdateHint state={update} onOpen={onOpenUpdate} />
         </motion.div>
       </section>
 

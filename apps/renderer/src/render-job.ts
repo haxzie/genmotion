@@ -14,8 +14,8 @@ import {
   type RenderJobPayload,
   type ThumbnailJobPayload,
 } from "@genmotion/shared";
+import { watermarkHtml } from "@genmotion/player/watermark";
 import { buildRenderHostBundle } from "./build-host";
-import { watermarkHtml } from "./watermark";
 
 const require = createRequire(import.meta.url);
 const FFMPEG_PATH = require("ffmpeg-static") as string;

@@ -34,6 +34,25 @@ export interface PaywallBody {
  */
 export const PAYWALL_STATUS = 402;
 
+/**
+ * The trial-ended rejection, exactly as the hosted API answers it.
+ *
+ * A pure constant rather than something computed per-caller: the desktop app
+ * builds this same body itself (it already holds `trial`/`subscription` from
+ * `/api/billing/limits`, and has no reason to round-trip the API a second time
+ * just to be told what it already knows) when it refuses a local export, and
+ * the two must say the same thing.
+ */
+export function trialEndedPaywall(): PaywallBody {
+  return {
+    error: "Your free trial has ended.",
+    paywall: {
+      reason: "trial",
+      message: "Your 7-day trial has ended. Upgrade to Pro to keep exporting — $19 a month.",
+    },
+  };
+}
+
 /** Narrow an arbitrary parsed response body to a paywall rejection. */
 export function isPaywallBody(body: unknown): body is PaywallBody {
   if (!body || typeof body !== "object") return false;

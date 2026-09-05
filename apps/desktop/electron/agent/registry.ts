@@ -1,9 +1,7 @@
-import path from "node:path";
-import fs from "node:fs/promises";
-import { app } from "electron";
 import { detectAgents } from "./detect";
 import { listModels, type AgentModel } from "./models";
 import type { AgentAvailability } from "./types";
+import { readSettings, update, type Settings } from "../settings-store";
 
 export type HarnessId = "claude-code" | "codex";
 
@@ -23,33 +21,7 @@ export interface HarnessState {
   models: AgentModel[];
 }
 
-/**
- * What settings.json holds.
- *
- * The model is kept per harness rather than as one value: switching to Codex
- * and back should not lose which Claude model was chosen, and the two have no
- * ids in common anyway.
- */
-interface Settings {
-  harness?: unknown;
-  models?: Record<string, string>;
-}
-
 const DEFAULT: HarnessId = "claude-code";
-
-function settingsFile(): string {
-  return path.join(app.getPath("userData"), "settings.json");
-}
-
-async function readSettings(): Promise<Settings> {
-  const raw = await fs.readFile(settingsFile(), "utf8").catch(() => null);
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as Settings;
-  } catch {
-    return {};
-  }
-}
 
 function storedHarness(settings: Settings): HarnessId | null {
   return settings.harness === "claude-code" || settings.harness === "codex"
@@ -110,14 +82,11 @@ export async function setHarness(id: HarnessId, model?: string | null): Promise<
     throw new Error(`${option.label} does not offer a model called ${model}.`);
   }
 
-  const settings = await readSettings();
-  const models = { ...settings.models };
-  if (model) models[id] = model;
-  await fs.writeFile(
-    settingsFile(),
-    `${JSON.stringify({ ...settings, harness: id, models }, null, 2)}\n`,
-    "utf8",
-  );
+  await update((settings) => {
+    const models = { ...settings.models };
+    if (model) models[id] = model;
+    return { ...settings, harness: id, models };
+  });
   return { ...state, active: id, activeModel: model ?? state.activeModel };
 }
 

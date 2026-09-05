@@ -22,6 +22,7 @@ const apiUrl =
 const api: DesktopApi = {
   apiUrl,
   createProject: (input) => ipcRenderer.invoke(IPC.createProject, input),
+  remixTemplate: (input) => ipcRenderer.invoke(IPC.remixTemplate, input),
   openProject: (dir) => ipcRenderer.invoke(IPC.openProject, dir),
   closeProject: () => ipcRenderer.invoke(IPC.closeProject),
   recentProjects: (range) => ipcRenderer.invoke(IPC.recentProjects, range),
@@ -35,6 +36,8 @@ const api: DesktopApi = {
   },
   deleteProject: (dir: string) => ipcRenderer.invoke(IPC.deleteProject, dir),
   openWeb: (path: string) => ipcRenderer.invoke(IPC.openWeb, path),
+  paths: () => ipcRenderer.invoke(IPC.paths),
+  revealPath: (target: string) => ipcRenderer.invoke(IPC.revealPath, target),
   launchContext: () => ipcRenderer.invoke(IPC.launchContext),
   onLaunchContext: (listener) => {
     const handler = (_event: unknown, context: LaunchContext) => listener(context);

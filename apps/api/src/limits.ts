@@ -1,4 +1,4 @@
-import { isTrialActive, trialDaysLeft, type PaywallBody } from "@genmotion/shared";
+import { isTrialActive, trialDaysLeft, trialEndedPaywall, type PaywallBody } from "@genmotion/shared";
 import { eq, db, schema } from "@genmotion/db";
 import { getEntitlements } from "./entitlements";
 
@@ -55,14 +55,7 @@ export async function checkPaywall(
   const trial = await trialState(organizationId);
   if (trial.active) return null;
 
-  return {
-    error: "Your free trial has ended.",
-    paywall: {
-      reason: "trial",
-      message:
-        "Your 7-day trial has ended. Upgrade to Pro to keep exporting — $19 a month.",
-    },
-  };
+  return trialEndedPaywall();
 }
 
 /**

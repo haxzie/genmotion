@@ -1,0 +1,124 @@
+{
+  "name": "WhatsApp chat video",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "scenes": [
+    {
+      "file": "scenes/01-whatsapp-chat.tsx",
+      "durationInFrames": 460,
+      "name": "WhatsApp chat"
+    }
+  ],
+  "audio": [
+    {
+      "id": "0bef8782-d974-437f-9c72-6a0f0e374b40",
+      "file": "assets/the_mountain-funky-508017.mp3",
+      "track": 2,
+      "startFrame": 0,
+      "durationInFrames": 460,
+      "startFrom": 0,
+      "volume": 0.13596748316709556,
+      "fadeInFrames": 18,
+      "fadeOutFrames": 45,
+      "muted": false,
+      "name": "the_mountain-funky-508017"
+    },
+    {
+      "id": "sfx-recv-1",
+      "file": "assets/wa-received.mp3",
+      "track": 1,
+      "startFrame": 48,
+      "durationInFrames": 16,
+      "startFrom": 0,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-recv-2",
+      "file": "assets/wa-received.mp3",
+      "track": 1,
+      "startFrame": 94,
+      "durationInFrames": 16,
+      "startFrom": 0,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-recv-3",
+      "file": "assets/wa-received.mp3",
+      "track": 1,
+      "startFrame": 142,
+      "durationInFrames": 16,
+      "startFrom": 0,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-sent-1",
+      "file": "assets/wa-sent.mp3",
+      "track": 0,
+      "startFrame": 182,
+      "durationInFrames": 10,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-sent-2",
+      "file": "assets/wa-sent.mp3",
+      "track": 0,
+      "startFrame": 236,
+      "durationInFrames": 10,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-recv-4",
+      "file": "assets/wa-received.mp3",
+      "track": 1,
+      "startFrame": 294,
+      "durationInFrames": 16,
+      "startFrom": 0,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-sent-3",
+      "file": "assets/wa-sent.mp3",
+      "track": 0,
+      "startFrame": 350,
+      "durationInFrames": 10,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-recv-5",
+      "file": "assets/wa-received.mp3",
+      "track": 1,
+      "startFrame": 402,
+      "durationInFrames": 16,
+      "startFrom": 0,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "Lovable funding announcement",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-idea.tsx",
+      "durationInFrames": 120,
+      "name": "Idea to app"
+    },
+    {
+      "file": "scenes/02-millions.tsx",
+      "durationInFrames": 150,
+      "name": "Millions of builders"
+    },
+    {
+      "file": "scenes/03-scale.tsx",
+      "durationInFrames": 120,
+      "name": "Scale"
+    },
+    {
+      "file": "scenes/04-series-c.tsx",
+      "durationInFrames": 140,
+      "name": "$400M Series C"
+    },
+    {
+      "file": "scenes/05-valuation.tsx",
+      "durationInFrames": 120,
+      "name": "Valuation & investors"
+    },
+    {
+      "file": "scenes/06-lovable.tsx",
+      "durationInFrames": 110,
+      "name": "Lovable"
+    }
+  ],
+  "audio": []
+}

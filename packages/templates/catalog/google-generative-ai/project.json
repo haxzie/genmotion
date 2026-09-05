@@ -1,0 +1,29 @@
+{
+  "name": "Google Generative AI Launch Video",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "durationInFrames": 290,
+      "name": "Intro"
+    },
+    {
+      "file": "scenes/02-generative.tsx",
+      "durationInFrames": 170,
+      "name": "Generative"
+    },
+    {
+      "file": "scenes/03-omni.tsx",
+      "durationInFrames": 140,
+      "name": "Omni"
+    },
+    {
+      "file": "scenes/04-lockup.tsx",
+      "durationInFrames": 130,
+      "name": "Lockup"
+    }
+  ],
+  "audio": []
+}

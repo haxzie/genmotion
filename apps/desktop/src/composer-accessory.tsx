@@ -12,6 +12,6 @@ import { FolderAccess } from "./folder-access";
 registerComposerAccessory(() => (
   <>
     <HarnessPicker placement="up" />
-    <FolderAccess />
+    <FolderAccess hideWhenEmpty />
   </>
 ));

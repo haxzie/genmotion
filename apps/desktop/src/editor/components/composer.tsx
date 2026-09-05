@@ -140,18 +140,29 @@ export const USE_CASES = [
  * composer has. The hosted app has nothing to put there; the desktop app puts
  * the agent-harness picker in it, so the choice is available before a project
  * exists rather than only once the editor is open.
+ *
+ * `defaultAspect` is what Settings stores. It seeds the picker rather than
+ * controlling it: someone who changes the ratio for one video has changed it
+ * for that video, not for every video after it.
  */
 export function HeroComposer({
   onSubmit,
   pending,
   accessory,
+  defaultAspect,
 }: {
   onSubmit: (prompt: string, dims: { width: number; height: number }) => void;
   pending: boolean;
   accessory?: ReactNode;
+  defaultAspect?: { width: number; height: number };
 }) {
   const [input, setInput] = useState("");
-  const [aspect, setAspect] = useState<AspectRatio>(ASPECT_RATIOS[0]);
+  const [aspect, setAspect] = useState<AspectRatio>(
+    () =>
+      ASPECT_RATIOS.find(
+        (r) => r.width === defaultAspect?.width && r.height === defaultAspect?.height,
+      ) ?? ASPECT_RATIOS[0],
+  );
   const placeholder = useTypewriter(USE_CASES);
 
   function submit() {

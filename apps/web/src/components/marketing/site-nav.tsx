@@ -10,6 +10,7 @@ import { ColorIcon } from "@/components/marketing/icons";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 
 const LINKS = [
+  { label: "Templates", href: "/templates" },
   { label: "Showcase", href: "/showcase" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },

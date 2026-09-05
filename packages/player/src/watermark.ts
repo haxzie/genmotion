@@ -1,23 +1,22 @@
-import { readFileSync } from "node:fs";
+import { WATERMARK_SVG_SOURCE } from "./watermark-svg.generated";
 
 /**
  * The Free-plan export badge — the GenMotion lockup burned into the
  * bottom-right of every rendered frame.
  *
  * It is drawn as a DOM layer on the render page rather than as an ffmpeg
- * overlay filter, so it costs no extra encode pass and lands identically in
- * MP4, WebM and GIF (all three come from the same screenshot loop). The badge
- * is a fixed-position sibling of the composition root, so scene code can
- * neither cover it nor be reflowed by it.
+ * overlay filter, so it costs no extra encode pass and lands identically
+ * whatever the render pipeline: `apps/renderer`'s hosted Playwright page,
+ * `apps/desktop`'s offscreen `BrowserWindow`, MP4/WebM/GIF, all of it — every
+ * one screenshots the same DOM. The badge is a fixed-position sibling of the
+ * composition root, so scene code can neither cover it nor be reflowed by it.
  *
- * The artwork is inlined from `assets/genmotion-watermark.svg` (not fetched
- * from the web app) because remote render sandboxes are credential-less and
- * network-restricted — an export must never lose its attribution because an
- * asset request was blocked. To restyle the badge, replace that file: it is
- * read as-is, only its ids are namespaced and its box is resized.
+ * The artwork is an embedded string (`watermark-svg.generated.ts`, built by
+ * `scripts/generate-watermark.mjs`) rather than a file read at runtime: one of
+ * this package's two consumers bundles into a single file with esbuild, where
+ * an `import.meta.url`-relative path resolves against the *bundle's* location,
+ * not this module's — a problem a plain string constant doesn't have.
  */
-
-const SVG_PATH = new URL("./assets/genmotion-watermark.svg", import.meta.url);
 
 /** Lockup width, in px, for a composition whose shorter edge is 1080. */
 const BASE_WIDTH = 300;
@@ -27,24 +26,20 @@ interface Lockup {
   width: number;
   height: number;
 }
+
 let cached: Lockup | null = null;
 
 /**
- * Load and prepare the artwork, memoized after the first call.
+ * Prepare the artwork, memoized after the first call.
  *
- * Read lazily rather than at module scope so a missing or unreadable asset —
- * a sandbox image built before this file landed, say — fails the one render
- * that wanted a badge instead of taking the whole worker down at import and
- * with it every paid render too.
- *
- * The asset is a Figma export whose ids (`mask0_854_166`, …) end up in the same
- * document as arbitrary user scene code. Prefixing every id and every `url(#…)`
- * reference makes a collision — which would silently break the alpha mask and
- * blank the badge — impossible.
+ * The asset is a Figma export whose ids (`mask0_854_166`, …) end up in the
+ * same document as arbitrary user scene code. Prefixing every id and every
+ * `url(#…)` reference makes a collision — which would silently break the alpha
+ * mask and blank the badge — impossible.
  */
 function lockup(): Lockup {
   if (cached) return cached;
-  const source = readFileSync(SVG_PATH, "utf8").trim();
+  const source = WATERMARK_SVG_SOURCE;
   const viewBox = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(source);
   cached = {
     svg: source
@@ -56,8 +51,7 @@ function lockup(): Lockup {
   return cached;
 }
 
-const clamp = (n: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, n));
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 /**
  * Badge scale for a composition. Driven by the *shorter* edge so a 1080×1920
@@ -76,10 +70,7 @@ function lockupSvg(width: number): string {
     tag
       .replace(/\swidth="[^"]*"/, "")
       .replace(/\sheight="[^"]*"/, "")
-      .replace(
-        "<svg",
-        `<svg width="${width}" height="${height}" style="display:block"`,
-      ),
+      .replace("<svg", `<svg width="${width}" height="${height}" style="display:block"`),
   );
 }
 
@@ -111,8 +102,6 @@ export function watermarkHtml(width: number, height: number): string {
   ].join(";");
 
   return (
-    `<div id="gm-watermark" style="${container}">` +
-    lockupSvg(Math.round(BASE_WIDTH * s)) +
-    `</div>`
+    `<div id="gm-watermark" style="${container}">` + lockupSvg(Math.round(BASE_WIDTH * s)) + `</div>`
   );
 }

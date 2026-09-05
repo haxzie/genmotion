@@ -580,6 +580,18 @@ registerToolPresentation({
     },
   },
 
+  mcp__genmotion__capture_frames: {
+    labels: { active: "Looking at the video", done: "Looked at the video" },
+    icon: ImageGlyph,
+    subject: (part) => shortPath(str(part, "scene")) ?? str(part, "at"),
+    // The frame itself isn't here — it goes to the model and is stripped before
+    // the transcript, so what's left is where it landed and which moment it was.
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
   mcp__genmotion__project_overview: {
     labels: { active: "Reading the timeline", done: "Read the timeline" },
     icon: ListGlyph,

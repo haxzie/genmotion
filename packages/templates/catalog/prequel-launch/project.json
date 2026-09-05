@@ -1,0 +1,213 @@
+{
+  "name": "Prequel Launch",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "durationInFrames": 66,
+      "name": "Introducing Prequel"
+    },
+    {
+      "file": "scenes/02-dock-click.tsx",
+      "durationInFrames": 150,
+      "name": "Dock click"
+    },
+    {
+      "file": "scenes/03-recording-dock.tsx",
+      "durationInFrames": 310,
+      "name": "Recording dock"
+    },
+    {
+      "file": "scenes/04-editor.tsx",
+      "durationInFrames": 287,
+      "name": "Editor"
+    },
+    {
+      "file": "scenes/05-perspective.tsx",
+      "durationInFrames": 190,
+      "name": "Perspective"
+    },
+    {
+      "file": "scenes/06-published.tsx",
+      "durationInFrames": 220,
+      "name": "Published"
+    },
+    {
+      "file": "scenes/07-signoff.tsx",
+      "durationInFrames": 195,
+      "name": "Sign-off"
+    }
+  ],
+  "audio": [
+    {
+      "id": "bed",
+      "file": "assets/soundsurfer-product-video-590799.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1419,
+      "startFrom": 0,
+      "volume": 0.1444862967862946,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "041e26a8-a6ee-47bf-97d6-0ef1f46ea8c6",
+      "file": "assets/ElevenLabs_2026-08-27T14_45_54_Sarah - Mature_ Reassuring_ Confident_pre_sp90_s50_sb75_se21_b_m2.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 138,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T14_45_54_Sarah - Mature, Reassuring, Confident_pre_sp90_s50_sb75_se21_b_m2"
+    },
+    {
+      "id": "75534de4-5cca-494c-95d2-2ca2c8548634",
+      "file": "assets/ElevenLabs_2026-08-27T14_48_04_Sarah - Mature_ Reassuring_ Confident_pre_sp102_s50_sb75_se21_b_m2.mp3",
+      "track": 1,
+      "startFrame": 194,
+      "durationInFrames": 261,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T14_48_04_Sarah - Mature, Reassuring, Confident_pre_sp102_s50_sb75_se21_b_m2"
+    },
+    {
+      "id": "6c959c1b-2821-4df3-b3c4-153f970bb6e9",
+      "file": "assets/mouseclick.mp3",
+      "track": 2,
+      "startFrame": 165,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "mouseclick"
+    },
+    {
+      "id": "e9320fe4-79e4-4b7c-b481-5e086b9ebdf6",
+      "file": "assets/dragon-studio-wow-423653.mp3",
+      "track": 2,
+      "startFrame": 454,
+      "durationInFrames": 90,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "dragon-studio-wow-423653"
+    },
+    {
+      "id": "edd87a84-8406-4e18-86cc-0d9073f1c748",
+      "file": "assets/ElevenLabs_2026-08-27T14_55_00_Sarah - Mature_ Reassuring_ Confident_pre_sp102_s50_sb75_se21_b_m2.mp3",
+      "track": 1,
+      "startFrame": 565,
+      "durationInFrames": 259,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T14_55_00_Sarah - Mature, Reassuring, Confident_pre_sp102_s50_sb75_se21_b_m2"
+    },
+    {
+      "id": "193990e4-ee80-42e9-a733-b2689dd1ba56",
+      "file": "assets/ElevenLabs_2026-08-27T14_56_17_Sarah - Mature_ Reassuring_ Confident_pre_sp102_s50_sb75_se21_b_m2.mp3",
+      "track": 1,
+      "startFrame": 834,
+      "durationInFrames": 120,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T14_56_17_Sarah - Mature, Reassuring, Confident_pre_sp102_s50_sb75_se21_b_m2"
+    },
+    {
+      "id": "ae760db1-caf1-42de-b5ae-abbd89d50bb4",
+      "file": "assets/ElevenLabs_2026-08-27T14_58_59_Sarah - Mature_ Reassuring_ Confident_pre_sp102_s50_sb75_se50_b_m2.mp3",
+      "track": 1,
+      "startFrame": 959,
+      "durationInFrames": 193,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T14_58_59_Sarah - Mature, Reassuring, Confident_pre_sp102_s50_sb75_se50_b_m2"
+    },
+    {
+      "id": "c95f60c0-573d-4bd1-9181-184de03ae0ca",
+      "file": "assets/mouseclick.mp3",
+      "track": 2,
+      "startFrame": 752,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "mouseclick"
+    },
+    {
+      "id": "0c7062f4-619c-4f5c-9d8a-fccf9055ef89",
+      "file": "assets/mouseclick.mp3",
+      "track": 2,
+      "startFrame": 978,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "mouseclick"
+    },
+    {
+      "id": "ce21fd99-f726-412d-864e-179da47c3244",
+      "file": "assets/mouseclick.mp3",
+      "track": 2,
+      "startFrame": 893,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "mouseclick"
+    },
+    {
+      "id": "4ca12f59-c23c-4343-b4fe-b431b609e7f5",
+      "file": "assets/mouseclick.mp3",
+      "track": 2,
+      "startFrame": 1196,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "mouseclick"
+    },
+    {
+      "id": "924913af-a83b-4dc7-a1b4-f5714dcfb399",
+      "file": "assets/ElevenLabs_2026-08-27T15_01_40_Sarah - Mature_ Reassuring_ Confident_pre_sp102_s50_sb75_se50_b_m2.mp3",
+      "track": 1,
+      "startFrame": 1217,
+      "durationInFrames": 173,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "ElevenLabs_2026-08-27T15_01_40_Sarah - Mature, Reassuring, Confident_pre_sp102_s50_sb75_se50_b_m2"
+    }
+  ]
+}

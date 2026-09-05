@@ -1,9 +1,12 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { z } from "zod";
-import { readManifest, validateSceneFile } from "@genmotion/project";
+import { readManifest } from "@genmotion/project";
+import { validateSceneFile } from "@genmotion/project/validate";
 import { PAYWALL_STATUS } from "@genmotion/shared";
 import { desktopAuth } from "../auth";
+import { captureFrame } from "../export/capture";
+import { resolveFrameTarget } from "../export/frame-target";
 import type { ProjectSession } from "../project-session";
 import type { AgentSdkModule } from "./load-sdk";
 
@@ -23,7 +26,18 @@ function failure(body: string): ToolResult {
 /** The MCP content shape both transports hand back to their harness. */
 export function toMcpContent(result: ToolResult) {
   return {
-    content: [{ type: "text" as const, text: result.text }],
+    content: [
+      { type: "text" as const, text: result.text },
+      ...(result.image
+        ? [
+            {
+              type: "image" as const,
+              data: result.image.base64,
+              mimeType: result.image.mimeType,
+            },
+          ]
+        : []),
+    ],
     ...(result.isError ? { isError: true } : {}),
   };
 }
@@ -32,6 +46,14 @@ export function toMcpContent(result: ToolResult) {
 export interface ToolResult {
   text: string;
   isError?: boolean;
+  /**
+   * A picture to put in front of the model alongside the text.
+   *
+   * The text still has to stand on its own: not every harness forwards image
+   * content into the model's context, so anything it needs — a file path, a
+   * frame number — belongs in `text` as well.
+   */
+  image?: { base64: string; mimeType: string };
 }
 
 /**
@@ -95,6 +117,78 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       } catch (err) {
         return failure(`INVALID\n\n${err instanceof Error ? err.message : String(err)}`);
       }
+    },
+  },
+
+  {
+    name: "capture_frames",
+    description:
+      "Look at the video. Renders one frame offscreen through the same path the export uses and hands it back as an image, so you can see what a scene actually looks like rather than imagining it. `validate_scene` proves a scene builds; this shows what it renders. Use it after any visual change — it is how you catch text overflowing its box, a dark card on a dark background, or an element that never appears.",
+    shape: {
+      scene: z
+        .string()
+        .optional()
+        .describe(
+          'Project-relative scene file, e.g. "scenes/02-hero.tsx". Omit to address the whole video.',
+        ),
+      at: z
+        .string()
+        .optional()
+        .describe(
+          'When to sample: seconds ("1.5s") or a frame number ("45"), measured from the start of `scene` when given, otherwise from the start of the video. Omit for 60% in — past the intro, before the outro.',
+        ),
+    },
+    readOnly: true,
+    async run(session, args) {
+      const { scene, at } = args as unknown as { scene?: string; at?: string };
+
+      let manifest;
+      try {
+        manifest = await readManifest(session.dir);
+      } catch (err) {
+        return failure(
+          `FAILED — project.json is invalid: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+
+      const resolved = resolveFrameTarget(manifest, { scene, at });
+      if (!resolved.ok) return failure(`FAILED — ${resolved.error}`);
+      const { frame, scene: owner, localFrame, totalFrames } = resolved.target;
+
+      // Naming a scene mounts only that scene. A project mid-edit usually has
+      // something else broken, and a scene you haven't touched failing to
+      // build is no reason to refuse you a look at the one you just fixed.
+      // Asking by timecode is different: the timeline is the question, so the
+      // whole thing has to compile for the answer to mean anything.
+      const single = scene !== undefined;
+      let image;
+      try {
+        image = await captureFrame(session, {
+          manifest,
+          scenes: single ? [owner] : manifest.scenes,
+          frame: single ? localFrame : frame,
+        });
+      } catch (err) {
+        return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      // `capturePage` returns the frame at the display's pixel ratio, which is
+      // twice the composition on a Retina screen. A vision model resolves
+      // nothing like that, and the full-size original would be megabytes of
+      // base64 — so it is scaled down once, for both the file and the model.
+      const jpeg = image
+        .resize({ width: Math.min(manifest.width, SNAPSHOT_WIDTH), quality: "good" })
+        .toJPEG(SNAPSHOT_QUALITY);
+      const saved = await writeSnapshot(session.dir, owner.file, frame, jpeg);
+
+      const { fps } = manifest;
+      return {
+        text: [
+          `${owner.file} — frame ${localFrame} of ${owner.durationInFrames} (${seconds(localFrame, fps)} into the scene, ${seconds(frame, fps)} of ${seconds(totalFrames, fps)} on the timeline) · ${manifest.width}×${manifest.height}`,
+          `Saved to ${saved}`,
+        ].join("\n"),
+        image: { base64: jpeg.toString("base64"), mimeType: "image/jpeg" },
+      };
     },
   },
 
@@ -242,6 +336,76 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
 ];
 
 /**
+ * How wide a captured frame is kept.
+ *
+ * A vision model resolves nothing close to 1920, let alone the 2× a Retina
+ * `capturePage` returns, and every extra pixel is base64 in the model's
+ * context. 1024 keeps text in a lower-third legible at roughly a tenth of the
+ * bytes.
+ */
+const SNAPSHOT_WIDTH = 1024;
+const SNAPSHOT_QUALITY = 80;
+
+/**
+ * Where captured frames land.
+ *
+ * Under `.genmotion/cache/`, which the file watcher ignores and the scaffolded
+ * `.gitignore` already excludes — so a capture never looks like a project edit
+ * and never ends up committed.
+ */
+const SNAPSHOT_DIR = [".genmotion", "cache", "snapshots"];
+
+/** Frames kept on disk before the oldest are dropped. */
+const SNAPSHOT_KEEP = 20;
+
+/** Save a captured frame and return its project-relative path. */
+async function writeSnapshot(
+  projectDir: string,
+  sceneFile: string,
+  frame: number,
+  jpeg: Buffer,
+): Promise<string> {
+  const dir = path.join(projectDir, ...SNAPSHOT_DIR);
+  await fs.mkdir(dir, { recursive: true });
+
+  const stem = (sceneFile.split("/").pop() ?? sceneFile)
+    .replace(/\.[jt]sx?$/, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-");
+  // Zero-padded so the folder sorts the way the timeline runs.
+  const name = `${stem}-f${String(frame).padStart(4, "0")}.jpg`;
+  await fs.writeFile(path.join(dir, name), jpeg);
+
+  // Best-effort: a folder that failed to prune is not a reason to fail a
+  // capture the model is waiting on.
+  await prune(dir).catch(() => {});
+
+  return [...SNAPSHOT_DIR, name].join("/");
+}
+
+async function prune(dir: string): Promise<void> {
+  const files = await fs.readdir(dir);
+  if (files.length <= SNAPSHOT_KEEP) return;
+  const stamped = await Promise.all(
+    files.map(async (file) => ({
+      file,
+      at: await fs
+        .stat(path.join(dir, file))
+        .then((s) => s.mtimeMs)
+        .catch(() => 0),
+    })),
+  );
+  stamped.sort((a, b) => b.at - a.at);
+  await Promise.all(
+    stamped.slice(SNAPSHOT_KEEP).map(({ file }) => fs.rm(path.join(dir, file), { force: true })),
+  );
+}
+
+/** A frame count as the seconds a person reads off the timeline. */
+function seconds(frame: number, fps: number): string {
+  return `${(frame / fps).toFixed(1)}s`;
+}
+
+/**
  * Ask the hosted API for generated media and land it in `assets/`.
  *
  * The providers are ours, not the user's — we hold the ElevenLabs and Gemini
@@ -357,12 +521,14 @@ export const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "NotebookRead"])
  * in the prompt.
  */
 export const DISALLOWED_TOOLS = [
-  // Shell. `add_package` and its approval flow don't exist yet, so there is no
-  // sanctioned way to install anything, and an agent with a shell would simply
-  // route around that.
-  "Bash",
-  "BashOutput",
-  "KillShell",
+  // Bash is deliberately NOT on this list. It used to be: a shell reaches
+  // past every containment rule below, since `canUseTool`'s path check has
+  // nothing to inspect on a command string, and `agentEnv()` hands it the
+  // user's real environment — network, other directories, credentials, all of
+  // it. It is on so the agent can reach ffmpeg (see `bundledBinDir()` in
+  // `agent/detect.ts`) for media work no scene-authoring tool covers. There is
+  // still no `add_package` approval flow, so treat anything it installs as
+  // unreviewed.
   // Delegation. A subagent inherits none of the containment below, and one
   // `Workflow` call can fan out to hundreds of agents on the user's plan. The
   // subagent tool has been called both `Task` and `Agent`; name both.

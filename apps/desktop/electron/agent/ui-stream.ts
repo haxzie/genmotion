@@ -1,5 +1,21 @@
+import { randomUUID } from "node:crypto";
 import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
 import type { AgentBackend, AgentEvent } from "./types";
+
+/** How often a checkpoint is written while only plain text is streaming in.
+ *  Tool events bypass this entirely — those are rare and worth writing
+ *  immediately, unlike a token arriving many times a second. */
+const CHECKPOINT_MIN_INTERVAL_MS = 400;
+
+interface CheckpointToolPart {
+  type: string;
+  toolCallId: string;
+  state: "input-available" | "output-available" | "output-error";
+  input: unknown;
+  output?: unknown;
+  errorText?: string;
+}
+type CheckpointPart = { type: "text" | "reasoning"; text: string } | CheckpointToolPart;
 
 /**
  * Adapts an `AgentEvent` stream into the AI SDK's UI message stream — the exact
@@ -18,6 +34,13 @@ export function runTurnAsUiStream(input: {
     /** The turn's last context reading, or null if it never reported one. */
     context: { usedTokens: number; maxTokens: number } | null;
   }) => void | Promise<void>;
+  /**
+   * A running snapshot of the assistant message, written as it streams —
+   * see `ProjectSession.writeCheckpoint`'s own comment for why. Optional so
+   * a caller with nowhere durable to put one (a test harness, say) can skip
+   * it; the turn behaves identically either way.
+   */
+  onCheckpoint?: (message: UIMessage) => void;
 }): Response {
   let sessionId: string | null = input.resumeSessionId;
   // Kept so the reading survives the turn: the ring needs a number when the
@@ -49,6 +72,31 @@ export function runTurnAsUiStream(input: {
         }
       };
 
+      // A hand-rolled mirror of the exact same message the chunks above are
+      // building — kept in parallel, rather than read back off the AI SDK's
+      // own accumulator, because that one is only ever handed to `onFinish`,
+      // at the very end. This is the one that can be checkpointed *during*
+      // the turn, which is the entire point.
+      const checkpointId = randomUUID();
+      const parts: CheckpointPart[] = [];
+      let openText: { type: "text"; text: string } | null = null;
+      let openReasoning: { type: "reasoning"; text: string } | null = null;
+      const toolPartIndex = new Map<string, number>();
+      let lastCheckpointAt = 0;
+
+      const checkpoint = (force: boolean) => {
+        if (!input.onCheckpoint) return;
+        const now = Date.now();
+        if (!force && now - lastCheckpointAt < CHECKPOINT_MIN_INTERVAL_MS) return;
+        lastCheckpointAt = now;
+        input.onCheckpoint({
+          id: checkpointId,
+          role: "assistant",
+          parts: parts as UIMessage["parts"],
+          metadata: { interrupted: true },
+        } as UIMessage);
+      };
+
       for await (const event of input.backend.startTurn({
         projectDir: input.projectDir,
         text: input.text,
@@ -63,6 +111,12 @@ export function runTurnAsUiStream(input: {
               writer.write({ type: "text-start", id: textId });
             }
             writer.write({ type: "text-delta", id: textId, delta: event.text });
+            if (!openText) {
+              openText = { type: "text", text: "" };
+              parts.push(openText);
+            }
+            openText.text += event.text;
+            checkpoint(false);
             break;
           }
 
@@ -72,6 +126,12 @@ export function runTurnAsUiStream(input: {
               writer.write({ type: "reasoning-start", id: reasoningId });
             }
             writer.write({ type: "reasoning-delta", id: reasoningId, delta: event.text });
+            if (!openReasoning) {
+              openReasoning = { type: "reasoning", text: "" };
+              parts.push(openReasoning);
+            }
+            openReasoning.text += event.text;
+            checkpoint(false);
             break;
           }
 
@@ -80,29 +140,54 @@ export function runTurnAsUiStream(input: {
             // leaving it open would append later text to the wrong bubble.
             closeText();
             closeReasoning();
+            openText = null;
+            openReasoning = null;
             writer.write({
               type: "tool-input-available",
               toolCallId: event.id,
               toolName: event.name,
               input: event.input,
             });
+            toolPartIndex.set(event.id, parts.length);
+            parts.push({
+              type: `tool-${event.name}`,
+              toolCallId: event.id,
+              state: "input-available",
+              input: event.input,
+            });
+            // Tool traces are exactly what's worth never losing — this is the
+            // one case checkpointed unconditionally, throttle or not.
+            checkpoint(true);
             break;
           }
 
           case "tool-end": {
+            const output = withoutImages(event.output);
             if (event.isError) {
               writer.write({
                 type: "tool-output-error",
                 toolCallId: event.id,
-                errorText: stringify(event.output),
+                errorText: stringify(output),
               });
             } else {
               writer.write({
                 type: "tool-output-available",
                 toolCallId: event.id,
-                output: event.output,
+                output,
               });
             }
+            const index = toolPartIndex.get(event.id);
+            const existing = index !== undefined ? parts[index] : undefined;
+            if (existing && "toolCallId" in existing) {
+              if (event.isError) {
+                existing.state = "output-error";
+                existing.errorText = stringify(output);
+              } else {
+                existing.state = "output-available";
+                existing.output = output;
+              }
+            }
+            checkpoint(true);
             break;
           }
 
@@ -129,6 +214,14 @@ export function runTurnAsUiStream(input: {
           case "error": {
             closeText();
             closeReasoning();
+            // One last unthrottled write before this throws: whatever text
+            // hadn't cleared the 400ms window yet is still worth having on
+            // disk. (This throw itself is not the interruption case the
+            // checkpoint exists for — the AI SDK still runs onFinish/flush
+            // after it, so `chatTurn`'s own onFinish clears the checkpoint
+            // right back out a moment later. This is only insurance for the
+            // process dying before that gets the chance to run.)
+            checkpoint(true);
             throw new Error(event.message);
           }
 
@@ -150,6 +243,24 @@ export function runTurnAsUiStream(input: {
   });
 
   return createUIMessageStreamResponse({ stream });
+}
+
+/**
+ * Tool output as the chat should keep it.
+ *
+ * A tool can hand the model a picture — `capture_frames` does — and that block
+ * is base64. It belongs in the model's context and nowhere else: this output is
+ * written into every checkpoint and appended to `chat.jsonl`, so keeping it
+ * would put a hundred kilobytes per call on disk and replay it on every reopen.
+ * The text block alongside it names the file the frame was saved to, which is
+ * what the card has to show anyway.
+ */
+function withoutImages(output: unknown): unknown {
+  if (!Array.isArray(output)) return output;
+  return output.filter(
+    (block) =>
+      !(block && typeof block === "object" && (block as { type?: unknown }).type === "image"),
+  );
 }
 
 function stringify(value: unknown): string {

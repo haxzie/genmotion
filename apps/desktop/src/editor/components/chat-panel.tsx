@@ -799,6 +799,26 @@ function ChatPanelInner({
   // landed (failed/interrupted) — offer to retry it.
   const canRetry = !busy && lastMessage?.role === "user";
 
+  /**
+   * `regenerate()` drops the trailing assistant message from `messages` the
+   * moment it's called — right, for a normal retry, since the point is to
+   * replace it. But when that message is what an interrupted turn already
+   * streamed in, dropping it is dropping real, already-produced work (tool
+   * calls included) with nothing yet on disk to fall back on: `chat.jsonl`
+   * only gets written once a turn reaches its own end, and `error` here is
+   * precisely the case where it never did. So: save it first.
+   */
+  function handleRetry() {
+    if (lastMessage?.role === "assistant") {
+      void api(`/api/chat/${projectId}/save-partial`, { json: { message: lastMessage } }).catch(
+        () => {
+          // Best-effort — regenerating is still the right next step either way.
+        },
+      );
+    }
+    regenerate();
+  }
+
   // Rotate a randomized working phrase while the loader is up (unless a concrete
   // live status like scene-writing progress is streaming).
   const [workingPhrase, setWorkingPhrase] = useState(WORKING_PHRASES[0]!);
@@ -1266,7 +1286,7 @@ function ChatPanelInner({
                 </p>
                 <button
                   type="button"
-                  onClick={() => regenerate()}
+                  onClick={handleRetry}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-danger/40 px-2.5 py-1 text-[0.786rem] font-medium text-danger transition-colors hover:bg-danger/15"
                 >
                   <RetryIcon className="size-3.5" />
@@ -1278,7 +1298,7 @@ function ChatPanelInner({
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => regenerate()}
+                  onClick={handleRetry}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-2.5 py-1 text-[0.786rem] text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
                 >
                   <RetryIcon className="size-3.5" />
@@ -1450,11 +1470,9 @@ function ChatPanelInner({
             <span className="min-w-0 flex-1 truncate text-center text-[0.786rem] text-text-tertiary">
               {selectedSceneIds.length > 0
                 ? `${selectedSceneIds.length} scene${selectedSceneIds.length > 1 ? "s" : ""} in context`
-                : assets && assets.length > 0
-                  ? `${assets.length} asset${assets.length > 1 ? "s" : ""} available`
-                  : busy
-                    ? "⏎ to queue"
-                    : "⏎ to send"}
+                : busy
+                  ? "⏎ to queue"
+                  : "⏎ to send"}
             </span>
             {messages.length > 0 && (
               <CapacityRing usage={contextUsage} />

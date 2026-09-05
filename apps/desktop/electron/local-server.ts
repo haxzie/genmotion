@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { randomUUID, randomBytes } from "node:crypto";
 import type { UIMessage } from "ai";
-import type { AssetData } from "@genmotion/shared";
+import { PAYWALL_STATUS, type AssetData } from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
 import type { ProjectSession } from "./project-session";
 // Static, unlike the other agent imports: this is a two-line registry with no
@@ -146,6 +146,13 @@ export async function startLocalServer(
       return;
     }
 
+    // Machine-wide preferences, like the harness above — the start screen
+    // offers them before any folder exists.
+    if (rest[0] === "preferences") {
+      send(res, 200, await preferenceRoutes(method, req));
+      return;
+    }
+
     // Entitlement is a property of the account, not of a folder, so this sits
     // above the "no project is open" check with the harness route.
     if (rest[0] === "billing" && rest[1] === "limits") {
@@ -164,6 +171,14 @@ export async function startLocalServer(
         return;
       }
       send(res, 200, result);
+      return;
+    }
+
+    // Also above the gate: the gallery lives on the start screen, and a
+    // template is browsed and remixed before any folder is open. Public
+    // upstream, so no token is attached and it works signed-out too.
+    if (rest[0] === "templates") {
+      await templateProxy(rest.slice(1), url, req, res);
       return;
     }
 
@@ -205,6 +220,15 @@ export async function startLocalServer(
       // An answer to an `AskUserQuestion` card. It arrives on its own request
       // because the turn that asked is still streaming on another one.
       if (method === "POST" && tail.at(-1) === "answer") return answerQuestionRoute(req);
+      // Called by the composer right before it retries a failed turn: `regenerate()`
+      // drops the errored assistant bubble from the live view the moment it's
+      // called, so whatever had already streamed in has to be on disk *before*
+      // that happens or it's gone from this session for good. Idempotent by the
+      // message's own id, same as the normal end-of-turn write — it either lands
+      // ahead of that write or is a no-op once it does.
+      if (method === "POST" && tail.at(-1) === "save-partial") {
+        return savePartialRoute(session, req);
+      }
       // The transcript lives in the project folder, so a conversation travels
       // with it — a page at a time, newest first, so opening a long-running
       // project costs the same as opening a new one.
@@ -241,6 +265,46 @@ export async function startLocalServer(
     // wrongly offer an upgrade to someone who already pays.
     if (!res) return { status: 503, body: { error: "Can't reach GenMotion." } };
     return { status: res.status, body: res.body };
+  }
+
+  /**
+   * The template catalog, proxied from the hosted API.
+   *
+   * The renderer cannot ask for this itself: its CSP allows `connect-src` from
+   * its own origin only, so every poster, bundle and remix has to arrive
+   * through here. That is also what keeps template audio playable — `media-src`
+   * has no `https:` in it, and a same-origin URL needs none.
+   */
+  async function templateProxy(
+    rest: string[],
+    url: URL,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): Promise<void> {
+    const { cloudFetch } = await import("./auth");
+    const tail = rest.length ? `/${rest.map(encodeURIComponent).join("/")}` : "";
+    const upstream = await cloudFetch(`/api/templates${tail}${url.search}`, {
+      headers: { accept: req.headers.accept ?? "*/*" },
+      signal: AbortSignal.timeout(30_000),
+    }).catch(() => null);
+
+    if (!upstream) {
+      send(res, 503, { error: "Can't reach GenMotion." });
+      return;
+    }
+    await pipeUpstream(upstream, res);
+  }
+
+  async function preferenceRoutes(
+    method: string,
+    req: http.IncomingMessage,
+  ): Promise<unknown> {
+    const { projectDefaults, setProjectDefaults } = await import("./preferences");
+    if (method === "POST") {
+      const body = await readJson<{ width?: number; height?: number; fps?: number }>(req);
+      return setProjectDefaults(body);
+    }
+    return projectDefaults();
   }
 
   async function agentRoutes(method: string, req: http.IncomingMessage): Promise<unknown> {
@@ -553,6 +617,7 @@ export async function startLocalServer(
     const { cancelExport, latestExport, onExportChange, startExport } = await import(
       "./export/service"
     );
+    const { ExportPaywallError } = await import("./export/entitlement");
 
     if (target === "latest" && method === "GET") {
       const job = latestExport();
@@ -562,7 +627,20 @@ export async function startLocalServer(
 
     if (!target && method === "POST") {
       const body = await readJson<{ format?: "mp4" | "webm" | "gif" }>(req);
-      return startExport(session, { format: body.format ?? "mp4" });
+      // Same status and body the hosted `POST /api/exports` answers with —
+      // the export button's `handleLimitError` already recognises this shape
+      // and opens the upgrade modal without knowing which backend refused it.
+      try {
+        return await startExport(session, { format: body.format ?? "mp4" });
+      } catch (err) {
+        if (err instanceof ExportPaywallError) {
+          return new Response(JSON.stringify(err.body), {
+            status: PAYWALL_STATUS,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        throw err;
+      }
     }
 
     if (target && action === "cancel" && method === "POST") {
@@ -715,10 +793,21 @@ async function chatTurn(
     text,
     resumeSessionId: await session.readAgentSession(backend.id),
     signal: controller.signal,
+    // Best-effort: a checkpoint write failing must never take the turn down
+    // with it, so errors are swallowed here rather than in ui-stream.ts,
+    // which has no io of its own to know how to handle one failing.
+    onCheckpoint: (message) => {
+      void session.writeCheckpoint(message).catch(() => {});
+    },
     onFinish: async ({ message, sessionId, context }) => {
       if (inFlightTurn === controller) inFlightTurn = null;
       if (message) await session.appendTranscript(message);
       await session.writeAgentSession(sessionId, backend.id, context);
+      // The turn reached a real end — successful or not, the AI SDK still
+      // ran flush() to get here — so whatever the checkpoint was standing in
+      // for is now either persisted above or was never worth persisting
+      // (an empty turn). Either way it's stale.
+      await session.clearCheckpoint();
     },
   });
 }
@@ -736,6 +825,18 @@ async function answerQuestionRoute(req: http.IncomingMessage): Promise<Response>
   }
   const delivered = answerQuestion(body.toolCallId, body.answers);
   return jsonResponse(delivered ? 200 : 410, { delivered });
+}
+
+async function savePartialRoute(
+  session: ProjectSession,
+  req: http.IncomingMessage,
+): Promise<Response> {
+  const body = await readJson<{ message?: UIMessage }>(req);
+  if (!body.message || body.message.role !== "assistant" || typeof body.message.id !== "string") {
+    return jsonResponse(400, { error: "Expected an assistant message with an id" });
+  }
+  await session.appendTranscript(body.message);
+  return jsonResponse(200, { saved: true });
 }
 
 /** Flatten a UIMessage's text parts — the harness takes a plain prompt. */
@@ -884,6 +985,45 @@ function send(res: http.ServerResponse, status: number, body: unknown): void {
     "content-length": Buffer.byteLength(payload),
   });
   res.end(payload);
+}
+
+/**
+ * Headers worth carrying from an upstream response.
+ *
+ * An allowlist rather than a copy, because `content-encoding` must NOT be
+ * forwarded: `fetch` has already decompressed the body by the time we see it,
+ * so echoing "gzip" hands Chromium plain bytes it will try to inflate — a
+ * poster that fails to decode with nothing in the console to say why.
+ * `content-length` goes for the same reason; Node re-chunks the body itself.
+ */
+const FORWARDED_HEADERS = [
+  "content-type",
+  "cache-control",
+  "etag",
+  "last-modified",
+  "accept-ranges",
+  "content-range",
+];
+
+/** Pipe an upstream response through, keeping only headers that still apply. */
+async function pipeUpstream(source: Response, res: http.ServerResponse): Promise<void> {
+  const headers: Record<string, string> = {};
+  for (const name of FORWARDED_HEADERS) {
+    const value = source.headers.get(name);
+    if (value !== null) headers[name] = value;
+  }
+  res.writeHead(source.status, headers);
+  if (!source.body) {
+    res.end();
+    return;
+  }
+  const reader = source.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    res.write(Buffer.from(value));
+  }
+  res.end();
 }
 
 async function pipeResponse(source: Response, res: http.ServerResponse): Promise<void> {

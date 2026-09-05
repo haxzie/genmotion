@@ -55,7 +55,21 @@ function FolderIcon({ className }: { className?: string }) {
  * change anything in it, and a user who assumes otherwise shares less than
  * they safely could.
  */
-export function FolderAccess({ placement = "up" }: { placement?: "up" | "down" }) {
+export function FolderAccess({
+  placement = "up",
+  hideWhenEmpty = false,
+}: {
+  placement?: "up" | "down";
+  /**
+   * Render nothing until a folder is actually shared. The editor's composer
+   * uses this — the `+` menu offers the same "Share a folder…" action (see
+   * `useShareFolder`'s own doc comment), so this pill would otherwise sit in
+   * the action row as a second, redundant way to start the same thing. Once
+   * one exists, the pill is the only place to see or revoke it, so it comes
+   * back.
+   */
+  hideWhenEmpty?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -97,6 +111,11 @@ export function FolderAccess({ placement = "up" }: { placement?: "up" | "down" }
   const roots = data?.roots ?? [];
   const pending = data?.pending ?? false;
   const error = share.error ?? revoke.error;
+
+  // Kept open through a revoke that empties the list — closing out from under
+  // an open dropdown the moment it clears the last folder would read as a
+  // glitch, not as the control tidying itself away.
+  if (hideWhenEmpty && roots.length === 0 && !open) return null;
 
   return (
     <div ref={ref} className="relative shrink-0">

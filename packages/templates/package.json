@@ -1,0 +1,40 @@
+{
+  "name": "@genmotion/templates",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "poster": "tsx scripts/poster.mjs",
+    "render-video": "tsx --env-file=../../.env scripts/render-video.mjs",
+    "scaffold": "tsx scripts/scaffold.mjs"
+  },
+  "dependencies": {
+    "@genmotion/project": "workspace:*",
+    "@genmotion/shared": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@genmotion/ai": "workspace:*",
+    "@genmotion/compiler": "workspace:*",
+    "@genmotion/config": "workspace:*",
+    "@genmotion/player": "workspace:*",
+    "@genmotion/storage": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "0.28.0",
+    "ffmpeg-static": "^5.3.0",
+    "playwright": "^1.60.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

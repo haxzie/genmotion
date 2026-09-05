@@ -1,0 +1,194 @@
+{
+  "name": "Polls in Messages",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "scenes": [
+    {
+      "file": "scenes/01-groupchat.tsx",
+      "durationInFrames": 170,
+      "name": "Group chat"
+    },
+    {
+      "file": "scenes/02-poll.tsx",
+      "durationInFrames": 285,
+      "name": "The poll"
+    },
+    {
+      "file": "scenes/03-payoff.tsx",
+      "durationInFrames": 150,
+      "name": "Payoff"
+    }
+  ],
+  "audio": [
+    {
+      "id": "ping-m1",
+      "file": "assets/ping.mp3",
+      "track": 0,
+      "startFrame": 16,
+      "durationInFrames": 22,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m2",
+      "file": "assets/ping.mp3",
+      "track": 1,
+      "startFrame": 40,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m3",
+      "file": "assets/ping.mp3",
+      "track": 0,
+      "startFrame": 62,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m4",
+      "file": "assets/ping.mp3",
+      "track": 1,
+      "startFrame": 84,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "sent-m5",
+      "file": "assets/sfx-sent-message.mp3",
+      "track": 2,
+      "startFrame": 104,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.9,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 4,
+      "muted": false
+    },
+    {
+      "id": "ping-m6",
+      "file": "assets/ping.mp3",
+      "track": 1,
+      "startFrame": 178,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m7",
+      "file": "assets/ping.mp3",
+      "track": 0,
+      "startFrame": 200,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m8",
+      "file": "assets/ping.mp3",
+      "track": 1,
+      "startFrame": 220,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m9",
+      "file": "assets/ping.mp3",
+      "track": 0,
+      "startFrame": 240,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-poll",
+      "file": "assets/ping.mp3",
+      "track": 1,
+      "startFrame": 280,
+      "durationInFrames": 30,
+      "startFrom": 0.97,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "ping-m12",
+      "file": "assets/ping.mp3",
+      "track": 0,
+      "startFrame": 388,
+      "durationInFrames": 26,
+      "startFrom": 0.97,
+      "volume": 0.85,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    },
+    {
+      "id": "sent-m13",
+      "file": "assets/sfx-sent-message.mp3",
+      "track": 2,
+      "startFrame": 414,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.9,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 4,
+      "muted": false
+    },
+    {
+      "id": "tap-poll-vote",
+      "file": "assets/sfx-tap-pop.mp3",
+      "track": 2,
+      "startFrame": 328,
+      "durationInFrames": 10,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 2,
+      "muted": false
+    },
+    {
+      "id": "bgm",
+      "file": "assets/bgm-blues-guitar-loop.mp3",
+      "track": 3,
+      "startFrame": 0,
+      "durationInFrames": 607,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "Blues guitar loop"
+    }
+  ]
+}

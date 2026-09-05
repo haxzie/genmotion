@@ -6,10 +6,12 @@ import {
   createSceneBundler,
   readManifest,
   sceneNameFromFile,
-  validateSceneFile,
   type ProjectManifest,
   type SceneBundler,
 } from "@genmotion/project";
+// Its own subpath: validation renders scenes with react-dom/server, which the
+// package's other consumers (the API) have no reason to install.
+import { validateSceneFile } from "@genmotion/project/validate";
 import type { DesktopProject, SceneBundle } from "./shared";
 
 export interface AgentContextUsage {
@@ -139,6 +141,12 @@ export class ProjectSession {
 
   static async open(dir: string, assetKey: string): Promise<ProjectSession> {
     const session = new ProjectSession(path.resolve(dir), assetKey);
+    // Before anything else touches the transcript: a checkpoint left behind
+    // means the last turn never reached its own onFinish — the process died,
+    // was force-quit, or an update installed out from under it. Nothing else
+    // in this process instance could have written one since, so it is safe to
+    // assume, not race against, that it is truly orphaned.
+    await session.recoverInterruptedTurn();
     await session.startWatching();
     return session;
   }
@@ -225,6 +233,82 @@ export class ProjectSession {
     const dir = path.join(this.dir, ".genmotion");
     await fs.mkdir(dir, { recursive: true });
     await fs.appendFile(path.join(dir, "chat.jsonl"), `${JSON.stringify(message)}\n`, "utf8");
+  }
+
+  /**
+   * A running snapshot of the assistant message a turn is still building —
+   * every text/tool part streamed so far, overwritten in place rather than
+   * appended. `chat.jsonl` only gets the finished turn, in one shot, once
+   * `onFinish` runs; if the process dies before that (a crash, a force-quit,
+   * an update installing mid-turn) nothing would otherwise exist on disk for
+   * everything that had already streamed to the screen. This is what makes
+   * that recoverable instead: whatever was last written here is exactly what
+   * `recoverInterruptedTurn` finalizes into the transcript on the next open.
+   *
+   * A write failing here must never take the turn down with it — callers
+   * treat this as best-effort and swallow its errors.
+   *
+   * Calls are chained onto `checkpointWrite` rather than let run concurrently:
+   * a tool event bypasses the caller's own throttle, so one can start before
+   * a text-delta's write has finished, and two writers racing on the same
+   * fixed tmp path is exactly the kind of thing that corrupts one.
+   */
+  private checkpointWrite: Promise<void> = Promise.resolve();
+
+  writeCheckpoint(message: unknown): Promise<void> {
+    const next = this.checkpointWrite.then(async () => {
+      const dir = path.join(this.dir, ".genmotion");
+      await fs.mkdir(dir, { recursive: true });
+      const file = path.join(dir, "chat.checkpoint.json");
+      // Write-then-rename so a write that dies mid-flight (the same kind of
+      // interruption this whole mechanism exists to survive) never leaves a
+      // half-written, unparseable checkpoint behind.
+      const tmp = `${file}.tmp`;
+      await fs.writeFile(tmp, JSON.stringify(message), "utf8");
+      await fs.rename(tmp, file);
+    });
+    // A failed write must not wedge the chain — the next call still has to
+    // run — but it should still reject for *this* caller.
+    this.checkpointWrite = next.catch(() => {});
+    return next;
+  }
+
+  /**
+   * Called once a turn reaches `onFinish` — the real transcript entry has
+   * landed, so the checkpoint that was standing in for it is stale.
+   *
+   * Chained onto the same queue as `writeCheckpoint`: `onFinish` firing right
+   * as one more event's write is still in flight must not let that write land
+   * *after* the clear and leave a stale checkpoint behind for next time.
+   */
+  clearCheckpoint(): Promise<void> {
+    const next = this.checkpointWrite.then(() =>
+      fs.rm(path.join(this.dir, ".genmotion", "chat.checkpoint.json"), { force: true }),
+    );
+    this.checkpointWrite = next.catch(() => {});
+    return next;
+  }
+
+  /**
+   * Finalize an orphaned checkpoint into the transcript, if one exists.
+   *
+   * Called once, when the session opens — see the comment at `open()`. A
+   * malformed checkpoint (the tmp-then-rename swap above should prevent this,
+   * but disks are disks) is discarded rather than left to fail every future
+   * open the same way.
+   */
+  private async recoverInterruptedTurn(): Promise<void> {
+    const file = path.join(this.dir, ".genmotion", "chat.checkpoint.json");
+    const raw = await fs.readFile(file, "utf8").catch(() => null);
+    if (raw === null) return;
+    try {
+      const message = JSON.parse(raw);
+      await this.appendTranscript(message);
+    } catch {
+      // Unreadable — nothing to recover, but still clear it below so it
+      // doesn't sit there forever.
+    }
+    await fs.rm(file, { force: true });
   }
 
   private seenTranscriptIds: Set<string> | null = null;

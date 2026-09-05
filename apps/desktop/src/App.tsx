@@ -4,7 +4,7 @@ import { projectQueryKey } from "@/hooks/use-project";
 import { UpgradeProvider } from "@/components/upgrade-modal";
 import { registerNavigate } from "./shims/next-link";
 import { api, type DesktopProject } from "./api";
-import { Home } from "./screens/Home";
+import { HomeShell } from "./screens/HomeShell";
 import { EditorScreen } from "./screens/EditorScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { useAuth } from "./lib/use-auth";
@@ -155,10 +155,11 @@ function Shell() {
   return project ? (
     <EditorScreen project={project} onClose={close} />
   ) : (
-    <Home
+    <HomeShell
       busy={busy}
       onOpen={open}
       onCreate={create}
+      onAdopt={adopt}
       user={auth.user}
       organization={auth.organization}
     />

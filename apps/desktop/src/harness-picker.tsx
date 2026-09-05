@@ -1,35 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 import { cx, Spinner } from "@/components/ui";
-
-type HarnessId = "claude-code" | "codex";
-
-interface HarnessOption {
-  id: HarnessId;
-  label: string;
-  installed: boolean;
-  version: string | null;
-  supported: boolean;
-  unavailableReason: string | null;
-}
-
-interface AgentModel {
-  id: string;
-  label: string;
-  version: string | null;
-  detail: string;
-  harness: HarnessId;
-}
-
-interface HarnessState {
-  active: HarnessId;
-  activeModel: string | null;
-  options: HarnessOption[];
-  models: AgentModel[];
-}
-
-const harnessKey = ["harness"] as const;
+import { useHarness, type AgentModel, type HarnessId } from "./lib/use-harness";
 
 /**
  * Claude Code's mark, from simple-icons (CC0). Inlined rather than pulling in
@@ -96,22 +67,7 @@ function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
 export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
-
-  const { data } = useQuery({
-    queryKey: harnessKey,
-    queryFn: () => api<HarnessState>("/api/agents"),
-    staleTime: 30_000,
-  });
-
-  const choose = useMutation({
-    mutationFn: (model: AgentModel) =>
-      api<HarnessState>("/api/agents", { json: { id: model.harness, model: model.id } }),
-    onSuccess: (next) => {
-      queryClient.setQueryData(harnessKey, next);
-      setOpen(false);
-    },
-  });
+  const { state: data, choose } = useHarness();
 
   // Close on an outside click or Escape, like the other menus in the editor.
   useEffect(() => {
@@ -136,7 +92,11 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
   );
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    // `min-w-0`, not `shrink-0`: this sits in a row that also holds Folders,
+    // the plugin menu, the context ring and Send, and the row has nowhere
+    // near enough width for all of it at the composer's narrowest — this is
+    // the one item whose label is genuinely optional, so it gives first.
+    <div ref={ref} className="relative min-w-0 shrink">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -146,7 +106,7 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
             : (active?.version ?? "Choose the model")
         }
         className={cx(
-          "flex h-8 items-center gap-1.5 rounded-full pl-2 pr-2 text-[0.786rem] transition-colors",
+          "flex h-8 min-w-0 items-center gap-1.5 rounded-full pl-2 pr-2 text-[0.786rem] transition-colors",
           "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
           open && "bg-surface-hover text-text-primary",
         )}
@@ -154,9 +114,12 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
         {data ? (
           <HarnessIcon id={data.active} className="size-[0.95rem] shrink-0" />
         ) : (
-          <Spinner className="size-3" />
+          <Spinner className="size-3 shrink-0" />
         )}
-        <span className="max-w-[130px] truncate">
+        {/* No fixed cap — truncates to whatever the row actually has left,
+            down to nothing, rather than holding a fixed width the row may
+            not have room for. */}
+        <span className="min-w-0 flex-1 truncate">
           {activeModel?.label ?? active?.label ?? "Agent"}
         </span>
         <svg viewBox="0 0 16 16" className={cx("size-3 shrink-0 opacity-60 transition-transform", open && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -202,7 +165,9 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
                       // for and the harness name has earned instead.
                       title={model.detail}
                       disabled={locked || choose.isPending}
-                      onClick={() => !isActive && choose.mutate(model)}
+                      onClick={() =>
+                        !isActive && choose.mutate(model, { onSuccess: () => setOpen(false) })
+                      }
                       className={cx(
                         "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors",
                         locked ? "cursor-default opacity-55" : "hover:bg-surface-hover",

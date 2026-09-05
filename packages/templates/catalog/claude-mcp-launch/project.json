@@ -1,0 +1,48 @@
+{
+  "name": "Claude MCP launch",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "durationInFrames": 122,
+      "name": "Introducing Sequel"
+    },
+    {
+      "file": "scenes/02-ask.tsx",
+      "durationInFrames": 240,
+      "name": "Ask Claude"
+    },
+    {
+      "file": "scenes/03-thinking.tsx",
+      "durationInFrames": 220,
+      "name": "Calling Sequel"
+    },
+    {
+      "file": "scenes/04-connect.tsx",
+      "durationInFrames": 284,
+      "name": "Connect your agents"
+    },
+    {
+      "file": "scenes/05-agents.tsx",
+      "durationInFrames": 142,
+      "name": "sequel.sh"
+    }
+  ],
+  "audio": [
+    {
+      "id": "bgm",
+      "file": "assets/bgm-lounge-jazz.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1008,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "Lounge jazz"
+    }
+  ]
+}

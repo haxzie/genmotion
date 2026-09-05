@@ -60,7 +60,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     features: [
       `${TRIAL_DAYS} days of the full studio`,
       "Unlimited projects and exports",
-      "No watermark",
       "Bring your own coding agent",
     ],
   },
@@ -74,6 +73,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     features: [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
+      "Exports with no GenMotion watermark",
       "Voiceover and image generation in chat",
       "Invite teammates at $19 each",
       "Priority support",

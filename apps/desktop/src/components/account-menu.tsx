@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/ui";
 import { api } from "../api";
-import type { AuthUser, AuthOrganization, CliStatus } from "../../electron/shared";
+import { CommandLineHint, useCommandLine } from "./command-line";
+import type { AuthUser, AuthOrganization } from "../../electron/shared";
 
 /**
- * The signed-in account, top right of the start screen.
+ * The signed-in account, at the foot of the sidebar.
  *
  * Billing and account settings deliberately leave the app: there is no
  * checkout in here, and those pages need the browser's session anyway.
@@ -47,52 +48,16 @@ function Item({
   );
 }
 
-/**
- * The `genmotion` command, offered where the rest of the app's own settings
- * are. Installed state is shown rather than hidden: a command that is already
- * there is the answer to "did that work?", and a command left over from an app
- * that has since moved is worth saying out loud, since it opens nothing.
- */
+/** The `genmotion` command as a menu row. See `command-line.tsx`. */
 function CommandLineItem() {
-  const [cli, setCli] = useState<CliStatus | null>(null);
-  const [installing, setInstalling] = useState(false);
-
-  useEffect(() => {
-    void api.cli.status().then(setCli);
-  }, []);
-
+  const { cli, installing, ready, install, label } = useCommandLine();
   if (!cli?.supported) return null;
-
-  const ready = cli.installed && cli.current;
-
   return (
     <>
-      <Item
-        disabled={ready || installing}
-        onClick={() => {
-          if (ready || installing) return;
-          setInstalling(true);
-          void api.cli
-            .install()
-            .then(setCli)
-            .finally(() => setInstalling(false));
-        }}
-      >
-        {installing
-          ? "Installing…"
-          : ready
-            ? "Command line tool installed"
-            : cli.installed
-              ? "Update the ‘genmotion’ command"
-              : "Install the ‘genmotion’ command"}
+      <Item disabled={ready || installing} onClick={install}>
+        {label}
       </Item>
-      {cli.error ? (
-        <p className="px-2 pb-1 text-[0.786rem] leading-snug text-warning">{cli.error}</p>
-      ) : ready ? (
-        <p className="px-2 pb-1 text-[0.786rem] leading-snug text-text-tertiary">
-          Run <code>genmotion .</code> in a folder to open the app with it shared.
-        </p>
-      ) : null}
+      <CommandLineHint cli={cli} ready={ready} className="px-2 pb-1" />
     </>
   );
 }
@@ -100,9 +65,12 @@ function CommandLineItem() {
 export function AccountMenu({
   user,
   organization,
+  placement = "down",
 }: {
   user: AuthUser;
   organization: AuthOrganization | null;
+  /** "up" for the sidebar footer, where there is no room below the avatar. */
+  placement?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
   const [failedImage, setFailedImage] = useState(false);
@@ -163,7 +131,11 @@ export function AccountMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-10 w-64 rounded-lg border border-border bg-surface-raised p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+          className={cx(
+            "absolute left-0 z-50 w-64 rounded-lg border border-border bg-surface-raised p-1.5",
+            "shadow-[0_12px_40px_rgba(0,0,0,0.45)]",
+            placement === "up" ? "bottom-10" : "top-10",
+          )}
         >
           <div className="border-b border-border px-2 pb-2.5 pt-1.5">
             <p className="truncate text-text-primary">{user.name || user.email}</p>
