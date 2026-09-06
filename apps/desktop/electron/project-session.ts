@@ -382,12 +382,19 @@ export class ProjectSession {
     const dir = path.join(this.dir, ".genmotion");
     await fs.mkdir(dir, { recursive: true });
     const previous = await this.readSessionFile();
+    const sameHarness = previous?.backend === backend;
     // A reading only carries forward within the same harness: a Codex number
     // says nothing about a Claude Code session, or the other way round.
-    const kept = previous?.backend === backend ? (previous.context ?? null) : null;
+    const kept = sameHarness ? (previous?.context ?? null) : null;
+    // Same for the id. A null here means "this turn never reported one" — a
+    // turn that failed before its `done`, say — not "there is no thread". The
+    // harness's session outlives our turn, so writing the null over a live id
+    // is what strands it: the next turn resumes nothing and the agent starts
+    // over with no memory of the conversation. Keep what we had.
+    const keptId = sessionId ?? (sameHarness ? (previous?.sessionId ?? null) : null);
     await fs.writeFile(
       path.join(dir, "session.json"),
-      `${JSON.stringify({ backend, sessionId, context: context ?? kept }, null, 2)}\n`,
+      `${JSON.stringify({ backend, sessionId: keptId, context: context ?? kept }, null, 2)}\n`,
       "utf8",
     );
   }

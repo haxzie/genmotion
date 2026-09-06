@@ -83,6 +83,12 @@ export function runTurnAsUiStream(input: {
       let openReasoning: { type: "reasoning"; text: string } | null = null;
       const toolPartIndex = new Map<string, number>();
       let lastCheckpointAt = 0;
+      /**
+       * A failure is held rather than thrown where it arrives — see the
+       * `error` case below for why the rest of the stream still has to be
+       * drained first. Rethrown once the backend is genuinely done.
+       */
+      let failure: Error | null = null;
 
       const checkpoint = (force: boolean) => {
         if (!input.onCheckpoint) return;
@@ -214,15 +220,23 @@ export function runTurnAsUiStream(input: {
           case "error": {
             closeText();
             closeReasoning();
-            // One last unthrottled write before this throws: whatever text
-            // hadn't cleared the 400ms window yet is still worth having on
-            // disk. (This throw itself is not the interruption case the
-            // checkpoint exists for — the AI SDK still runs onFinish/flush
-            // after it, so `chatTurn`'s own onFinish clears the checkpoint
-            // right back out a moment later. This is only insurance for the
-            // process dying before that gets the chance to run.)
+            // One last unthrottled write: whatever text hadn't cleared the
+            // 400ms window yet is still worth having on disk. (Not the
+            // interruption case the checkpoint exists for — the AI SDK runs
+            // onFinish/flush after the throw below, so `chatTurn`'s onFinish
+            // clears the checkpoint right back out a moment later. This is
+            // only insurance for the process dying before that can run.)
             checkpoint(true);
-            throw new Error(event.message);
+            // Held, not thrown. A harness that fails mid-turn still has an
+            // epilogue worth consuming: Claude Code yields its `done` — the
+            // only event carrying the session id — *after* the error, so
+            // throwing here unwound the loop before that arrived. The id went
+            // back null, `writeAgentSession` wrote that null over a perfectly
+            // live thread, and the next turn resumed nothing: one dropped
+            // connection and the agent had forgotten the whole conversation.
+            // (Codex yields `done` first, so it never hit this.)
+            failure ??= new Error(event.message);
+            break;
           }
 
           case "done": {
@@ -237,6 +251,9 @@ export function runTurnAsUiStream(input: {
 
       closeText();
       closeReasoning();
+      // Now that `done` has been seen and `sessionId` is whatever the harness
+      // last reported, the turn can fail for real.
+      if (failure) throw failure;
       // The files changed underneath the editor; tell it to refetch.
       writer.write({ type: "data-scenes-updated", data: {}, transient: true });
     },
