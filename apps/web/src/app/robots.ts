@@ -6,10 +6,16 @@ const BASE = SITE_URL;
 // The authenticated app, editor, admin console, and API are never indexable.
 // Everything else (marketing, features, tools, blog, glossary, showcase) is
 // public and we WANT it discovered.
+//
+// Every entry is a PREFIX, not a path segment: `/templates` would disallow
+// `/templates-og.png` as readily as `/templates/<id>`. That is exactly how the
+// public templates gallery — and the social card the gallery's own pages point
+// at — ended up unreachable to Twitterbot while `sitemap.xml` was advertising
+// all sixteen of those URLs. Anything added here needs checking against
+// `public/` as well as the route tree.
 const DISALLOW = [
   "/dashboard",
   "/projects",
-  "/templates",
   "/settings",
   "/onboarding",
   "/p/",
