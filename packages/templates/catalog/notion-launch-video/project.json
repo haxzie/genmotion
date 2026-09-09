@@ -1,0 +1,19 @@
+{
+  "name": "Notion launch video",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-notion-dock.tsx",
+      "durationInFrames": 218,
+      "name": "Notion dock"
+    },
+    {
+      "file": "scenes/02-any-workspace.tsx",
+      "durationInFrames": 140,
+      "name": "Any workspace"
+    }
+  ],
+  "audio": []
+}
