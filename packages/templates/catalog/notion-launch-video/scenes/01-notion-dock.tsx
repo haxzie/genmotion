@@ -22,9 +22,9 @@ import { icon, wallpaper } from "../components/assets";
  *
  * Notion is the constant: it never changes, never drifts, and sits dead
  * centre of frame throughout. Everything else — the desktop and the six
- * icons around it — HARD CUTS to a new set, accelerating from 1.0s to
- * 0.27s. Then a cursor arrives, clicks Notion, it bounces out of the
- * dock, and the whole desktop flashes away to leave the logo on white.
+ * icons around it — HARD CUTS to a new set every 13 frames, a flat
+ * cadence across all twelve. Then a cursor arrives, clicks Notion, it
+ * bounces out of the dock, and the desktop flashes away to white.
  *
  * Layout: the whole dock fits the frame with a slight gap. Seven slots at
  * 224px is the most that fits, and an odd count is what keeps Notion dead
@@ -53,69 +53,85 @@ const MAX_ZOOM = 1.03; // any tighter and the dock loses its gap
 const CENTER = 3;
 const SLOTS = 7; // 3 either side of Notion
 
-const FIRST_BEAT = 30; // 1.0s
-const LAST_BEAT = 8; // 0.27s
+const INTRO = 26; // set 1 holds while the dock assembles (~frame 22)
+const BEAT = 13; // every swap after that, evenly paced — 0.43s
 
-/* Eight workflows. Each set is the six slots around Notion, left to
- * right, paired with a desktop that gives the glass a different colour. */
+/* Twelve workflows. Each set is the six slots around Notion, left to
+ * right, paired with a desktop that gives the glass a different colour.
+ * Ordered so no two consecutive beats share a palette. */
 const SETS = [
   {
-    bg: "landscape-01-landscape-photography-of-mountains",
+    bg: "landscape-01-landscape-photography-of-mountains", // warm gold
     apps: ["gemini", "chatgpt", "claude", "perplexity", "ms-copilot", "grammarly"],
   },
   {
-    bg: "landscape-16-vestrahorn-mountain-reflected-in-the-wet-black",
+    bg: "landscape-16-vestrahorn-mountain-reflected-in-the-wet-black", // purple
     apps: ["procreate", "canva", "figma", "sketch", "pixelmator-pro", "photomator"],
   },
   {
-    bg: "space-05-northern-lights-over-snow-capped-mountian",
+    bg: "space-05-northern-lights-over-snow-capped-mountian", // green night
     apps: ["terminal", "ghostty", "docker", "raycast", "xcode", "warp"],
   },
   {
-    bg: "landscape-22-a-dense-forest-of-golden-larch-trees-below-jag",
+    bg: "landscape-22-a-dense-forest-of-golden-larch-trees-below-jag", // orange
     apps: ["telegram", "discord", "slack", "whatsapp", "zoom", "signal"],
   },
   {
-    bg: "ocean-15-clear-turquoise-water-with-sunlight-patterns-r",
+    bg: "ocean-15-clear-turquoise-water-with-sunlight-patterns-r", // cyan
     apps: ["reeder", "obsidian", "bear", "things-3", "todoist", "drafts"],
   },
   {
-    bg: "cityscape-12-an-aerial-view-of-the-manhattan-skyline-at-nig",
+    bg: "landscape-30-panorama-photography-of-green-hills", // green
+    apps: ["safari", "google-chrome", "firefox", "brave", "opera", "microsoft-edge"],
+  },
+  {
+    bg: "cityscape-12-an-aerial-view-of-the-manhattan-skyline-at-nig", // dark blue
     apps: ["ms-onenote", "ms-excel", "ms-word", "ms-powerpoint", "ms-outlook", "keynote"],
   },
   {
-    bg: "landscape-09-rolling-sand-dunes-in-desert-landscape",
+    bg: "cityscape-05-a-narrow-alleyway-in-tokyo-at-night-with-glowi", // red night
+    apps: ["spotify", "netflix", "youtube", "podcasts", "tv", "shazam"],
+  },
+  {
+    bg: "landscape-09-rolling-sand-dunes-in-desert-landscape", // beige
     apps: ["garageband", "logic-pro", "final-cut-pro", "photos", "music", "imovie"],
   },
   {
-    bg: "architecture-10-architectural-photography-of-glass-building",
+    bg: "ocean-01-bird-s-eye-view-of-sea-waves", // white / teal
+    apps: ["linear", "asana", "trello", "airtable", "miro", "clickup"],
+  },
+  {
+    bg: "architecture-10-architectural-photography-of-glass-building", // pale blue
     apps: ["istat-menus", "1password", "cleanmymac", "dropbox", "bitwarden", "magnet"],
+  },
+  {
+    bg: "landscape-19-a-view-of-a-lake-surrounded-by-trees", // deep blue
+    apps: ["calendar", "mail", "messages", "maps", "weather", "freeform"],
   },
 ];
 
-/* Beat lengths ramp linearly from 1.0s to 0.27s, so the cuts accelerate. */
+/* One establishing hold, then a flat cadence — every swap the same length. */
 const BEATS = (() => {
-  const n = SETS.length;
   const out: { start: number; dur: number }[] = [];
   let acc = 0;
-  for (let i = 0; i < n; i++) {
-    const dur = Math.round(FIRST_BEAT + (LAST_BEAT - FIRST_BEAT) * (i / (n - 1)));
+  for (let i = 0; i < SETS.length; i++) {
+    const dur = i === 0 ? INTRO : BEAT;
     out.push({ start: acc, dur });
     acc += dur;
   }
   return out;
 })();
-const BEATS_END = BEATS[BEATS.length - 1].start + BEATS[BEATS.length - 1].dur; // 152
+const BEATS_END = BEATS[BEATS.length - 1].start + BEATS[BEATS.length - 1].dur; // 169
 
 /* --- the outro: cursor, click, bounce, flash to white --------------- */
-const CURSOR_START = BEATS_END; // 152
-const CURSOR_LAND = CURSOR_START + 16; // 168 — arrives on Notion
-const PRESS_END = CURSOR_LAND + 4; // 172 — press and release
-const BOUNCE_START = PRESS_END; // 172
-const BOUNCE_END = BOUNCE_START + 20; // 192 — one full up-and-down
-const WHITE_START = BOUNCE_END; // 192
-const WHITE_END = WHITE_START + 14; // 206
-const TOTAL = WHITE_END + 12; // 218
+const CURSOR_START = BEATS_END; // 169
+const CURSOR_LAND = CURSOR_START + 16; // 185 — arrives on Notion
+const PRESS_END = CURSOR_LAND + 4; // 189 — press and release
+const BOUNCE_START = PRESS_END; // 189
+const BOUNCE_END = BOUNCE_START + 20; // 209 — one full up-and-down
+const WHITE_START = BOUNCE_END; // 209
+const WHITE_END = WHITE_START + 14; // 223
+const TOTAL = WHITE_END + 12; // 235
 
 const BOUNCE_H = 200; // how far out of the dock the icon jumps
 

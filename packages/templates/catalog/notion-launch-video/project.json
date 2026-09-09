@@ -6,7 +6,7 @@
   "scenes": [
     {
       "file": "scenes/01-notion-dock.tsx",
-      "durationInFrames": 218,
+      "durationInFrames": 235,
       "name": "Notion dock"
     },
     {
