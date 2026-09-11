@@ -6,14 +6,23 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
-import { randomUUID } from "node:crypto";
 import { BrowserWindow, app, dialog, ipcMain, protocol, shell } from "electron";
-import { createProject } from "@genmotion/project";
+import { createProject, readManifest } from "@genmotion/project";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
 import { flushAnalytics, startAnalytics, track } from "./analytics";
-import { ProjectSession } from "./project-session";
-import { captureThumbnail, refreshThumbnail } from "./export/thumbnail";
+import {
+  activeSession,
+  closeAllSessions,
+  closeSession,
+  getSession,
+  onProjectChanged,
+  openSession as registryOpen,
+  sessionByAssetKey,
+  setActiveSession,
+  type CloseResult,
+} from "./session-registry";
+import { refreshThumbnail } from "./export/thumbnail";
 import { forgetProject, listRecents, rememberProject } from "./recents";
 import { mimeForAsset, startLocalServer, type LocalServer } from "./local-server";
 import {
@@ -30,11 +39,15 @@ import {
   type LaunchContext,
   type RecentProjectRange,
   type RemixTemplateInput,
+  type RestoredTabs,
+  type StoredTabs,
 } from "./shared";
 import { cliStatus, getLaunchDir, installCli, launchDirFromArgv, setLaunchDir } from "./cli";
 import { fetchRemixBundle, writeRemix } from "./remix";
 import { projectDefaults } from "./preferences";
+import { readSettings, update as updateSettings } from "./settings-store";
 import { applySessionRoots } from "./agent/read-roots";
+import { installMenu } from "./menu";
 
 const DEV_SERVER = process.env.GM_DEV_SERVER_URL;
 // Electron's main process is bundled to CJS, so `__dirname` is the file's own
@@ -42,8 +55,6 @@ const DEV_SERVER = process.env.GM_DEV_SERVER_URL;
 const dirname = __dirname;
 
 let window: BrowserWindow | null = null;
-let session: ProjectSession | null = null;
-let unsubscribe: (() => void) | null = null;
 let localServer: LocalServer | null = null;
 
 /**
@@ -79,47 +90,51 @@ async function exists(file: string): Promise<boolean> {
     .catch(() => false);
 }
 
-async function closeSession(): Promise<void> {
-  unsubscribe?.();
-  unsubscribe = null;
-  if (thumbnailTimer) {
-    clearTimeout(thumbnailTimer);
-    thumbnailTimer = null;
-    // Leaving the editor is exactly when the card is about to be looked at, so
-    // spend the capture now rather than dropping the pending one.
-    if (session) await captureThumbnail(session).catch(() => null);
-  }
-  await session?.dispose();
-  session = null;
-  // A subprocess spawned in anticipation of a turn that never came.
-  void import("./agent/claude-code").then((m) => m.disposeWarmClaudeCode());
-}
-
+/**
+ * Open a project, or return the one already open at that folder.
+ *
+ * Nothing here closes another project: several stay open at once, one per
+ * tab, and the registry is what keeps them apart. The open-time work — grants,
+ * the warm subprocess, the recents entry — runs only for a genuinely new
+ * session; an already-open folder just gets its payload back, which is all
+ * that focusing its tab needs.
+ */
 async function openSession(dir: string): Promise<DesktopProject> {
-  await closeSession();
-  const opened = await ProjectSession.open(dir, randomUUID());
-  session = opened;
+  const { session, project, alreadyOpen } = await registryOpen(dir);
+  if (alreadyOpen) return project;
   // Folders picked before this project existed — the launch folder, and
   // anything added from the start screen — become grants against it. Awaited
   // rather than fired off, so the subprocess warmed a line below starts with
   // them already in place.
-  await applySessionRoots(opened.dir);
+  await applySessionRoots(session.dir);
   // Opening a project is the strongest signal that a turn is coming. Load the
   // agent SDK and resolve the CLI now, so the first message does not pay for
-  // them — not awaited, because none of it gates the editor appearing.
-  void import("./agent/claude-code").then((m) => m.warmClaudeCode(opened));
-  unsubscribe = opened.onChange((project) => {
-    if (!window || window.isDestroyed()) return;
-    window.webContents.send(IPC.projectChanged, project);
-    scheduleThumbnail(opened);
-  });
-  const payload = await session.load();
-  await rememberProject(dir, payload.name);
+  // them — not awaited, because none of it gates the editor appearing. Only the
+  // tab being opened is warmed; the registry keeps one warm process, for the
+  // frontmost project, and the renderer re-points it as tabs change.
+  void import("./agent/claude-code").then((m) => m.warmClaudeCode(session));
+  await rememberProject(session.dir, project.name);
   // Bring the card up to date with whatever happened to the folder while the
   // app wasn't watching it. Deliberately not awaited — a stale picture is not
   // worth delaying the editor for.
-  void refreshThumbnail(opened).catch(() => {});
-  return payload;
+  void refreshThumbnail(session).catch(() => {});
+  return project;
+}
+
+/**
+ * The renderer's tab came to the front.
+ *
+ * The one warm subprocess follows the active tab: that is the project whose
+ * next turn is most likely, and warming every open one would be an idle Node
+ * process per tab for a saving on a single first turn.
+ */
+function activateProject(dir: string | null): void {
+  setActiveSession(dir);
+  const session = dir ? getSession(dir) : null;
+  void import("./agent/claude-code").then((m) => {
+    if (!session) return;
+    if (m.warmDir() !== session.dir) m.warmClaudeCode(session);
+  });
 }
 
 /**
@@ -149,26 +164,6 @@ async function remixTemplateAndOpen(templateId: string, name?: string): Promise<
 }
 
 /**
- * Re-capture the project's card image once its edits settle.
- *
- * Long after the change, and only when nothing else has landed since: an agent
- * turn writes a scene several times over, and each write would otherwise open a
- * composition-sized window to photograph a half-finished frame.
- */
-const THUMBNAIL_SETTLE_MS = 4000;
-let thumbnailTimer: NodeJS.Timeout | null = null;
-
-function scheduleThumbnail(target: ProjectSession): void {
-  if (thumbnailTimer) clearTimeout(thumbnailTimer);
-  thumbnailTimer = setTimeout(() => {
-    thumbnailTimer = null;
-    // The project may have been closed during the wait.
-    if (session !== target) return;
-    void captureThumbnail(target).catch(() => {});
-  }, THUMBNAIL_SETTLE_MS);
-}
-
-/**
  * Where projects live. The app owns this folder so creating a video never
  * involves a save dialog — you type what you want and it exists.
  */
@@ -195,9 +190,51 @@ async function allocateProjectDir(name: string): Promise<string> {
 
 /** Replace the pre-spawned agent process, which fixed its roots when it started. */
 function rewarmAgent(): void {
+  const session = activeSession();
   if (!session) return;
-  const opened = session;
-  void import("./agent/claude-code").then((m) => m.warmClaudeCode(opened));
+  void import("./agent/claude-code").then((m) => m.warmClaudeCode(session));
+}
+
+/**
+ * Which tabs were open last time, minus any folder that has since gone.
+ *
+ * Names come from the manifests so the strip can label every tab at once; the
+ * projects themselves are opened lazily, as the renderer gets to them — a
+ * launch with eight tabs should not start eight watchers before painting.
+ */
+async function restoreTabs(): Promise<RestoredTabs> {
+  const stored = (await readSettings()).openTabs;
+  if (!stored) return { tabs: [], activeDir: null };
+  const tabs: RestoredTabs["tabs"] = [];
+  for (const dir of stored.dirs) {
+    if (!(await exists(path.join(dir, "project.json")))) continue;
+    const name = await readManifest(dir)
+      .then((m) => m.name)
+      .catch(() => path.basename(dir));
+    tabs.push({ dir, name });
+  }
+  const activeDir =
+    stored.activeDir && tabs.some((t) => t.dir === stored.activeDir) ? stored.activeDir : null;
+  return { tabs, activeDir };
+}
+
+/** The renderer's tabs changed; remember them for the next launch. Debounced — a drag reorders many times. */
+let persistTimer: NodeJS.Timeout | null = null;
+let pendingTabs: StoredTabs | null = null;
+
+function persistTabs(tabs: StoredTabs): void {
+  pendingTabs = tabs;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => void flushTabs(), 500);
+}
+
+async function flushTabs(): Promise<void> {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = null;
+  const tabs = pendingTabs;
+  pendingTabs = null;
+  if (!tabs) return;
+  await updateSettings((settings) => ({ ...settings, openTabs: tabs })).catch(() => {});
 }
 
 /** The launch folder, and whether it is a project the app could just open. */
@@ -240,7 +277,52 @@ function registerIpc(): void {
   );
 
   ipcMain.handle(IPC.openProject, async (_event, dir: string) => openSession(dir));
-  ipcMain.handle(IPC.closeProject, async () => closeSession());
+  /**
+   * Close a project's tab.
+   *
+   * With the agent mid-turn, the first attempt is refused and the question is
+   * put to the user here — a native dialog the main process owns, for the same
+   * reason delete's is: it ends work in progress, and the renderer runs
+   * agent-authored code.
+   */
+  ipcMain.handle(
+    IPC.closeProject,
+    async (_event, dir: string, options?: { force?: boolean }): Promise<CloseResult> => {
+      if (typeof dir !== "string") throw new Error("Expected a project folder");
+      const first = await closeSession(dir, options);
+      if (first.closed || options?.force) return first;
+      const name = await readManifest(dir)
+        .then((m) => m.name)
+        .catch(() => path.basename(dir));
+      const { response } = await dialog.showMessageBox({
+        type: "warning",
+        buttons: ["Stop and close", "Cancel"],
+        defaultId: 1,
+        cancelId: 1,
+        message: `The agent is still working on “${name}”.`,
+        detail: "Closing the tab stops it. Everything it has already written stays in the project.",
+      });
+      if (response !== 0) return first;
+      return closeSession(dir, { force: true });
+    },
+  );
+  ipcMain.handle(IPC.activateProject, async (_event, dir: string | null) => activateProject(dir));
+  ipcMain.handle(IPC.restoreTabs, async () => restoreTabs());
+  // `on`, not `handle`: the renderer sends and forgets.
+  ipcMain.on(IPC.persistTabs, (_event, tabs: StoredTabs) => persistTabs(tabs));
+  /**
+   * Show a finished export in the file manager.
+   *
+   * By job id rather than path: the main process is the only side that knows
+   * where the file went, and a project opened with `genmotion <path>` can live
+   * anywhere — so this cannot go through `revealPath`, which is deliberately
+   * fenced to the projects root.
+   */
+  ipcMain.handle(IPC.revealExport, async (_event, id: string) => {
+    const { exportOutputPath } = await import("./export/service");
+    const target = await exportOutputPath(id);
+    if (target && (await exists(target))) shell.showItemInFolder(target);
+  });
   ipcMain.handle(IPC.recentProjects, async (_event, range: RecentProjectRange | undefined) =>
     listRecents(range ?? {}),
   );
@@ -294,8 +376,10 @@ function registerIpc(): void {
 
     // Releasing the session first: it holds a bundler and a filesystem watcher
     // on this folder, and a watcher firing on a directory that just went to the
-    // Trash is a stream of errors for a project nobody is looking at.
-    if (session?.dir === dir) await closeSession();
+    // Trash is a stream of errors for a project nobody is looking at. Forced:
+    // an agent mid-turn in a project being deleted has nothing left to do.
+    await closeSession(dir, { force: true });
+    window?.webContents.send(IPC.projectClosed, dir);
 
     await shell.trashItem(dir);
     await forgetProject(dir);
@@ -341,14 +425,17 @@ function registerIpc(): void {
 
 /** Absolute path for a `gm-asset://<key>/<path>` URL, or null if it isn't ours. */
 function assetPathFromUrl(raw: string): string | null {
-  if (!session) return null;
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
     return null;
   }
-  if (url.protocol !== "gm-asset:" || url.hostname !== session.assetKey) return null;
+  if (url.protocol !== "gm-asset:") return null;
+  // The key names the project, so every open tab's assets resolve — not just
+  // the frontmost one's.
+  const session = sessionByAssetKey(url.hostname);
+  if (!session) return null;
   const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "");
   const target = path.resolve(session.dir, relative);
   return path.relative(session.dir, target).startsWith("..") ? null : target;
@@ -417,12 +504,11 @@ async function serveAssetFile(target: string, request: Request): Promise<Respons
 
 function registerAssetProtocol(): void {
   protocol.handle("gm-asset", async (request) => {
-    if (!session) return new Response("No project open", { status: 404 });
     const url = new URL(request.url);
-    // `gm-asset://<key>/<path>` — the key namespaces the open project.
-    if (url.hostname !== session.assetKey) {
-      return new Response("Unknown project", { status: 404 });
-    }
+    // `gm-asset://<key>/<path>` — the key names which open project this is,
+    // so a background tab's preview and audio keep resolving.
+    const session = sessionByAssetKey(url.hostname);
+    if (!session) return new Response("Unknown project", { status: 404 });
     const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "");
     const target = path.resolve(session.dir, relative);
     if (path.relative(session.dir, target).startsWith("..")) {
@@ -457,12 +543,18 @@ function handleDeepLink(url: string): void {
   const parsed = new URL(url);
   const [, templateId, action] = parsed.pathname.split("/");
   if (parsed.hostname === "templates" && templateId && action === "remix") {
-    remixTemplateAndOpen(templateId).catch((err: unknown) => {
+    remixTemplateAndOpen(templateId)
+      .then((project) => {
+        // Opened from outside the renderer, so it has to be told there is a
+        // new project to put a tab on.
+        window?.webContents.send(IPC.projectOpened, project);
+      })
+      .catch((err: unknown) => {
       dialog.showErrorBox(
         "Couldn’t open that template",
         err instanceof Error ? err.message : "Something went wrong.",
       );
-    });
+      });
     return;
   }
 
@@ -566,10 +658,11 @@ if (!app.requestSingleInstanceLock()) {
     const dir = launchDirFromArgv(argv);
     if (dir) {
       setLaunchDir(dir);
-      // A project open right now gets the folder too — the user ran the
+      // The project in front right now gets the folder too — the user ran the
       // command from somewhere, and waiting until they open the next project
       // to act on that would read as the command having done nothing.
-      if (session) void applySessionRoots(session.dir).then(rewarmAgent);
+      const active = activeSession();
+      if (active) void applySessionRoots(active.dir).then(rewarmAgent);
       void launchContext().then((context) => {
         window?.webContents.send(IPC.launchContextChanged, context);
       });
@@ -596,8 +689,16 @@ void app.whenReady().then(async () => {
   registerAssetProtocol();
   // Must be listening before the window exists: its URL is handed to the
   // renderer as a launch argument.
-  localServer = await startLocalServer(() => session, path.join(dirname, "../renderer"));
+  localServer = await startLocalServer(path.join(dirname, "../renderer"));
+  installMenu(() => window);
   createWindow();
+
+  // Push every project's changes to the renderer; the payload carries its
+  // `dir`, which is how the renderer knows which tab it belongs to.
+  onProjectChanged((project) => {
+    if (!window || window.isDestroyed()) return;
+    window.webContents.send(IPC.projectChanged, project);
+  });
 
   // Delivery for anything recorded from here on, plus whatever last run left
   // queued. The sender is handed over rather than imported by the analytics
@@ -646,7 +747,25 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => {
-  void closeSession();
-  void localServer?.close();
+/**
+ * Quit waits for the sessions to close.
+ *
+ * Each close may capture a project card, and with several tabs open a
+ * fire-and-forget teardown would lose every one of them. The flag is what
+ * lets the second `quit()` through once the work is done.
+ */
+let quitting = false;
+app.on("before-quit", (event) => {
+  if (quitting) return;
+  quitting = true;
+  event.preventDefault();
+  void (async () => {
+    await flushTabs();
+    await Promise.race([
+      closeAllSessions(),
+      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+    ]).catch(() => {});
+    await localServer?.close().catch(() => {});
+    app.quit();
+  })();
 });

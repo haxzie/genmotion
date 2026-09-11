@@ -2,34 +2,150 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { BrowserWindow } from "electron";
 import {
   buildRenderAudioSources,
   type ExportFormat,
-  type ExportJobData,
+  type ExportStatus,
 } from "@genmotion/shared";
-import { readManifest } from "@genmotion/project";
+import { readManifest, type ProjectManifest } from "@genmotion/project";
 // Its own subpath: the barrel also exports Composition/Player (React) and
 // the zustand store, none of which the main process needs — pulling them in
 // through the barrel added 1.5MB to main.cjs for a badge that is one string.
 import { watermarkHtml } from "@genmotion/player/watermark";
 import type { ProjectSession } from "../project-session";
+import type { DesktopExportJob } from "../shared";
 import { bundledBinary } from "../bundled-bin";
 import { checkExportEntitlement } from "./entitlement";
+import {
+  findExportRecord,
+  listExportHistory,
+  outputExists,
+  recordExport,
+  type ExportRecord,
+} from "./history";
+import { readThumbnail } from "./thumbnail";
 
 /** Encoder quality knob, matching the hosted renderer's mapping. */
 const QUALITY = 80;
 
-type Listener = (job: ExportJobData) => void;
+type Listener = (job: DesktopExportJob) => void;
 
-let current: (ExportJobData & { projectDir: string; outputPath?: string }) | null = null;
-let cancelled = false;
+/**
+ * The full record of one export — the wire shape the export button already
+ * reads, plus what the Exports panel needs to list jobs from every project and
+ * what the main process needs to run and reveal them.
+ */
+interface Job extends DesktopExportJob {
+  /** Absolute path of the finished file, once there is one. */
+  outputPath?: string;
+  /** Set by `cancelExport`; the frame loop checks it between frames. */
+  cancelled: boolean;
+}
+
+/**
+ * Every export this run of the app has been asked for, in the order asked.
+ *
+ * A queue rather than a single slot: with several projects open, two of them
+ * asking to export at once is ordinary. They still render one at a time — each
+ * job holds a composition-sized offscreen window and an ffmpeg, and two of
+ * those would slow the one the user is actually waiting for — but the second
+ * waits its turn instead of being refused. Insertion order is the panel's
+ * order.
+ */
+const jobs = new Map<string, Job>();
+/** Ids waiting to run, oldest first. */
+const waiting: string[] = [];
+/** The job holding the offscreen window right now. */
+let running: string | null = null;
 const listeners = new Set<Listener>();
 
-export function latestExport(): ExportJobData | null {
-  if (!current) return null;
-  const { projectDir: _dir, outputPath: _out, ...job } = current;
-  return job;
+const ACTIVE: ReadonlySet<ExportStatus> = new Set(["queued", "rendering", "encoding", "uploading"]);
+
+function publicJob(job: Job): DesktopExportJob {
+  const { outputPath: _out, cancelled: _cancelled, ...rest } = job;
+  return rest;
+}
+
+/** The newest export for a project, or across every project when none is given. */
+export function latestExport(projectDir?: string): DesktopExportJob | null {
+  let found: Job | null = null;
+  for (const job of jobs.values()) {
+    if (projectDir && job.projectDir !== projectDir) continue;
+    found = job;
+  }
+  return found ? publicJob(found) : null;
+}
+
+/** This run's jobs, newest first. */
+function liveExports(): DesktopExportJob[] {
+  return [...jobs.values()].reverse().map(publicJob);
+}
+
+function fromRecord(record: ExportRecord): DesktopExportJob {
+  return {
+    id: record.id,
+    projectId: record.projectDir,
+    projectDir: record.projectDir,
+    projectName: record.projectName,
+    format: record.format,
+    status: "done",
+    progress: 100,
+    totalFrames: Math.round(record.durationSeconds * record.fps),
+    createdAt: record.createdAt,
+    finishedAt: record.finishedAt,
+    sizeBytes: record.sizeBytes,
+    width: record.width,
+    height: record.height,
+    durationSeconds: record.durationSeconds,
+  };
+}
+
+/**
+ * Every export, newest first: this run's queue, then everything remembered
+ * from before it. A finished job appears in both, so the live copy wins.
+ *
+ * `limit` bounds the history read for the panel, which shows a handful;
+ * `thumbnails` inlines each project's card image for the page, read once per
+ * project rather than once per export.
+ */
+export async function listExports({
+  limit,
+  thumbnails = false,
+}: { limit?: number; thumbnails?: boolean } = {}): Promise<DesktopExportJob[]> {
+  const live = liveExports();
+  const seen = new Set(live.map((job) => job.id));
+  const remembered = (await listExportHistory()).filter((record) => !seen.has(record.id));
+  const merged = [...live, ...remembered.map(fromRecord)].sort(
+    (a, b) => (b.finishedAt ?? b.createdAt) - (a.finishedAt ?? a.createdAt),
+  );
+  const page = limit ? merged.slice(0, limit) : merged;
+
+  const pictures = new Map<string, Promise<string | null>>();
+  return Promise.all(
+    page.map(async (job) => {
+      const out: DesktopExportJob = { ...job };
+      if (job.status === "done") {
+        const target = await outputPathFor(job.id);
+        out.fileMissing = !target || !(await outputExists({ outputPath: target }));
+      }
+      if (thumbnails) {
+        let picture = pictures.get(job.projectDir);
+        if (!picture) {
+          picture = readThumbnail(job.projectDir).catch(() => null);
+          pictures.set(job.projectDir, picture);
+        }
+        out.thumbnail = await picture;
+      }
+      return out;
+    }),
+  );
+}
+
+/** True while any project's export holds, or is waiting for, the window. */
+export function hasActiveExport(): boolean {
+  return running !== null || waiting.length > 0;
 }
 
 export function onExportChange(listener: Listener): () => void {
@@ -37,18 +153,44 @@ export function onExportChange(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
+/**
+ * Stop an export. A queued one is simply pulled from the line; a running one
+ * finishes the frame it is on and then stops.
+ */
 export function cancelExport(id: string): boolean {
-  if (!current || current.id !== id) return false;
-  cancelled = true;
-  update({ status: "cancelled" });
+  const job = jobs.get(id);
+  if (!job || !ACTIVE.has(job.status)) return false;
+  job.cancelled = true;
+  const index = waiting.indexOf(id);
+  if (index !== -1) waiting.splice(index, 1);
+  update(id, { status: "cancelled", finishedAt: Date.now() });
   return true;
 }
 
-function update(patch: Partial<ExportJobData>): void {
-  if (!current) return;
-  Object.assign(current, patch);
-  const snapshot = latestExport();
-  if (snapshot) for (const listener of listeners) listener(snapshot);
+/** Closing or deleting a project takes its exports with it. */
+export function cancelExportsForProject(projectDir: string): void {
+  for (const job of jobs.values()) {
+    if (job.projectDir === projectDir && ACTIVE.has(job.status)) cancelExport(job.id);
+  }
+}
+
+/** Where a finished export landed, for revealing it — main owns the path, not the renderer. */
+async function outputPathFor(id: string): Promise<string | null> {
+  const live = jobs.get(id)?.outputPath;
+  if (live) return live;
+  return (await findExportRecord(id))?.outputPath ?? null;
+}
+
+export function exportOutputPath(id: string): Promise<string | null> {
+  return outputPathFor(id);
+}
+
+function update(id: string, patch: Partial<Job>): void {
+  const job = jobs.get(id);
+  if (!job) return;
+  Object.assign(job, patch);
+  const snapshot = publicJob(job);
+  for (const listener of listeners) listener(snapshot);
 }
 
 function runFfmpeg(args: string[]): Promise<void> {
@@ -116,11 +258,7 @@ function encoderArgs(
 export async function startExport(
   session: ProjectSession,
   input: { format: ExportFormat },
-): Promise<ExportJobData> {
-  if (current && ["queued", "rendering", "encoding", "uploading"].includes(current.status)) {
-    throw new Error("An export is already running");
-  }
-
+): Promise<DesktopExportJob> {
   // Checked before anything else — including before a job exists to be queued
   // — so a trial that has ended refuses the same way the hosted API's own
   // `POST /api/exports` does: nothing starts, and `ExportPaywallError`
@@ -132,38 +270,90 @@ export async function startExport(
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
   if (totalFrames === 0) throw new Error("Nothing to export — the project has no scenes");
 
-  cancelled = false;
-  current = {
-    id: `exp_${Date.now().toString(36)}`,
+  const id = `exp_${Date.now().toString(36)}_${randomBytes(3).toString("hex")}`;
+  const job: Job = {
+    id,
     projectId: session.dir,
     projectDir: session.dir,
+    projectName: manifest.name,
+    format: input.format,
     status: "queued",
     progress: 0,
     totalFrames,
+    createdAt: Date.now(),
+    cancelled: false,
   };
-  const job = latestExport()!;
+  jobs.set(id, job);
+  waiting.push(id);
+  // Announce the queued job so the panel's feed shows it at once, even though
+  // nothing has started yet.
+  update(id, {});
 
   // Run detached: the HTTP response returns the queued job immediately and the
   // client follows progress over the event stream.
-  void run(session, manifest, input.format, entitlement.watermark).catch((err) => {
-    update({ status: "failed", error: err instanceof Error ? err.message : String(err) });
-  });
+  void pump(() => ({ session, manifest, watermark: entitlement.watermark }));
 
-  return job;
+  return publicJob(job);
+}
+
+/** What a queued job needs to run, held beside it until its turn comes. */
+type Prepared = { session: ProjectSession; manifest: ProjectManifest; watermark: boolean };
+const prepared = new Map<string, Prepared>();
+
+/**
+ * Run the next job in line, if the window is free.
+ *
+ * Re-entered after every job — successful, failed or cancelled — so a queue
+ * of three drains without anyone asking again.
+ */
+async function pump(next?: () => Prepared): Promise<void> {
+  if (next) {
+    const id = waiting.at(-1);
+    if (id) prepared.set(id, next());
+  }
+  if (running !== null) return;
+  const id = waiting.shift();
+  if (!id) return;
+  const job = jobs.get(id);
+  const input = prepared.get(id);
+  prepared.delete(id);
+  // Cancelled while waiting: nothing to run, move on.
+  if (!job || !input || job.cancelled) {
+    void pump();
+    return;
+  }
+  running = id;
+  try {
+    update(id, { startedAt: Date.now() });
+    await run(job, input.session, input.manifest, input.watermark);
+  } catch (err) {
+    update(id, {
+      status: "failed",
+      error: err instanceof Error ? err.message : String(err),
+      finishedAt: Date.now(),
+    });
+  } finally {
+    running = null;
+    void pump();
+  }
 }
 
 async function run(
+  job: Job,
   session: ProjectSession,
-  manifest: Awaited<ReturnType<typeof readManifest>>,
-  format: ExportFormat,
+  manifest: ProjectManifest,
   watermark: boolean,
 ): Promise<void> {
   const { fps, width, height } = manifest;
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
+  const format = job.format;
+  const id = job.id;
 
   // 1. Bundle every scene with the same incremental bundler the editor uses.
   const scenes = [];
   for (const entry of manifest.scenes) {
+    // The project's tab may have closed while this job waited its turn.
+    if (session.disposed) throw new Error("This project was closed.");
     const built = await session.bundler.bundle(entry.file);
     if (!built.ok) throw new Error(`${entry.file} failed to build: ${built.error.message}`);
     scenes.push({
@@ -176,7 +366,7 @@ async function run(
 
   const hostBundle = await fs.readFile(path.join(__dirname, "render-host.js"), "utf8");
 
-  update({ status: "rendering" });
+  update(id, { status: "rendering" });
 
   // 2. An offscreen window at exactly the composition's pixel size. Offscreen
   //    rendering keeps painting when the window is never shown, which a plain
@@ -244,7 +434,7 @@ async function run(
     });
 
     for (let frame = 0; frame < totalFrames; frame++) {
-      if (cancelled) break;
+      if (job.cancelled) break;
       // The host resolves this once React has committed, fonts are ready, and
       // every registered asset reports loaded — the determinism barrier.
       await win.webContents.executeJavaScript(`window.__gm.setFrame(${frame})`);
@@ -254,25 +444,51 @@ async function run(
         await new Promise<void>((resolve) => ffmpeg.stdin.once("drain", resolve));
       }
       if (frame % 5 === 0 || frame === totalFrames - 1) {
-        update({ progress: Math.round(((frame + 1) / totalFrames) * 100) });
+        update(id, { progress: Math.round(((frame + 1) / totalFrames) * 100) });
       }
     }
     ffmpeg.stdin.end();
     await encoded;
 
-    if (cancelled) {
+    if (job.cancelled) {
       await fs.rm(silentPath, { force: true });
       return;
     }
 
     // 4. Mux the timeline audio, if any.
-    update({ status: "encoding", progress: 100 });
+    update(id, { status: "encoding", progress: 100 });
     const mixed = await muxAudio(session, manifest, silentPath, outputPath, format, totalFrames / fps);
     if (!mixed) await fs.rename(silentPath, outputPath);
     else await fs.rm(silentPath, { force: true });
 
-    update({ status: "done", outputUrl: session.assetUrl(path.relative(session.dir, outputPath)) });
-    if (current) current.outputPath = outputPath;
+    const finishedAt = Date.now();
+    const sizeBytes = await fs.stat(outputPath).then((s) => s.size).catch(() => 0);
+    update(id, {
+      status: "done",
+      outputUrl: session.assetUrl(path.relative(session.dir, outputPath)),
+      outputPath,
+      finishedAt,
+      sizeBytes,
+      width,
+      height,
+      durationSeconds: totalFrames / fps,
+    });
+    // Remembered across launches — the panel and the Exports page read it
+    // back. Best-effort: a history write failing must not fail the export.
+    await recordExport({
+      id,
+      projectDir: session.dir,
+      projectName: job.projectName,
+      format,
+      outputPath,
+      sizeBytes,
+      width,
+      height,
+      fps,
+      durationSeconds: totalFrames / fps,
+      createdAt: job.createdAt,
+      finishedAt,
+    }).catch(() => {});
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }

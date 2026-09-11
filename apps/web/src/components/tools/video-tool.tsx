@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Player, usePlaybackStore } from "@genmotion/player";
+import { Player, defaultPlaybackStore, usePlaybackStore } from "@genmotion/player";
 import { FaqSection } from "@/components/marketing/faq";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
@@ -97,8 +97,10 @@ export function VideoTool({ slug }: { slug: string }) {
         setData(body as MetricVideoData);
         setIsSample(false);
         // Restart the preview so the visitor sees the animation for their data.
-        usePlaybackStore.getState().seek(0);
-        usePlaybackStore.setState({ isPlaying: true });
+        // This page has one player on the default clock, so it is addressed
+        // directly rather than through a provider.
+        defaultPlaybackStore.getState().seek(0);
+        defaultPlaybackStore.setState({ isPlaying: true });
       } catch {
         setError("Couldn't reach the server. Check your connection and try again.");
       } finally {

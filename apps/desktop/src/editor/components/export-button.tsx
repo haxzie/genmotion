@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   EXPORT_FORMATS,
@@ -14,6 +14,7 @@ import { track } from "@/lib/analytics";
 import { Button, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
+import { flyToExports } from "../../tabs/fly-to-exports";
 
 const ACTIVE_STATUSES = new Set(["queued", "rendering", "encoding", "uploading"]);
 
@@ -121,7 +122,9 @@ export function ExportButton({
   const { data: latest } = useQuery({
     queryKey: ["export-latest", projectId],
     queryFn: () =>
-      api<ExportJobData | null>(`/api/exports/latest?projectId=${projectId}`),
+      api<ExportJobData | null>(
+        `/api/exports/latest?projectId=${encodeURIComponent(projectId)}`,
+      ),
     refetchOnWindowFocus: false,
   });
   useEffect(() => {
@@ -147,9 +150,6 @@ export function ExportButton({
     return () => source.close();
   }, [job?.id, jobActive, projectId, queryClient]);
 
-  // Auto-download once, but only for an export the user kicked off and is
-  // waiting on — not when merely reopening a previously-finished modal.
-  const awaitingDownload = useRef(false);
   const done = job?.status === "done";
   const failed = job?.status === "failed";
 
@@ -170,13 +170,6 @@ export function ExportButton({
     [],
   );
 
-  useEffect(() => {
-    if (done && job?.outputUrl && awaitingDownload.current) {
-      awaitingDownload.current = false;
-      download(job.outputUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done, job?.outputUrl]);
 
   const startExport = useMutation({
     mutationFn: (fmt: ExportFormat) =>
@@ -185,7 +178,6 @@ export function ExportButton({
       }),
     onSuccess: (created, fmt) => {
       track("export_started", { format: fmt });
-      awaitingDownload.current = true;
       setJob(created);
       queryClient.invalidateQueries({ queryKey: limitsQueryKey });
     },
@@ -201,7 +193,6 @@ export function ExportButton({
       api<ExportJobData>(`/api/exports/${id}/cancel`, { method: "POST" }),
     onSuccess: (updated) => {
       track("export_cancelled");
-      awaitingDownload.current = false;
       setJob(updated);
     },
     onError: () => {
@@ -219,7 +210,7 @@ export function ExportButton({
   );
   const currentSig = useMemo(() => projectSignature(project), [project]);
 
-  function runExport() {
+  function runExport(event: ReactMouseEvent<HTMLButtonElement>) {
     // No client-side pre-gate: exports are unmetered, and the trial paywall is
     // enforced by the server, which answers 402 and opens the modal via
     // handleLimitError below.
@@ -230,6 +221,13 @@ export function ExportButton({
       /* private mode / quota — change detection just won't survive reload */
     }
     startExport.mutate(format);
+    // The render carries on in the queue; the dialog has nothing more to say.
+    // Close it and point at where the export went — the Exports icon in the
+    // tab strip — the way a browser does for a download. The rect is read
+    // before the dialog unmounts under us.
+    const from = event.currentTarget.getBoundingClientRect();
+    setOpen(false);
+    flyToExports(from, format);
   }
 
   const frames = totalDurationInFrames(project.scenes);
@@ -274,28 +272,29 @@ export function ExportButton({
         {active ? `${progress}%` : "Export"}
       </Button>
 
+      {/* Dismissible even mid-render: the export carries on in the queue, the
+          button shows its progress, and the Exports panel in the tab strip
+          lists it — so there is no reason to hold the user in a dialog, and
+          a modal that could not be closed would also block switching tabs. */}
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        dismissible={!active}
         labelledBy="export-modal-title"
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 id="export-modal-title" className="text-[1.05rem] font-semibold text-text-primary">
             Export video
           </h2>
-          {!active && (
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="flex size-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface-raised hover:text-text-primary"
-            >
-              <svg viewBox="0 0 14 14" className="size-3.5" stroke="currentColor" strokeWidth="1.6" fill="none">
-                <path d="M3 3l8 8M11 3l-8 8" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="flex size-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface-raised hover:text-text-primary"
+          >
+            <svg viewBox="0 0 14 14" className="size-3.5" stroke="currentColor" strokeWidth="1.6" fill="none">
+              <path d="M3 3l8 8M11 3l-8 8" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         <div className="px-5 py-4">
@@ -377,17 +376,19 @@ export function ExportButton({
           <Button
             variant="secondary"
             className="h-10 px-4"
-            // Enabled while queued (to cancel the render) or when idle (to close);
-            // disabled once rendering has actually started.
-            disabled={(active && !queued) || cancelExport.isPending}
+            // While the job is queued or rendering this cancels it — a running
+            // render stops at the next frame; otherwise it closes the dialog.
+            disabled={cancelExport.isPending}
             onClick={
-              queued ? () => cancelExport.mutate(job!.id) : () => setOpen(false)
+              active ? () => cancelExport.mutate(job!.id) : () => setOpen(false)
             }
           >
-            {queued
+            {active
               ? cancelExport.isPending
                 ? "Cancelling…"
-                : "Cancel render"
+                : queued
+                  ? "Cancel"
+                  : "Cancel render"
               : done
                 ? "Close"
                 : "Cancel"}

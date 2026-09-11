@@ -6,6 +6,8 @@ import {
   type DesktopApi,
   type DesktopProject,
   type LaunchContext,
+  type StoredTabs,
+  type TabCommand,
   type UpdateState,
 } from "./shared";
 
@@ -24,7 +26,34 @@ const api: DesktopApi = {
   createProject: (input) => ipcRenderer.invoke(IPC.createProject, input),
   remixTemplate: (input) => ipcRenderer.invoke(IPC.remixTemplate, input),
   openProject: (dir) => ipcRenderer.invoke(IPC.openProject, dir),
-  closeProject: () => ipcRenderer.invoke(IPC.closeProject),
+  closeProject: (dir, options) => ipcRenderer.invoke(IPC.closeProject, dir, options),
+  activateProject: (dir) => ipcRenderer.invoke(IPC.activateProject, dir),
+  restoreTabs: () => ipcRenderer.invoke(IPC.restoreTabs),
+  persistTabs: (tabs: StoredTabs) => {
+    ipcRenderer.send(IPC.persistTabs, tabs);
+  },
+  onProjectOpened: (listener) => {
+    const handler = (_event: unknown, project: DesktopProject) => listener(project);
+    ipcRenderer.on(IPC.projectOpened, handler);
+    return () => {
+      ipcRenderer.off(IPC.projectOpened, handler);
+    };
+  },
+  onProjectClosed: (listener) => {
+    const handler = (_event: unknown, dir: string) => listener(dir);
+    ipcRenderer.on(IPC.projectClosed, handler);
+    return () => {
+      ipcRenderer.off(IPC.projectClosed, handler);
+    };
+  },
+  onTabCommand: (listener) => {
+    const handler = (_event: unknown, command: TabCommand) => listener(command);
+    ipcRenderer.on(IPC.tabCommand, handler);
+    return () => {
+      ipcRenderer.off(IPC.tabCommand, handler);
+    };
+  },
+  revealExport: (id) => ipcRenderer.invoke(IPC.revealExport, id),
   recentProjects: (range) => ipcRenderer.invoke(IPC.recentProjects, range),
   revealProject: (dir) => ipcRenderer.invoke(IPC.revealProject, dir),
   onProjectChanged: (listener) => {

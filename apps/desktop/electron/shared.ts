@@ -1,5 +1,10 @@
 /** Types crossing the IPC boundary. Imported by both the main process and the renderer. */
-import type { DesktopAuthProvider, ProjectData } from "@genmotion/shared";
+import type {
+  DesktopAuthProvider,
+  ExportFormat,
+  ExportJobData,
+  ProjectData,
+} from "@genmotion/shared";
 
 /**
  * What the main process produced for one scene. The bundle is built there,
@@ -28,6 +33,35 @@ export interface DesktopProject extends ProjectData {
   manifestError: string | null;
   /** The folder itself is gone (moved, deleted, unmounted). Nothing to show. */
   folderMissing: boolean;
+}
+
+/**
+ * One export, as the Exports panel lists it.
+ *
+ * `ExportJobData` is the hosted renderer's wire shape and is all the export
+ * button reads; the rest is what a list spanning every open project needs to
+ * say which project a row belongs to and how long ago it was asked for. Kept
+ * here rather than in `@genmotion/shared` because nothing hosted has a use for
+ * it.
+ */
+export interface DesktopExportJob extends ExportJobData {
+  /** The project folder — the same value as `projectId`, named for what it is. */
+  projectDir: string;
+  projectName: string;
+  format: ExportFormat;
+  /** Epoch ms. */
+  createdAt: number;
+  startedAt?: number;
+  finishedAt?: number;
+  /** Known once the file exists. */
+  sizeBytes?: number;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  /** The file has since been moved or deleted — nothing to show in Finder. */
+  fileMissing?: boolean;
+  /** The project's card image as a data URL, only when asked for (the Exports page). */
+  thumbnail?: string | null;
 }
 
 /**
@@ -65,6 +99,32 @@ export interface RecentProject {
   /** Cached card image as a data URL, or null before one has been captured. */
   thumbnail: string | null;
 }
+
+/** Open tabs, as remembered between launches. */
+export interface StoredTabs {
+  /** Project folders, in tab order. */
+  dirs: string[];
+  /** The frontmost one, or null for the Home tab. */
+  activeDir: string | null;
+}
+
+/** What comes back at launch: the remembered tabs that still exist, with names to label them before they load. */
+export interface RestoredTabs {
+  tabs: { dir: string; name: string }[];
+  activeDir: string | null;
+}
+
+/**
+ * Whether a project closed.
+ *
+ * `turn-running` is the one refusal: the agent is mid-turn there, and closing
+ * would dispose the bundler its tools compile against. The renderer confirms
+ * and retries with `force`, which stops the turn first.
+ */
+export type CloseProjectResult = { closed: true } | { closed: false; reason: "turn-running" };
+
+/** Tab shortcuts the OS menu forwards to the renderer. */
+export type TabCommand = "close" | "next" | "prev" | { select: number };
 
 /** Which slice of the recents list to build. */
 export interface RecentProjectRange {
@@ -187,8 +247,28 @@ export interface DesktopApi {
    * renderer navigates identically after either.
    */
   remixTemplate(input: RemixTemplateInput): Promise<DesktopProject>;
+  /** Open a folder, or return the project already open at it — several can be open at once. */
   openProject(dir: string): Promise<DesktopProject>;
-  closeProject(): Promise<void>;
+  /**
+   * Close one project. While its agent is mid-turn the main process asks the
+   * user first — a native dialog, like delete's — and `closed: false` means
+   * they kept it. `force` skips the question.
+   */
+  closeProject(dir: string, options?: { force?: boolean }): Promise<CloseProjectResult>;
+  /** Which project's tab is frontmost; null for Home. Drives the warm subprocess. */
+  activateProject(dir: string | null): Promise<void>;
+  /** Tabs remembered from the last launch, minus folders that have since gone. */
+  restoreTabs(): Promise<RestoredTabs>;
+  /** Fire-and-forget: remember the open tabs for next launch. */
+  persistTabs(tabs: StoredTabs): void;
+  /** A project was opened from outside the renderer — a deep link — and needs a tab. */
+  onProjectOpened(listener: (project: DesktopProject) => void): () => void;
+  /** A project was closed from the main process — deleted — and its tab should go. */
+  onProjectClosed(listener: (dir: string) => void): () => void;
+  /** A tab shortcut from the OS menu. */
+  onTabCommand(listener: (command: TabCommand) => void): () => void;
+  /** Show a finished export in the file manager, by job id. */
+  revealExport(id: string): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
   revealProject(dir: string): Promise<void>;
   /**
@@ -249,6 +329,13 @@ export const IPC = {
   revealPath: "shell:reveal",
   openProject: "project:open",
   closeProject: "project:close",
+  activateProject: "project:activate",
+  projectOpened: "project:opened",
+  projectClosed: "project:closed",
+  restoreTabs: "tabs:restore",
+  persistTabs: "tabs:persist",
+  tabCommand: "tabs:command",
+  revealExport: "export:reveal",
   recentProjects: "project:recent",
   revealProject: "project:reveal",
   deleteProject: "project:delete",

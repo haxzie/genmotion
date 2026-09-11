@@ -9,9 +9,9 @@ import { FolderAccess } from "./folder-access";
  * see — and neither exists in the hosted app, where there is no local harness
  * and no filesystem to share.
  */
-registerComposerAccessory(() => (
+registerComposerAccessory(({ projectId }) => (
   <>
     <HarnessPicker placement="up" />
-    <FolderAccess hideWhenEmpty />
+    <FolderAccess hideWhenEmpty projectId={projectId} />
   </>
 ));

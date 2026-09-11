@@ -166,3 +166,47 @@ describe("recovery on open", () => {
     expect(messages).toEqual([message]);
   });
 });
+
+describe("appendTranscript with a checkpoint alias", () => {
+  it("treats a recovered checkpoint and the finished turn as one message", async () => {
+    const dir = await tempProjectDir();
+    // The checkpoint id the turn streamed under, recovered on a later open.
+    await fs.mkdir(path.join(dir, ".genmotion"), { recursive: true });
+    await fs.writeFile(
+      checkpointPath(dir),
+      JSON.stringify({ id: "ckpt-1", role: "assistant", parts: [{ type: "text", text: "partial" }] }),
+    );
+    const session = await open(dir);
+    expect(await transcriptLines(dir)).toHaveLength(1);
+
+    // The same turn then finishes normally under the harness's own id, but
+    // stamped with the checkpoint it was a snapshot of.
+    await session.appendTranscript({
+      id: "sdk-msg-1",
+      role: "assistant",
+      parts: [{ type: "text", text: "partial and then the rest" }],
+      metadata: { checkpointId: "ckpt-1" },
+    });
+    expect(await transcriptLines(dir)).toHaveLength(1);
+
+    // A genuinely different turn still lands.
+    await session.appendTranscript({ id: "sdk-msg-2", role: "assistant", parts: [] });
+    expect(await transcriptLines(dir)).toHaveLength(2);
+  });
+
+  it("indexes the alias from disk on a fresh session", async () => {
+    const dir = await tempProjectDir();
+    const first = await open(dir);
+    await first.appendTranscript({
+      id: "sdk-msg-1",
+      role: "assistant",
+      parts: [],
+      metadata: { checkpointId: "ckpt-9" },
+    });
+    await first.dispose();
+
+    const second = await open(dir);
+    await second.appendTranscript({ id: "ckpt-9", role: "assistant", parts: [] });
+    expect(await transcriptLines(dir)).toHaveLength(1);
+  });
+});

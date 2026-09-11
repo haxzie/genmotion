@@ -1,6 +1,7 @@
 "use client";
 
-import { create } from "zustand";
+import { createContext, createElement, useContext, useState, type ReactNode } from "react";
+import { createStore, useStore, type StoreApi } from "zustand";
 
 export interface FixRequest {
   sceneId: string;
@@ -66,7 +67,16 @@ interface EditorState {
   clearElements(): void;
 }
 
-export const useEditorStore = create<EditorState>((set, get) => ({
+/**
+ * One editor's selection and chat-handoff state.
+ *
+ * A factory rather than a module-level store: every open project tab has its
+ * own editor, and a single shared store would let a selection in one tab
+ * drive a delete or a "fix with AI" in another. The provider below makes one
+ * per tab; the hooks read whichever is nearest.
+ */
+export function createEditorStore(): StoreApi<EditorState> {
+  return createStore<EditorState>((set, get) => ({
   selectedSceneIds: [],
   selectedAssetIds: [],
   selectedAudioClipIds: [],
@@ -200,4 +210,29 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   clearElements() {
     set({ selectedElements: [] });
   },
-}));
+  }));
+}
+
+export type EditorStoreApi = StoreApi<EditorState>;
+
+const EditorStoreContext = createContext<EditorStoreApi | null>(null);
+
+export function EditorStoreProvider({ children }: { children: ReactNode }) {
+  const [store] = useState(createEditorStore);
+  return createElement(EditorStoreContext.Provider, { value: store }, children);
+}
+
+/**
+ * The tab's store itself, for imperative reads (`getState()`) inside event
+ * handlers and effects. Deliberately the only way to get one — a static
+ * `.getState` on the hook would silently read a store that is nobody's tab.
+ */
+export function useEditorStoreApi(): EditorStoreApi {
+  const store = useContext(EditorStoreContext);
+  if (!store) throw new Error("useEditorStore must be used inside an EditorStoreProvider");
+  return store;
+}
+
+export function useEditorStore<T>(selector: (state: EditorState) => T): T {
+  return useStore(useEditorStoreApi(), selector);
+}

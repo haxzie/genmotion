@@ -1,25 +1,27 @@
 import { useState } from "react";
-import { AppSidebar, type HomeTab } from "../components/app-sidebar";
+import { AppSidebar } from "../components/app-sidebar";
 import { UpdateModal } from "../components/update-modal";
 import { useUpdate } from "../lib/use-update";
+import { useTabsStore } from "../tabs/tabs-store";
 import { Home } from "./Home";
 import { Templates } from "./Templates";
+import { Exports } from "./Exports";
 import { Settings } from "./Settings";
 import type { AuthOrganization, AuthUser, DesktopProject } from "../../electron/shared";
 
 /**
- * Everything that is not the editor.
+ * Everything that is not the editor — the Home tab.
  *
  * The three destinations share one frame — a nav rail and an inset panel — so
- * moving between them changes only what is inside the panel. It owns the
- * frameless window's drag strip for all of them, which `Home` used to hand-roll
- * for itself.
+ * moving between them changes only what is inside the panel. The frameless
+ * window's drag strip is the tab strip above, which every screen sits under.
  */
 export function HomeShell({
   busy,
   onOpen,
   onCreate,
   onAdopt,
+  onOpenProject,
   user,
   organization,
 }: {
@@ -28,20 +30,19 @@ export function HomeShell({
   onCreate: (input: { prompt: string; width: number; height: number }) => void;
   /** A remixed template arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
+  /** From the Exports page: bring that project's tab up, opening it if need be. */
+  onOpenProject: (dir: string) => void;
   user: AuthUser;
   organization: AuthOrganization | null;
 }) {
-  const [tab, setTab] = useState<HomeTab>("create");
+  const tab = useTabsStore((s) => s.homeView);
+  const setTab = useTabsStore((s) => s.setHomeView);
   const update = useUpdate();
   const [updateOpen, setUpdateOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-text-primary">
+    <div className="flex h-full overflow-hidden bg-background text-text-primary">
       {updateOpen && <UpdateModal state={update} onClose={() => setUpdateOpen(false)} />}
-      {/* Spans the whole window, behind everything: a draggable region is
-          geometric rather than hit-tested, so anything on top of it needs
-          `.no-drag` — which the controls inside the panel already carry. */}
-      <div className="titlebar-drag pointer-events-none fixed inset-x-0 top-0 z-40 h-9" />
 
       <AppSidebar
         tab={tab}
@@ -52,7 +53,7 @@ export function HomeShell({
         onOpenUpdate={() => setUpdateOpen(true)}
       />
 
-      <main className="min-w-0 flex-1 p-3 pl-3">
+      <main className="min-w-0 flex-1 p-3 pl-3 pt-0">
         <div className="h-full overflow-hidden rounded-xl border border-border bg-surface">
           {tab === "create" ? (
             <Home
@@ -63,6 +64,8 @@ export function HomeShell({
             />
           ) : tab === "templates" ? (
             <Templates onRemixed={onAdopt} />
+          ) : tab === "exports" ? (
+            <Exports onOpenProject={onOpenProject} />
           ) : (
             <Settings user={user} organization={organization} />
           )}

@@ -2,7 +2,7 @@
 
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePlaybackStore } from "@genmotion/player";
+import { usePlaybackStoreApi } from "@genmotion/player";
 import {
   clipsOverlap,
   resolveAudioPlacement,
@@ -463,6 +463,7 @@ export function AudioLanes({
   }) => void;
 }) {
   const queryClient = useQueryClient();
+  const playback = usePlaybackStoreApi();
   const [draft, setDraft] = useState<Draft | null>(null);
   // True while an alt-drag is in progress (drop creates a copy, not a move).
   const [copyDrag, setCopyDrag] = useState(false);
@@ -506,7 +507,7 @@ export function AudioLanes({
 
   async function addFromAsset(asset: AudioAssetOption) {
     setMenuOpen(false);
-    const start = Math.max(0, usePlaybackStore.getState().frame);
+    const start = Math.max(0, playback.getState().frame);
     const frames = await naturalFrames(asset.url, asset.durationSeconds);
     onAdd({
       url: asset.url,

@@ -9,7 +9,7 @@ import { Timeline } from "@/components/editor/timeline";
 import { AssetsView } from "@/components/editor/assets-view";
 import { CodeView } from "@/components/editor/code-view";
 import { Button, Spinner, cx } from "@/components/ui";
-import { useEditorStore } from "@/stores/editor-store";
+import { useEditorStore, useEditorStoreApi } from "@/stores/editor-store";
 import { formatCompileError } from "@genmotion/compiler";
 import { api } from "../api";
 import type { DesktopProject } from "../../electron/shared";
@@ -55,12 +55,16 @@ type ViewTab = (typeof VIEW_TABS)[number]["id"];
  * The editor shell, mirroring `apps/web/src/app/p/[projectId]/page.tsx`. Only
  * the app-shell concerns differ: no auth gate, and the Preview/Assets/Code
  * switch is local state rather than a URL parameter, since there is no router.
+ *
+ * Fills whatever the tab host gives it; the window's drag strip and the way
+ * out (the tab's close button) belong to the strip above, not to the editor.
  */
 export function EditorScreen({
   project: initial,
   onClose,
 }: {
   project: DesktopProject;
+  /** The project is gone (deleted from here); drop its tab. */
   onClose: () => void;
 }) {
   const projectId = initial.dir;
@@ -85,15 +89,16 @@ export function EditorScreen({
     deleteAudioClip,
   } = useProjectMutations(projectId);
 
+  const editorStore = useEditorStoreApi();
   const requestFix = useEditorStore((s) => s.requestFix);
   const aiBusy = useEditorStore((s) => s.aiBusy);
 
   const handleDeleteScenes = useCallback(
     (ids: string[]) => {
-      if (useEditorStore.getState().aiBusy) return;
+      if (editorStore.getState().aiBusy) return;
       for (const id of ids) deleteScene.mutate(id);
     },
-    [deleteScene],
+    [deleteScene, editorStore],
   );
 
   function startResize(e: ReactPointerEvent<HTMLDivElement>) {
@@ -184,17 +189,7 @@ function EditorBody({
   const firstError = project.scenes.find((s) => s.id in errors);
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* Clears the traffic lights, and gives the frameless window a drag strip. */}
-      <div className="titlebar-drag flex h-9 shrink-0 items-center justify-end border-b border-border pr-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded px-2 py-0.5 text-[0.786rem] text-text-tertiary transition-colors hover:text-text-primary"
-        >
-          Close project
-        </button>
-      </div>
+    <main className="flex h-full flex-col overflow-hidden bg-background">
       <div className="flex min-h-0 flex-1">
         {/* Left column: project header (over the chat) + chat */}
         <div className="relative flex shrink-0 flex-col" style={{ width: chatWidth }}>

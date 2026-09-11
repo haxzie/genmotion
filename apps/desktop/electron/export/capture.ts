@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { BrowserWindow, type NativeImage } from "electron";
 import type { ProjectManifest, SceneEntry } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
-import { PAGE_SHELL, latestExport } from "./service";
+import { PAGE_SHELL, hasActiveExport } from "./service";
 
 /**
  * One frame of a composition, rendered offscreen.
@@ -67,8 +67,7 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
   // An export already owns an offscreen window and the encoder; adding a
   // second composition-sized window mid-render would slow down the thing the
   // user is actually waiting for.
-  const running = latestExport();
-  if (running && ["queued", "rendering", "encoding", "uploading"].includes(running.status)) {
+  if (hasActiveExport()) {
     throw new CaptureBusyError("an export is running — try again once it finishes");
   }
 

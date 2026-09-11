@@ -17,7 +17,20 @@ interface ReadRootsState {
   cancelled?: boolean;
 }
 
-export const readRootsKey = ["read-roots"] as const;
+/**
+ * Keyed by project: grants belong to a folder, and with several open at once
+ * each editor's list is its own. The start screen, with no project yet, is
+ * the `null` key — the folders held for whatever gets opened next.
+ */
+export const readRootsKey = (projectId: string | null) => ["read-roots", projectId] as const;
+
+/** `?projectId=` for the editor; nothing for the start screen. */
+function readRootsUrl(projectId: string | null, params: Record<string, string> = {}): string {
+  const search = new URLSearchParams(params);
+  if (projectId) search.set("projectId", projectId);
+  const query = search.toString();
+  return `/api/read-roots${query ? `?${query}` : ""}`;
+}
 
 /**
  * Open the native folder picker and share what comes back.
@@ -26,11 +39,11 @@ export const readRootsKey = ["read-roots"] as const;
  * one request, and one cache the answer lands in — so a folder added from
  * either place shows up in the other without a refetch.
  */
-export function useShareFolder() {
+export function useShareFolder(projectId: string | null = null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api<ReadRootsState>("/api/read-roots", { json: {} }),
-    onSuccess: (next) => queryClient.setQueryData(readRootsKey, next),
+    mutationFn: () => api<ReadRootsState>(readRootsUrl(projectId), { json: {} }),
+    onSuccess: (next) => queryClient.setQueryData(readRootsKey(projectId), next),
   });
 }
 
@@ -58,8 +71,11 @@ function FolderIcon({ className }: { className?: string }) {
 export function FolderAccess({
   placement = "up",
   hideWhenEmpty = false,
+  projectId = null,
 }: {
   placement?: "up" | "down";
+  /** The editor's project; the start screen has none. */
+  projectId?: string | null;
   /**
    * Render nothing until a folder is actually shared. The editor's composer
    * uses this — the `+` menu offers the same "Share a folder…" action (see
@@ -75,21 +91,19 @@ export function FolderAccess({
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: readRootsKey,
-    queryFn: () => api<ReadRootsState>("/api/read-roots"),
+    queryKey: readRootsKey(projectId),
+    queryFn: () => api<ReadRootsState>(readRootsUrl(projectId)),
     staleTime: 0,
   });
 
   // The picker is native and opens in the main process, so this mutation is
   // pending for as long as the user is looking at a Finder window.
-  const share = useShareFolder();
+  const share = useShareFolder(projectId);
 
   const revoke = useMutation({
     mutationFn: (dir: string) =>
-      api<ReadRootsState>(`/api/read-roots?path=${encodeURIComponent(dir)}`, {
-        method: "DELETE",
-      }),
-    onSuccess: (next) => queryClient.setQueryData(readRootsKey, next),
+      api<ReadRootsState>(readRootsUrl(projectId, { path: dir }), { method: "DELETE" }),
+    onSuccess: (next) => queryClient.setQueryData(readRootsKey(projectId), next),
   });
 
   useEffect(() => {

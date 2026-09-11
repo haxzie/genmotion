@@ -1,6 +1,7 @@
 "use client";
 
-import { create } from "zustand";
+import { createContext, createElement, useContext, useState, type ReactNode } from "react";
+import { createStore, useStore, type StoreApi } from "zustand";
 
 export interface PlaybackState {
   frame: number;
@@ -34,12 +35,21 @@ export function selectDisplayFrame(state: PlaybackState): number {
   return state.hoverFrame;
 }
 
+export type PlaybackStoreApi = StoreApi<PlaybackState>;
+
 /**
- * Global playback clock shared by the preview player, transport controls,
- * and timeline playhead. Frame updates are transient and high-frequency —
+ * One playback clock, shared by a preview player, its transport controls and
+ * its timeline playhead. Frame updates are transient and high-frequency —
  * subscribe with selectors.
+ *
+ * A factory rather than a single global: the desktop editor keeps several
+ * projects open at once, each with its own player, and one clock between them
+ * would have a background tab's timeline scrubbing the frontmost preview.
+ * Pages with a single player never need to think about this — see
+ * `defaultPlaybackStore` below.
  */
-export const usePlaybackStore = create<PlaybackState>((set, get) => ({
+export function createPlaybackStore(): PlaybackStoreApi {
+  return createStore<PlaybackState>((set, get) => ({
   frame: 0,
   isPlaying: false,
   totalFrames: 0,
@@ -84,4 +94,43 @@ export const usePlaybackStore = create<PlaybackState>((set, get) => ({
           : Math.min(state.hoverFrame, Math.max(0, totalFrames - 1)),
     }));
   },
-}));
+  }));
+}
+
+/**
+ * The store a page gets when it has not asked for its own.
+ *
+ * Every `usePlaybackStore` call outside a `PlaybackStoreProvider` reads this
+ * one, which is exactly the old single-global behaviour — a page with one
+ * `<Player>` and one set of controls needs nothing else.
+ */
+export const defaultPlaybackStore: PlaybackStoreApi = createPlaybackStore();
+
+const PlaybackStoreContext = createContext<PlaybackStoreApi | null>(null);
+
+/** Give the subtree its own clock. The desktop editor mounts one per project tab. */
+export function PlaybackStoreProvider({
+  store,
+  children,
+}: {
+  /** Bring your own — the host may need a handle to it (to pause a hidden tab, say). */
+  store?: PlaybackStoreApi;
+  children: ReactNode;
+}) {
+  const [own] = useState(createPlaybackStore);
+  return createElement(PlaybackStoreContext.Provider, { value: store ?? own }, children);
+}
+
+/**
+ * The nearest clock itself, for imperative reads and writes inside event
+ * handlers and effects. This — not a static on the hook — is how to get one:
+ * a `usePlaybackStore.getState()` would always read the default store, which
+ * inside a provider is nobody's clock.
+ */
+export function usePlaybackStoreApi(): PlaybackStoreApi {
+  return useContext(PlaybackStoreContext) ?? defaultPlaybackStore;
+}
+
+export function usePlaybackStore<T>(selector: (state: PlaybackState) => T): T {
+  return useStore(usePlaybackStoreApi(), selector);
+}

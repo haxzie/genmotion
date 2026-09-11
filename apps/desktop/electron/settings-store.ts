@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { app } from "electron";
+import type { StoredTabs } from "./shared";
 
 /**
  * `<userData>/settings.json`, with one writer.
@@ -17,6 +18,8 @@ export interface Settings {
   models?: Record<string, string>;
   /** What the composer opens with on a fresh project. */
   defaults?: { width?: number; height?: number; fps?: number };
+  /** The tabs open when the app last quit, so a launch picks up where it left off. */
+  openTabs?: StoredTabs;
 }
 
 function settingsFile(): string {

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePlaybackStore, type CompiledScene } from "@genmotion/player";
+import { usePlaybackStore, usePlaybackStoreApi, type CompiledScene } from "@genmotion/player";
 import { framesToTimecode, globalToLocal } from "@genmotion/shared";
-import { useEditorStore, type ElementContext } from "@/stores/editor-store";
+import { useEditorStore, useEditorStoreApi, type ElementContext } from "@/stores/editor-store";
 
 /** Purple, react-grab style. */
 const HILITE = "#a855f7";
@@ -119,8 +119,10 @@ export function PreviewInspector({
   const [marqueeHits, setMarqueeHits] = useState<Box[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [note, setNote] = useState("");
+  const editorStore = useEditorStoreApi();
   const addElement = useEditorStore((s) => s.addElement);
   const requestPrompt = useEditorStore((s) => s.requestPrompt);
+  const playback = usePlaybackStoreApi();
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
 
   // Drag bookkeeping (refs so it survives re-renders without re-binding).
@@ -220,7 +222,7 @@ export function PreviewInspector({
     const tag = el.tagName.toLowerCase();
     const elementId = el.id || null;
     const text = (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
-    const frame = usePlaybackStore.getState().frame;
+    const frame = playback.getState().frame;
     const mapping = globalToLocal(scenes, frame);
     const scene = mapping ? scenes[mapping.sceneIndex] : null;
     const short = text.length > 24 ? `${text.slice(0, 24)}…` : text;
@@ -246,7 +248,7 @@ export function PreviewInspector({
 
   function takenIds(): Set<string> {
     return new Set(
-      useEditorStore.getState().selectedElements.map(contextKey),
+      editorStore.getState().selectedElements.map(contextKey),
     );
   }
 
@@ -260,7 +262,7 @@ export function PreviewInspector({
       setDraft(null);
       return;
     }
-    usePlaybackStore.getState().pause();
+    playback.getState().pause();
     const seen = new Set<string>();
     const elements: ElementContext[] = [];
     for (const { el } of hits) {

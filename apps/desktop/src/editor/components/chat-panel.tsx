@@ -22,7 +22,9 @@ import {
 import { limitsQueryKey } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { useEditorStore } from "@/stores/editor-store";
+import { useEditorStore, useEditorStoreApi } from "@/stores/editor-store";
+import { useTabActive } from "../../tabs/active-tab";
+import { reportTabBusy } from "../../tabs/tabs-store";
 import { projectQueryKey } from "@/hooks/use-project";
 import { useProjectAssets, uploadProjectAsset } from "@/hooks/use-assets";
 import {
@@ -81,9 +83,11 @@ async function fetchChatPage(projectId: string, before?: string): Promise<ChatPa
  * pick. Registered rather than passed as a prop because ChatPanel is mounted by
  * the editor page, not by the host.
  */
-let ComposerAccessory: ComponentType | null = null;
+let ComposerAccessory: ComponentType<{ projectId: string }> | null = null;
 
-export function registerComposerAccessory(component: ComponentType | null): void {
+export function registerComposerAccessory(
+  component: ComponentType<{ projectId: string }> | null,
+): void {
   ComposerAccessory = component;
 }
 
@@ -548,13 +552,18 @@ function ChatPanelInner({
   const [plugins, setPlugins] = useState<ChatPlugin[]>([]);
   const queryClient = useQueryClient();
   const { data: assets } = useProjectAssets(projectId);
+  const editorStore = useEditorStoreApi();
+  // Window-level listeners below only act for the tab in front: every open
+  // project's chat is mounted, and a keypress or a file drag reaches all of
+  // them.
+  const tabActive = useTabActive();
   const selectAsset = useEditorStore((s) => s.selectAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Files being uploaded from a chat-composer drop — shown as loading chips
   // until they resolve into real assets and land as context.
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   // Offered from the `+` as well as from the Folders control beside it.
-  const shareFolder = useShareFolder();
+  const shareFolder = useShareFolder(projectId);
   // `windowDragActive`: a file is being dragged somewhere in the window (cue the
   // composer as a target). `chatDragOver`: it's directly over the composer.
   const [windowDragActive, setWindowDragActive] = useState(false);
@@ -589,6 +598,7 @@ function ChatPanelInner({
   // depth counter handles dragenter/dragleave firing on nested elements. Also
   // swallows drops outside a drop zone so the browser doesn't open the file.
   useEffect(() => {
+    if (!tabActive) return;
     const hasFiles = (e: DragEvent) =>
       Boolean(e.dataTransfer?.types?.includes("Files"));
     let depth = 0;
@@ -620,7 +630,7 @@ function ChatPanelInner({
       window.removeEventListener("dragover", onOver);
       window.removeEventListener("drop", onDrop);
     };
-  }, []);
+  }, [tabActive]);
 
   // Upload dropped/attached files, showing a loading chip per file until it
   // resolves into an asset and is auto-added to the chat context.
@@ -831,6 +841,9 @@ function ChatPanelInner({
 
   useEffect(() => {
     setAiBusy(busy);
+    // The tab strip shows a spinner while this runs and a mark once it ends
+    // in a tab that is not in front.
+    reportTabBusy(projectId, busy);
     if (!busy) {
       // Final settle: make sure the editor reflects every tool mutation.
       queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
@@ -865,9 +878,9 @@ function ChatPanelInner({
   // close that instead.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (!tabActive || e.key !== "Escape") return;
       if (document.querySelector('[role="dialog"]')) return;
-      const s = useEditorStore.getState();
+      const s = editorStore.getState();
       if (
         s.selectedSceneIds.length ||
         s.selectedAssetIds.length ||
@@ -883,7 +896,7 @@ function ChatPanelInner({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [editorStore, tabActive]);
 
   // Live updates mid-stream: whenever a new tool result lands, refetch scenes.
   const toolOutputCount = useRef(0);
@@ -904,7 +917,7 @@ function ChatPanelInner({
   // Shimmer scenes the AI is actively editing: scene-targeting tool calls in the
   // live turn that carry a sceneId but haven't produced output yet.
   useEffect(() => {
-    const setEditing = useEditorStore.getState().setEditingSceneIds;
+    const setEditing = editorStore.getState().setEditingSceneIds;
     if (!busy) {
       setEditing([]);
       return;
@@ -926,7 +939,7 @@ function ChatPanelInner({
       }
     }
     setEditing([...editing]);
-  }, [messages, busy]);
+  }, [messages, busy, editorStore]);
 
   // Auto-send the prompt the user typed on the home page (new-project flow).
   useEffect(() => {
@@ -943,14 +956,14 @@ function ChatPanelInner({
   // Consume "Fix with AI" requests issued from the preview/timeline.
   useEffect(() => {
     if (!fixRequest || busy) return;
-    const request = useEditorStore.getState().consumeFixRequest();
+    const request = editorStore.getState().consumeFixRequest();
     if (request) {
       sendMessage(
         { text: request.message },
         { body: { selectedSceneIds: [request.sceneId] } },
       );
     }
-  }, [fixRequest, busy, sendMessage]);
+  }, [fixRequest, busy, sendMessage, editorStore]);
 
   // Breathing room left above a focused message, so it reads as the top of the
   // turn rather than being flush against the panel's edge.
@@ -1176,13 +1189,13 @@ function ChatPanelInner({
 
     track("chat_message_sent", {
       length: text.length,
-      hasSelection: useEditorStore.getState().selectedSceneIds.length > 0,
+      hasSelection: editorStore.getState().selectedSceneIds.length > 0,
     });
 
     const send = buildSendPayload(text);
 
     // Context is consumed by this message (queued or sent) — clear the pills.
-    const store = useEditorStore.getState();
+    const store = editorStore.getState();
     store.clearSelection();
     store.clearAssetSelection();
     store.clearAudioClipSelection();
@@ -1203,7 +1216,7 @@ function ChatPanelInner({
   // composer message — queueing behind a live turn included.
   useEffect(() => {
     if (!promptRequest) return;
-    const text = useEditorStore.getState().consumePrompt();
+    const text = editorStore.getState().consumePrompt();
     if (text) submit(text);
     // `submit` is rebuilt each render; the effect always runs the current one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1466,7 +1479,7 @@ function ChatPanelInner({
               onShareFolder={() => shareFolder.mutate()}
               sharingFolder={shareFolder.isPending}
             />
-            {ComposerAccessory && <ComposerAccessory />}
+            {ComposerAccessory && <ComposerAccessory projectId={projectId} />}
             <span className="min-w-0 flex-1 truncate text-center text-[0.786rem] text-text-tertiary">
               {selectedSceneIds.length > 0
                 ? `${selectedSceneIds.length} scene${selectedSceneIds.length > 1 ? "s" : ""} in context`

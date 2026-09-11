@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import {
   Player,
   usePlaybackStore,
+  usePlaybackStoreApi,
   selectDisplayFrame,
   type CompiledScene,
 } from "@genmotion/player";
 import { framesToTimecode, type AudioClipData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { PreviewInspector } from "./preview-inspector";
+import { useTabActive } from "../../tabs/active-tab";
 
 function PlayIcon({ playing }: { playing: boolean }) {
   return playing ? (
@@ -91,15 +93,19 @@ export function PreviewStage({
   // The readout describes the picture, so it follows a timeline hover along
   // with it — a timecode that disagreed with the frame on screen would be
   // worse than one that moves. The playhead itself stays put.
+  const playback = usePlaybackStoreApi();
   const frame = usePlaybackStore(selectDisplayFrame);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
   const totalFrames = usePlaybackStore((s) => s.totalFrames);
   const toggle = usePlaybackStore((s) => s.toggle);
   const seek = usePlaybackStore((s) => s.seek);
+  const tabActive = useTabActive();
 
-  // Space toggles playback unless typing in an input.
+  // Space toggles playback unless typing in an input — and only in the tab
+  // in front, or one press would scrub every open project.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (!tabActive) return;
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -112,12 +118,12 @@ export function PreviewStage({
         e.preventDefault();
         toggle();
       }
-      if (e.code === "ArrowLeft") seek(usePlaybackStore.getState().frame - (e.shiftKey ? 10 : 1));
-      if (e.code === "ArrowRight") seek(usePlaybackStore.getState().frame + (e.shiftKey ? 10 : 1));
+      if (e.code === "ArrowLeft") seek(playback.getState().frame - (e.shiftKey ? 10 : 1));
+      if (e.code === "ArrowRight") seek(playback.getState().frame + (e.shiftKey ? 10 : 1));
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, seek]);
+  }, [toggle, seek, playback, tabActive]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -180,7 +186,7 @@ export function PreviewStage({
           </TransportButton>
           <TransportButton
             title="Jump to end"
-            onClick={() => seek(usePlaybackStore.getState().totalFrames - 1)}
+            onClick={() => seek(playback.getState().totalFrames - 1)}
             disabled={scenes.length === 0}
           >
             <SkipEndIcon />

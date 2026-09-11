@@ -111,13 +111,16 @@ function loadToolchain(): Promise<[AgentSdkModule, string | null]> {
 }
 
 /**
- * The turn currently running, for callbacks that outlive a single `query()`.
+ * The turn currently running in each project, for callbacks that outlive a
+ * single `query()`.
  *
  * A pre-warmed subprocess is created before the turn that will use it exists,
  * so its `canUseTool` cannot close over that turn's abort signal. It reads it
- * from here instead.
+ * from here instead — keyed by project, like `lastContext` below, because with
+ * several tabs open there are several turns, and a single slot would hand one
+ * project's question the abort signal of another's turn.
  */
-let activeTurn: { signal: AbortSignal } | null = null;
+const activeTurns = new Map<string, { signal: AbortSignal }>();
 
 /**
  * The most recent context reading, per project, carried between turns.
@@ -173,7 +176,7 @@ async function turnOptions(
       // hand the selection back on the input. Unanswered is a valid
       // outcome: the model is told nobody replied.
       if (toolName === "AskUserQuestion") {
-        const signal = activeTurn?.signal ?? AbortSignal.timeout(0);
+        const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
         const answers = await waitForAnswer(toolUseID, signal);
         return {
           behavior: "allow" as const,
@@ -252,6 +255,21 @@ export async function disposeWarmClaudeCode(): Promise<void> {
   }
 }
 
+/**
+ * The same, but only if the warm process belongs to `dir`.
+ *
+ * Closing a background tab must not take the active tab's warm process with
+ * it — that is the one the next turn is most likely to want.
+ */
+export async function disposeWarmClaudeCodeFor(dir: string): Promise<void> {
+  if (warm?.dir === dir) await disposeWarmClaudeCode();
+}
+
+/** Which project the warm process was spawned for, if there is one. */
+export function warmDir(): string | null {
+  return warm?.dir ?? null;
+}
+
 export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
   return {
     id: "claude-code",
@@ -283,9 +301,15 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
       // a `resume` id that was not known then. Claimed rather than borrowed —
       // a WarmQuery is single-use.
       const claimed = warm?.dir === projectDir && !resumeSessionId ? warm : null;
-      warm = null;
+      // Only the claimed one is taken. Nulling the slot unconditionally would
+      // discard another project's warm handle without closing it — a leaked
+      // subprocess every time a turn ran in a tab that was not the warm one.
+      // A warm process for *this* project that a resumed turn cannot use is
+      // closed properly: every later turn resumes too, so nothing will want it.
+      if (claimed) warm = null;
+      else if (warm?.dir === projectDir) void disposeWarmClaudeCode();
 
-      activeTurn = { signal };
+      activeTurns.set(projectDir, { signal });
       const response = claimed
         ? claimed.handle.query(text)
         : sdk.query({
@@ -432,8 +456,9 @@ export function createClaudeCodeBackend(session: ProjectSession): AgentBackend {
       } finally {
         signal.removeEventListener("abort", stop);
         // Leaving a finished turn's signal here would let a later callback
-        // park on an abort that can never fire again.
-        activeTurn = null;
+        // park on an abort that can never fire again. Identity-checked: a
+        // retry registers the next turn before this one's finally runs.
+        if (activeTurns.get(projectDir)?.signal === signal) activeTurns.delete(projectDir);
       }
 
       // Whatever landed before the turn ended. If it did not, the reading is

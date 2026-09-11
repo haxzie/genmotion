@@ -148,7 +148,7 @@ export async function uploadProjectAsset(
 export function useProjectAssets(projectId: string) {
   return useQuery({
     queryKey: ["assets", projectId],
-    queryFn: () => api<AssetData[]>(`/api/assets?projectId=${projectId}`),
+    queryFn: () => api<AssetData[]>(`/api/assets?projectId=${encodeURIComponent(projectId)}`),
   });
 }
 
@@ -157,7 +157,9 @@ export function useDeleteAsset(projectId: string) {
 
   return useMutation({
     mutationFn: (assetId: string) =>
-      api(`/api/assets/${assetId}`, { method: "DELETE" }),
+      api(`/api/assets/${assetId}?projectId=${encodeURIComponent(projectId)}`, {
+        method: "DELETE",
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
     },

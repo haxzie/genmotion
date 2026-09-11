@@ -127,6 +127,17 @@ pnpm db:push                          # sync schema to DEV only
   PostHog key is a write credential handed to every user). It posts to
   `/api/events` and the server forwards; identity comes from the session, never
   the body, and names are prefixed `desktop_` server-side.
+- **The desktop app keeps several projects open at once (tabs).** Every open
+  project has its own `ProjectSession` in `electron/session-registry.ts` — the
+  only place allowed to construct one, idempotent by realpath — and every
+  loopback route names its project (in the path for `/projects/<dir>` and
+  `/chat/<dir>`, as `?projectId=` for assets/read-roots, in the body for
+  exports). There is deliberately no "current project" in `electron/`. In the
+  renderer every tab's editor stays mounted (hidden with `display:none` +
+  `inert`), because the chat's HTTP request *is* the agent turn; anything
+  hung on `window` inside the editor must check `useTabActive()` first, and
+  editor/playback state comes from per-tab stores (`EditorStoreProvider`,
+  `PlaybackStoreProvider`) — never a module-level one.
 - **The desktop chat agent has a real shell.** Both harnesses' Bash tool is on,
   with this app's own `ffmpeg` prepended to its `PATH` (`bundledBinDir()` in
   `apps/desktop/electron/bundled-bin.ts`, wired into `agentEnv()` in

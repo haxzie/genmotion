@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import type { ProjectSession } from "../project-session";
-import { GENMOTION_TOOLS, toMcpContent } from "./tools";
+import { GENMOTION_TOOLS, runTool, toMcpContent } from "./tools";
 
 /**
  * The GenMotion tools, served as a streamable-HTTP MCP server.
@@ -106,7 +106,7 @@ export async function handleMcpMessage(
       const args = (request.params?.arguments ?? {}) as Record<string, never>;
       try {
         const parsed = z.object(spec.shape).parse(args) as Record<string, never>;
-        return ok(id, toMcpContent(await spec.run(session, parsed)));
+        return ok(id, toMcpContent(await runTool(spec, session, parsed)));
       } catch (err) {
         // A thrown tool is still a *result* in MCP — reporting it as a protocol
         // error would abort the turn instead of letting the model correct itself.

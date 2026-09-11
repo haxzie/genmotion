@@ -6,10 +6,12 @@ import type { UIMessage } from "ai";
 import { PAYWALL_STATUS, type AssetData } from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
 import type { ProjectSession } from "./project-session";
+import { getSession, listSessions } from "./session-registry";
 // Static, unlike the other agent imports: this is a two-line registry with no
 // startup cost, and a lazily-imported copy risks being a *second* registry —
 // the turn parks on one map and the answer lands in the other.
 import { answerQuestion } from "./agent/questions";
+import { beginTurn, endTurn } from "./agent/turns";
 
 /**
  * A loopback HTTP server speaking the same routes as the hosted Hono API, so
@@ -30,13 +32,15 @@ export interface LocalServer {
   close(): Promise<void>;
 }
 
-type SessionRef = () => ProjectSession | null;
-
 /** Sentinel: the route wrote directly to the socket (an event stream). */
 const HANDLED = Symbol("handled");
 
-/** The agent turn currently running, so a new one can supersede it. */
-let inFlightTurn: AbortController | null = null;
+/** Thrown by a route that was asked about a project no tab has open. */
+class ProjectNotOpen extends Error {
+  constructor() {
+    super("That project isn't open");
+  }
+}
 
 /**
  * Cap for JSON bodies, which are read into memory.
@@ -96,8 +100,42 @@ export function mimeForAsset(file: string): string {
   return ASSET_MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream";
 }
 
+/**
+ * Which open project a URL path names, and what follows it.
+ *
+ * A project's id is its absolute folder path, so it spans many URL segments —
+ * `/api/projects//Users/me/.genmotion/projects/foo/scenes/...`. With several
+ * projects open the question is *which* folder the path starts with, and one
+ * project can sit inside another's folder (`~/work` and `~/work/promo`), so
+ * the longest match wins rather than the first. Exported for its test.
+ */
+export function matchProjectPath(
+  sessions: readonly ProjectSession[],
+  segments: readonly string[],
+): { session: ProjectSession; rest: string[] } | null {
+  const joined = segments.map((part) => decodeURIComponent(part)).join("/");
+  let best: { session: ProjectSession; rest: string[] } | null = null;
+  for (const session of sessions) {
+    const key = session.dir.replace(/^\/+/, "");
+    if (joined !== key && !joined.startsWith(`${key}/`)) continue;
+    if (best && best.session.dir.length >= session.dir.length) continue;
+    best = {
+      session,
+      rest: joined === key ? [] : joined.slice(key.length + 1).split("/"),
+    };
+  }
+  return best;
+}
+
+/** `?projectId=<dir>` → the open session, or a 409 for the caller. */
+function sessionFromQuery(url: URL): ProjectSession {
+  const dir = url.searchParams.get("projectId");
+  const session = dir ? getSession(dir) : null;
+  if (!session) throw new ProjectNotOpen();
+  return session;
+}
+
 export async function startLocalServer(
-  getSession: SessionRef,
   /**
    * Directory of the built renderer. Serving the UI over http rather than
    * file:// gives it a real origin, so root-absolute asset paths written for
@@ -108,10 +146,25 @@ export async function startLocalServer(
   const secret = randomBytes(24).toString("base64url");
   const prefix = `/s/${secret}`;
   // Filled in once the port is known — a spawned harness needs an absolute URL.
-  let mcpUrl = "";
+  let origin = "";
+  /**
+   * The MCP endpoint for one project. The folder is in the path because the
+   * harness is handed this URL at spawn and keeps it for the whole turn — it
+   * has to land on its own project's bundler, whichever tab is in front.
+   */
+  const mcpUrlFor = (session: ProjectSession) =>
+    `${origin}${prefix}/api/mcp/${session.dir
+      .replace(/^\/+/, "")
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`;
 
   const server = http.createServer((req, res) => {
     void handle(req, res).catch((err) => {
+      if (err instanceof ProjectNotOpen) {
+        send(res, 409, { error: err.message });
+        return;
+      }
       send(res, 500, { error: err instanceof Error ? err.message : String(err) });
     });
   });
@@ -161,11 +214,14 @@ export async function startLocalServer(
       return;
     }
 
-    // Above the "no project is open" gate: the start screen shares folders
-    // too, and a folder picked there is held until a project exists to grant
-    // it against.
+    // The start screen shares folders too, and a folder picked there is held
+    // until a project exists to grant it against — so this takes an optional
+    // project rather than requiring one.
     if (rest[0] === "read-roots") {
-      const result = await readRootRoutes(getSession(), method, url);
+      const dir = url.searchParams.get("projectId");
+      const session = dir ? getSession(dir) : null;
+      if (dir && !session) throw new ProjectNotOpen();
+      const result = await readRootRoutes(session, method, url);
       if (result === undefined) {
         send(res, 404, { error: `No route for ${method} /${rest.join("/")}` });
         return;
@@ -174,21 +230,15 @@ export async function startLocalServer(
       return;
     }
 
-    // Also above the gate: the gallery lives on the start screen, and a
-    // template is browsed and remixed before any folder is open. Public
-    // upstream, so no token is attached and it works signed-out too.
+    // The gallery lives on the start screen, and a template is browsed and
+    // remixed before any folder is open. Public upstream, so no token is
+    // attached and it works signed-out too.
     if (rest[0] === "templates") {
       await templateProxy(rest.slice(1), url, req, res);
       return;
     }
 
-    const session = getSession();
-    if (!session) {
-      send(res, 409, { error: "No project is open" });
-      return;
-    }
-
-    const result = await route(session, method, rest, url, req, res);
+    const result = await route(method, rest, url, req, res);
     if (result === undefined) {
       send(res, 404, { error: `No route for ${method} /${rest.join("/")}` });
       return;
@@ -201,9 +251,15 @@ export async function startLocalServer(
     send(res, 200, result);
   }
 
-  /** `undefined` means no route; `HANDLED` means the response was written directly. */
+  /**
+   * Every project-shaped route names its project, because several are open at
+   * once and there is no "current" one to fall back on. `/projects/<dir>/…`
+   * and `/chat/<dir>/…` carry it in the path; assets and exports carry it as
+   * `?projectId=` or in the body; the MCP endpoint carries it in the path so a
+   * spawned harness — which is handed a fixed URL — reaches its own project's
+   * bundler.
+   */
   async function route(
-    session: ProjectSession,
     method: string,
     segments: string[],
     url: URL,
@@ -212,21 +268,34 @@ export async function startLocalServer(
   ): Promise<unknown | Response | undefined> {
     const [head, ...tail] = segments;
 
-    if (head === "projects") return projectRoutes(session, method, tail, req);
-    if (head === "assets") return assetRoutes(session, method, tail, url, req);
-    if (head === "exports") return exportRoutes(session, method, tail, req, res);
-    if (head === "mcp") return mcpRoute(session, method, req);
+    if (head === "projects") {
+      const match = matchProjectPath(listSessions(), tail);
+      if (!match) throw new ProjectNotOpen();
+      return projectRoutes(match.session, method, match.rest, req);
+    }
+    if (head === "assets") return assetRoutes(method, tail, url, req);
+    if (head === "exports") return exportRoutes(method, tail, url, req, res);
+    if (head === "mcp") {
+      const match = matchProjectPath(listSessions(), tail);
+      return mcpRoute(match?.session ?? null, method, req);
+    }
     if (head === "chat") {
       // An answer to an `AskUserQuestion` card. It arrives on its own request
-      // because the turn that asked is still streaming on another one.
-      if (method === "POST" && tail.at(-1) === "answer") return answerQuestionRoute(req);
+      // because the turn that asked is still streaming on another one — and it
+      // names no project: the tool-call id alone says which turn is waiting.
+      if (method === "POST" && tail.length === 1 && tail[0] === "answer") {
+        return answerQuestionRoute(req);
+      }
+      const match = matchProjectPath(listSessions(), tail);
+      if (!match) throw new ProjectNotOpen();
+      const { session, rest } = match;
       // Called by the composer right before it retries a failed turn: `regenerate()`
       // drops the errored assistant bubble from the live view the moment it's
       // called, so whatever had already streamed in has to be on disk *before*
       // that happens or it's gone from this session for good. Idempotent by the
       // message's own id, same as the normal end-of-turn write — it either lands
       // ahead of that write or is a no-op once it does.
-      if (method === "POST" && tail.at(-1) === "save-partial") {
+      if (method === "POST" && rest.at(-1) === "save-partial") {
         return savePartialRoute(session, req);
       }
       // The transcript lives in the project folder, so a conversation travels
@@ -242,7 +311,7 @@ export async function startLocalServer(
         // ring says "unknown" rather than inventing one from message count.
         return before ? page : { ...page, context: { usage: await session.readAgentContext() } };
       }
-      if (method === "POST") return chatTurn(session, req, mcpUrl);
+      if (method === "POST") return chatTurn(session, req, mcpUrlFor(session));
     }
     return undefined;
   }
@@ -325,7 +394,7 @@ export async function startLocalServer(
    * through the environment, which is what actually guards the endpoint.
    */
   async function mcpRoute(
-    session: ProjectSession,
+    session: ProjectSession | null,
     method: string,
     req: http.IncomingMessage,
   ): Promise<unknown | Response | undefined> {
@@ -339,6 +408,8 @@ export async function startLocalServer(
     // A client closing its session; there is no per-connection state to drop.
     if (method === "DELETE") return new Response(null, { status: 204 });
     if (method !== "POST") return undefined;
+    // The token was right but the project has closed under the harness.
+    if (!session) throw new ProjectNotOpen();
 
     const reply = await handleMcpMessage(session, await readJson<unknown>(req));
     // A notification has no reply — 202 is how the transport says "received".
@@ -347,26 +418,6 @@ export async function startLocalServer(
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  }
-
-  /**
-   * Everything after the project id in `/api/projects/<id>/...`.
-   *
-   * The id here is the project's absolute folder path, so it spans many URL
-   * segments — `/api/projects//Users/me/.genmotion/projects/foo/scenes/...`.
-   * Splitting on "/" and taking one segment silently 404s every mutation the
-   * editor makes, so the id is matched against the open session instead.
-   */
-  function pathAfterProjectId(session: ProjectSession, segments: string[]): string[] {
-    // `segments` already excludes the "projects" prefix, so it begins with the id.
-    const after = segments.map((part) => decodeURIComponent(part));
-    const joined = after.join("/");
-    const dirKey = session.dir.replace(/^\/+/, "");
-    if (joined === dirKey) return [];
-    if (joined.startsWith(`${dirKey}/`)) return joined.slice(dirKey.length + 1).split("/");
-    // An id that isn't the folder path (a test, or a project addressed by name)
-    // still occupies exactly one segment.
-    return after.slice(1);
   }
 
   /**
@@ -445,10 +496,10 @@ export async function startLocalServer(
   async function projectRoutes(
     session: ProjectSession,
     method: string,
-    segments: string[],
+    /** What followed the project's folder in the path. */
+    rest: string[],
     req: http.IncomingMessage,
   ): Promise<unknown | undefined> {
-    const rest = pathAfterProjectId(session, segments);
     const [section, ...targetParts] = rest;
     // Scene ids are project-relative paths, so they arrive spread across
     // several URL segments (`.../scenes/scenes/01-intro.tsx`). Rejoin them.
@@ -572,12 +623,14 @@ export async function startLocalServer(
   }
 
   async function assetRoutes(
-    session: ProjectSession,
     method: string,
     segments: string[],
     url: URL,
     req: http.IncomingMessage,
   ): Promise<unknown | undefined> {
+    // Every asset route says which project: the list and the upload always
+    // have, and a delete now does too.
+    const session = sessionFromQuery(url);
     // Asset ids are project-relative paths, so rejoin the segments.
     const target =
       segments.length > 0 ? segments.map((part) => decodeURIComponent(part)).join("/") : undefined;
@@ -607,26 +660,37 @@ export async function startLocalServer(
   }
 
   async function exportRoutes(
-    session: ProjectSession,
     method: string,
     segments: string[],
+    url: URL,
     req: http.IncomingMessage,
     res: http.ServerResponse,
   ): Promise<unknown | undefined> {
     const [target, action] = segments;
-    const { cancelExport, latestExport, onExportChange, startExport } = await import(
+    const { cancelExport, latestExport, listExports, onExportChange, startExport } = await import(
       "./export/service"
     );
     const { ExportPaywallError } = await import("./export/entitlement");
 
+    // Every project's exports, newest first — this run's queue and the
+    // remembered history behind it. The panel asks for a few; the page asks
+    // for all of them with pictures.
+    if (!target && method === "GET") {
+      return listExports({
+        limit: Number(url.searchParams.get("limit")) || undefined,
+        thumbnails: url.searchParams.get("thumbnails") === "1",
+      });
+    }
+
     if (target === "latest" && method === "GET") {
-      const job = latestExport();
       // The button asks per project; a job from another folder isn't theirs.
-      return job && job.projectId === session.dir ? job : null;
+      return latestExport(sessionFromQuery(url).dir);
     }
 
     if (!target && method === "POST") {
-      const body = await readJson<{ format?: "mp4" | "webm" | "gif" }>(req);
+      const body = await readJson<{ projectId?: string; format?: "mp4" | "webm" | "gif" }>(req);
+      const session = body.projectId ? getSession(body.projectId) : null;
+      if (!session) throw new ProjectNotOpen();
       // Same status and body the hosted `POST /api/exports` answers with —
       // the export button's `handleLimitError` already recognises this shape
       // and opens the upgrade modal without knowing which backend refused it.
@@ -641,6 +705,37 @@ export async function startLocalServer(
         }
         throw err;
       }
+    }
+
+    // One stream for the whole queue, for the Exports panel: the full list on
+    // connect and again on every change. Unlike the per-job stream below it
+    // never ends on its own — it lives as long as the panel does.
+    if (target === "feed" && method === "GET") {
+      res.writeHead(200, {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+      const limit = Number(url.searchParams.get("limit")) || undefined;
+      // Writes are chained so a burst of progress events cannot land out of
+      // order — each snapshot is awaited before the next is read.
+      let chain: Promise<void> = Promise.resolve();
+      const write = () => {
+        chain = chain.then(async () => {
+          const jobs = await listExports({ limit });
+          if (!res.writableEnded) res.write(`event: exports\ndata: ${JSON.stringify(jobs)}\n\n`);
+        });
+      };
+      write();
+      const off = onExportChange(write);
+      // Comments keep an idle connection from being reaped by anything in
+      // between; the browser ignores them.
+      const heartbeat = setInterval(() => res.write(": ping\n\n"), 25_000);
+      res.on("close", () => {
+        off();
+        clearInterval(heartbeat);
+      });
+      return HANDLED;
     }
 
     if (target && action === "cancel" && method === "POST") {
@@ -659,9 +754,13 @@ export async function startLocalServer(
       // dispatches as "message" and is silently ignored.
       const write = (job: unknown) =>
         res.write(`event: progress\ndata: ${JSON.stringify(job)}\n\n`);
-      const initial = latestExport();
+      const initial = (await listExports()).find((job) => job.id === target);
       if (initial) write(initial);
+      // Filtered to this job: with a queue there are other jobs' changes on
+      // the same listener, and the button must not see another project's
+      // progress as its own.
       const off = onExportChange((job) => {
+        if (job.id !== target) return;
         write(job);
         if (["done", "failed", "cancelled"].includes(job.status)) {
           off();
@@ -722,14 +821,17 @@ export async function startLocalServer(
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("server has no port");
 
-  const origin = `http://127.0.0.1:${address.port}`;
-  mcpUrl = `${origin}${prefix}/api/mcp`;
+  origin = `http://127.0.0.1:${address.port}`;
   return {
     url: `${origin}${prefix}`,
     origin,
     close: () =>
       new Promise((resolve) => {
         server.close(() => resolve());
+        // `close` alone waits for every connection to end, and an event
+        // stream — the Exports panel's feed, a turn mid-stream — never does
+        // on its own. Quitting must not hang on them.
+        server.closeAllConnections();
       }),
   };
 }
@@ -779,12 +881,11 @@ async function chatTurn(
   // failed turn still leaves the transcript honest.
   await session.appendTranscript(last);
 
-  // A new turn supersedes whatever was running. Without this, hitting retry
-  // leaves the old turn alive: two agents editing the same files at once, both
-  // billed to the user's plan.
-  inFlightTurn?.abort();
-  const controller = new AbortController();
-  inFlightTurn = controller;
+  // A new turn supersedes whatever was running *in this project*. Without
+  // this, hitting retry leaves the old turn alive: two agents editing the same
+  // files at once, both billed to the user's plan. Other projects' turns are
+  // untouched — a tab in the background keeps working.
+  const controller = beginTurn(session.dir);
   req.on("close", () => controller.abort());
 
   return runTurnAsUiStream({
@@ -799,9 +900,17 @@ async function chatTurn(
     onCheckpoint: (message) => {
       void session.writeCheckpoint(message).catch(() => {});
     },
-    onFinish: async ({ message, sessionId, context }) => {
-      if (inFlightTurn === controller) inFlightTurn = null;
-      if (message) await session.appendTranscript(message);
+    onFinish: async ({ message, sessionId, context, checkpointId }) => {
+      endTurn(session.dir, controller);
+      // Stamped with the checkpoint's id so the two are one message on disk:
+      // a checkpoint recovered by a later open must not sit beside the turn
+      // it was a snapshot of.
+      if (message) {
+        await session.appendTranscript({
+          ...message,
+          metadata: { ...(message.metadata as object | undefined), checkpointId },
+        });
+      }
       await session.writeAgentSession(sessionId, backend.id, context);
       // The turn reached a real end — successful or not, the AI SDK still
       // ran flush() to get here — so whatever the checkpoint was standing in

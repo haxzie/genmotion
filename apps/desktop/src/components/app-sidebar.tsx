@@ -4,7 +4,7 @@ import { AccountMenu } from "./account-menu";
 import { hasUpdate } from "../lib/use-update";
 import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
 
-export type HomeTab = "create" | "templates" | "settings";
+export type HomeTab = "create" | "templates" | "exports" | "settings";
 
 type IconProps = { className?: string };
 
@@ -51,9 +51,23 @@ function SettingsIcon({ className }: IconProps) {
   );
 }
 
+// Solar "Download Minimalistic" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
+function DownloadIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path
+        d="M3 15c0-1.4 0-2.1.272-2.635a2.5 2.5 0 0 1 1.093-1.093C4.9 11 5.6 11 7 11h10c1.4 0 2.1 0 2.635.272a2.5 2.5 0 0 1 1.092 1.093C21 12.9 21 13.6 21 15v1c0 1.4 0 2.1-.273 2.635a2.5 2.5 0 0 1-1.092 1.092C19.1 20 18.4 20 17 20H7c-1.4 0-2.1 0-2.635-.273a2.5 2.5 0 0 1-1.093-1.092C3 18.1 3 17.4 3 16z"
+        opacity=".5"
+      />
+      <path d="M12.75 3a.75.75 0 0 0-1.5 0v9.19l-1.72-1.72a.75.75 0 1 0-1.06 1.06l3 3a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72z" />
+    </svg>
+  );
+}
+
 const NAV: readonly { id: HomeTab; label: string; Icon: (props: IconProps) => React.ReactElement }[] = [
   { id: "create", label: "Create", Icon: ClapperboardIcon },
   { id: "templates", label: "Templates", Icon: NotesIcon },
+  { id: "exports", label: "Exports", Icon: DownloadIcon },
   { id: "settings", label: "Settings", Icon: SettingsIcon },
 ];
 
@@ -97,8 +111,7 @@ function UpgradeCard({ hidden }: { hidden: boolean }) {
  * preview and a timeline, and a rail beside all three would come out of the
  * preview.
  *
- * It starts below `h-9` on every platform. On macOS the traffic lights sit over
- * the top-left corner, which is exactly where a nav item would otherwise be.
+ * It sits under the tab strip, which is what clears the traffic lights.
  */
 export function AppSidebar({
   tab,
@@ -117,9 +130,6 @@ export function AppSidebar({
 }) {
   return (
     <aside className="flex w-56 shrink-0 flex-col bg-background pb-3 pl-3">
-      {/* Clears the traffic lights. The strip itself is the shell's. */}
-      <div className="h-9 shrink-0" />
-
       <div className="px-2 pb-4 pt-1">
         <img src="/logo.svg" alt="GenMotion" className="size-5 rounded-[5px]" />
       </div>

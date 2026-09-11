@@ -33,6 +33,13 @@ export function runTurnAsUiStream(input: {
     sessionId: string | null;
     /** The turn's last context reading, or null if it never reported one. */
     context: { usedTokens: number; maxTokens: number } | null;
+    /**
+     * The id the running checkpoint was written under. The finished message
+     * carries the harness's own id, so the two would not dedupe against each
+     * other on disk; the caller records this on the final message so a
+     * checkpoint recovered by a later open is recognised as the same turn.
+     */
+    checkpointId: string;
   }) => void | Promise<void>;
   /**
    * A running snapshot of the assistant message, written as it streams —
@@ -47,12 +54,16 @@ export function runTurnAsUiStream(input: {
   // project is next opened, long before another turn produces one.
   let context: { usedTokens: number; maxTokens: number } | null = null;
 
+  // Minted up front so `onFinish` can name it — see the mirror built inside
+  // `execute` for what it labels.
+  const checkpointId = randomUUID();
+
   const stream = createUIMessageStream({
     // Without this the stream swallows the real failure and emits a bare
     // "An error occurred", which is useless in a chat transcript.
     onError: (error) => (error instanceof Error ? error.message : String(error)),
     onFinish: async ({ responseMessage }) => {
-      await input.onFinish({ message: responseMessage ?? null, sessionId, context });
+      await input.onFinish({ message: responseMessage ?? null, sessionId, context, checkpointId });
     },
     execute: async ({ writer }) => {
       // One text part per turn, opened lazily so a tool-only turn has none.
@@ -77,7 +88,6 @@ export function runTurnAsUiStream(input: {
       // own accumulator, because that one is only ever handed to `onFinish`,
       // at the very end. This is the one that can be checkpointed *during*
       // the turn, which is the entire point.
-      const checkpointId = randomUUID();
       const parts: CheckpointPart[] = [];
       let openText: { type: "text"; text: string } | null = null;
       let openReasoning: { type: "reasoning"; text: string } | null = null;

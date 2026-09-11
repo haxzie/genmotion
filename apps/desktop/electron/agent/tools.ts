@@ -465,6 +465,24 @@ function describeGenerationFailure(label: string, status: number, body: unknown)
   return `FAILED — ${detail || `${label} failed (${status}).`}`;
 }
 
+/**
+ * Run a tool against a project, unless that project has been closed.
+ *
+ * A tab can close while its agent is still winding down after an abort, and a
+ * call landing then would hit a disposed esbuild context — an opaque "service
+ * is no longer running" from deep inside the bundler. A sentence the model
+ * can narrate is better. Both transports go through here so neither can
+ * differ.
+ */
+export async function runTool(
+  spec: GenmotionTool,
+  session: ProjectSession,
+  args: Record<string, never>,
+): Promise<ToolResult> {
+  if (session.disposed) return failure("This project was closed.");
+  return spec.run(session, args);
+}
+
 /** The Claude-side transport: the same tools as an in-process MCP server. */
 export function createGenmotionTools(sdk: AgentSdkModule, session: ProjectSession) {
   const { createSdkMcpServer, tool } = sdk;
@@ -477,7 +495,7 @@ export function createGenmotionTools(sdk: AgentSdkModule, session: ProjectSessio
         spec.name,
         spec.description,
         spec.shape,
-        async (args: Record<string, never>) => toMcpContent(await spec.run(session, args)),
+        async (args: Record<string, never>) => toMcpContent(await runTool(spec, session, args)),
         spec.readOnly ? { annotations: { readOnlyHint: true } } : undefined,
       ),
     ),

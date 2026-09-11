@@ -23,7 +23,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { usePlaybackStore } from "@genmotion/player";
+import { usePlaybackStore, usePlaybackStoreApi } from "@genmotion/player";
+import { useTabActive } from "../../tabs/active-tab";
 import {
   framesToTimecode,
   sceneStartFrames,
@@ -354,6 +355,7 @@ function Playhead({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
+  const playback = usePlaybackStoreApi();
 
   // Length of the light trail: a bit over a third of a second of travel,
   // derived from the scale rather than hardcoded so it still reads right if
@@ -401,15 +403,15 @@ function Playhead({
 
     let raf = 0;
     let anchor = 0;
-    let lastFrame = usePlaybackStore.getState().frame;
-    let playing = usePlaybackStore.getState().isPlaying;
+    let lastFrame = playback.getState().frame;
+    let playing = playback.getState().isPlaying;
 
     const startLoop = () => {
       setMoving(true);
-      anchor = performance.now() - (usePlaybackStore.getState().frame / fps) * 1000;
-      lastFrame = usePlaybackStore.getState().frame;
+      anchor = performance.now() - (playback.getState().frame / fps) * 1000;
+      lastFrame = playback.getState().frame;
       const tick = () => {
-        const s = usePlaybackStore.getState();
+        const s = playback.getState();
         if (!s.isPlaying) return;
         // Re-anchor if the frame was moved externally (seek/scrub mid-play).
         if (s.frame !== lastFrame) {
@@ -423,7 +425,7 @@ function Playhead({
       raf = requestAnimationFrame(tick);
     };
 
-    apply(usePlaybackStore.getState().frame, false);
+    apply(playback.getState().frame, false);
     if (playing) startLoop();
 
     // Fires on EVERY store write, not just this component's slice of it — so
@@ -432,7 +434,7 @@ function Playhead({
     // each of those (and the reset when the pointer leaves) would scroll the
     // playhead back into view, dragging the track out from under whatever the
     // user had scrolled to look at.
-    const unsubscribe = usePlaybackStore.subscribe((s) => {
+    const unsubscribe = playback.subscribe((s) => {
       if (s.isPlaying && !playing) {
         playing = true;
         startLoop();
@@ -454,7 +456,7 @@ function Playhead({
       setMoving(false);
       unsubscribe();
     };
-  }, [pxPerFrame, fps, totalFrames, scrollRef]);
+  }, [pxPerFrame, fps, totalFrames, scrollRef, playback]);
 
   return (
     <div
@@ -586,6 +588,7 @@ export function Timeline({
   const editingSceneIds = useEditorStore((s) => s.editingSceneIds);
 
   const seek = usePlaybackStore((s) => s.seek);
+  const tabActive = useTabActive();
   const totalFrames = totalDurationInFrames(scenes);
 
   const { data: assets } = useProjectAssets(projectId);
@@ -631,9 +634,12 @@ export function Timeline({
 
   // Delete/Backspace removes selected scenes and/or audio clips. Only bail when
   // the user is actively editing text — selecting a clip focuses the (empty)
-  // chat input, and that shouldn't swallow the delete shortcut.
+  // chat input, and that shouldn't swallow the delete shortcut. And only in
+  // the tab in front: every open project's timeline is mounted, each keeping
+  // its own selection, and one press must not delete across all of them.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (!tabActive) return;
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       const target = e.target as HTMLElement;
       const isTextField =
@@ -654,7 +660,7 @@ export function Timeline({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedSceneIds, selectedAudioClipIds, onDeleteScenes, onDeleteClip]);
+  }, [selectedSceneIds, selectedAudioClipIds, onDeleteScenes, onDeleteClip, tabActive]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

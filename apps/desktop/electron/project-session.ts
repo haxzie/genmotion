@@ -69,6 +69,22 @@ function messageId(line: string): string | null {
   return typeof parsed?.id === "string" ? parsed.id : null;
 }
 
+/**
+ * Every id a message answers to.
+ *
+ * Its own, plus the id of the checkpoint that stood in for it while it
+ * streamed (`metadata.checkpointId`). A turn interrupted and later recovered
+ * is written under the checkpoint's id; the same turn finishing normally is
+ * written under the harness's. Indexing both is what makes them one entry.
+ */
+function messageIds(message: unknown): string[] {
+  const msg = message as { id?: unknown; metadata?: { checkpointId?: unknown } } | null;
+  const ids: string[] = [];
+  if (typeof msg?.id === "string") ids.push(msg.id);
+  if (typeof msg?.metadata?.checkpointId === "string") ids.push(msg.metadata.checkpointId);
+  return ids;
+}
+
 /** Cut a long string down, saying so rather than silently ending mid-word. */
 function clip(value: string): string {
   if (value.length <= MAX_PAYLOAD_CHARS) return value;
@@ -126,7 +142,18 @@ export class ProjectSession {
   private watcher: FSWatcher | null = null;
   private timer: NodeJS.Timeout | null = null;
   private listeners = new Set<(project: DesktopProject) => void>();
-  private disposed = false;
+  private isDisposed = false;
+
+  /**
+   * True once `dispose()` has run.
+   *
+   * Checked by anything that may outlive the project's tab — a queued export,
+   * an agent tool call landing after a forced close — so it can fail with a
+   * sentence rather than an esbuild "service is no longer running".
+   */
+  get disposed(): boolean {
+    return this.isDisposed;
+  }
 
   private constructor(dir: string, assetKey: string) {
     this.assetKey = assetKey;
@@ -224,11 +251,11 @@ export class ProjectSession {
    * three times when they reopen the project.
    */
   async appendTranscript(message: unknown): Promise<void> {
-    const id = (message as { id?: unknown } | null)?.id;
-    if (typeof id === "string") {
+    const ids = messageIds(message);
+    if (ids.length > 0) {
       const seen = await this.transcriptIds();
-      if (seen.has(id)) return;
-      seen.add(id);
+      if (ids.some((id) => seen.has(id))) return;
+      for (const id of ids) seen.add(id);
     }
     const dir = path.join(this.dir, ".genmotion");
     await fs.mkdir(dir, { recursive: true });
@@ -318,9 +345,7 @@ export class ProjectSession {
       // Every id, not a page: this is the dedupe set, and it is built once per
       // session on the first append.
       const lines = await this.transcriptLines();
-      this.seenTranscriptIds = new Set(
-        lines.map(messageId).filter((id): id is string => id !== null),
-      );
+      this.seenTranscriptIds = new Set(lines.flatMap((line) => messageIds(parseLine(line))));
     }
     return this.seenTranscriptIds;
   }
@@ -491,7 +516,7 @@ export class ProjectSession {
   }
 
   async dispose(): Promise<void> {
-    this.disposed = true;
+    this.isDisposed = true;
     if (this.timer) clearTimeout(this.timer);
     this.listeners.clear();
     await this.watcher?.close();
@@ -530,7 +555,7 @@ export class ProjectSession {
     });
 
     const bump = () => {
-      if (this.disposed) return;
+      if (this.isDisposed) return;
       if (this.timer) clearTimeout(this.timer);
       this.timer = setTimeout(() => {
         this.timer = null;
@@ -546,7 +571,7 @@ export class ProjectSession {
     const payload = await this.load().catch((err) =>
       this.blank(err instanceof Error ? err.message : String(err)),
     );
-    if (this.disposed) return;
+    if (this.isDisposed) return;
     for (const listener of this.listeners) listener(payload);
   }
 }
