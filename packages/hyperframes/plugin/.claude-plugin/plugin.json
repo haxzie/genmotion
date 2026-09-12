@@ -1,0 +1,6 @@
+{
+  "name": "hyperframes",
+  "version": "0.0.0",
+  "description": "HyperFrames authoring skills, vendored from heygen-com/hyperframes. Loaded by GenMotion into the agent's session for HyperFrames projects.",
+  "author": { "name": "HeyGen (skills) · GenMotion (packaging)" }
+}

@@ -35,3 +35,7 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/openai-compatible@2.0.53'
   - '@ai-sdk/provider-utils@4.0.32'
   - '@ai-sdk/provider@3.0.12'
+  - '@hyperframes/core@0.8.34'
+  - '@hyperframes/lint@0.8.34'
+  - '@hyperframes/parsers@0.8.34'
+  - '@hyperframes/studio-server@0.8.34'
