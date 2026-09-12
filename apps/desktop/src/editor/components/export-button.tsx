@@ -90,14 +90,31 @@ function triggerDownload(url: string) {
   a.remove();
 }
 
+/**
+ * What a HyperFrames project tells the button instead of `project.scenes`.
+ *
+ * The composition is the timeline there, so its length, its fingerprint and
+ * its size come from the compile rather than from a scene list.
+ */
+export interface CompositionSummary {
+  totalFrames: number;
+  /** Content fingerprint; a change means a finished export is stale. */
+  signature: string;
+  sceneCount: number;
+  width: number;
+  height: number;
+}
+
 export function ExportButton({
   projectId,
   project,
   disabled,
+  composition,
 }: {
   projectId: string;
   project: ProjectData;
   disabled?: boolean;
+  composition?: CompositionSummary;
 }) {
   const queryClient = useQueryClient();
   const { openUpgrade, handleLimitError, plan } = useUpgrade();
@@ -208,7 +225,10 @@ export function ExportButton({
   const exportedSig = useRef<string | null>(
     typeof window !== "undefined" ? localStorage.getItem(sigKey) : null,
   );
-  const currentSig = useMemo(() => projectSignature(project), [project]);
+  const currentSig = useMemo(
+    () => (composition ? hashString(composition.signature) : projectSignature(project)),
+    [project, composition],
+  );
 
   function runExport(event: ReactMouseEvent<HTMLButtonElement>) {
     // No client-side pre-gate: exports are unmetered, and the trial paywall is
@@ -230,7 +250,7 @@ export function ExportButton({
     flyToExports(from, format);
   }
 
-  const frames = totalDurationInFrames(project.scenes);
+  const frames = composition ? composition.totalFrames : totalDurationInFrames(project.scenes);
   const length = formatLength(frames / project.fps);
   const progress = job?.progress ?? 0;
   const starting = startExport.isPending;
@@ -252,11 +272,11 @@ export function ExportButton({
     done && !!job?.outputUrl && downloadExt.toLowerCase() !== format;
   const needsExport = dirty || formatChanged;
   const details: Array<[string, string]> = [
-    ["Resolution", `${project.width} × ${project.height}`],
+    ["Resolution", `${composition?.width ?? project.width} × ${composition?.height ?? project.height}`],
     ["Frame rate", `${project.fps} fps`],
     ["Length", length],
     ["Frames", frames.toLocaleString()],
-    ["Scenes", String(project.scenes.length)],
+    ["Scenes", String(composition ? composition.sceneCount : project.scenes.length)],
     ["Format", fmtMeta.label],
   ];
 

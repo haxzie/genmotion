@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { readManifest } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
-import { captureFrame } from "./capture";
+import { captureCompositionFrame, captureFrame } from "./capture";
 import { SAMPLE_AT } from "./frame-target";
 
 /**
@@ -52,7 +52,10 @@ export async function refreshThumbnail(session: ProjectSession): Promise<void> {
   if (cached) {
     const manifest = await readManifest(session.dir).catch(() => null);
     if (!manifest) return;
-    const sources = ["project.json", ...manifest.scenes.map((s) => s.file)];
+    const sources =
+      manifest.engine === "hyperframes"
+        ? ["project.json", "index.html", ...(session.hyperframes.state().files.map((f) => f.path))]
+        : ["project.json", ...manifest.scenes.map((s) => s.file)];
     const times = await Promise.all(
       sources.map((file) =>
         fs
@@ -70,6 +73,7 @@ async function run(session: ProjectSession): Promise<string | null> {
   const target = thumbnailPath(session.dir);
 
   const manifest = await readManifest(session.dir);
+  if (manifest.engine === "hyperframes") return runComposition(session, target);
   const entry = manifest.scenes[0];
   if (!entry) {
     // An empty project shouldn't keep showing the last scene it had.
@@ -94,6 +98,31 @@ async function run(session: ProjectSession): Promise<string | null> {
     return null;
   }
 
+  const jpeg = image.resize({ width: THUMBNAIL_WIDTH, quality: "good" }).toJPEG(80);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, jpeg);
+  return target;
+}
+
+/** The HyperFrames card: the composition sampled part-way into its first scene, or the whole thing. */
+async function runComposition(session: ProjectSession, target: string): Promise<string | null> {
+  const compiled = session.hyperframes.current;
+  if (!compiled || compiled.durationSeconds <= 0) {
+    await fs.rm(target, { force: true });
+    return null;
+  }
+  const first = compiled.timeline.scenes[0];
+  const window = first
+    ? { start: first.start, length: first.duration ?? compiled.durationSeconds - first.start }
+    : { start: 0, length: compiled.durationSeconds };
+  const at = window.start + window.length * SAMPLE_AT;
+
+  let image;
+  try {
+    ({ image } = await captureCompositionFrame(session, at));
+  } catch {
+    return null;
+  }
   const jpeg = image.resize({ width: THUMBNAIL_WIDTH, quality: "good" }).toJPEG(80);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, jpeg);

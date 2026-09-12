@@ -1,17 +1,19 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import chokidar, { type FSWatcher } from "chokidar";
-import type { AudioClipData, SceneData } from "@genmotion/shared";
+import { MAX_AUDIO_TRACKS, type AudioClipData, type SceneData } from "@genmotion/shared";
 import {
   createSceneBundler,
   readManifest,
   sceneNameFromFile,
+  type ProjectEngine,
   type ProjectManifest,
   type SceneBundler,
 } from "@genmotion/project";
 // Its own subpath: validation renders scenes with react-dom/server, which the
 // package's other consumers (the API) have no reason to install.
 import { validateSceneFile } from "@genmotion/project/validate";
+import { HyperframesEngine } from "./hyperframes/engine";
 import type { DesktopProject, SceneBundle } from "./shared";
 
 export interface AgentContextUsage {
@@ -139,6 +141,18 @@ export class ProjectSession {
 
   /** Shared with the agent's validate tool so both see one incremental build. */
   readonly bundler: SceneBundler;
+  /**
+   * Which runtime the folder is written for, read from the manifest at open
+   * and again on every reload — a project does not change engine in practice,
+   * but a manifest edit that says otherwise should be believed.
+   */
+  engine: ProjectEngine = "react";
+  /**
+   * The HyperFrames compile state. Constructed on first use rather than up
+   * front: a React project never needs one, and the engine keys a lint pass
+   * and a compile to every folder change.
+   */
+  private hyperframesEngine: HyperframesEngine | null = null;
   private watcher: FSWatcher | null = null;
   private timer: NodeJS.Timeout | null = null;
   private listeners = new Set<(project: DesktopProject) => void>();
@@ -174,8 +188,33 @@ export class ProjectSession {
     // in this process instance could have written one since, so it is safe to
     // assume, not race against, that it is truly orphaned.
     await session.recoverInterruptedTurn();
+    session.engine = await readManifest(session.dir)
+      .then((m) => m.engine)
+      .catch(() => "react" as const);
     await session.startWatching();
     return session;
+  }
+
+  /** The HyperFrames half of the session. Only meaningful when `engine` is `hyperframes`. */
+  get hyperframes(): HyperframesEngine {
+    this.hyperframesEngine ??= new HyperframesEngine(this.dir);
+    return this.hyperframesEngine;
+  }
+
+  /**
+   * Reload and re-announce the project as if the folder had changed.
+   *
+   * For state the watcher cannot see: the install that follows a new project
+   * lands in `node_modules`, which is deliberately ignored, yet finishing it
+   * changes which runtime the preview should load.
+   */
+  touch(): void {
+    if (this.isDisposed) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.emit();
+    }, SETTLE_MS);
   }
 
   onChange(listener: (project: DesktopProject) => void): () => void {
@@ -442,6 +481,61 @@ export class ProjectSession {
         gone,
       );
     }
+    this.engine = manifest.engine;
+
+    if (manifest.engine === "hyperframes") {
+      // The composition is the timeline, and it is read into the same
+      // primitives a React project has: every sub-composition `index.html`
+      // mounts is a scene, every `<audio>` an audio clip. The editor's
+      // timeline, scene chips and code view then need no second version.
+      await this.hyperframes.refresh();
+      const state = this.hyperframes.state();
+      const { fps } = manifest;
+      const total = state.durationSeconds;
+      const frames = (seconds: number) => Math.max(1, Math.round(seconds * fps));
+
+      const ordered = [...state.timeline.scenes].sort((a, b) => a.start - b.start);
+      const scenes: SceneData[] = ordered.map((scene, index) => ({
+        id: scene.file,
+        name: scene.label,
+        code: state.files.find((f) => f.path === scene.file)?.code ?? "",
+        durationInFrames: frames(scene.duration ?? Math.max(0, total - scene.start)),
+        order: index,
+        audioUrl: null,
+        audioVolume: 1,
+      }));
+
+      const audioClips: AudioClipData[] = state.timeline.audio.map((clip, index) => ({
+        id: clip.id,
+        track: Math.min(index, MAX_AUDIO_TRACKS - 1),
+        url: this.assetUrl(clip.src),
+        name: clip.src.split("/").pop() ?? clip.src,
+        startFrame: Math.round(clip.start * fps),
+        durationInFrames: frames(clip.duration ?? Math.max(0, total - clip.start)),
+        startFrom: clip.mediaStart,
+        volume: clip.volume,
+        fadeInFrames: 0,
+        fadeOutFrames: 0,
+        muted: false,
+      }));
+
+      return {
+        id: this.dir,
+        dir: this.dir,
+        engine: "hyperframes",
+        name: manifest.name,
+        fps,
+        width: manifest.width,
+        height: manifest.height,
+        scenes,
+        audioClips,
+        bundles: {},
+        missing: [],
+        manifestError: null,
+        folderMissing: false,
+        hyperframes: state,
+      };
+    }
 
     const missing: string[] = [];
     const scenes: SceneData[] = [];
@@ -502,6 +596,8 @@ export class ProjectSession {
     return {
       id: this.dir,
       dir: this.dir,
+      engine: "react",
+      hyperframes: null,
       name: manifest.name,
       fps: manifest.fps,
       width: manifest.width,
@@ -527,6 +623,8 @@ export class ProjectSession {
     return {
       id: this.dir,
       dir: this.dir,
+      engine: this.engine,
+      hyperframes: null,
       name: path.basename(this.dir),
       fps: 30,
       width: 1920,
@@ -549,8 +647,15 @@ export class ProjectSession {
         const [head] = rel.split(path.sep);
         // Dependencies and app-owned state churn constantly and never change
         // the composition on their own — a real change re-enters through the
-        // scene that imports it.
-        return head === "node_modules" || head === ".genmotion" || head === ".git";
+        // scene that imports it. `exports/` is where renders land, and
+        // `.agents/` is the skill links the app itself writes on open.
+        return (
+          head === "node_modules" ||
+          head === ".genmotion" ||
+          head === ".git" ||
+          head === ".agents" ||
+          head === "exports"
+        );
       },
     });
 

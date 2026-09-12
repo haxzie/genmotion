@@ -4,6 +4,7 @@ import { BrowserWindow, type NativeImage } from "electron";
 import type { ProjectManifest, SceneEntry } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
 import { PAGE_SHELL, hasActiveExport } from "./service";
+import { openCompositionWindow } from "./hyperframes-window";
 
 /**
  * One frame of a composition, rendered offscreen.
@@ -59,6 +60,41 @@ export interface CaptureInput {
  */
 export function captureFrame(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
   return serialize(() => render(session, input));
+}
+
+/**
+ * One frame of a HyperFrames composition, at `timeSeconds`.
+ *
+ * The same offscreen page the export drives — opened, seeked once, captured,
+ * closed. Returns the size it rendered at alongside the picture, because the
+ * composition's own `data-width`/`data-height` decide that, not the manifest.
+ */
+export function captureCompositionFrame(
+  session: ProjectSession,
+  timeSeconds: number,
+): Promise<{ image: NativeImage; width: number; height: number; durationSeconds: number }> {
+  return serialize(async () => {
+    if (hasActiveExport()) {
+      throw new CaptureBusyError("an export is running — try again once it finishes");
+    }
+    const compiled = session.hyperframes.current;
+    if (!compiled) {
+      throw new Error(session.hyperframes.compileError ?? "the composition does not compile");
+    }
+    const page = await openCompositionWindow(session, {
+      width: compiled.width,
+      height: compiled.height,
+    });
+    try {
+      const t = Math.max(0, Math.min(timeSeconds, Math.max(0, page.durationSeconds - 1 / 1000)));
+      await page.seek(t);
+      const image = await page.capture();
+      if (image.isEmpty()) throw new Error("the capture came back blank");
+      return { image, width: page.width, height: page.height, durationSeconds: page.durationSeconds };
+    } finally {
+      page.close();
+    }
+  });
 }
 
 async function render(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {

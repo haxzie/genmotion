@@ -4,7 +4,7 @@ import { useCompiledScenes } from "@/hooks/use-compiled-scenes";
 import { Topbar } from "@/components/editor/topbar";
 import { ExportButton } from "@/components/editor/export-button";
 import { ChatPanel } from "@/components/editor/chat-panel";
-import { PreviewStage } from "@/components/editor/preview";
+import { PreviewStage, PreviewTransport } from "@/components/editor/preview";
 import { Timeline } from "@/components/editor/timeline";
 import { AssetsView } from "@/components/editor/assets-view";
 import { CodeView } from "@/components/editor/code-view";
@@ -14,8 +14,23 @@ import { formatCompileError } from "@genmotion/compiler";
 import { api } from "../api";
 import type { DesktopProject } from "../../electron/shared";
 import { ProjectBundlesProvider } from "../lib/project-bundles";
+import { HyperframesStage } from "@/components/editor/hyperframes/stage";
+import { ScaffoldBanner } from "@/components/editor/hyperframes/scaffold-banner";
+import { ScaffoldScreen } from "@/components/editor/hyperframes/scaffold-screen";
+import { formatFinding } from "@genmotion/hyperframes/shared";
 
 const CHAT_WIDTH_KEY = "gm-chat-width";
+
+/** FNV-1a, for a cheap content fingerprint the export button compares. */
+function hashOf(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+const noop = () => {};
 const CHAT_MIN = 300;
 const CHAT_MAX = 640;
 
@@ -188,6 +203,22 @@ function EditorBody({
   const { compiled, errors, initializing } = useCompiledScenes(project.scenes);
   const firstError = project.scenes.find((s) => s.id in errors);
 
+  // The HyperFrames half. Null for a React project, and every branch below
+  // reads as "the composition" rather than "the scenes" when it is set.
+  const hf = project.engine === "hyperframes" ? project.hyperframes : null;
+  const hfProblem = hf
+    ? hf.compileError
+      ? { title: "The composition doesn't compile", detail: hf.compileError }
+      : (() => {
+          const error = hf.lint.findings.find((f) => f.severity === "error");
+          return error ? { title: "Lint error", detail: formatFinding(error) } : null;
+        })()
+    : null;
+  const hfFrames = hf ? Math.round(hf.durationSeconds * project.fps) : 0;
+  const hfSignature = hf
+    ? `${project.fps}x${hf.width}x${hf.height}:${hf.files.map((f) => `${f.path}:${f.code.length}:${hashOf(f.code)}`).join("|")}`
+    : "";
+
   return (
     <main className="flex h-full flex-col overflow-hidden bg-background">
       <div className="flex min-h-0 flex-1">
@@ -267,7 +298,18 @@ function EditorBody({
             <ExportButton
               projectId={project.dir}
               project={project}
-              disabled={project.scenes.length === 0}
+              disabled={hf ? hfFrames === 0 || !!hf.compileError : project.scenes.length === 0}
+              composition={
+                hf
+                  ? {
+                      totalFrames: hfFrames,
+                      signature: hfSignature,
+                      sceneCount: project.scenes.length,
+                      width: hf.width ?? project.width,
+                      height: hf.height ?? project.height,
+                    }
+                  : undefined
+              }
             />
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
@@ -280,7 +322,89 @@ function EditorBody({
               {tab === "assets" ? (
                 <AssetsView projectId={project.dir} />
               ) : tab === "code" ? (
-                <CodeView scenes={project.scenes} />
+                <CodeView
+                  files={
+                    hf
+                      ? hf.files.map((f) => ({ id: f.path, name: f.path, code: f.code }))
+                      : project.scenes.map((s) => ({ id: s.id, name: s.name, code: s.code }))
+                  }
+                  heading={hf ? "Composition" : "Scenes"}
+                  language={hf ? "html" : "tsx"}
+                />
+              ) : hf && (hf.scaffold?.step === "resolving" || hf.scaffold?.step === "installing") ? (
+                // The install behind a brand-new project. The preview would
+                // only reload under the user as packages land, so it waits.
+                <ScaffoldScreen state={hf.scaffold} engineLabel="HyperFrames" mark="/hyperframes-mark.png" />
+              ) : hf ? (
+                <>
+                  <ScaffoldBanner dir={project.dir} scaffold={hf.scaffold} runtime={hf.runtime} />
+                  {hfProblem && (
+                    <div className="flex items-center justify-between gap-3 border-b border-danger/30 bg-danger/10 px-4 py-1.5 text-[0.857rem]">
+                      <span className="truncate text-danger" title={hfProblem.detail}>
+                        {hfProblem.title}: {hfProblem.detail.split("\n")[0]}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={aiBusy}
+                        onClick={() =>
+                          requestFix({
+                            sceneId: "index.html",
+                            message: `The composition has a problem:\n\n${hfProblem.detail}\n\nPlease fix it and run validate_composition.`,
+                          })
+                        }
+                      >
+                        Fix with AI
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="relative min-h-0 flex-1 p-4">
+                      <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+                        {hf.compileError || hf.width === null || hf.height === null ? (
+                          <div className="flex h-full items-center justify-center">
+                            <div className="max-w-md text-center text-text-tertiary">
+                              <p className="text-lg">Nothing to show yet</p>
+                              <p className="mt-1">
+                                {hf.compileError
+                                  ? "The composition doesn't compile. Fix it, or ask the agent to."
+                                  : "The composition is being compiled…"}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <HyperframesStage
+                            dir={project.dir}
+                            revision={hf.revision}
+                            fps={project.fps}
+                            width={hf.width}
+                            height={hf.height}
+                            scenes={project.scenes}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <PreviewTransport fps={project.fps} />
+                  </div>
+                  {/* The same timeline as a React project: sub-compositions are
+                      the scenes, `<audio>` elements the clips. Edits are not
+                      written back into the HTML yet, so the handlers are
+                      inert — the composition stays the source of truth. */}
+                  <Timeline
+                    projectId={project.dir}
+                    scenes={project.scenes}
+                    fps={project.fps}
+                    sceneErrors={{}}
+                    audioClips={project.audioClips ?? []}
+                    onReorder={noop}
+                    onDeleteScenes={noop}
+                    onToggleMute={noop}
+                    onResizeScene={noop}
+                    onAddClip={noop}
+                    onUpdateClip={noop}
+                    onDeleteClip={noop}
+                  />
+                </>
               ) : (
                 <>
                   {firstError && (

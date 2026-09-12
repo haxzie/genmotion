@@ -6,6 +6,7 @@ import { copyEsbuildBinary, copyFfmpegBinary } from "./copy-esbuild-binary.mjs";
 import { buildRenderHost } from "./build-render-host.mjs";
 import { buildIcons } from "./build-icons.mjs";
 import { vendorAgentSdk } from "./vendor-agent-sdk.mjs";
+import { vendorHyperframes } from "./vendor-hyperframes.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -15,6 +16,7 @@ await copyFfmpegBinary();
 await buildRenderHost();
 await buildIcons();
 await vendorAgentSdk();
+await vendorHyperframes();
 await viteBuild({ root, configFile: path.join(root, "vite.config.ts") });
 
 console.log("desktop build complete");

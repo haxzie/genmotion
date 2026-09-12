@@ -1,12 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import type { SceneData } from "@genmotion/shared";
 import { cx } from "@/components/ui";
 import { SceneIcon } from "./scene-icon";
-import CodeBlock from "./code-block";
+import CodeBlock, { type CodeLanguage } from "./code-block";
 
-export function CodeView({ scenes }: { scenes: SceneData[] }) {
+/** One file the view can show — a React scene or a HyperFrames composition file. */
+export interface CodeFile {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export function CodeView({
+  files: scenes,
+  heading = "Scenes",
+  language = "tsx",
+}: {
+  files: CodeFile[];
+  heading?: string;
+  language?: CodeLanguage;
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = scenes.find((s) => s.id === selectedId) ?? scenes[0] ?? null;
 
@@ -15,12 +29,12 @@ export function CodeView({ scenes }: { scenes: SceneData[] }) {
       {/* Left: scene list */}
       <div className="flex w-64 shrink-0 flex-col border-r border-border">
         <div className="flex h-10 shrink-0 items-center border-b border-border px-3">
-          <span className="text-[0.857rem] font-medium">Scenes</span>
+          <span className="text-[0.857rem] font-medium">{heading}</span>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
           {scenes.length === 0 ? (
             <p className="px-2 py-8 text-center text-[0.786rem] text-text-tertiary">
-              No scenes yet.
+              Nothing here yet.
             </p>
           ) : (
             scenes.map((scene) => {
@@ -57,12 +71,12 @@ export function CodeView({ scenes }: { scenes: SceneData[] }) {
               </span>
             </div>
             <div className="min-h-0 flex-1">
-              <CodeBlock code={selected.code} fill />
+              <CodeBlock code={selected.code} fill language={language} />
             </div>
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center text-text-tertiary">
-            Select a scene to view its code
+            Select a file to view its code
           </div>
         )}
       </div>

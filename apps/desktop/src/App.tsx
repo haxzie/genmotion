@@ -4,6 +4,7 @@ import { projectQueryKey } from "@/hooks/use-project";
 import { UpgradeProvider } from "@/components/upgrade-modal";
 import { registerNavigate } from "./shims/next-link";
 import { api, type DesktopProject } from "./api";
+import { uploadProjectAsset } from "@/hooks/use-assets";
 import { HomeShell } from "./screens/HomeShell";
 import { LoginScreen } from "./screens/LoginScreen";
 import { TabStrip } from "./tabs/tab-strip";
@@ -97,13 +98,34 @@ function Shell() {
   );
 
   const create = useCallback(
-    async ({ prompt, width, height }: { prompt: string; width: number; height: number }) => {
+    async ({
+      prompt,
+      width,
+      height,
+      files,
+    }: {
+      prompt: string;
+      width: number;
+      height: number;
+      files: File[];
+    }) => {
       setBusy(true);
       try {
         // Name the project from the opening words of the prompt; the agent can
         // rename it once it knows what the video actually is.
         const name = prompt.split(/\s+/).slice(0, 6).join(" ").slice(0, 48);
         const project = await api.createProject({ name, width, height });
+        // Files attached on the start screen go into the new project's
+        // assets now, before the tab opens, so the first message can carry
+        // them as context the way a drop into the chat would. One that fails
+        // to upload is left out rather than holding the project back.
+        const uploaded = await Promise.all(
+          files.map((file) => uploadProjectAsset(project.dir, file).catch(() => null)),
+        );
+        const assetIds = uploaded.filter((a) => a !== null).map((a) => a.id);
+        if (assetIds.length > 0) {
+          sessionStorage.setItem(`gm-initial-assets-${project.dir}`, JSON.stringify(assetIds));
+        }
         // The chat panel picks this up and sends it as the first message —
         // the same handoff the web app uses. `adopt` brings the new tab to
         // the front, so the first turn streams into the tab being looked at.
@@ -161,6 +183,19 @@ function Shell() {
         client.setQueryData(projectQueryKey(next.dir), next);
       }),
     [client, forget],
+  );
+
+  // The install behind a new HyperFrames project, step by step. Patched into
+  // the cached payload so the banner follows it without a reload of the
+  // whole project; the settled state also arrives with the next full payload.
+  useEffect(
+    () =>
+      api.onScaffoldChanged((dir, scaffold) => {
+        client.setQueryData<DesktopProject>(projectQueryKey(dir), (current) =>
+          current?.hyperframes ? { ...current, hyperframes: { ...current.hyperframes, scaffold } } : current,
+        );
+      }),
+    [client],
   );
 
   // Opened from outside the renderer — a `genmotion://` remix link.

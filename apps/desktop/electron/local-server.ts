@@ -7,6 +7,9 @@ import { PAYWALL_STATUS, type AssetData } from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
+import { mimeForAsset, serveAssetFile } from "./serve-file";
+
+export { mimeForAsset };
 // Static, unlike the other agent imports: this is a two-line registry with no
 // startup cost, and a lazily-imported copy risks being a *second* registry —
 // the turn parks on one map and the answer lands in the other.
@@ -34,6 +37,39 @@ export interface LocalServer {
 
 /** Sentinel: the route wrote directly to the socket (an event stream). */
 const HANDLED = Symbol("handled");
+
+/**
+ * The running server's base URL, secret prefix included.
+ *
+ * Main-process code that opens a *page* on the server — the offscreen window
+ * a HyperFrames export renders in — needs an absolute URL, and nothing but
+ * the server knows its port. Set once at listen.
+ */
+let serverUrl: string | null = null;
+
+export function localServerUrl(): string {
+  if (!serverUrl) throw new Error("The local server is not running");
+  return serverUrl;
+}
+
+/**
+ * The preview document for a project, as a URL on this server.
+ *
+ * Exported for the export window; the renderer builds the same URL itself
+ * from `apiUrl`. `revision` cache-busts: the document is regenerated on every
+ * folder change and the iframe must never be served the previous compile.
+ */
+export function previewUrl(
+  session: ProjectSession,
+  options: { revision?: number; render?: boolean } = {},
+): string {
+  const dir = session.dir.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/");
+  const query = new URLSearchParams();
+  if (options.revision !== undefined) query.set("r", String(options.revision));
+  if (options.render) query.set("mode", "render");
+  const suffix = query.size ? `?${query}` : "";
+  return `${localServerUrl()}/api/projects/${dir}/preview/index.html${suffix}`;
+}
 
 /** Thrown by a route that was asked about a project no tab has open. */
 class ProjectNotOpen extends Error {
@@ -71,33 +107,6 @@ function assetKind(file: string): AssetData["kind"] {
   if (AUDIO_EXT.has(ext)) return "audio";
   if (VIDEO_EXT.has(ext)) return "video";
   return IMAGE_EXT.has(ext) ? "image" : "export";
-}
-
-/** Content types for project assets — shared with the gm-asset protocol. */
-export const ASSET_MIME: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mov": "video/quicktime",
-  ".mp3": "audio/mpeg",
-  ".wav": "audio/wav",
-  ".m4a": "audio/mp4",
-  ".aac": "audio/aac",
-  ".ogg": "audio/ogg",
-  ".avif": "image/avif",
-  ".m4v": "video/x-m4v",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-};
-
-/** Content type for a project asset path, defaulting to a plain byte stream. */
-export function mimeForAsset(file: string): string {
-  return ASSET_MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream";
 }
 
 /**
@@ -370,7 +379,7 @@ export async function startLocalServer(
   ): Promise<unknown> {
     const { projectDefaults, setProjectDefaults } = await import("./preferences");
     if (method === "POST") {
-      const body = await readJson<{ width?: number; height?: number; fps?: number }>(req);
+      const body = await readJson<{ width?: number; height?: number; fps?: number; engine?: "react" | "hyperframes" }>(req);
       return setProjectDefaults(body);
     }
     return projectDefaults();
@@ -505,6 +514,15 @@ export async function startLocalServer(
     // several URL segments (`.../scenes/scenes/01-intro.tsx`). Rejoin them.
     const target = targetParts.length > 0 ? targetParts.join("/") : undefined;
 
+    // The compiled HyperFrames composition and everything it loads. Served
+    // as ordinary pages so the iframe and the export window get relative
+    // asset paths, range requests for video, and a cacheable runtime for
+    // free — the same three things the CLI's own preview server exists for.
+    if (section === "preview") {
+      if (method !== "GET" && method !== "HEAD") return undefined;
+      return previewRoutes(session, target ?? "index.html", req);
+    }
+
     if (rest.length === 0) {
       if (method === "GET") return session.load();
       if (method === "PATCH") {
@@ -620,6 +638,78 @@ export async function startLocalServer(
     }
 
     return undefined;
+  }
+
+  async function previewRoutes(
+    session: ProjectSession,
+    target: string,
+    req: http.IncomingMessage,
+  ): Promise<Response> {
+    if (session.engine !== "hyperframes") {
+      return new Response("Not a HyperFrames project", { status: 404 });
+    }
+    const engine = session.hyperframes;
+    // The editor sandboxes the preview iframe to an opaque origin, so a
+    // composition that `fetch`es its own Lottie JSON or a 3D model is making
+    // a cross-origin request to this server. These are the project's own
+    // files, and nothing here is private to an origin.
+    const noStore = { "cache-control": "no-store", "access-control-allow-origin": "*" };
+
+    if (target === "index.html") {
+      const html = engine.previewHtml();
+      if (html === null) {
+        return new Response(engine.compileError ?? "The composition has not compiled yet", {
+          status: 503,
+          headers: { "content-type": "text/plain; charset=utf-8", ...noStore },
+        });
+      }
+      // `?mode=render` is the export window asking for the same document with
+      // the runtime's capture mode switched on before any page script runs —
+      // the flag HyperFrames' own renderer sets, so media and timelines are
+      // driven by seeks rather than by a live clock.
+      const render = new URL(req.url ?? "/", "http://localhost").searchParams.get("mode") === "render";
+      return new Response(render ? engine.renderHtml(html) : html, {
+        headers: { "content-type": "text/html; charset=utf-8", ...noStore },
+      });
+    }
+
+    // `__gm/…` is what the compiler wrote the runtime and GSAP references as
+    // (see `hyperframes/engine.ts`); both are the app's to serve.
+    if (target === "__gm/runtime.js") {
+      return new Response(await engine.runtimeScript(), {
+        headers: { "content-type": "text/javascript; charset=utf-8", ...noStore },
+      });
+    }
+    if (target === "__gm/gsap.min.js") {
+      const { gsapSource } = await import("./hyperframes/vendor");
+      return new Response(await gsapSource(), {
+        headers: {
+          "content-type": "text/javascript; charset=utf-8",
+          "cache-control": "max-age=3600",
+          "access-control-allow-origin": "*",
+        },
+      });
+    }
+
+    // Anything else is a file the composition references — an asset, a
+    // font, a script the agent installed — inside the project folder.
+    // `.genmotion/` holds the transcript and the app's own state, which no
+    // composition has a reason to load and no page should be able to read.
+    // `target` arrived decoded — `matchProjectPath` decodes every segment.
+    const file = path.resolve(session.dir, target);
+    const inside = path.relative(session.dir, file);
+    if (!inside || inside.startsWith("..") || path.isAbsolute(inside) || inside.startsWith(".genmotion")) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    const served = await serveAssetFile(
+      file,
+      new Request("http://localhost/", {
+        method: req.method ?? "GET",
+        headers: req.headers.range ? { range: req.headers.range } : {},
+      }),
+    );
+    served.headers.set("access-control-allow-origin", "*");
+    return served;
   }
 
   async function assetRoutes(
@@ -822,6 +912,7 @@ export async function startLocalServer(
   if (!address || typeof address === "string") throw new Error("server has no port");
 
   origin = `http://127.0.0.1:${address.port}`;
+  serverUrl = `${origin}${prefix}`;
   return {
     url: `${origin}${prefix}`,
     origin,

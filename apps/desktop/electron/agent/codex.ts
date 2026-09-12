@@ -274,7 +274,7 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
       // Codex read outside the workspace — what it lacks is knowing where to
       // look, and that writes stay in the project whatever it can see.
       const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
-      const preamble = buildCodexPreamble(readRoots, getLaunchDir());
+      const preamble = buildCodexPreamble(readRoots, getLaunchDir(), session.engine);
       const opening = resumeSessionId ? text : `${preamble}\n\n${text}`;
 
       // A resume can fail for reasons the user can't act on — the session log

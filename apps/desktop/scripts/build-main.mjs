@@ -1,8 +1,10 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import * as esbuild from "esbuild";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
 
 /**
  * The main process bundles everything it needs, including esbuild's JavaScript,
@@ -20,9 +22,52 @@ export const mainBuildOptions = {
   format: "cjs",
   outExtension: { ".js": ".cjs" },
   external: ["electron", "fsevents", "@anthropic-ai/claude-agent-sdk"],
+  plugins: [esbuildShim()],
   sourcemap: true,
   logLevel: "info",
 };
+
+/**
+ * One esbuild in the bundle, ours, with its sync API switched off.
+ *
+ * `@hyperframes/core` depends on an older esbuild and calls `transformSync`
+ * to strip comments from a composition's scripts. Two problems, both fatal in
+ * a bundled main process: its own copy would drive the 0.28 binary at
+ * `ESBUILD_BINARY_PATH` with 0.25's JavaScript (a version mismatch), and the
+ * sync API itself starts a worker thread from `__filename` — which, once
+ * bundled, is `main.cjs`, so the worker boots the whole Electron main process
+ * again and the caller blocks on it forever.
+ *
+ * So every `esbuild` import resolves to a shim over the app's copy whose sync
+ * entry points throw. The one caller in core catches and keeps the script as
+ * written; everything of ours uses the async API, which spawns the binary as
+ * a child process and is unaffected.
+ */
+function esbuildShim() {
+  const real = require.resolve("esbuild");
+  return {
+    name: "esbuild-shim",
+    setup(build) {
+      build.onResolve({ filter: /^esbuild$/ }, () => ({ path: "esbuild", namespace: "esbuild-shim" }));
+      build.onLoad({ filter: /.*/, namespace: "esbuild-shim" }, () => ({
+        resolveDir: root,
+        contents: `
+          const real = require(${JSON.stringify(real)});
+          const unavailable = (name) => () => {
+            throw new Error(\`esbuild.\${name} is unavailable in the main process; use the async API\`);
+          };
+          module.exports = {
+            ...real,
+            transformSync: unavailable("transformSync"),
+            buildSync: unavailable("buildSync"),
+            formatMessagesSync: unavailable("formatMessagesSync"),
+            analyzeMetafileSync: unavailable("analyzeMetafileSync"),
+          };
+        `,
+      }));
+    },
+  };
+}
 
 export const entries = [
   { entryPoints: ["electron/main.ts"], outfile: "dist/main/main.cjs" },

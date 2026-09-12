@@ -6,9 +6,10 @@ product story; this file is the minimal, agent-facing context. (Follows the
 
 ## What this is
 
-GenMotion — an AI motion-video studio. An agent writes animated scenes as
-React/TSX, they preview frame-accurately in the browser, get arranged on a
-timeline, and export as pixel-identical MP4s rendered by a headless worker.
+GenMotion — an AI motion-video studio. An agent writes a video — as a
+[HyperFrames](https://github.com/heygen-com/hyperframes) HTML composition for
+every new project, or as React/TSX scenes in older ones — it previews
+frame-accurately in the app, and exports as an MP4 rendered locally.
 
 ## Monorepo layout
 
@@ -36,10 +37,15 @@ packages/
   db/        Drizzle schema + client (Postgres, node-postgres)
   storage/   S3 wrapper (MinIO dev / R2 prod)
   shared/    types + timeline frame math (+ render-token, subpath exports)
-  project/   a project as a folder on disk: manifest, scaffold,
-             scene bundler, validation (used by apps/desktop).
+  project/   a project as a folder on disk: manifest, scaffold (both
+             engines), scene bundler, validation (used by apps/desktop).
              `@genmotion/project/validate` is a subpath: it renders scenes
              with react-dom/server, which the API has no reason to install
+  hyperframes/ the HyperFrames engine wrapper: compile/lint/timeline over
+             `@hyperframes/core`, the npm installer, the agent guide, and
+             the vendored skill pack (`plugin/`, synced from upstream by
+             `pnpm --filter @genmotion/hyperframes sync-upstream`).
+             `@genmotion/hyperframes/shared` is the browser-safe subpath
   templates/ the starter templates. Each is a real project folder under
              `catalog/`, plus a `template.json` sidecar and a `poster.jpg`.
              Also the catalog reader the API serves from
@@ -149,7 +155,31 @@ pnpm db:push                          # sync schema to DEV only
   call there is ungoverned by anything this app adds. Accepted deliberately
   (see the comment above `DISALLOWED_TOOLS` in `agent/tools.ts`), not a gap to
   quietly close.
-- **Scenes (agent-authored TSX):** may import only `react`, `@genmotion/motion`,
+- **Two engines, one manifest.** `project.json`'s `engine` is `hyperframes`
+  (every new project) or `react` (absent = react, for older folders). A
+  HyperFrames project is `index.html` (the timeline: one slot per scene) +
+  `scenes/*.html` (one sub-composition per scene) + `assets/`. The manifest's
+  `scenes`/`audio` stay empty; `ProjectSession.load()` fills the payload's
+  `scenes`/`audioClips` from the compiled composition instead, so the editor's
+  timeline, scene chips and code view are the same components either way
+  (timeline edits are not written back into the HTML yet — the handlers are
+  inert for this engine). The main process compiles it with `@hyperframes/core` on every
+  change (`electron/hyperframes/engine.ts`), serves the result under
+  `/api/projects/<dir>/preview/…` for the editor's sandboxed iframe, and
+  exports by driving the same page frame by frame in an offscreen window
+  (`export/hyperframes-window.ts`: `__hf.seek` + `__hfWaitForSeekCompletion`).
+  `<audio>` is mixed by ffmpeg from the per-frame gains the page reports, so
+  timeline volume tweens survive the export. There is no HyperFrames CLI in
+  the app: the agent gets `validate_composition`, `capture_frames` and the
+  rest as MCP tools, the skill pack as a Claude Code plugin (Codex: symlinks
+  under `.agents/skills`), and `HYPERFRAMES_AUTHORING_GUIDE` (also the
+  project's AGENTS.md) maps the skills' `npx hyperframes …` commands to them.
+  A new project is scaffolded against the bundled release and previews at
+  once; `npm install @hyperframes/core@latest` runs behind it
+  (`electron/hyperframes/scaffold.ts`), reported to the editor's banner, and
+  the project's own runtime is preferred once it lands and is on the same
+  minor line as the app's compiler.
+- **Scenes (agent-authored TSX, `react` engine):** may import only `react`, `@genmotion/motion`,
   `gsap`, `lucide-react`. No `Math.random`/`Date.now`/timers/CSS transitions —
   everything is a pure function of the current frame. Inline styles only; never
   mix a CSS shorthand and its longhand (e.g. `background` + `backgroundColor`)

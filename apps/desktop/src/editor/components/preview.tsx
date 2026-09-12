@@ -75,21 +75,13 @@ function TransportButton({
   );
 }
 
-export function PreviewStage({
-  scenes,
-  fps,
-  width,
-  height,
-  audioClips,
-  initializing,
-}: {
-  scenes: CompiledScene[];
-  fps: number;
-  width: number;
-  height: number;
-  audioClips?: AudioClipData[];
-  initializing: boolean;
-}) {
+/**
+ * The transport under a preview: timecode, jump/play/jump, frame readout, and
+ * the keyboard shortcuts that drive them. Shared by the React stage and the
+ * HyperFrames one — both run on the same playback store, so one set of
+ * controls serves either.
+ */
+export function PreviewTransport({ fps }: { fps: number }) {
   // The readout describes the picture, so it follows a timeline hover along
   // with it — a timecode that disagreed with the frame on screen would be
   // worse than one that moves. The playhead itself stays put.
@@ -100,6 +92,7 @@ export function PreviewStage({
   const toggle = usePlaybackStore((s) => s.toggle);
   const seek = usePlaybackStore((s) => s.seek);
   const tabActive = useTabActive();
+  const empty = totalFrames === 0;
 
   // Space toggles playback unless typing in an input — and only in the tab
   // in front, or one press would scrub every open project.
@@ -125,6 +118,55 @@ export function PreviewStage({
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle, seek, playback, tabActive]);
 
+  return (
+    <div className="relative flex shrink-0 items-center justify-between bg-surface px-4 pt-1 pb-4">
+      <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
+        {framesToTimecode(frame, fps)}{" "}
+        <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
+      </span>
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
+        <TransportButton title="Jump to start" onClick={() => seek(0)} disabled={empty}>
+          <SkipStartIcon />
+        </TransportButton>
+        <TransportButton
+          title="Play/Pause (Space)"
+          onClick={toggle}
+          disabled={empty}
+          active={isPlaying}
+          primary
+        >
+          <PlayIcon playing={isPlaying} />
+        </TransportButton>
+        <TransportButton
+          title="Jump to end"
+          onClick={() => seek(playback.getState().totalFrames - 1)}
+          disabled={empty}
+        >
+          <SkipEndIcon />
+        </TransportButton>
+      </div>
+      <span className="font-mono text-[0.786rem] text-text-tertiary">
+        frame {frame} · {fps}fps
+      </span>
+    </div>
+  );
+}
+
+export function PreviewStage({
+  scenes,
+  fps,
+  width,
+  height,
+  audioClips,
+  initializing,
+}: {
+  scenes: CompiledScene[];
+  fps: number;
+  width: number;
+  height: number;
+  audioClips?: AudioClipData[];
+  initializing: boolean;
+}) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1 p-4">
@@ -162,40 +204,7 @@ export function PreviewStage({
         </div>
       </div>
 
-      <div className="relative flex shrink-0 items-center justify-between bg-surface px-4 pt-1 pb-4">
-        <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
-          {framesToTimecode(frame, fps)}{" "}
-          <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
-        </span>
-        <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
-          <TransportButton
-            title="Jump to start"
-            onClick={() => seek(0)}
-            disabled={scenes.length === 0}
-          >
-            <SkipStartIcon />
-          </TransportButton>
-          <TransportButton
-            title="Play/Pause (Space)"
-            onClick={toggle}
-            disabled={scenes.length === 0}
-            active={isPlaying}
-            primary
-          >
-            <PlayIcon playing={isPlaying} />
-          </TransportButton>
-          <TransportButton
-            title="Jump to end"
-            onClick={() => seek(playback.getState().totalFrames - 1)}
-            disabled={scenes.length === 0}
-          >
-            <SkipEndIcon />
-          </TransportButton>
-        </div>
-        <span className="font-mono text-[0.786rem] text-text-tertiary">
-          frame {frame} · {fps}fps
-        </span>
-      </div>
+      <PreviewTransport fps={fps} />
     </div>
   );
 }

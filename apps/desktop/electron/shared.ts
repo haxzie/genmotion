@@ -5,6 +5,8 @@ import type {
   ExportJobData,
   ProjectData,
 } from "@genmotion/shared";
+import type { ProjectEngine } from "@genmotion/project/schema";
+import type { CompositionTimeline, InstallStep, LintReport } from "@genmotion/hyperframes/shared";
 
 /**
  * What the main process produced for one scene. The bundle is built there,
@@ -26,6 +28,10 @@ export interface SceneBundle {
  */
 export interface DesktopProject extends ProjectData {
   dir: string;
+  /** Which runtime the folder is written for; decides which half of the editor shows. */
+  engine: ProjectEngine;
+  /** Present for `hyperframes` projects: the compiled composition and everything around it. */
+  hyperframes: HyperframesState | null;
   bundles: Record<string, SceneBundle>;
   /** Scene files the manifest lists but disk doesn't have. */
   missing: string[];
@@ -33,6 +39,42 @@ export interface DesktopProject extends ProjectData {
   manifestError: string | null;
   /** The folder itself is gone (moved, deleted, unmounted). Nothing to show. */
   folderMissing: boolean;
+}
+
+/** Which HyperFrames runtime the preview and export load, and why. */
+export interface HyperframesRuntime {
+  version: string;
+  /** `project` is the folder's own `node_modules` copy; `app` the one this build carries. */
+  source: "project" | "app";
+  /** Shown in the editor when the choice is not the obvious one. */
+  note: string | null;
+}
+
+/** The install that follows a new project, as the scaffolding banner shows it. */
+export type ScaffoldState = InstallStep & { at: number };
+
+/**
+ * What the main process knows about a HyperFrames project after compiling it.
+ *
+ * The compiled document itself is not in here — it is served to the preview
+ * iframe and the export window by URL — but everything the editor draws from
+ * it is: the timeline, the lint findings, the source files for the Code view.
+ */
+export interface HyperframesState {
+  /** Bumped per compile. The preview keys its iframe on it. */
+  revision: number;
+  /** From the root's `data-width`/`data-height`; null until a compile succeeds. */
+  width: number | null;
+  height: number | null;
+  durationSeconds: number;
+  timeline: CompositionTimeline;
+  lint: LintReport;
+  /** The compiler refused the folder outright (no index.html, a broken sub-composition). */
+  compileError: string | null;
+  runtime: HyperframesRuntime;
+  /** `index.html` and every `scenes/*.html`, for the Code view. */
+  files: { path: string; code: string }[];
+  scaffold: ScaffoldState | null;
 }
 
 /**
@@ -143,6 +185,8 @@ export interface CreateProjectInput {
   name?: string;
   width?: number;
   height?: number;
+  /** Omitted means the stored default (see `preferences.ts`) — the start screen's picker. */
+  engine?: ProjectEngine;
 }
 
 /** Which template to copy, and what to call the copy. */
@@ -267,6 +311,10 @@ export interface DesktopApi {
   onProjectClosed(listener: (dir: string) => void): () => void;
   /** A tab shortcut from the OS menu. */
   onTabCommand(listener: (command: TabCommand) => void): () => void;
+  /** The install behind a new HyperFrames project moved; the banner follows it. */
+  onScaffoldChanged(listener: (dir: string, state: ScaffoldState) => void): () => void;
+  /** Run the HyperFrames install again for a project whose first attempt failed. */
+  retryScaffold(dir: string): Promise<ScaffoldState>;
   /** Show a finished export in the file manager, by job id. */
   revealExport(id: string): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
@@ -350,6 +398,8 @@ export const IPC = {
   cliStatus: "cli:status",
   cliInstall: "cli:install",
   projectChanged: "project:changed",
+  scaffoldChanged: "project:scaffold-changed",
+  retryScaffold: "project:scaffold-retry",
   authState: "auth:state",
   authStart: "auth:start",
   authOpenBrowser: "auth:open-browser",

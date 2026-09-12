@@ -6,6 +6,7 @@ import {
   type DesktopApi,
   type DesktopProject,
   type LaunchContext,
+  type ScaffoldState,
   type StoredTabs,
   type TabCommand,
   type UpdateState,
@@ -53,6 +54,14 @@ const api: DesktopApi = {
       ipcRenderer.off(IPC.tabCommand, handler);
     };
   },
+  onScaffoldChanged: (listener) => {
+    const handler = (_event: unknown, dir: string, state: ScaffoldState) => listener(dir, state);
+    ipcRenderer.on(IPC.scaffoldChanged, handler);
+    return () => {
+      ipcRenderer.off(IPC.scaffoldChanged, handler);
+    };
+  },
+  retryScaffold: (dir) => ipcRenderer.invoke(IPC.retryScaffold, dir),
   revealExport: (id) => ipcRenderer.invoke(IPC.revealExport, id),
   recentProjects: (range) => ipcRenderer.invoke(IPC.recentProjects, range),
   revealProject: (dir) => ipcRenderer.invoke(IPC.revealProject, dir),

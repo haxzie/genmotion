@@ -4,9 +4,11 @@ import { z } from "zod";
 import { readManifest } from "@genmotion/project";
 import { validateSceneFile } from "@genmotion/project/validate";
 import { PAYWALL_STATUS } from "@genmotion/shared";
+import { formatFinding } from "@genmotion/hyperframes";
 import { desktopAuth } from "../auth";
-import { captureFrame } from "../export/capture";
-import { resolveFrameTarget } from "../export/frame-target";
+import { captureCompositionFrame, captureFrame } from "../export/capture";
+import { resolveFrameTarget, SAMPLE_AT } from "../export/frame-target";
+import { openCompositionWindow } from "../export/hyperframes-window";
 import type { ProjectSession } from "../project-session";
 import type { AgentSdkModule } from "./load-sdk";
 
@@ -89,6 +91,11 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     shape: { file: z.string().describe('Project-relative path, e.g. "scenes/01-intro.tsx"') },
     readOnly: true,
     async run(session, args) {
+      if (session.engine === "hyperframes") {
+        return failure(
+          "This is a HyperFrames project — there are no TSX scenes to validate. Call `validate_composition` instead.",
+        );
+      }
       const { file } = args as unknown as { file: string };
       const rel = file.replace(/^\.?\//, "");
       let durationInFrames = 150;
@@ -121,6 +128,65 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   },
 
   {
+    name: "validate_composition",
+    description:
+      "Check a HyperFrames project the way the editor does: compile index.html (scenes inlined, timing resolved), run the HyperFrames linter over index.html and every scenes/*.html, then load the composition for real and seek three frames. Returns every finding with its file and a fix hint. Run this after every edit to composition HTML — it is what `npx hyperframes lint`/`check` would be, and those commands are not available here.",
+    shape: {},
+    readOnly: true,
+    async run(session) {
+      if (session.engine !== "hyperframes") {
+        return failure("This is not a HyperFrames project — use `validate_scene` on a scene file instead.");
+      }
+      const engine = session.hyperframes;
+      // Fresh, not the watcher's last pass: the agent is asking about the
+      // file it just wrote, and the watcher debounces.
+      await engine.refresh();
+      const state = engine.state();
+
+      if (state.compileError) return failure(`INVALID — does not compile\n\n${state.compileError}`);
+
+      const errors = state.lint.findings.filter((f) => f.severity === "error");
+      const warnings = state.lint.findings.filter((f) => f.severity !== "error");
+      const notes = warnings.length
+        ? `\n\nWarnings (${warnings.length}):\n${warnings.map(formatFinding).join("\n")}`
+        : "";
+      if (errors.length) {
+        return failure(
+          `INVALID — ${errors.length} lint error${errors.length === 1 ? "" : "s"}\n\n${errors
+            .map(formatFinding)
+            .join("\n")}${notes}`,
+        );
+      }
+
+      // Lint passing proves the markup; only loading the page proves the
+      // timeline registers, the media loads, and a seek lands.
+      const compiled = engine.current;
+      if (!compiled) return failure("INVALID — the composition did not compile");
+      let page;
+      try {
+        page = await openCompositionWindow(session, { width: compiled.width, height: compiled.height });
+      } catch (err) {
+        return failure(`INVALID — the composition does not load\n\n${err instanceof Error ? err.message : String(err)}`);
+      }
+      try {
+        const d = page.durationSeconds;
+        for (const t of [0, d / 2, Math.max(0, d - 1 / 30)]) await page.seek(t);
+      } catch (err) {
+        return failure(`INVALID — seeking failed\n\n${err instanceof Error ? err.message : String(err)}`);
+      } finally {
+        page.close();
+      }
+
+      const scenes = state.timeline.scenes.length
+        ? ` · ${state.timeline.scenes.length} scene${state.timeline.scenes.length === 1 ? "" : "s"}`
+        : "";
+      return text(
+        `VALID — compiles, lints clean, loads and seeks. ${compiled.width}×${compiled.height}, ${compiled.durationSeconds.toFixed(1)}s${scenes}, HyperFrames ${state.runtime.version}.${notes}`,
+      );
+    },
+  },
+
+  {
     name: "capture_frames",
     description:
       "Look at the video. Renders one frame offscreen through the same path the export uses and hands it back as an image, so you can see what a scene actually looks like rather than imagining it. `validate_scene` proves a scene builds; this shows what it renders. Use it after any visual change — it is how you catch text overflowing its box, a dark card on a dark background, or an element that never appears.",
@@ -141,6 +207,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     readOnly: true,
     async run(session, args) {
       const { scene, at } = args as unknown as { scene?: string; at?: string };
+      if (session.engine === "hyperframes") return captureComposition(session, { scene, at });
 
       let manifest;
       try {
@@ -201,6 +268,9 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     async run(session) {
       const project = await session.load();
       if (project.manifestError) return failure(`project.json is invalid:\n${project.manifestError}`);
+      if (project.engine === "hyperframes" && project.hyperframes) {
+        return text(describeComposition(project.name, project.fps, project.hyperframes));
+      }
 
       const fps = project.fps;
       let at = 0;
@@ -344,6 +414,126 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
  * bytes.
  */
 const SNAPSHOT_WIDTH = 1024;
+
+/**
+ * `capture_frames` for a HyperFrames project.
+ *
+ * `scene` names a scene slot — by file (`scenes/02-hero.html`) or
+ * by id — and `at` is then measured from its start; without one, from the
+ * start of the video. The default is the same 60% mark the React path uses.
+ */
+async function captureComposition(
+  session: ProjectSession,
+  input: { scene?: string; at?: string },
+): Promise<ToolResult> {
+  const state = session.hyperframes.state();
+  if (state.compileError) return failure(`FAILED — the composition does not compile: ${state.compileError}`);
+  const total = state.durationSeconds;
+  if (total <= 0) return failure("FAILED — the composition has no duration yet");
+
+  let window = { label: "the video", start: 0, length: total };
+  if (input.scene) {
+    const wanted = input.scene.replace(/^\.?\//, "");
+    const found = state.timeline.scenes.find((s) => s.file === wanted || s.id === wanted);
+    if (!found) {
+      const known = state.timeline.scenes.map((s) => s.file).join(", ") || "(none)";
+      return failure(`FAILED — no scene "${input.scene}". Mounted scenes: ${known}`);
+    }
+    window = {
+      label: found.file,
+      start: found.start,
+      length: found.duration ?? Math.max(0, total - found.start),
+    };
+  }
+
+  let offset = window.length * SAMPLE_AT;
+  if (input.at !== undefined) {
+    const raw = input.at.trim();
+    const seconds = /^(\d+(?:\.\d+)?)s$/.exec(raw);
+    const frames = /^\d+$/.test(raw) ? Number(raw) : null;
+    if (seconds) offset = Number(seconds[1]);
+    else if (frames !== null) offset = frames / (await readManifest(session.dir)).fps;
+    else return failure(`FAILED — "${input.at}" is not a time: use seconds like "1.5s" or a frame number like "45"`);
+    if (offset < 0 || offset > window.length) {
+      return failure(`FAILED — ${raw} is outside ${window.label} (${window.length.toFixed(2)}s long)`);
+    }
+  }
+  const time = window.start + offset;
+
+  let captured;
+  try {
+    captured = await captureCompositionFrame(session, time);
+  } catch (err) {
+    return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  const jpeg = captured.image
+    .resize({ width: Math.min(captured.width, SNAPSHOT_WIDTH), quality: "good" })
+    .toJPEG(SNAPSHOT_QUALITY);
+  const stem = input.scene ? window.label : "index.html";
+  const saved = await writeSnapshot(session.dir, stem, Math.round(time * 1000), jpeg);
+  return {
+    text: [
+      `${window.label} — ${offset.toFixed(2)}s in${input.scene ? ` (${time.toFixed(2)}s of ${total.toFixed(2)}s on the timeline)` : ` of ${total.toFixed(2)}s`} · ${captured.width}×${captured.height}`,
+      `Saved to ${saved}`,
+    ].join("\n"),
+    image: { base64: jpeg.toString("base64"), mimeType: "image/jpeg" },
+  };
+}
+
+/** `project_overview` for a HyperFrames project, from the last compile. */
+function describeComposition(
+  name: string,
+  fps: number,
+  hf: import("../shared").HyperframesState,
+): string {
+  const lines: string[] = [];
+  const size = hf.width && hf.height ? `${hf.width}×${hf.height}` : "size unknown";
+  lines.push(
+    `${name} — HyperFrames ${hf.runtime.version}, ${size} @ ${fps}fps, ${hf.durationSeconds.toFixed(1)}s total`,
+  );
+  if (hf.compileError) lines.push("", `DOES NOT COMPILE: ${hf.compileError}`);
+  if (hf.runtime.note) lines.push("", hf.runtime.note);
+
+  lines.push("", "Files: " + hf.files.map((f) => f.path).join(", "));
+
+  const { scenes, clips, audio } = hf.timeline;
+  if (scenes.length) {
+    lines.push("", "Sub-compositions:");
+    scenes.forEach((s, i) => {
+      const end = s.duration === null ? "?" : (s.start + s.duration).toFixed(1);
+      lines.push(`${i + 1}. ${s.label} — ${s.file} · ${s.start.toFixed(1)}s–${end}s`);
+    });
+  }
+  const rootClips = clips.filter((c) => c.depth === 0 && c.kind !== "composition" && c.kind !== "audio");
+  if (rootClips.length) {
+    lines.push(
+      "",
+      "Root clips: " +
+        rootClips
+          .map((c) => `#${c.id} (${c.start.toFixed(1)}s${c.duration === null ? "" : `–${(c.start + c.duration).toFixed(1)}s`})`)
+          .join(", "),
+    );
+  }
+  if (audio.length) {
+    lines.push(
+      "",
+      "Audio: " +
+        audio
+          .map((a) => `#${a.id} ${a.src} @ ${a.start.toFixed(1)}s${a.duration === null ? "" : ` for ${a.duration.toFixed(1)}s`}, vol ${a.volume}`)
+          .join(", "),
+    );
+  }
+  const errors = hf.lint.findings.filter((f) => f.severity === "error");
+  const warnings = hf.lint.findings.filter((f) => f.severity !== "error");
+  if (errors.length || warnings.length) {
+    lines.push("", `Lint: ${errors.length} error(s), ${warnings.length} warning(s)`);
+    for (const f of [...errors, ...warnings].slice(0, 20)) lines.push(formatFinding(f));
+  } else {
+    lines.push("", "Lint: clean");
+  }
+  return lines.join("\n");
+}
 const SNAPSHOT_QUALITY = 80;
 
 /**
@@ -369,7 +559,7 @@ async function writeSnapshot(
   await fs.mkdir(dir, { recursive: true });
 
   const stem = (sceneFile.split("/").pop() ?? sceneFile)
-    .replace(/\.[jt]sx?$/, "")
+    .replace(/\.(?:[jt]sx?|html?)$/, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-");
   // Zero-padded so the folder sorts the way the timeline runs.
   const name = `${stem}-f${String(frame).padStart(4, "0")}.jpg`;
@@ -580,6 +770,14 @@ export const DISALLOWED_TOOLS = [
   "DesignSync",
   "ReportFindings",
 ];
+
+/**
+ * The same list for a HyperFrames project, where `Skill` is the point: the
+ * HyperFrames pack arrives as a plugin this app ships (see `pluginDir()` in
+ * `claude-code.ts`), and with `settingSources` empty it is the only pack
+ * the session can see — so allowing the tool allows exactly those skills.
+ */
+export const DISALLOWED_TOOLS_HYPERFRAMES = DISALLOWED_TOOLS.filter((name) => name !== "Skill");
 
 /**
  * What to do with a file once it's saved — which differs by kind, and getting

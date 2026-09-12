@@ -4,10 +4,9 @@ import "./esbuild-binary";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { createReadStream } from "node:fs";
-import { Readable } from "node:stream";
 import { BrowserWindow, app, dialog, ipcMain, protocol, shell } from "electron";
 import { createProject, readManifest } from "@genmotion/project";
+import { GSAP_VERSION, HYPERFRAMES_AUTHORING_GUIDE, HYPERFRAMES_VERSION } from "@genmotion/hyperframes";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
 import { flushAnalytics, startAnalytics, track } from "./analytics";
@@ -24,7 +23,8 @@ import {
 } from "./session-registry";
 import { refreshThumbnail } from "./export/thumbnail";
 import { forgetProject, listRecents, rememberProject } from "./recents";
-import { mimeForAsset, startLocalServer, type LocalServer } from "./local-server";
+import { startLocalServer, type LocalServer } from "./local-server";
+import { serveAssetFile } from "./serve-file";
 import {
   checkForUpdate,
   downloadUpdate,
@@ -48,6 +48,8 @@ import { projectDefaults } from "./preferences";
 import { readSettings, update as updateSettings } from "./settings-store";
 import { applySessionRoots } from "./agent/read-roots";
 import { installMenu } from "./menu";
+import { linkSkillsIntoProject } from "./hyperframes/skills";
+import { onScaffoldChange, runScaffoldInstall } from "./hyperframes/scaffold";
 
 const DEV_SERVER = process.env.GM_DEV_SERVER_URL;
 // Electron's main process is bundled to CJS, so `__dirname` is the file's own
@@ -107,6 +109,12 @@ async function openSession(dir: string): Promise<DesktopProject> {
   // rather than fired off, so the subprocess warmed a line below starts with
   // them already in place.
   await applySessionRoots(session.dir);
+  // The skill pack, for Codex. Re-linked on every open so an app update
+  // reaches projects made before it. Best-effort: a project without the
+  // links still works, the agent just has less to read.
+  if (session.engine === "hyperframes") {
+    await linkSkillsIntoProject(session.dir).catch(() => {});
+  }
   // Opening a project is the strongest signal that a turn is coming. Load the
   // agent SDK and resolve the CLI now, so the first message does not pay for
   // them — not awaited, because none of it gates the editor appearing. Only the
@@ -267,9 +275,47 @@ function registerIpc(): void {
     const defaults = await projectDefaults();
     const width = input.width ?? defaults.width;
     const height = input.height ?? defaults.height;
-    await createProject({ dir, name, width, height, fps: defaults.fps });
-    track("project_created", { width, height });
-    return openSession(dir);
+    const engine = input.engine ?? defaults.engine;
+    if (engine === "react") {
+      await createProject({ dir, name, width, height, fps: defaults.fps });
+      track("project_created", { width, height, engine });
+      return openSession(dir);
+    }
+    // A HyperFrames composition. The folder is written against the release
+    // this app carries and is previewable at once; the upgrade to the newest
+    // release runs behind the open, reported to the editor's scaffolding
+    // banner (`runScaffoldInstall`).
+    await createProject({
+      dir,
+      name,
+      width,
+      height,
+      fps: defaults.fps,
+      engine: "hyperframes",
+      hyperframes: {
+        version: HYPERFRAMES_VERSION,
+        gsapVersion: GSAP_VERSION,
+        guide: HYPERFRAMES_AUTHORING_GUIDE,
+      },
+    });
+    track("project_created", { width, height, engine });
+    const project = await openSession(dir);
+    void runScaffoldInstall(project.dir)
+      .then(() => getSession(project.dir)?.touch())
+      .catch(() => {});
+    return project;
+  });
+
+  /**
+   * Run the install again. The banner offers this after a failure — no
+   * network at creation, npm hiccup — and the result flows back over the same
+   * event the first attempt used.
+   */
+  ipcMain.handle(IPC.retryScaffold, async (_event, dir: string) => {
+    if (typeof dir !== "string" || !getSession(dir)) throw new Error("That project isn't open");
+    const state = await runScaffoldInstall(dir);
+    getSession(dir)?.touch();
+    return state;
   });
 
   ipcMain.handle(IPC.remixTemplate, async (_event, input: RemixTemplateInput) =>
@@ -439,67 +485,6 @@ function assetPathFromUrl(raw: string): string | null {
   const relative = decodeURIComponent(url.pathname).replace(/^\/+/, "");
   const target = path.resolve(session.dir, relative);
   return path.relative(session.dir, target).startsWith("..") ? null : target;
-}
-
-/** `Range: bytes=a-b` → an inclusive [start, end] inside a file of `size`. */
-function parseRange(
-  header: string | null,
-  size: number,
-): { start: number; end: number } | null {
-  const match = /^bytes=(\d*)-(\d*)$/.exec(header?.trim() ?? "");
-  if (!match) return null;
-  const [, rawStart, rawEnd] = match;
-  // `bytes=-500` is the LAST 500 bytes, not the first 500.
-  const start = rawStart ? Number(rawStart) : Math.max(0, size - Number(rawEnd || 0));
-  const end = rawStart ? (rawEnd ? Math.min(Number(rawEnd), size - 1) : size - 1) : size - 1;
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
-    return null;
-  }
-  return { start, end };
-}
-
-/**
- * Serve one project file, with byte ranges.
- *
- * The ranges are the whole point. This used to hand the request to
- * `net.fetch(file://…)` on the strength of that honouring `Range` — it does
- * not. It answers **200** with no `Content-Range`, no `Content-Length` and no
- * `Accept-Ranges`, while quietly returning only the requested bytes. Chromium's
- * media loader reads that as a stream it cannot seek, so `video.seekable` stays
- * empty and every `currentTime =` is dropped on the floor: measured on the real
- * export path, a <Video> reported `currentTime` 0.000 for all 60 frames of a
- * scene and decoded exactly one distinct frame — the clip frozen on the first
- * frame it ever loaded, which is the "the video doesn't play in my export"
- * report. Every render frame is a seek, so this is not a detail.
- */
-async function serveAssetFile(target: string, request: Request): Promise<Response> {
-  let size: number;
-  try {
-    size = (await fs.stat(target)).size;
-  } catch {
-    return new Response("Not found", { status: 404 });
-  }
-
-  const headers: Record<string, string> = {
-    "content-type": mimeForAsset(target),
-    "accept-ranges": "bytes",
-    "cache-control": "no-cache",
-  };
-  const range = parseRange(request.headers.get("range"), size);
-  const start = range?.start ?? 0;
-  const end = range?.end ?? size - 1;
-  headers["content-length"] = String(end - start + 1);
-  if (range) headers["content-range"] = `bytes ${start}-${end}/${size}`;
-
-  // HEAD and a zero-length file both want the headers and nothing else.
-  if (request.method === "HEAD" || size === 0) {
-    return new Response(null, { status: range ? 206 : 200, headers });
-  }
-  const stream = createReadStream(target, { start, end });
-  return new Response(Readable.toWeb(stream) as ReadableStream, {
-    status: range ? 206 : 200,
-    headers,
-  });
 }
 
 function registerAssetProtocol(): void {
@@ -698,6 +683,11 @@ void app.whenReady().then(async () => {
   onProjectChanged((project) => {
     if (!window || window.isDestroyed()) return;
     window.webContents.send(IPC.projectChanged, project);
+  });
+  // The install behind a new project, step by step, for its tab's banner.
+  onScaffoldChange((dir, state) => {
+    if (!window || window.isDestroyed()) return;
+    window.webContents.send(IPC.scaffoldChanged, dir, state);
   });
 
   // Delivery for anything recorded from here on, plus whatever last run left

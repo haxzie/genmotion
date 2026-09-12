@@ -17,7 +17,7 @@ export interface Settings {
   harness?: unknown;
   models?: Record<string, string>;
   /** What the composer opens with on a fresh project. */
-  defaults?: { width?: number; height?: number; fps?: number };
+  defaults?: { width?: number; height?: number; fps?: number; engine?: string };
   /** The tabs open when the app last quit, so a launch picks up where it left off. */
   openTabs?: StoredTabs;
 }

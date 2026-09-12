@@ -12,6 +12,7 @@ import { resolveFrameTarget } from "../frame-target";
 /** Two scenes: 0–89 is the intro, 90–209 is the hero. 30fps. */
 const manifest: ProjectManifest = {
   name: "Test",
+  engine: "react",
   fps: 30,
   width: 1920,
   height: 1080,

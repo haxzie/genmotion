@@ -26,6 +26,8 @@ import {
   type ExportRecord,
 } from "./history";
 import { readThumbnail } from "./thumbnail";
+import { openCompositionWindow, type CompositionWindow } from "./hyperframes-window";
+import { planAudioMix, type AudioLevelSamples } from "./hyperframes-audio";
 
 /** Encoder quality knob, matching the hosted renderer's mapping. */
 const QUALITY = 80;
@@ -267,8 +269,14 @@ export async function startExport(
   const entitlement = await checkExportEntitlement();
 
   const manifest = await readManifest(session.dir);
-  const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
-  if (totalFrames === 0) throw new Error("Nothing to export — the project has no scenes");
+  const totalFrames = expectedFrames(session, manifest);
+  if (totalFrames === 0) {
+    throw new Error(
+      manifest.engine === "hyperframes"
+        ? session.hyperframes.compileError ?? "Nothing to export — the composition has no duration"
+        : "Nothing to export — the project has no scenes",
+    );
+  }
 
   const id = `exp_${Date.now().toString(36)}_${randomBytes(3).toString("hex")}`;
   const job: Job = {
@@ -294,6 +302,20 @@ export async function startExport(
   void pump(() => ({ session, manifest, watermark: entitlement.watermark }));
 
   return publicJob(job);
+}
+
+/**
+ * How many frames the export will have, from what is known before it runs.
+ *
+ * A React project's length is the sum of its scenes; a HyperFrames project's
+ * is whatever the last compile resolved — the page confirms it once open.
+ */
+function expectedFrames(session: ProjectSession, manifest: ProjectManifest): number {
+  if (manifest.engine === "hyperframes") {
+    const seconds = session.hyperframes.current?.durationSeconds ?? 0;
+    return Math.round(seconds * manifest.fps);
+  }
+  return manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
 }
 
 /** What a queued job needs to run, held beside it until its turn comes. */
@@ -344,6 +366,8 @@ async function run(
   manifest: ProjectManifest,
   watermark: boolean,
 ): Promise<void> {
+  if (manifest.engine === "hyperframes") return runHyperframes(job, session, manifest, watermark);
+
   const { fps, width, height } = manifest;
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
   const format = job.format;
@@ -492,6 +516,164 @@ async function run(
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
+}
+
+/**
+ * The HyperFrames export.
+ *
+ * Same shape as the React one — offscreen window, seek, capture, pipe to
+ * ffmpeg, mux — with the composition page standing in for the render host.
+ * The size and length come from the page rather than the manifest: the root's
+ * `data-width`/`data-height` and the duration the runtime resolved are the
+ * truth, and a manifest that disagrees is only the app's record of what the
+ * project was created as.
+ */
+async function runHyperframes(
+  job: Job,
+  session: ProjectSession,
+  manifest: ProjectManifest,
+  watermark: boolean,
+): Promise<void> {
+  const { fps } = manifest;
+  const format = job.format;
+  const id = job.id;
+
+  const compiled = session.hyperframes.current;
+  if (!compiled) throw new Error(session.hyperframes.compileError ?? "The composition does not compile");
+  const { width, height } = compiled;
+
+  update(id, { status: "rendering" });
+  const page = await openCompositionWindow(session, { width, height });
+
+  const outDir = path.join(session.dir, "exports");
+  await fs.mkdir(outDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const silentPath = path.join(outDir, `.render-${stamp}.${format}`);
+  const outputPath = path.join(outDir, `${slug(manifest.name)}-${stamp}.${format}`);
+
+  try {
+    const totalFrames = Math.max(1, Math.round(page.durationSeconds * fps));
+    update(id, { totalFrames });
+
+    if (watermark) {
+      await injectWatermark(page, width, height);
+    }
+
+    const ffmpeg = spawn(bundledBinary("ffmpeg"), [
+      "-y",
+      "-f", "image2pipe",
+      "-framerate", String(fps),
+      "-i", "-",
+      ...encoderArgs(format, fps, width, height),
+      silentPath,
+    ]);
+    let ffmpegErr = "";
+    ffmpeg.stderr.on("data", (d: Buffer) => {
+      ffmpegErr += d.toString();
+      if (ffmpegErr.length > 20000) ffmpegErr = ffmpegErr.slice(-10000);
+    });
+    const encoded = new Promise<void>((resolve, reject) => {
+      ffmpeg.on("close", (code) =>
+        code === 0 ? resolve() : reject(new Error(`ffmpeg exited with ${code}: ${ffmpegErr.slice(-600)}`)),
+      );
+      ffmpeg.on("error", reject);
+    });
+
+    // Every frame's audio gains, for the mix: a fade the timeline animates
+    // is only knowable by asking the page at each frame.
+    const levels: AudioLevelSamples = [];
+    for (let frame = 0; frame < totalFrames; frame++) {
+      if (job.cancelled) break;
+      await page.seek(frame / fps);
+      levels.push(await page.audioLevels());
+      const image = await page.capture();
+      const jpeg = image.toJPEG(92);
+      if (!ffmpeg.stdin.write(jpeg)) {
+        await new Promise<void>((resolve) => ffmpeg.stdin.once("drain", resolve));
+      }
+      if (frame % 5 === 0 || frame === totalFrames - 1) {
+        update(id, { progress: Math.round(((frame + 1) / totalFrames) * 100) });
+      }
+    }
+    ffmpeg.stdin.end();
+    await encoded;
+
+    if (job.cancelled) {
+      await fs.rm(silentPath, { force: true });
+      return;
+    }
+
+    update(id, { status: "encoding", progress: 100 });
+    const plan =
+      format === "gif"
+        ? null
+        : planAudioMix(session.dir, compiled.timeline.audio, levels, fps, totalFrames);
+    if (plan) {
+      await runFfmpeg([
+        "-y", "-i", silentPath,
+        ...plan.inputs,
+        "-filter_complex", plan.filterComplex,
+        "-map", "0:v",
+        "-map", "[aout]",
+        "-c:v", "copy",
+        "-c:a", format === "webm" ? "libopus" : "aac",
+        "-t", (totalFrames / fps).toFixed(3),
+        outputPath,
+      ]);
+      await fs.rm(silentPath, { force: true });
+    } else {
+      await fs.rename(silentPath, outputPath);
+    }
+
+    const finishedAt = Date.now();
+    const sizeBytes = await fs.stat(outputPath).then((s) => s.size).catch(() => 0);
+    update(id, {
+      status: "done",
+      outputUrl: session.assetUrl(path.relative(session.dir, outputPath)),
+      outputPath,
+      finishedAt,
+      sizeBytes,
+      width,
+      height,
+      durationSeconds: totalFrames / fps,
+    });
+    await recordExport({
+      id,
+      projectDir: session.dir,
+      projectName: job.projectName,
+      format,
+      outputPath,
+      sizeBytes,
+      width,
+      height,
+      fps,
+      durationSeconds: totalFrames / fps,
+      createdAt: job.createdAt,
+      finishedAt,
+    }).catch(() => {});
+  } finally {
+    page.close();
+  }
+}
+
+/**
+ * The trial badge, on the composition page. Appended to `<body>` outside the
+ * composition root so nothing the agent wrote can paint over it — the same
+ * markup and rule the React export uses.
+ */
+async function injectWatermark(
+  page: CompositionWindow,
+  width: number,
+  height: number,
+): Promise<void> {
+  await page.execute(
+    `(() => {
+       const holder = document.createElement("div");
+       holder.innerHTML = ${JSON.stringify(watermarkHtml(width, height))};
+       const badge = holder.firstElementChild;
+       if (badge) document.body.appendChild(badge);
+     })()`,
+  );
 }
 
 /** Returns true when an audio track was mixed in. */

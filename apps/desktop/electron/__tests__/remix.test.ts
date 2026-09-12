@@ -29,6 +29,7 @@ function bundle(files: TemplateRemixBundle["files"]): TemplateRemixBundle {
     revision: "abc123",
     manifest: {
       name: "Demo",
+      engine: "react",
       fps: 30,
       width: 1920,
       height: 1080,

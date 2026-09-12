@@ -7,12 +7,14 @@ import { waitForAnswer } from "./questions";
 import {
   ALLOWED_TOOLS,
   DISALLOWED_TOOLS,
+  DISALLOWED_TOOLS_HYPERFRAMES,
   READ_ONLY_TOOLS,
   createGenmotionTools,
   isInsideProject,
 } from "./tools";
 import { isReadable, listReadRoots } from "./read-roots";
 import { getLaunchDir } from "../cli";
+import { pluginDir } from "../hyperframes/vendor";
 import { activeModel } from "./registry";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
@@ -34,6 +36,12 @@ function describeTool(name: string, input: unknown): string {
       return "Searching the project";
     case "mcp__genmotion__validate_scene":
       return short ? `Checking ${short}` : "Checking the scene";
+    case "mcp__genmotion__validate_composition":
+      return "Checking the composition";
+    case "mcp__genmotion__capture_frames":
+      return "Looking at a frame";
+    case "Skill":
+      return typeof values.skill === "string" ? `Reading the ${values.skill} skill` : "Reading a skill";
     case "mcp__genmotion__project_overview":
       return "Reading the timeline";
     case "WebSearch":
@@ -149,20 +157,25 @@ async function turnOptions(
     ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
     env: agentEnv(),
     ...(model ? { model } : {}),
-    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir()),
+    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine),
     // Folders the user has shared. The CLI refuses a path outside its working
     // roots before `canUseTool` is ever consulted, so a grant has to be
     // declared here too — this opens the door, and the callback below is what
     // decides that only reads walk through it.
     ...(readRoots.length ? { additionalDirectories: readRoots } : {}),
     allowedTools: ALLOWED_TOOLS,
-    disallowedTools: DISALLOWED_TOOLS,
+    disallowedTools: session.engine === "hyperframes" ? DISALLOWED_TOOLS_HYPERFRAMES : DISALLOWED_TOOLS,
     // "default", not "acceptEdits": an auto-approving mode would decide
     // before canUseTool runs, and that callback is the containment check.
     permissionMode: "default" as const,
     // Don't inherit the user's own CLAUDE.md, skills, or hooks — this
     // agent authors videos, and their coding setup would only confuse it.
     settingSources: [] as [],
+    // The HyperFrames skill pack, as a plugin this app ships. A plugin is how
+    // skills reach a session that loads no settings at all — and it means
+    // the pack the agent reads is the one this build was tested with, not
+    // whatever the user has under ~/.claude/skills.
+    ...(session.engine === "hyperframes" ? { plugins: [{ type: "local" as const, path: pluginDir() }] } : {}),
     mcpServers: { genmotion: createGenmotionTools(sdk, session) },
     includePartialMessages: true,
     canUseTool: async (

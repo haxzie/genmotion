@@ -163,6 +163,8 @@ export async function closeSession(
   await disposeWarmClaudeCodeFor(resolved);
   const { cancelExportsForProject } = await import("./export/service");
   cancelExportsForProject(resolved);
+  const { cancelScaffoldInstall } = await import("./hyperframes/scaffold");
+  cancelScaffoldInstall(resolved);
   return { closed: true };
 }
 
