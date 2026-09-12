@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { cx } from "@/components/ui";
 import { HOME_TAB, useTabsStore, type ProjectTab } from "./tabs-store";
 import { ExportsButton } from "./exports-panel";
@@ -127,6 +128,7 @@ export function TabStrip({
 }) {
   const tabs = useTabsStore((s) => s.tabs);
   const activeId = useTabsStore((s) => s.activeId);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div
@@ -147,21 +149,38 @@ export function TabStrip({
       <div className="mx-1 h-4 w-px shrink-0 bg-border" />
 
       {/* Scrolls sideways when the row overflows; the export button stays put. */}
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {tabs.map((tab) => (
-          <TabButton
-            key={tab.dir}
-            active={activeId === tab.dir}
-            onSelect={() => onActivate(tab.dir)}
-            onClose={() => onClose(tab.dir)}
-            label={tab.name}
-          >
-            <Activity tab={tab} />
-            <span className={cx("truncate", tab.project === null && "italic text-text-tertiary")}>
-              {tab.name}
-            </span>
-          </TabButton>
-        ))}
+      <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* A tab grows in from nothing and shrinks away when closed, with
+            its neighbours sliding to fill the gap — so opening a project
+            reads as a tab arriving, and closing one as the row closing
+            up, rather than the strip re-laying itself out in one frame.
+            The gap lives on each wrapper rather than the row, so it
+            collapses with the tab instead of leaving a stray space. */}
+        <AnimatePresence initial={false}>
+          {tabs.map((tab) => (
+            <motion.div
+              key={tab.dir}
+              layout
+              initial={reduceMotion ? false : { width: 0, opacity: 0, scale: 0.92 }}
+              animate={{ width: "auto", opacity: 1, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { width: 0, opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="shrink-0 overflow-hidden pr-1"
+            >
+              <TabButton
+                active={activeId === tab.dir}
+                onSelect={() => onActivate(tab.dir)}
+                onClose={() => onClose(tab.dir)}
+                label={tab.name}
+              >
+                <Activity tab={tab} />
+                <span className={cx("truncate", tab.project === null && "italic text-text-tertiary")}>
+                  {tab.name}
+                </span>
+              </TabButton>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       <ExportsButton onOpenProject={onOpenProject} onShowAll={onShowAllExports} />
