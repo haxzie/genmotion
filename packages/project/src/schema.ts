@@ -71,9 +71,22 @@ export const audioEntrySchema = z.object({
   name: z.string().min(1).optional(),
 });
 
+/**
+ * Which runtime a project is written for.
+ *
+ * `react` is the original: `scenes/*.tsx` bundled by esbuild and driven frame
+ * by frame by `@genmotion/motion`. `hyperframes` is an HTML composition —
+ * `index.html` plus `scenes/*.html` — compiled and seeked by HyperFrames.
+ * Absent means `react`, so every manifest written before the field existed
+ * keeps meaning what it meant.
+ */
+export const projectEngineSchema = z.enum(["react", "hyperframes"]);
+export type ProjectEngine = z.infer<typeof projectEngineSchema>;
+
 export const projectManifestSchema = z.object({
   $schema: z.string().optional(),
   name: z.string().min(1),
+  engine: projectEngineSchema.default("react"),
   fps: z.number().int().positive().max(120).default(30),
   width: z.number().int().positive().max(7680).default(1920),
   height: z.number().int().positive().max(4320).default(1080),

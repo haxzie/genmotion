@@ -46,6 +46,71 @@ describe("createProject", () => {
     );
   });
 
+  it("scaffolds a HyperFrames project that plays as written", async () => {
+    const manifest = await createProject({
+      dir,
+      name: "Promo",
+      engine: "hyperframes",
+      width: 1080,
+      height: 1920,
+      hyperframes: {
+        version: "0.8.34",
+        gsapVersion: "3.14.2",
+        guide: "# Guide\n\nRead the skills.",
+      },
+    });
+
+    expect(manifest.engine).toBe("hyperframes");
+    expect(manifest.scenes).toEqual([]);
+    expect(manifest.width).toBe(1080);
+
+    const files = await fs.readdir(dir);
+    expect(files).toEqual(
+      expect.arrayContaining([
+        "project.json",
+        "index.html",
+        "hyperframes.json",
+        "package.json",
+        "AGENTS.md",
+        ".npmrc",
+        ".gitignore",
+        "assets",
+        SCENES_DIR,
+      ]),
+    );
+    expect(files).not.toContain("tsconfig.json");
+
+    const index = await fs.readFile(path.join(dir, "index.html"), "utf8");
+    expect(index).toContain('data-composition-id="main"');
+    expect(index).toContain('data-width="1080"');
+    expect(index).toContain("gsap@3.14.2");
+    expect(index).toContain('window.__timelines["main"]');
+    expect(index).toContain('data-composition-src="scenes/01-intro.html"');
+
+    const intro = await fs.readFile(path.join(dir, "scenes/01-intro.html"), "utf8");
+    expect(intro).toMatch(/^<template>/);
+    expect(intro).toContain('data-composition-id="intro"');
+    expect(intro).toContain('window.__timelines["intro"]');
+
+    const pkg = JSON.parse(await fs.readFile(path.join(dir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@hyperframes/core"]).toBe("0.8.34");
+    expect(pkg.dependencies.gsap).toBe("3.14.2");
+
+    const hf = JSON.parse(await fs.readFile(path.join(dir, "hyperframes.json"), "utf8"));
+    expect(hf).toMatchObject({ version: "0.8.34", entry: "index.html", width: 1080, height: 1920, fps: 30 });
+
+    expect(await fs.readFile(path.join(dir, "AGENTS.md"), "utf8")).toContain("Read the skills.");
+    expect(await fs.readFile(path.join(dir, ".gitignore"), "utf8")).toContain(".agents/");
+  });
+
+  it("reads a manifest with no engine as react", async () => {
+    await createProject({ dir, name: "Old" });
+    const raw = JSON.parse(await fs.readFile(path.join(dir, "project.json"), "utf8"));
+    delete raw.engine;
+    await fs.writeFile(path.join(dir, "project.json"), JSON.stringify(raw));
+    expect((await readManifest(dir)).engine).toBe("react");
+  });
+
   it("refuses to overwrite an existing project", async () => {
     await createProject({ dir });
     await expect(createProject({ dir })).rejects.toThrow(/already contains/);

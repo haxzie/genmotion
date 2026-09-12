@@ -13,8 +13,19 @@ import {
   formatManifestError,
   projectManifestSchema,
   sceneNameFromFile,
+  type ProjectEngine,
   type ProjectManifest,
 } from "./schema";
+import {
+  HYPERFRAMES_ENTRY,
+  HYPERFRAMES_STARTER_SCENE,
+  renderHyperframesAgentsMd,
+  renderHyperframesGitignore,
+  renderHyperframesIndexHtml,
+  renderHyperframesJson,
+  renderHyperframesPackageJson,
+  renderHyperframesStarterScene,
+} from "./scaffold-hyperframes";
 import {
   DEFAULT_VERSIONS,
   renderAgentsMd,
@@ -81,6 +92,17 @@ export interface CreateProjectInput {
   versions?: ScaffoldVersions;
   /** Skip the starter scene (used when importing an existing project). */
   empty?: boolean;
+  /** Which runtime the folder is written for. Defaults to `react` — the callers that want HyperFrames say so. */
+  engine?: ProjectEngine;
+  /** Required when `engine` is `hyperframes`: what the host knows that this package does not. */
+  hyperframes?: {
+    /** `@hyperframes/core` release to pin. */
+    version: string;
+    /** The release the starter composition loads from the CDN — the app swaps it for a local copy. */
+    gsapVersion: string;
+    /** The GenMotion-in-HyperFrames guide, for AGENTS.md. */
+    guide: string;
+  };
 }
 
 /**
@@ -98,6 +120,8 @@ export async function createProject(
   if (await exists(manifestPath(dir))) {
     throw new ProjectError(`${dir} already contains a ${MANIFEST_FILE}`);
   }
+
+  if (input.engine === "hyperframes") return createHyperframesProject(dir, name, input);
 
   for (const sub of [SCENES_DIR, COMPONENTS_DIR, ASSETS_DIR, CACHE_DIR]) {
     await fs.mkdir(path.join(dir, sub), { recursive: true });
@@ -133,6 +157,73 @@ export async function createProject(
     input.empty
       ? Promise.resolve()
       : fs.writeFile(path.join(dir, starter), renderStarterScene(), "utf8"),
+  ]);
+
+  return manifest;
+}
+
+/**
+ * The HyperFrames flavour of the scaffold: an `index.html` that plays as
+ * written, the folders the skills expect, a pinned `package.json`, and an
+ * AGENTS.md that tells the agent how this app stands in for the CLI. The
+ * root is the timeline and `scenes/01-intro.html` the first scene — the
+ * same two-level shape as a React project, so the editor's scene chips
+ * have something to show from the first frame.
+ */
+async function createHyperframesProject(
+  dir: string,
+  name: string,
+  input: CreateProjectInput,
+): Promise<ProjectManifest> {
+  const hf = input.hyperframes;
+  if (!hf) throw new ProjectError("A HyperFrames scaffold needs `hyperframes` versions and sources");
+
+  const fps = input.fps ?? 30;
+  const width = input.width ?? 1920;
+  const height = input.height ?? 1080;
+  const manifest = projectManifestSchema.parse({
+    name,
+    engine: "hyperframes",
+    fps,
+    width,
+    height,
+    scenes: [],
+    audio: [],
+  });
+
+  for (const sub of [SCENES_DIR, ASSETS_DIR, CACHE_DIR]) {
+    await fs.mkdir(path.join(dir, sub), { recursive: true });
+  }
+
+  await Promise.all([
+    writeManifest(dir, manifest),
+    fs.writeFile(
+      path.join(dir, HYPERFRAMES_ENTRY),
+      renderHyperframesIndexHtml({ name, width, height, gsapVersion: hf.gsapVersion }),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, HYPERFRAMES_STARTER_SCENE),
+      renderHyperframesStarterScene({ width, height }),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "hyperframes.json"),
+      renderHyperframesJson({ name, version: hf.version, width, height, fps }),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "package.json"),
+      renderHyperframesPackageJson(name, { hyperframes: hf.version, gsap: hf.gsapVersion }),
+      "utf8",
+    ),
+    fs.writeFile(path.join(dir, ".npmrc"), renderNpmrc(), "utf8"),
+    fs.writeFile(path.join(dir, ".gitignore"), renderHyperframesGitignore(), "utf8"),
+    fs.writeFile(
+      path.join(dir, "AGENTS.md"),
+      renderHyperframesAgentsMd({ projectName: name, guide: hf.guide }),
+      "utf8",
+    ),
   ]);
 
   return manifest;
