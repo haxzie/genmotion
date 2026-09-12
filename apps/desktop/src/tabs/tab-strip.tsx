@@ -38,6 +38,24 @@ function Activity({ tab }: { tab: ProjectTab }) {
   return null;
 }
 
+/**
+ * The outward curve where a tab meets the content, one per side — the
+ * Chrome shape. A square hanging off the tab's bottom corner, filled with the
+ * content colour except for a quarter circle cut out of its top corner, so
+ * the tab's edge appears to flare into the pane below it.
+ */
+function TabFlare({ side }: { side: "left" | "right" }) {
+  return (
+    <span
+      aria-hidden
+      className={cx("pointer-events-none absolute bottom-0 size-1.5", side === "left" ? "-left-1.5" : "-right-1.5")}
+      style={{
+        background: `radial-gradient(circle at ${side === "left" ? "0 0" : "100% 0"}, transparent 6px, var(--color-background) 6.5px)`,
+      }}
+    />
+  );
+}
+
 function TabButton({
   active,
   onSelect,
@@ -59,17 +77,21 @@ function TabButton({
       aria-selected={active}
       aria-label={label}
       className={cx(
-        "group relative flex h-7 max-w-52 shrink-0 items-center gap-1.5 rounded-md pl-2.5 text-[0.857rem]",
+        "group relative flex h-8 max-w-52 shrink-0 items-center gap-1.5 rounded-t-lg pl-2.5 text-[0.857rem]",
         "transition-colors duration-150",
         onClose ? "pr-1" : "pr-2.5",
-        // The strip is the darkest surface in the app, so the active tab takes
-        // the hover tone — two steps up — to read as the one in front.
+        // The active tab is the content colour and runs straight into the
+        // pane beneath with no edge between them — the strip is the frame
+        // around the page, and this tab is the page. Inactive tabs sit on
+        // the frame and only pick up a tint on hover.
         active
-          ? "bg-surface-hover text-text-primary"
-          : "text-text-secondary hover:bg-surface hover:text-text-primary",
+          ? "bg-background text-text-primary"
+          : "text-text-secondary hover:bg-white/[0.06] hover:text-text-primary",
         className,
       )}
     >
+      {active && <TabFlare side="left" />}
+      {active && <TabFlare side="right" />}
       {/* The tab's face is a button so the drag strip lets clicks through (see
           `.titlebar-drag button` in styles.css). Middle-click closes, as
           browsers do. */}
@@ -131,25 +153,31 @@ export function TabStrip({
   const reduceMotion = useReducedMotion();
 
   return (
+    // The frame: a step darker than the page, with the tabs standing on its
+    // bottom edge so the active one reads as part of the pane below — the way
+    // a browser draws its tab strip. Nothing separates the two; the active
+    // tab's colour is the pane's colour.
     <div
       role="tablist"
       className={cx(
-        "titlebar-drag flex h-10 shrink-0 items-center gap-1 bg-background pr-2",
+        "titlebar-drag flex h-10 shrink-0 items-end bg-black pr-2",
         isMac ? "pl-[78px]" : "pl-2",
       )}
     >
-      <TabButton
-        active={activeId === HOME_TAB}
-        onSelect={() => onActivate(HOME_TAB)}
-        label="Home"
-      >
-        <HomeIcon className="size-4" />
-      </TabButton>
+      <div className="px-1.5">
+        <TabButton
+          active={activeId === HOME_TAB}
+          onSelect={() => onActivate(HOME_TAB)}
+          label="Home"
+        >
+          <HomeIcon className="size-4" />
+        </TabButton>
+      </div>
 
-      <div className="mx-1 h-4 w-px shrink-0 bg-border" />
+      <div className="mb-2 h-4 w-px shrink-0 self-end bg-border" />
 
       {/* Scrolls sideways when the row overflows; the export button stays put. */}
-      <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* A tab grows in from nothing and shrinks away when closed, with
             its neighbours sliding to fill the gap — so opening a project
             reads as a tab arriving, and closing one as the row closing
@@ -165,7 +193,9 @@ export function TabStrip({
               animate={{ width: "auto", opacity: 1, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { width: 0, opacity: 0, scale: 0.92 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="shrink-0 overflow-hidden pr-1"
+              // Room on both sides for the active tab's flares, which hang
+              // outside its box; the same room is the spacing between tabs.
+              className="shrink-0 overflow-hidden px-1.5"
             >
               <TabButton
                 active={activeId === tab.dir}
@@ -183,7 +213,9 @@ export function TabStrip({
         </AnimatePresence>
       </div>
 
-      <ExportsButton onOpenProject={onOpenProject} onShowAll={onShowAllExports} />
+      <div className="mb-1 self-end">
+        <ExportsButton onOpenProject={onOpenProject} onShowAll={onShowAllExports} />
+      </div>
     </div>
   );
 }
