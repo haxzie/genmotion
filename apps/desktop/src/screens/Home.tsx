@@ -52,9 +52,11 @@ function UpdateHint({ state, onOpen }: { state: UpdateState; onOpen: () => void 
         type="button"
         onClick={onOpen}
         className={cx(
-          "group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
-          "text-[0.786rem] text-text-tertiary transition-colors duration-150",
-          "hover:text-text-secondary",
+          // A pill rather than bare text: this sits on the hero's gradient,
+          // where tertiary grey on a lit backdrop was not readable at all.
+          "group inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/80 px-3 py-1 backdrop-blur-md",
+          "text-[0.857rem] text-text-secondary transition-colors duration-150",
+          "hover:border-border-strong hover:text-text-primary",
           "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         )}
       >
