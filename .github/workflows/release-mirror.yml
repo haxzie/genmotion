@@ -128,6 +128,13 @@ jobs:
           FILE: ${{ steps.release.outputs.file }}
         run: |
           set -eu
+          # One part, not twenty. The CLI's default splits anything over 8 MiB
+          # into a multipart upload, and 0.0.9 went up that way twice with R2
+          # then serving nothing past part 13 — every download stalling at
+          # ~60% off a copy whose HEAD and ETag looked perfect. A DMG is far
+          # under the single-PUT limit, so there is no reason to give R2 the
+          # harder case.
+          aws configure set default.s3.multipart_threshold 2GB
           # Version-pinned key, so the object never changes and can be cached
           # for as long as anyone will keep it.
           aws s3 cp "dist/$FILE" "s3://$BUCKET/$PREFIX/$VERSION/$FILE" \
@@ -135,6 +142,31 @@ jobs:
             --content-type application/x-apple-diskimage \
             --cache-control "public, max-age=31536000, immutable" \
             --only-show-errors
+
+      # Read the whole object back through the public host and compare it to
+      # the file that was uploaded. A HEAD is not enough: 0.0.9 uploaded as
+      # twenty 8 MiB parts, answered HEAD and every range request with the
+      # right headers, and served no bytes at all past part 13 — a download
+      # that stalls at 60% for everyone, from a copy that looked fine. Only a
+      # full read from the edge proves the edge can serve it. Verified before
+      # latest.json is touched, so a bad copy never becomes the download.
+      - name: Verify the copy is readable end to end
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          FILE: ${{ steps.release.outputs.file }}
+          SHA256: ${{ steps.release.outputs.sha256 }}
+        run: |
+          set -eu
+          url="$PUBLIC_URL/$PREFIX/$VERSION/$FILE"
+          # --speed-limit/--speed-time: fail on a stall, not only on an error.
+          # A copy that trickles at a few KB/s is the failure being guarded.
+          curl -fsSL --speed-limit 500000 --speed-time 20 -o mirrored.dmg "$url"
+          got=$(sha256sum mirrored.dmg | cut -d' ' -f1)
+          if [ "$got" != "$SHA256" ]; then
+            echo "::error::$url read back with sha256 $got, expected $SHA256 — the copy on R2 is corrupt."
+            exit 1
+          fi
+          echo "verified $(stat -c%s mirrored.dmg) bytes, sha256 $got"
 
       - name: Update latest.json
         env:
