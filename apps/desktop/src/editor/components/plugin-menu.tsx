@@ -121,7 +121,7 @@ export function PluginMenu({
           <p className="px-3 pb-1 pt-2.5 text-[0.72rem] uppercase tracking-wider text-text-tertiary">
             Add
           </p>
-          {CHAT_PLUGINS.map((plugin) => {
+          {CHAT_PLUGINS.filter((plugin) => !plugin.hidden).map((plugin) => {
             const premium = isPremiumPlugin(plugin);
             const locked = premium && !paid;
             const attached = disabledIds.includes(plugin.id);

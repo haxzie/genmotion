@@ -27,7 +27,7 @@ export function HomeShell({
 }: {
   busy: boolean;
   onOpen: (dir: string) => void;
-  onCreate: (input: { prompt: string; width: number; height: number }) => void;
+  onCreate: (input: { prompt: string; width: number; height: number; files: File[] }) => void;
   /** A remixed template arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
   /** From the Exports page: bring that project's tab up, opening it if need be. */

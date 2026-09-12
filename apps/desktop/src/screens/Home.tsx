@@ -5,7 +5,8 @@ import { HeroComposer } from "@/components/composer";
 import { api as loopback } from "@/lib/api";
 import { cx } from "@/components/ui";
 import { HarnessPicker } from "../harness-picker";
-import { FolderAccess } from "../folder-access";
+import { EnginePicker } from "../engine-picker";
+import { FolderAccess, useShareFolder } from "../folder-access";
 import { api, type RecentProject } from "../api";
 import { hasUpdate, useUpdate } from "../lib/use-update";
 import type { UpdateState } from "../../electron/shared";
@@ -185,7 +186,7 @@ export function Home({
 }: {
   busy: boolean;
   onOpen: (dir: string) => void;
-  onCreate: (input: { prompt: string; width: number; height: number }) => void;
+  onCreate: (input: { prompt: string; width: number; height: number; files: File[] }) => void;
   onOpenUpdate: () => void;
 }) {
   const [projects, setProjects] = useState<RecentProject[] | null>(null);
@@ -198,6 +199,9 @@ export function Home({
   const cursorRef = useRef(0);
   const busyRef = useRef(false);
   const update = useUpdate();
+  // "Share a folder" in the composer's `+`: folders picked here are held for
+  // whichever project the prompt creates.
+  const shareFolder = useShareFolder(null);
 
   // Seeds the composer's aspect picker. Its own query rather than a prop, so
   // changing the default in Settings is reflected the next time this mounts
@@ -316,16 +320,21 @@ export function Home({
           transition={{ duration: 0.45, ease: enterEase, delay: 0.1 }}
         >
           <HeroComposer
-            onSubmit={(prompt, dims) => onCreate({ prompt, ...dims })}
+            onSubmit={(prompt, dims, files) => onCreate({ prompt, ...dims, files })}
             pending={busy}
             defaultAspect={defaults}
+            onShareFolder={() => shareFolder.mutate()}
+            sharingFolder={shareFolder.isPending}
             // The first prompt goes straight to the agent, so which agent that
             // is belongs here rather than only inside the editor — and so does
             // what it can see, which is where a `genmotion .` launch shows up.
+            // The folder pill only appears once something is shared (the `+`
+            // menu is where sharing starts); then it is the place to see it.
             accessory={
               <>
                 <HarnessPicker placement="down" />
-                <FolderAccess placement="down" />
+                <EnginePicker placement="down" />
+                <FolderAccess placement="down" hideWhenEmpty />
               </>
             }
           />

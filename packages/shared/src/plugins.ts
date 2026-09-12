@@ -52,6 +52,14 @@ export interface ChatPlugin {
    * scene and place the result on the timeline.
    */
   directive: string;
+  /**
+   * Kept out of the `+` menu. The plugin still exists — its tool stays on the
+   * agent and its route on the API — but the user is not offered it. Voiceover
+   * sits here while its provider is being swapped: an agent that reaches for
+   * it on its own gets a clear refusal to relay, whereas a menu row that
+   * fails is a broken promise.
+   */
+  hidden?: boolean;
 }
 
 export const CHAT_PLUGINS: ChatPlugin[] = [
@@ -60,6 +68,7 @@ export const CHAT_PLUGINS: ChatPlugin[] = [
     label: "Voiceover",
     hint: "Generate narration from a script",
     integration: "elevenlabs",
+    hidden: true,
     tool: "generate_voiceover",
     placeholder: "Write the script to narrate…",
     directive:

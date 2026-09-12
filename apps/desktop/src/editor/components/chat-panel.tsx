@@ -942,16 +942,47 @@ function ChatPanelInner({
   }, [messages, busy, editorStore]);
 
   // Auto-send the prompt the user typed on the home page (new-project flow).
+  //
+  // Files attached there were already uploaded into the project by the
+  // shell, which left their asset ids beside the prompt. Those become context
+  // chips on this first message the same way a drop into the chat would —
+  // which means waiting for the asset list, selecting them, and only then
+  // sending through the ordinary path so the note and the pills both carry
+  // them. A prompt with nothing attached goes at once.
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   useEffect(() => {
     const key = `gm-initial-prompt-${projectId}`;
     const prompt = sessionStorage.getItem(key);
-    if (prompt && messages.length === 0) {
+    if (!prompt || messages.length !== 0) return;
+    const assetKey = `gm-initial-assets-${projectId}`;
+    let wanted: string[] = [];
+    try {
+      wanted = JSON.parse(sessionStorage.getItem(assetKey) ?? "[]") as string[];
+    } catch {
+      wanted = [];
+    }
+    if (wanted.length === 0) {
       sessionStorage.removeItem(key);
       sendMessage({ text: prompt }, { body: { selectedSceneIds: [] } });
+      return;
     }
-    // Run once on mount; messages start from persisted history.
+    if (!assets) return; // the list is still loading; this effect re-runs when it lands
+    sessionStorage.removeItem(key);
+    sessionStorage.removeItem(assetKey);
+    for (const id of wanted) {
+      if (assets.some((a) => a.id === id)) selectAsset(id, true);
+    }
+    setInitialPrompt(prompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, assets]);
+
+  // The selection above lands on the next render; send once it has.
+  useEffect(() => {
+    if (initialPrompt === null) return;
+    setInitialPrompt(null);
+    submit(initialPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt, selectedAssetIds]);
 
   // Consume "Fix with AI" requests issued from the preview/timeline.
   useEffect(() => {
