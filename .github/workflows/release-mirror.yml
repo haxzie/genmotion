@@ -157,7 +157,9 @@ jobs:
           SHA256: ${{ steps.release.outputs.sha256 }}
         run: |
           set -eu
-          url="$PUBLIC_URL/$PREFIX/$VERSION/$FILE"
+          # The same URL latest.json will publish, query and all: the edge
+          # caches by full URL, so this is the copy users get, not a neighbour.
+          url="$PUBLIC_URL/$PREFIX/$VERSION/$FILE?v=${SHA256:0:12}"
           # --speed-limit/--speed-time: fail on a stall, not only on an error.
           # A copy that trickles at a few KB/s is the failure being guarded.
           curl -fsSL --speed-limit 500000 --speed-time 20 -o mirrored.dmg "$url"
@@ -168,6 +170,14 @@ jobs:
           fi
           echo "verified $(stat -c%s mirrored.dmg) bytes, sha256 $got"
 
+      # The published URL carries a content-hash query. The key is immutable
+      # and cached for a year, which is right for a versioned artifact — until
+      # an edge caches a bad copy. That happened with 0.0.9: a PoP stored the
+      # truncated multipart response and served it, `cf-cache-status: HIT`,
+      # through two re-uploads. Nothing in this repo can purge Cloudflare, but
+      # a URL the edge has never seen needs no purge: a re-mirror of the same
+      # bytes keeps the query (same hash, and the object was verified above),
+      # while a rebuilt DMG gets a new one and a fresh cache key everywhere.
       - name: Update latest.json
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -188,7 +198,7 @@ jobs:
             --arg tag "$TAG" \
             --arg publishedAt "$PUBLISHED_AT" \
             --arg filename "$FILE" \
-            --arg url "$PUBLIC_URL/$PREFIX/$VERSION/$FILE" \
+            --arg url "$PUBLIC_URL/$PREFIX/$VERSION/$FILE?v=${SHA256:0:12}" \
             --arg sha256 "$SHA256" \
             --argjson size "$SIZE" \
             '{
