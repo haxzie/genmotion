@@ -4,6 +4,7 @@ import {
   handleWebhookEvent,
   type WebhookEnvelope,
 } from "../../billing/webhook-handler";
+import { notifySubscriptionEvent } from "../../slack";
 
 /**
  * Payment provider webhooks. Mounted OUTSIDE requireAuth — the caller is the
@@ -52,14 +53,25 @@ dodoWebhookRoutes.post("/", async (c) => {
     const outcome = await handleWebhookEvent(webhookId, event);
     // Every outcome is a 2xx: processed, replayed, superseded and unhandled are
     // all final. Only an infrastructure failure below is worth a retry.
-    if (outcome.status !== "processed") {
+    if (outcome.status === "processed") {
+      // Only once the state change is committed — a delivery that was deduped
+      // or stale changed nothing, and must not be announced as if it had.
+      await notifySubscriptionEvent(event, outcome.organizationId).catch((err) => {
+        console.error("[billing] slack notification failed:", err);
+      });
+    } else {
       console.log(
         `[billing] webhook ${event.type} ${webhookId}: ${outcome.status}${
           "detail" in outcome ? ` (${outcome.detail})` : ""
         }`,
       );
     }
-    return c.json({ ok: true, ...outcome });
+    // The org id is ours, not the provider's: answer with the outcome alone.
+    return c.json({
+      ok: true,
+      status: outcome.status,
+      ...("detail" in outcome ? { detail: outcome.detail } : {}),
+    });
   } catch (err) {
     console.error("[billing] webhook processing failed:", err);
     return c.json({ error: "Processing failed" }, 500);

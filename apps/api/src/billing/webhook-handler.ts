@@ -56,7 +56,7 @@ export interface WebhookEnvelope {
     product_id?: string;
     status?: string;
     metadata?: Record<string, unknown> | null;
-    customer?: { customer_id?: string } | null;
+    customer?: { customer_id?: string; email?: string | null } | null;
     next_billing_date?: string | null;
     cancel_at_next_billing_date?: boolean | null;
     /** Seat add-on lines; their quantities are the teammates past the first. */
@@ -65,7 +65,7 @@ export interface WebhookEnvelope {
 }
 
 export type WebhookOutcome =
-  | { status: "processed" }
+  | { status: "processed"; organizationId: string }
   | { status: "deduped" }
   | { status: "stale" }
   | { status: "ignored"; detail: string };
@@ -338,7 +338,7 @@ export async function handleWebhookEvent(
       }
 
       await finish(tx, webhookId, "processed", undefined, organizationId);
-      return { status: "processed" } as const;
+      return { status: "processed", organizationId } as const;
     });
   } catch (err) {
     await recordFailure(webhookId, event, eventAt, err);

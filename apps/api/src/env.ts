@@ -49,6 +49,12 @@ const schema = z.object({
   POSTHOG_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().url().default("https://us.i.posthog.com"),
 
+  // ── Slack ops feeds — optional ──────────────────────────────────────
+  // Incoming webhooks. `events` gets checkout, subscription lifecycle and team
+  // changes; `signups` gets every new account. Unset means nothing is posted.
+  SLACK_EVENTS_WEBHOOK_URL: z.url().optional(),
+  SLACK_SIGNUPS_WEBHOOK_URL: z.url().optional(),
+
   // ── Email (Amazon SES) — optional ───────────────────────────────────
   EMAIL_FROM: z.email().optional(),
   AWS_SES_REGION: z.string().min(1).optional(),

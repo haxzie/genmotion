@@ -14,6 +14,7 @@ import {
 } from "../entitlements";
 import { dodoClient, dodoEnabled, productForPlan, seatAddons } from "../dodo";
 import { env } from "../env";
+import { notifyCheckoutStarted } from "../slack";
 
 export const billingRoutes = new Hono<AuthEnv>();
 
@@ -224,6 +225,11 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
     productId,
     checkoutUrl: session.checkout_url,
   });
+
+  // The session exists and is recorded; nothing about the feed may undo that.
+  await notifyCheckoutStarted({ user, organizationId, plan, seats: totalSeats }).catch(
+    (err) => console.error("[billing] slack notification failed:", err),
+  );
 
   return c.json({ url: session.checkout_url, sessionId: session.session_id });
 });

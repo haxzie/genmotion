@@ -13,6 +13,14 @@ import { assertCanInvite } from "./entitlements";
 import { releaseSeats, syncSeats } from "./billing/seats";
 import { env } from "./env";
 import { trackServer } from "./analytics";
+import {
+  notifyInviteAccepted,
+  notifyInviteSent,
+  notifyMemberRemoved,
+  notifyOnboarded,
+  notifySignup,
+  signupMethod,
+} from "./slack";
 import { sendEmail, emailEnabled } from "./mailer";
 import { magicLinkEmail, inviteEmail } from "./emails";
 
@@ -111,7 +119,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (createdUser) => {
+        after: async (createdUser, ctx) => {
           try {
             await createDefaultOrg(createdUser);
           } catch (err) {
@@ -127,6 +135,20 @@ export const auth = betterAuth({
               name: createdUser.name,
               signed_up_at: createdUser.createdAt,
             },
+          });
+          notifySignup(createdUser, signupMethod(ctx));
+        },
+      },
+      update: {
+        // Onboarding is the one update that carries a name and a role, and the
+        // web app sends it exactly once — it redirects anyone already onboarded.
+        after: async (updatedUser, ctx) => {
+          const body = ctx?.body as { onboardingCompleted?: unknown } | undefined;
+          if (body?.onboardingCompleted !== true) return;
+          notifyOnboarded({
+            name: updatedUser.name,
+            email: updatedUser.email,
+            jobRole: typeof updatedUser.jobRole === "string" ? updatedUser.jobRole : null,
           });
         },
       },
@@ -264,7 +286,8 @@ export const auth = betterAuth({
          * three are after-hooks and best-effort — the person is already gone,
          * and a provider hiccup must not fail the removal.
          */
-        afterRemoveMember: async ({ member }) => {
+        afterRemoveMember: async ({ member, user, organization }) => {
+          notifyMemberRemoved({ user, organization });
           await releaseSeats(member.organizationId, "remove-member");
         },
         afterCancelInvitation: async ({ invitation }) => {
@@ -272,6 +295,18 @@ export const auth = betterAuth({
         },
         afterRejectInvitation: async ({ invitation }) => {
           await releaseSeats(invitation.organizationId, "reject-invitation");
+        },
+
+        afterCreateInvitation: async ({ invitation, inviter, organization }) => {
+          notifyInviteSent({
+            inviter,
+            email: invitation.email,
+            role: invitation.role,
+            organization,
+          });
+        },
+        afterAcceptInvitation: async ({ user, organization }) => {
+          notifyInviteAccepted({ user, organization });
         },
 
         /**
