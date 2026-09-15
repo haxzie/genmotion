@@ -98,8 +98,10 @@ export function BillingSection() {
             {/* The step up from Pro, as a strip on the same card: Max is the
                 only other thing to buy, so it is said here rather than on a
                 page of its own. The change itself happens on the web. */}
+            {/* Bleeds to the card's edges: undoes Section's p-5 on the sides
+                and the bottom, and takes its bottom radius. */}
             {paid && plan.id === "pro" && (
-              <div className="mt-5 flex items-center justify-between gap-4 rounded-md border border-border bg-surface px-4 py-3">
+              <div className="-mx-5 -mb-5 mt-5 flex items-center justify-between gap-4 rounded-b-md border-t border-border bg-surface px-5 py-3.5">
                 <div className="min-w-0">
                   <p className="text-[0.929rem] text-text-primary">
                     Get {PLANS.max.allowanceMultiplier}× more usage and {PLANS.max.includedSeats} seats with {PLANS.max.name}
