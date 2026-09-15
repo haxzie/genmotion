@@ -194,14 +194,15 @@ export function TabStrip({
               animate={{ width: "auto", opacity: 1, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { width: 0, opacity: 0, scale: 0.92 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              // Room on both sides for the active tab's flares, which hang
-              // outside its box; the same room is the spacing between tabs.
-              className="flex shrink-0 items-end overflow-hidden px-1.5"
+              // Room on the right for the active tab's flare, which hangs
+              // outside its box; on the left the rule's margin is that room.
+              className="flex shrink-0 items-end overflow-hidden pr-1.5"
             >
               {/* A short rule before every tab — between Home and the first,
                   and between neighbours — the way a browser separates its
-                  tabs. Inside the wrapper so it collapses with the tab. */}
-              <div className="mb-2.5 mr-3 h-4 w-px shrink-0 bg-border" />
+                  tabs, 6px from each. Inside the wrapper so it collapses
+                  with the tab. */}
+              <div className="mb-2.5 mr-1.5 h-4 w-px shrink-0 bg-border" />
               <TabButton
                 active={activeId === tab.dir}
                 onSelect={() => onActivate(tab.dir)}
