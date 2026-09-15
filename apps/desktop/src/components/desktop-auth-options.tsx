@@ -66,6 +66,26 @@ export function DesktopAuthOptions({ state }: { state: AuthState }) {
           Only approve if your browser shows this code.
         </p>
 
+        {/* The app is polling the whole time; say so, or the card reads as a
+            dead end and the user goes hunting for another button. Once the
+            token is in, the browser part is over — say that too, for the
+            second the profile takes to load. */}
+        <p
+          className={cx(
+            "mt-1 flex items-center justify-center gap-2 text-[0.857rem]",
+            pending.phase === "approved" ? "text-green" : "text-text-secondary",
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          <Spinner className="size-3.5" />
+          {pending.phase === "approved"
+            ? "Approved — signing you in…"
+            : pending.provider === "magic"
+              ? "Waiting for you to open the link…"
+              : "Waiting for you to approve in the browser…"}
+        </p>
+
         <div className="mt-2 flex items-center justify-center gap-4">
           <button
             type="button"

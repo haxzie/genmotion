@@ -458,6 +458,7 @@ export class DesktopAuth {
     // clearAttempt, not cancel: broadcasting "signed-out" here would flash the
     // login screen in the instant between the token arriving and the profile.
     this.clearAttempt();
+    if (this.state.status === "pending") this.set({ ...this.state, phase: "approved" });
     await writeStored(token);
     const res = await callApi<SessionResponse>("/api/desktop/session", {
       token,

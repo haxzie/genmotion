@@ -262,6 +262,11 @@ export type AuthState =
       email?: string;
       /** Epoch ms; the code is refused after this. */
       expiresAt: number;
+      /**
+       * `approved` once the token is in hand and the profile is loading — a
+       * second or so in which the screen should say the browser part is over.
+       */
+      phase?: "waiting" | "approved";
     }
   | { status: "signed-in"; user: AuthUser; organization: AuthOrganization | null };
 
