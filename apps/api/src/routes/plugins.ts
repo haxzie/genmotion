@@ -130,10 +130,10 @@ async function handle(
   work: () => Promise<GeneratedMedia>,
 ): Promise<Response> {
   const organizationId = c.get("organizationId");
-  const { paid, seats } = await getEntitlements(organizationId);
+  const { paid, plan } = await getEntitlements(organizationId);
   if (!paid) return c.json(pluginPaywall(), PAYWALL_STATUS);
   // Paying, but this month's allowance is spent. Also before any provider byte.
-  const quota = await checkQuota(organizationId, seats, draw.meter, draw.cost);
+  const quota = await checkQuota(organizationId, plan, draw.meter, draw.cost);
   if (quota) return c.json(quota, QUOTA_STATUS);
 
   const userId = c.get("user").id;

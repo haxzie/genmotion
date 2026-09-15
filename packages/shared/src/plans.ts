@@ -19,21 +19,23 @@
  * Free is a seven-day trial of everything else, not a reduced tier.
  */
 
-export type PlanId = "free" | "pro";
+export type PlanId = "free" | "pro" | "max";
 
 export const PLAN_IDS = ["free", "pro"] as const;
 
 /** Price per person, per month, in whole USD. One number, everywhere. */
 export const SEAT_PRICE_USD = 19;
+/** GenMotion Max: one price for the whole team. */
+export const MAX_PRICE_USD = 199;
 
 /**
- * What a Pro seat may generate in a calendar month, per meter.
+ * What Pro may generate in a calendar month, per meter; Max gets a multiple
+ * of it (see `allowanceMultiplier`), pooled across the whole team.
  *
  * Sized so a seat that uses all three costs us about a third of its price
  * at list rates, and a typical one far less: 15,000 characters is roughly
- * ten minutes of narration, or fifteen to twenty short videos. Allowances
- * are per seat and pooled across the org — a three-seat team draws on
- * three times this. The API enforces it; the app shows it.
+ * ten minutes of narration, or fifteen to twenty short videos. The API
+ * enforces it; the app shows it.
  */
 export const PLUGIN_ALLOWANCE = {
   /** Characters of narration through `generate_voiceover`. */
@@ -46,9 +48,9 @@ export const PLUGIN_ALLOWANCE = {
 
 export type PluginMeter = keyof typeof PLUGIN_ALLOWANCE;
 
-/** The allowance an org has this month: the per-seat figure times its seats. */
-export function pluginAllowance(seats: number): Record<PluginMeter, number> {
-  const n = Math.max(1, seats);
+/** The allowance an org on `plan` has this month: the base times the plan's multiplier. */
+export function pluginAllowance(plan: PlanId): Record<PluginMeter, number> {
+  const n = PLANS[plan].allowanceMultiplier;
   return {
     characters: PLUGIN_ALLOWANCE.characters * n,
     sfx: PLUGIN_ALLOWANCE.sfx * n,
@@ -68,6 +70,22 @@ export interface PluginUsage {
   characters: MeterUsage;
   sfx: MeterUsage;
   images: MeterUsage;
+}
+
+/**
+ * The team policy as the API decides it and the apps render it — one block on
+ * /api/billing/limits. Whether an invite may go, the sentence beside the
+ * control, and which plan to pitch when an upgrade would lift the refusal.
+ * The apps branch on none of the rules behind it.
+ */
+export interface TeamPolicy {
+  canInvite: boolean;
+  seats: { used: number; max: number };
+  /** Every seat taken — members plus pending invitations. */
+  full: boolean;
+  message: string;
+  code?: "PLAN_REQUIRES_UPGRADE" | "SEAT_LIMIT_REACHED" | "TEAM_FULL";
+  upgrade?: PlanId;
 }
 
 /**
@@ -94,16 +112,21 @@ export interface PlanDefinition {
   id: PlanId;
   name: string;
   /**
-   * List price in whole USD per person per month. Read through `planPrice()`
-   * so the marketing page and the in-app billing page can never quote
-   * different numbers; the payment provider remains the source of truth for
-   * what is actually charged.
+   * List price in whole USD per month for the whole plan. Read through
+   * `planPrice()` so the marketing page and the in-app billing page can never
+   * quote different numbers; the payment provider remains the source of truth
+   * for what is actually charged.
    */
   priceUsd: number;
-  /** Seats the plan carries before any add-on. */
+  /**
+   * Seats the plan carries — the whole of them: there are no add-ons. Pro is
+   * one person; Max is a team of five. More than that is a conversation.
+   */
   includedSeats: number;
   /** Whether the org may create invitations at all. */
   canInvite: boolean;
+  /** How many Pro allowances of generation the plan gets a month. */
+  allowanceMultiplier: number;
   /** Buyable through checkout. Free is the absence of a subscription. */
   purchasable: boolean;
   /** Marketing bullets — used by both the modal and the billing page. */
@@ -117,6 +140,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceUsd: 0,
     includedSeats: 1,
     canInvite: false,
+    allowanceMultiplier: 0,
     purchasable: false,
     features: [
       `${TRIAL_DAYS} days of the full studio`,
@@ -129,14 +153,30 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     name: "Pro",
     priceUsd: SEAT_PRICE_USD,
     includedSeats: 1,
-    canInvite: true,
+    canInvite: false,
+    allowanceMultiplier: 1,
     purchasable: true,
     features: [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion watermark",
       `${PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx} sound effects and ${PLUGIN_ALLOWANCE.images} images a month`,
-      `Invite teammates at $${SEAT_PRICE_USD} each`,
+      "One seat",
+      "Priority support",
+    ],
+  },
+  max: {
+    id: "max",
+    name: "Max",
+    priceUsd: MAX_PRICE_USD,
+    includedSeats: 5,
+    canInvite: true,
+    allowanceMultiplier: 5,
+    purchasable: true,
+    features: [
+      "Everything in Pro",
+      "Five seats — invite your team",
+      `${(PLUGIN_ALLOWANCE.characters * 5).toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx * 5} sound effects and ${PLUGIN_ALLOWANCE.images * 5} images a month, shared`,
       "Priority support",
     ],
   },
@@ -183,9 +223,9 @@ export function planPrice(plan: PlanId): string {
   return `$${PLANS[plan].priceUsd}`;
 }
 
-/** What an org of this size costs per month on Pro. */
-export function monthlyTotalUsd(seats: number): number {
-  return Math.max(1, seats) * SEAT_PRICE_USD;
+/** What a plan costs per month — the same whatever the headcount within it. */
+export function monthlyTotalUsd(plan: PlanId): number {
+  return PLANS[plan].priceUsd;
 }
 
 // ── Trial ────────────────────────────────────────────────────────────────

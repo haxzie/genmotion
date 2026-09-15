@@ -5,12 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   PLANS,
   planPrice,
-  SEAT_PRICE_USD,
   type PlanId,
 } from "@genmotion/shared";
 import { api } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { openBillingPortal, startCheckout } from "@/lib/billing";
+import { openBillingPortal, startCheckout, type PurchasablePlan } from "@/lib/billing";
 import { limitsQueryKey } from "@/components/upgrade-modal";
 import { Button, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -66,9 +65,9 @@ function PluginUsageSection({ usage, seats }: { usage: PluginUsageResponse; seat
       <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Generation this month</h2>
       <div className="rounded-xl border border-border bg-surface-raised p-5">
         <p className="mb-4 text-[0.857rem] text-text-tertiary">
-          Resets on {resets}. Each seat adds {PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover,{" "}
-          {PLUGIN_ALLOWANCE.sfx} sound effects and {PLUGIN_ALLOWANCE.images} images, shared across the team
-          {seats > 1 ? ` (${seats} seats)` : ""}.
+          Resets on {resets}. Your plan includes {usage.characters.limit.toLocaleString("en-US")} characters of voiceover,{" "}
+          {usage.sfx.limit} sound effects and {usage.images.limit} images a month
+          {seats > 1 ? ", shared across the team" : ""}.
         </p>
         <div className="flex flex-col gap-4">
           {METERS.map((m) => (
@@ -139,6 +138,7 @@ interface Trial {
 interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
   seats: { used: number; max: number };
+  team?: { message: string };
   subscription: Subscription;
   trial: Trial;
   entitled: boolean;
@@ -311,7 +311,7 @@ function Stat({
 }
 
 /** The plans a checkout can move this org to. There is one. */
-const PURCHASABLE = ["pro"] as const;
+const PURCHASABLE = ["pro", "max"] as const;
 
 /**
  * How long to wait for the subscription webhook after checkout. It usually
@@ -329,17 +329,27 @@ const ACTIVATION_ATTEMPTS = 30;
  */
 function PlanCard({
   plan,
+  current,
   busy,
   disabled,
   onSelect,
 }: {
   plan: (typeof PURCHASABLE)[number];
+  /** The plan the org is on now — decides whether this card is up, down, or a fresh start. */
+  current: PlanId;
   busy: boolean;
   disabled: boolean;
   onSelect: () => void;
 }) {
   const def = PLANS[plan];
   const featured = plan === "pro";
+  const live = current !== "free";
+  const down = live && PLANS[current].priceUsd > def.priceUsd;
+  const label = !live
+    ? `Upgrade to ${def.name} — ${planPrice(plan)}/mo`
+    : down
+      ? `Switch to ${def.name} at renewal — ${planPrice(plan)}/mo`
+      : `Upgrade to ${def.name} — ${planPrice(plan)}/mo`;
   return (
     <div
       className={cx(
@@ -359,7 +369,7 @@ function PlanCard({
         </p>
       </div>
       <p className="mt-2 text-[0.9rem] text-text-secondary">
-        {`Everything, for one person. Add teammates at $${SEAT_PRICE_USD} each.`}
+        {def.includedSeats === 1 ? "Everything, for one person." : `Everything, for a team of ${def.includedSeats}.`}
       </p>
       <ul className="mt-3 flex flex-1 flex-col gap-1.5">
         {def.features.map((f) => (
@@ -379,11 +389,7 @@ function PlanCard({
             : "border-border bg-surface text-text-primary hover:bg-surface-hover",
         )}
       >
-        {busy ? (
-          <Spinner />
-        ) : (
-          `Upgrade to ${def.name} — ${planPrice(plan)}/mo`
-        )}
+        {busy ? <Spinner /> : label}
       </button>
     </div>
   );
@@ -393,7 +399,7 @@ export default function BillingPage() {
   const [data, setData] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [checkoutBusy, setCheckoutBusy] = useState<"pro" | null>(null);
+  const [checkoutBusy, setCheckoutBusy] = useState<PurchasablePlan | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -684,7 +690,7 @@ export default function BillingPage() {
             {upgradable.length > 0 && (
               <>
                 <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
-                  {data.subscription.status !== "none" ? "Resubscribe" : "Upgrade"}
+                  {data.subscription.status === "active" ? "Change plan" : data.subscription.status !== "none" ? "Resubscribe" : "Upgrade"}
                 </h2>
                 <div
                   className={cx(
@@ -696,13 +702,20 @@ export default function BillingPage() {
                     <PlanCard
                       key={p}
                       plan={p}
+                      current={data.plan.id}
                       busy={checkoutBusy === p}
                       disabled={checkoutBusy !== null}
                       onSelect={async () => {
                         setCheckoutBusy(p);
                         setError(null);
                         try {
-                          await startCheckout(p);
+                          // In place for a live subscription: reload the page's
+                          // data rather than leaving for a checkout that isn't.
+                          if ((await startCheckout(p)) === "changed") {
+                            await load();
+                            queryClient.invalidateQueries({ queryKey: limitsQueryKey });
+                            setCheckoutBusy(null);
+                          }
                         } catch (e) {
                           setError(
                             e instanceof Error
@@ -733,9 +746,8 @@ export default function BillingPage() {
                 </p>
               </div>
               <p className="mt-2 text-[0.857rem] text-text-tertiary">
-                Pricing is ${SEAT_PRICE_USD} per person a month. Inviting a
-                teammate adds a seat, prorated from the day they are invited;
-                removing one takes it off the bill.
+                {data.team?.message ??
+                  `${data.plan.name} covers ${data.plan.seats} ${data.plan.seats === 1 ? "seat" : "seats"}.`}
               </p>
             </div>
 

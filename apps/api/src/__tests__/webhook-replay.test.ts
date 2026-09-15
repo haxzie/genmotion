@@ -111,8 +111,8 @@ describe.skipIf(!dbReady)("replaying a real purchase", () => {
     expect(body.status).toBe("ignored");
   });
 
-  // A seat bought by inviting: `plan_changed` + `updated` with one add-on line.
-  it("grows and shrinks seats from the add-on lines", async () => {
+  // Recorded from the add-on days: `plan_changed` + `updated` with a seat line.
+  it("ignores add-on lines: the seats are the plan's", async () => {
     const { orgId } = await createOrg();
     const t0 = new Date(Date.now() - 10_000);
     await postWebhook(signWebhook(fixture("subscription.active", orgId, t0)));
@@ -123,14 +123,13 @@ describe.skipIf(!dbReady)("replaying a real purchase", () => {
     await postWebhook(
       signWebhook(fixture("subscription.updated.addons", orgId, new Date(t0.getTime() + 1100))),
     );
-    expect((await row(orgId)).seats).toBe(2);
+    expect((await row(orgId)).seats).toBe(1);
 
     await postWebhook(
       signWebhook(fixture("subscription.plan_changed.removed", orgId, new Date(t0.getTime() + 2000))),
     );
     expect((await row(orgId)).seats).toBe(1);
   });
-
   /**
    * Cancelling at the period end is not a `cancelled` event: it is an
    * `updated` snapshot with `cancel_at_next_billing_date: true` and the status

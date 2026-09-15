@@ -3,6 +3,7 @@ import {
   PLANS,
   type PlanId,
   type SubscriptionStatus,
+  type TeamPolicy,
 } from "@genmotion/shared";
 
 /**
@@ -74,7 +75,9 @@ export function entitlementsFromRow(
     plan,
     planName: def.name,
     status,
-    seats: row?.seats ?? def.includedSeats,
+    // The plan's seats, whole: Pro is one person, Max is five. The row's
+    // own count is history from when seats were add-ons.
+    seats: def.includedSeats,
     canInvite: def.canInvite,
     currentPeriodEnd: row?.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
@@ -132,7 +135,13 @@ export async function countSeats(
   return (members[0]?.n ?? 0) + (pending[0]?.n ?? 0);
 }
 
-export type InviteGateCode = "PLAN_REQUIRES_PRO" | "SEAT_LIMIT_REACHED";
+/**
+ * Why a team action is refused. `PLAN_REQUIRES_UPGRADE` is a plan without
+ * teammates (Pro) — the answer is Max. `SEAT_LIMIT_REACHED` is Max with every
+ * seat taken — the answer is a word with us. `TEAM_FULL` is the invitee's side
+ * of the same wall.
+ */
+export type InviteGateCode = "PLAN_REQUIRES_UPGRADE" | "SEAT_LIMIT_REACHED" | "TEAM_FULL";
 
 export type InviteGate =
   | { ok: true }
@@ -142,7 +151,33 @@ export type InviteGate =
       message: string;
       plan: PlanId;
       seats: { used: number; max: number };
+      /** The plan that lifts the refusal, when one does. */
+      upgrade?: PlanId;
     };
+
+/** See `TeamPolicy` in @genmotion/shared — this is where it is decided. */
+export async function teamPolicy(organizationId: string): Promise<TeamPolicy> {
+  const gate = await assertCanInvite(organizationId);
+  if (gate.ok) {
+    const ent = await getEntitlements(organizationId);
+    const used = await countSeats(organizationId);
+    const left = ent.seats - used;
+    return {
+      canInvite: true,
+      seats: { used, max: ent.seats },
+      full: false,
+      message: `${used} of ${ent.seats} seats in use · ${left} ${left === 1 ? "seat" : "seats"} left.`,
+    };
+  }
+  return {
+    canInvite: false,
+    seats: gate.seats,
+    full: gate.code === "SEAT_LIMIT_REACHED",
+    message: gate.message,
+    code: gate.code,
+    ...(gate.upgrade ? { upgrade: gate.upgrade } : {}),
+  };
+}
 
 /**
  * Whether the org may create one more invitation. Used by the invite hook and
@@ -157,23 +192,26 @@ export async function assertCanInvite(
   if (!ent.canInvite) {
     return {
       ok: false,
-      code: "PLAN_REQUIRES_PRO",
+      code: "PLAN_REQUIRES_UPGRADE",
       plan: ent.plan,
       seats: { used: await countSeats(organizationId, opts), max: ent.seats },
-      message: `Inviting teammates is part of ${PLANS.pro.name}. Upgrade to add your team at $${PLANS.pro.priceUsd} each.`,
+      upgrade: "max",
+      message: `Teammates are part of GenMotion ${PLANS.max.name} — ${PLANS.max.includedSeats} seats for $${PLANS.max.priceUsd} a month. Upgrade to invite your team.`,
     };
   }
 
   const used = await countSeats(organizationId, opts);
   if (used >= ent.seats) {
-    // The invite hook treats this as "buy one more" when the subscription can
-    // be resized; the message is for the cases where it cannot.
     return {
       ok: false,
-      code: "SEAT_LIMIT_REACHED",
+      // The invitee's side reads the same wall as TEAM_FULL — see the accept hook.
+      code: opts.includePendingInvitations === false ? "TEAM_FULL" : "SEAT_LIMIT_REACHED",
       plan: ent.plan,
       seats: { used, max: ent.seats },
-      message: `Your ${ent.planName} plan covers ${ent.seats} ${ent.seats === 1 ? "seat" : "seats"} and all of them are taken. Remove a member or cancel a pending invitation to free one up.`,
+      message:
+        opts.includePendingInvitations === false
+          ? `This team is already full (${ent.seats} of ${ent.seats} seats). Ask an admin to make room, or to contact us for more seats.`
+          : `Your ${ent.planName} plan covers ${ent.seats} seats and all of them are taken. Remove a member or cancel a pending invitation to free one — or contact us for more seats.`,
     };
   }
 

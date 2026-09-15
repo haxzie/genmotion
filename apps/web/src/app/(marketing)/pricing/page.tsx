@@ -13,14 +13,14 @@ import type { Faq } from "@/lib/marketing/faq";
 import { cx } from "@/lib/cx";
 import {
   PLANS,
-  SEAT_PRICE_USD,
+  PLUGIN_ALLOWANCE,
   TRIAL_DAYS,
   planPrice,
 } from "@genmotion/shared";
 
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
-  description: `One plan, priced per person. Try the whole studio free for ${TRIAL_DAYS} days, then ${planPrice("pro")} a month per seat for unlimited, watermark-free exports.`,
+  description: `Try the whole studio free for ${TRIAL_DAYS} days. Then ${planPrice("pro")} a month for one person, or ${planPrice("max")} for a team of five with five times the generation allowance.`,
   path: "/pricing",
 });
 
@@ -56,7 +56,7 @@ const TIERS: Tier[] = [
   {
     name: PLANS.pro.name,
     price: planPrice("pro"),
-    cadence: "per person, per month",
+    cadence: "per month, one seat",
     blurb: "For anyone still making videos after the first week.",
     cta: { label: "Download", href: "/download" },
     highlighted: true,
@@ -64,10 +64,22 @@ const TIERS: Tier[] = [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion badge",
-      "Voiceover, sound effects and image generation in chat",
-      `Add teammates at $${SEAT_PRICE_USD} each`,
+      `${PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx} sound effects and ${PLUGIN_ALLOWANCE.images} images a month`,
       "Renders on your machine — no queue",
       "Priority support",
+    ],
+  },
+  {
+    name: PLANS.max.name,
+    price: planPrice("max"),
+    cadence: `per month, ${PLANS.max.includedSeats} seats`,
+    blurb: "For a team that makes videos together.",
+    cta: { label: "Download", href: "/download" },
+    features: [
+      "Everything in Pro, for five people",
+      `${(PLUGIN_ALLOWANCE.characters * PLANS.max.allowanceMultiplier).toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx * PLANS.max.allowanceMultiplier} sound effects and ${PLUGIN_ALLOWANCE.images * PLANS.max.allowanceMultiplier} images a month, shared`,
+      "Invite and remove teammates yourself",
+      "Need more than five? Talk to us",
     ],
   },
 ];
@@ -91,11 +103,11 @@ const pricingJsonLd = {
 const FAQ: Faq[] = [
   {
     q: "Is there a free plan?",
-    a: `There's a free ${TRIAL_DAYS}-day trial of the whole studio: unlimited projects, exports at any resolution, your own coding agent. No card. The only difference from Pro is a small GenMotion badge on exports, and that voiceover and image generation in chat are Pro-only. After the week, it's ${planPrice("pro")} a month per person to keep exporting.`,
+    a: `There's a free ${TRIAL_DAYS}-day trial of the whole studio: unlimited projects, exports at any resolution, your own coding agent. No card. The only difference from Pro is a small GenMotion badge on exports, and that voiceover, sound effects and image generation in chat are for paid plans. After the week, it's ${planPrice("pro")} a month to keep exporting.`,
   },
   {
     q: "How does pricing work for a team?",
-    a: `Pro is ${planPrice("pro")} per person per month. Your subscription covers one seat; inviting a teammate adds one at the same price, prorated from the day you invite them, and removing someone takes their seat off the bill.`,
+    a: `Pro is ${planPrice("pro")} a month for one person. Max is ${planPrice("max")} a month for a team of up to ${PLANS.max.includedSeats}, with ${PLANS.max.allowanceMultiplier}× the generation allowance shared across it. Need more seats than that? Contact us.`,
   },
   {
     q: "How does rendering work?",
@@ -128,11 +140,11 @@ export default function PricingPage() {
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow className="mb-4">Pricing</Eyebrow>
             <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              One plan, priced per person
+              Two plans, one price each
             </h1>
             <p className="mt-5 text-lg text-text-secondary">
               Try everything free for {TRIAL_DAYS} days. Then {planPrice("pro")} a
-              month per seat, and nothing is metered.
+              month for one person, or {planPrice("max")} for a team of five.
             </p>
           </div>
         </Container>
@@ -140,7 +152,7 @@ export default function PricingPage() {
 
       <Section className="pt-0">
         <Container>
-          <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-2">
+          <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}

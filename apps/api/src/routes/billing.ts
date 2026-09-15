@@ -3,17 +3,18 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, gte, isNotNull, sql, db, schema } from "@genmotion/db";
 import { CHAT_MODEL_ID } from "@genmotion/ai";
-import { PLANS, TEAM_SEATS } from "@genmotion/shared";
+import { PLANS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { trialState } from "../limits";
 import { pluginUsage, pluginUsageByMember } from "../plugin-usage";
 import {
   countSeats,
   getEntitlements,
+  teamPolicy,
   getSubscriptionRow,
   type Entitlements,
 } from "../entitlements";
-import { dodoClient, dodoEnabled, productForPlan, seatAddons } from "../dodo";
+import { changePlan, dodoClient, dodoEnabled, productForPlan } from "../dodo";
 import { env } from "../env";
 import { notifyCheckoutStarted } from "../slack";
 
@@ -90,11 +91,14 @@ billingRoutes.get("/limits", async (c) => {
   ]);
   // The three plugin meters, from the same rows that gate a call. One
   // GROUP BY — cheap enough for a poll.
-  const usage = await pluginUsage(organizationId, ent.seats);
+  const [usage, team] = await Promise.all([pluginUsage(organizationId, ent.plan), teamPolicy(organizationId)]);
   return c.json({
     plan: planPayload(ent),
     seats: { used: seatsUsed, max: ent.seats },
     usage,
+    // The team policy, decided here: whether an invite may go, what to say,
+    // and which plan to pitch. The apps render it and branch on nothing.
+    team,
     trial: {
       active: trial.active,
       daysLeft: trial.daysLeft,
@@ -114,7 +118,7 @@ billingRoutes.get("/plugin-usage", async (c) => {
   const organizationId = c.get("organizationId");
   const ent = await getEntitlements(organizationId);
   const [totals, members] = await Promise.all([
-    pluginUsage(organizationId, ent.seats),
+    pluginUsage(organizationId, ent.plan),
     pluginUsageByMember(organizationId),
   ]);
   return c.json({ ...totals, members });
@@ -161,13 +165,7 @@ billingRoutes.post("/cancel", (c) => setCancelling(c, true));
 billingRoutes.post("/resume", (c) => setCancelling(c, false));
 
 const checkoutSchema = z.object({
-  plan: z.literal("pro"),
-  /**
-   * Seats to buy, when the caller knows it wants more than the headcount —
-   * the upgrade modal opened for an invite passes the count that invite
-   * needs. Never fewer than the people already in the org.
-   */
-  seats: z.number().int().min(1).max(TEAM_SEATS).optional(),
+  plan: z.enum(["pro", "max"]),
 });
 
 /**
@@ -219,7 +217,7 @@ async function isBillingAdmin(
 billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
-  const { plan, seats } = c.req.valid("json");
+  const { plan } = c.req.valid("json");
 
   const productId = productForPlan(plan);
   if (!dodoEnabled || !productId) {
@@ -233,27 +231,56 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
   }
 
   const row = await getSubscriptionRow(organizationId);
+  // A live subscription changes plan in place rather than buying a second
+  // one; a stuck or lapsed one goes through checkoutConflict as before.
+  if (row && row.plan !== "free" && row.status === "active" && row.dodoSubscriptionId && row.plan !== plan) {
+    const target = PLANS[plan];
+    const headcountNow = await countSeats(organizationId);
+    if (headcountNow > target.includedSeats) {
+      return c.json(
+        { error: `${target.name} covers ${target.includedSeats} ${target.includedSeats === 1 ? "seat" : "seats"} and your organization has ${headcountNow} people. Remove people first.` },
+        409,
+      );
+    }
+    const direction = target.priceUsd > PLANS[row.plan].priceUsd ? "up" : "down";
+    try {
+      await changePlan(row.dodoSubscriptionId, plan, direction);
+    } catch (err) {
+      console.error("[billing] plan change failed:", err);
+      return c.json({ error: "Couldn't change the plan. Please try again." }, 502);
+    }
+    // Up takes effect now; down at renewal, when the webhook lands.
+    if (direction === "up") {
+      await db
+        .update(schema.organizationSubscriptions)
+        .set({ plan, seats: target.includedSeats, dodoProductId: productId, updatedAt: new Date() })
+        .where(eq(schema.organizationSubscriptions.organizationId, organizationId));
+    }
+    return c.json({ changed: true, plan, effective: direction === "up" ? "now" : "renewal" });
+  }
+
   const conflict = row?.plan !== "free" && row
     ? checkoutConflict(row.status, PLANS[row.plan].name)
     : null;
   if (conflict) return c.json(conflict, 409);
 
-  // Pro carries one seat; everyone already in the org (members and open
-  // invitations) needs one too, or the org is over its seats the moment it
-  // pays and cannot invite. A lapsed team resubscribing lands here.
-  const totalSeats = Math.max(await countSeats(organizationId), seats ?? 1);
-  const addons = seatAddons(totalSeats);
+  // A plan is the whole of its seats: a team bigger than the plan it is
+  // buying would be over its seats the moment it paid. Max is the answer
+  // for a Pro-sized team that grew; past Max is a conversation.
+  const headcount = await countSeats(organizationId);
+  if (headcount > PLANS[plan].includedSeats) {
+    return c.json(
+      {
+        error: `${PLANS[plan].name} covers ${PLANS[plan].includedSeats} ${PLANS[plan].includedSeats === 1 ? "seat" : "seats"} and your organization has ${headcount} people (members and pending invitations). ${plan === "pro" ? `Choose ${PLANS.max.name}, or remove people first.` : "Contact us for more seats."}`,
+      },
+      409,
+    );
+  }
 
   let session: { session_id: string; checkout_url?: string | null };
   try {
     session = await dodoClient().checkoutSessions.create({
-      product_cart: [
-        {
-          product_id: productId,
-          quantity: 1,
-          ...(addons.length > 0 ? { addons } : {}),
-        },
-      ],
+      product_cart: [{ product_id: productId, quantity: 1 }],
       customer: { email: user.email, name: user.name || user.email },
       return_url: `${env.WEB_URL}/settings/billing?checkout=success&plan=${plan}`,
       // Keys ≤40 chars and string values ≤500 — well inside the provider's
@@ -261,7 +288,7 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
       metadata: {
         organizationId,
         plan,
-        seats: String(totalSeats),
+        seats: String(PLANS[plan].includedSeats),
         userId: user.id,
         source: "genmotion-app",
       },
@@ -286,7 +313,7 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
   });
 
   // The session exists and is recorded; nothing about the feed may undo that.
-  await notifyCheckoutStarted({ user, organizationId, plan, seats: totalSeats }).catch(
+  await notifyCheckoutStarted({ user, organizationId, plan, seats: PLANS[plan].includedSeats }).catch(
     (err) => console.error("[billing] slack notification failed:", err),
   );
 
@@ -478,16 +505,17 @@ billingRoutes.get("/usage", async (c) => {
 
   // Same resolver as /limits, so the two endpoints can never disagree about
   // which plan an org is on.
-  const [ent, seatsUsed, trial] = await Promise.all([
+  const [ent, seatsUsed, trial, team] = await Promise.all([
     getEntitlements(organizationId),
     countSeats(organizationId),
     trialState(organizationId),
+    teamPolicy(organizationId),
   ]);
 
   return c.json({
     plan: planPayload(ent),
-    // Seats are what the bill scales with now, so the usage page needs them.
     seats: { used: seatsUsed, max: ent.seats },
+    team,
     // The billing page is where an org learns its trial is over, so it needs
     // the same trial block /limits carries.
     trial: {

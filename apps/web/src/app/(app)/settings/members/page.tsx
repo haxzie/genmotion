@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { PLANS, SEAT_PRICE_USD } from "@genmotion/shared";
+import { PLANS } from "@genmotion/shared";
 import { useSession, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -45,9 +45,11 @@ export default function MembersPage() {
   const { data } = useSession();
   const meId = data?.user.id;
   const orgId = data?.session.activeOrganizationId ?? null;
-  const { openUpgrade, handleAuthClientError, canInvite, seats } = useUpgrade();
-  // Every bought seat is taken — the next invite buys another one.
-  const seatsFull = seats ? seats.used >= seats.max : false;
+  const { openUpgrade, handleAuthClientError, team } = useUpgrade();
+  // The API decides whether an invite may go and what to say; this page
+  // draws it. Absent (an older API), assume the door is open and let the
+  // request answer.
+  const canInvite = team?.canInvite ?? true;
   const queryClient = useQueryClient();
 
   const [org, setOrg] = useState<FullOrg | null>(null);
@@ -105,11 +107,7 @@ export default function MembersPage() {
       setError(res.error.message ?? "Couldn't send the invitation.");
       return;
     }
-    setNotice(
-      seatsFull
-        ? `Invitation sent to ${email.trim()}. A seat was added to your subscription.`
-        : `Invitation sent to ${email.trim()}.`,
-    );
+    setNotice(`Invitation sent to ${email.trim()}.`);
     setEmail("");
     refresh();
   }
@@ -154,13 +152,16 @@ export default function MembersPage() {
         {!loading && org && canManage && (
           <Button
             variant="primary"
+            // Kept visible rather than hidden when the plan can't invite:
+            // discovering the capability is the point of the upsell. When an
+            // upgrade lifts the refusal the modal pitches that plan; when
+            // nothing does (a full team) the button rests and the sentence
+            // under the title says why.
+            disabled={!canInvite && !team?.upgrade}
+            title={!canInvite ? team?.message : undefined}
             onClick={() => {
-              // Kept visible rather than hidden when the plan can't invite:
-              // discovering the capability is the point of the upsell. A full
-              // plan is not a wall — inviting buys the seat — so it opens the
-              // form, which says what the invite will cost.
               if (!canInvite) {
-                openUpgrade("seats");
+                if (team?.upgrade) openUpgrade("seats");
                 return;
               }
               setError(null);
@@ -170,9 +171,9 @@ export default function MembersPage() {
             className="h-9 gap-2"
           >
             Invite members
-            {!canInvite && (
+            {team?.upgrade && (
               <span className="rounded-full bg-background/15 px-1.5 py-0.5 text-[0.714rem] font-medium">
-                {PLANS.pro.name}
+                {PLANS[team.upgrade].name}
               </span>
             )}
           </Button>
@@ -182,6 +183,7 @@ export default function MembersPage() {
         {org
           ? `Manage who can collaborate in ${org.name}.`
           : "Invite teammates to collaborate in your organization."}
+        {team && <span className="block mt-1 text-text-tertiary">{team.message}</span>}
       </p>
 
       {loading ? (
@@ -330,15 +332,6 @@ export default function MembersPage() {
             <option value="admin">Admin</option>
           </select>
 
-          {seatsFull && seats && (
-            <p className="mt-3 text-[0.857rem] text-text-secondary">
-              {seats.max === 1
-                ? "Your plan covers one seat and you're in it."
-                : `All ${seats.max} seats are in use.`}{" "}
-              Sending this invite adds a seat to your subscription — $
-              {SEAT_PRICE_USD} a month, prorated from today.
-            </p>
-          )}
           {error && <p className="mt-3 text-[0.857rem] text-danger">{error}</p>}
           {notice && <p className="mt-3 text-[0.857rem] text-success">{notice}</p>}
 
@@ -357,13 +350,7 @@ export default function MembersPage() {
               disabled={inviting || !email.trim()}
               className="h-10"
             >
-              {inviting ? (
-                <Spinner className="text-background" />
-              ) : seatsFull ? (
-                `Add seat & send invite`
-              ) : (
-                "Send invite"
-              )}
+              {inviting ? <Spinner className="text-background" /> : "Send invite"}
             </Button>
           </div>
         </form>

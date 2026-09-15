@@ -29,7 +29,7 @@ export const organizationSubscriptions = pgTable(
 
     // Mirrors PlanId in @genmotion/shared. Enumerated so a malformed webhook
     // can't invent a plan; unmapped products are ignored rather than stored.
-    plan: text("plan", { enum: ["free", "pro"] })
+    plan: text("plan", { enum: ["free", "pro", "max"] })
       .notNull()
       .default("free"),
     // The provider's lifecycle status, stored verbatim. Entitlement resolution
@@ -106,7 +106,7 @@ export const billingCheckoutSessions = pgTable(
     userId: text("user_id").notNull(),
     // Only Pro is purchasable. A TS-level enum on a plain text column, so
     // narrowing it is not a schema change.
-    plan: text("plan", { enum: ["pro"] }).notNull(),
+    plan: text("plan", { enum: ["pro", "max"] }).notNull(),
     productId: text("product_id").notNull(),
     checkoutUrl: text("checkout_url").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),

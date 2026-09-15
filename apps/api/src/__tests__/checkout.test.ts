@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { eq, db, schema } from "@genmotion/db";
+import { and, eq, db, schema } from "@genmotion/db";
 
 /**
  * The SDK is stubbed at its single boundary (`../dodo`) rather than at the
@@ -8,6 +8,7 @@ import { eq, db, schema } from "@genmotion/db";
  */
 const create = vi.fn();
 const portalCreate = vi.fn();
+const subscriptionChangePlan = vi.fn();
 let enabled = true;
 
 vi.mock("../dodo", async (importOriginal) => {
@@ -21,6 +22,8 @@ vi.mock("../dodo", async (importOriginal) => {
       checkoutSessions: { create },
       customers: { customerPortal: { create: portalCreate } },
     }),
+    // Our helper over subscriptions.changePlan, stubbed at the same boundary.
+    changePlan: subscriptionChangePlan,
   };
 });
 
@@ -34,6 +37,7 @@ beforeEach(async () => {
   await truncateAll();
   create.mockReset();
   portalCreate.mockReset();
+  subscriptionChangePlan.mockReset();
   enabled = true;
   create.mockResolvedValue({
     session_id: "cks_test_1",
@@ -182,9 +186,10 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
     const { orgId } = await createOrg();
     const adminId = await addMember(orgId, "admin");
     const session = await createSession(adminId, orgId);
+    // Two people in the org, so the plan that fits is Max.
     const { status } = await requestJson("/api/billing/checkout", {
       as: session,
-      json: { plan: "pro" },
+      json: { plan: "max" },
     });
     expect(status).toBe(200);
   });
@@ -242,56 +247,106 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
   });
 
   /**
-   * Pro includes one seat. An org that already has people in it must buy the
-   * rest as add-on lines in the same cart, or it is over its seats the moment
-   * it pays. Pending invitations count: they will become members.
+   * A plan is the whole of its seats. Pro is one person: an org with people
+   * already in it cannot buy it, and is pointed at Max. Max is five.
    */
-  it("buys add-on seats for the current headcount", async () => {
+  it("refuses Pro for an org bigger than one, and points at Max", async () => {
     const { orgId, ownerId, session } = await ownerSession();
-    await addMember(orgId, "member");
     await addMember(orgId, "member");
     const { createPendingInvitation } = await import("./helpers/factories");
     await createPendingInvitation(orgId, { inviterId: ownerId });
 
-    await requestJson("/api/billing/checkout", { as: session, json: { plan: "pro" } });
-
-    const [args] = create.mock.calls[0]!;
-    // Owner + 2 members + 1 pending = 4 people; one is included in Pro.
-    expect(args.product_cart).toEqual([
-      {
-        product_id: "pdt_test_pro",
-        quantity: 1,
-        addons: [{ addon_id: "adn_test_seat", quantity: 3 }],
-      },
-    ]);
-    expect(args.metadata.seats).toBe("4");
-  });
-
-  // The upgrade modal opened for an invite asks for the seat that invite needs.
-  it("honours a requested seat count above the headcount", async () => {
-    const { session } = await ownerSession();
-    await requestJson("/api/billing/checkout", {
+    const { status, body } = await requestJson<{ error: string }>("/api/billing/checkout", {
       as: session,
-      json: { plan: "pro", seats: 3 },
+      json: { plan: "pro" },
     });
-    const [args] = create.mock.calls[0]!;
-    expect(args.product_cart[0].addons).toEqual([
-      { addon_id: "adn_test_seat", quantity: 2 },
-    ]);
-    expect(args.metadata.seats).toBe("3");
+
+    expect(status).toBe(409);
+    expect(body.error).toContain("Max");
+    expect(create).not.toHaveBeenCalled();
   });
 
-  it("never buys fewer seats than there are people", async () => {
+  it("sells Max as one product with no add-ons, for a team of up to five", async () => {
     const { orgId, session } = await ownerSession();
     await addMember(orgId, "member");
-    await requestJson("/api/billing/checkout", {
-      as: session,
-      json: { plan: "pro", seats: 1 },
-    });
+    await addMember(orgId, "member");
+
+    const { status } = await requestJson("/api/billing/checkout", { as: session, json: { plan: "max" } });
+
+    expect(status).toBe(200);
     const [args] = create.mock.calls[0]!;
-    expect(args.product_cart[0].addons).toEqual([
-      { addon_id: "adn_test_seat", quantity: 1 },
-    ]);
+    expect(args.product_cart).toEqual([{ product_id: process.env.DODOPAYMENT_MAX_PRODUCT_ID, quantity: 1 }]);
+    expect(args.metadata.plan).toBe("max");
+    expect(args.metadata.seats).toBe("5");
+  });
+
+  /**
+   * A live subscription changes plan in place. Up is immediate and the row
+   * says so before the webhook does; down waits for renewal.
+   */
+  it("moves a live Pro subscription up to Max in place, prorated now", async () => {
+    subscriptionChangePlan.mockResolvedValue(undefined);
+    const { orgId, session } = await ownerSession();
+    await setSubscription(orgId, {
+      plan: "pro",
+      status: "active",
+      dodoCustomerId: "cus_1",
+      dodoSubscriptionId: "sub_1",
+      currentPeriodEnd: new Date(Date.now() + 10 * 86_400_000),
+    });
+
+    const { status, body } = await requestJson<{ changed: boolean; effective: string }>("/api/billing/checkout", {
+      as: session,
+      json: { plan: "max" },
+    });
+
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ changed: true, plan: "max", effective: "now" });
+    expect(create).not.toHaveBeenCalled();
+    expect(subscriptionChangePlan).toHaveBeenCalledWith("sub_1", "max", "up");
+    const { body: limits } = await requestJson<{ plan: { id: string; seats: number } }>("/api/billing/limits", { as: session });
+    expect(limits.plan).toMatchObject({ id: "max", seats: 5 });
+  });
+
+  it("moves Max down to Pro at renewal, only when the team fits", async () => {
+    subscriptionChangePlan.mockResolvedValue(undefined);
+    const { orgId, session } = await ownerSession();
+    await setSubscription(orgId, {
+      plan: "max",
+      status: "active",
+      dodoCustomerId: "cus_1",
+      dodoSubscriptionId: "sub_1",
+      currentPeriodEnd: new Date(Date.now() + 10 * 86_400_000),
+    });
+    await addMember(orgId, "member");
+
+    // Two people do not fit in Pro.
+    const refused = await requestJson<{ error: string }>("/api/billing/checkout", { as: session, json: { plan: "pro" } });
+    expect(refused.status).toBe(409);
+    expect(subscriptionChangePlan).not.toHaveBeenCalled();
+
+    // Alone, the switch is scheduled for renewal and the row keeps Max till then.
+    await db.delete(schema.member).where(and(eq(schema.member.organizationId, orgId), eq(schema.member.role, "member")));
+    const { status, body } = await requestJson<{ effective: string }>("/api/billing/checkout", { as: session, json: { plan: "pro" } });
+    expect(status).toBe(200);
+    expect(body.effective).toBe("renewal");
+    expect(subscriptionChangePlan).toHaveBeenCalledWith("sub_1", "pro", "down");
+    const { body: limits } = await requestJson<{ plan: { id: string } }>("/api/billing/limits", { as: session });
+    expect(limits.plan.id).toBe("max");
+  });
+
+  it("refuses Max for a team bigger than five, with a word to contact us", async () => {
+    const { orgId, session } = await ownerSession();
+    for (let i = 0; i < 5; i++) await addMember(orgId, "member"); // owner + 5 = 6
+
+    const { status, body } = await requestJson<{ error: string }>("/api/billing/checkout", {
+      as: session,
+      json: { plan: "max" },
+    });
+
+    expect(status).toBe(409);
+    expect(body.error).toMatch(/contact us/i);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("reports 503 when billing isn't configured", async () => {
@@ -398,7 +453,7 @@ describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
 
   it("reports seat usage including pending invites", async () => {
     const { orgId, ownerId, session } = await ownerSession();
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
+    await setSubscription(orgId, { plan: "max", status: "active" });
     await addMember(orgId, "member");
     const { createPendingInvitation } = await import("./helpers/factories");
     await createPendingInvitation(orgId, { inviterId: ownerId });
@@ -409,10 +464,10 @@ describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
       entitled: boolean;
     }>("/api/billing/limits", { as: session });
 
-    expect(body.plan.id).toBe("pro");
+    expect(body.plan.id).toBe("max");
     expect(body.plan.canInvite).toBe(true);
     expect(body.entitled).toBe(true);
-    expect(body.seats).toEqual({ used: 3, max: 10 });
+    expect(body.seats).toEqual({ used: 3, max: 5 });
   });
 
   // Locks the single-source-of-truth property the whole design rests on.

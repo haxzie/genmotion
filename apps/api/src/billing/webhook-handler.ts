@@ -22,29 +22,12 @@ import { planForProduct } from "../dodo";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
- * How many people the subscription covers, or `undefined` when the payload
- * does not say.
- *
- * Pro carries one seat and every teammate past that is a quantity on the seat
- * add-on, so the total is base + add-on. Read from the payload rather than
- * from our plan table: the provider is the authority on what was actually
- * bought, including a change made in their dashboard that we never initiated.
- *
- * A payload with no `addons` array at all is not "zero add-ons" — a snapshot
- * that omits the lines must leave the stored count alone, or a routine
- * `subscription.updated` would silently shrink a ten-seat team to one.
+ * How many people the subscription covers: the plan's seats, whole. There
+ * are no add-ons any more — Pro is one person, Max is five — so the product
+ * says it all, and a row's count from the add-on days is overwritten.
  */
-function seatsFromPayload(
-  data: { addons?: { addon_id?: string; quantity?: number }[] | null },
-  plan: PlanId,
-): number | undefined {
-  if (!Array.isArray(data.addons)) return undefined;
-  const included = PLANS[plan].includedSeats;
-  const extra = data.addons.reduce(
-    (total, addon) => total + (addon.quantity ?? 0),
-    0,
-  );
-  return included + extra;
+function seatsFromPayload(_data: unknown, plan: PlanId): number {
+  return PLANS[plan].includedSeats;
 }
 
 /** The subset of the envelope we rely on. */
@@ -123,14 +106,12 @@ export function transitionFor(
     // than inferred from the event name.
     const status =
       event.type === "subscription.updated" ? (data.status ?? "active") : "active";
-    const seats = seatsFromPayload(data, plan);
-
     return {
       patch: {
         ...common,
         plan,
         status,
-        ...(seats !== undefined ? { seats } : {}),
+        seats: seatsFromPayload(data, plan),
         dodoProductId: data.product_id ?? null,
         currentPeriodEnd: toDate(data.next_billing_date),
         cancelAtPeriodEnd: Boolean(data.cancel_at_next_billing_date),

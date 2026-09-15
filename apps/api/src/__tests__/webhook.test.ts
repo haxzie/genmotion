@@ -140,7 +140,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
     expect((await getEntitlements(orgId)).plan).toBe("pro");
   });
 
-  it("derives seats from the add-on quantity, not from the plan", async () => {
+  it("takes seats from the plan, whatever add-ons the payload carries", async () => {
     const { orgId } = await createOrg();
     await postWebhook(
       signWebhook(
@@ -152,8 +152,21 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
       ),
     );
     const row = await subscriptionRow(orgId);
-    // One included seat plus nine add-on seats.
-    expect(row).toMatchObject({ plan: "pro", seats: 10 });
+    expect(row).toMatchObject({ plan: "pro", seats: 1 });
+    expect((await getEntitlements(orgId)).canInvite).toBe(false);
+  });
+
+  it("activates Max with its five seats", async () => {
+    const { orgId } = await createOrg();
+    await postWebhook(
+      signWebhook(
+        subscriptionEvent("subscription.active", {
+          organizationId: orgId,
+          productId: process.env.DODOPAYMENT_MAX_PRODUCT_ID!,
+        }),
+      ),
+    );
+    expect(await subscriptionRow(orgId)).toMatchObject({ plan: "max", seats: 5 });
     expect((await getEntitlements(orgId)).canInvite).toBe(true);
   });
 
@@ -301,7 +314,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
    * Treating "no array" as "no add-ons" would shrink every team to one seat on
    * the next routine update.
    */
-  it("leaves the seat count alone when an update carries no add-on lines", async () => {
+  it("keeps the plan's seats through an update, whatever the lines say", async () => {
     const { orgId } = await createOrg();
     await postWebhook(
       signWebhook(
@@ -312,7 +325,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
         }),
       ),
     );
-    expect((await subscriptionRow(orgId))!.seats).toBe(4);
+    expect((await subscriptionRow(orgId))!.seats).toBe(1);
 
     await postWebhook(
       signWebhook(
@@ -324,33 +337,8 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
         }),
       ),
     );
-    expect((await subscriptionRow(orgId))!.seats).toBe(4);
-  });
-
-  it("does shrink the seats when the add-on lines say so", async () => {
-    const { orgId } = await createOrg();
-    await postWebhook(
-      signWebhook(
-        subscriptionEvent("subscription.active", {
-          organizationId: orgId,
-          productId: PRO,
-          extraSeats: 3,
-        }),
-      ),
-    );
-    await postWebhook(
-      signWebhook(
-        subscriptionEvent("subscription.plan_changed", {
-          organizationId: orgId,
-          productId: PRO,
-          extraSeats: 0, // an empty array: the add-ons were removed
-          timestamp: new Date(Date.now() + 1000),
-        }),
-      ),
-    );
     expect((await subscriptionRow(orgId))!.seats).toBe(1);
   });
-
   it("keeps entitlement through a pause until the paid period ends", async () => {
     const { orgId } = await createOrg();
     await pastTrial(orgId);

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  MAX_PRICE_USD,
   PAYWALL_STATUS,
   PLANS,
   SEAT_PRICE_USD,
@@ -17,6 +18,7 @@ import {
   isPaywallBody,
   type PlanId,
   type PluginUsage,
+  type TeamPolicy,
   type UpgradeReason,
 } from "@genmotion/shared";
 import { ApiError, api } from "@/lib/api";
@@ -45,8 +47,8 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
     body: `The ${TRIAL_DAYS}-day trial covered the whole studio. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep going.`,
   },
   seats: {
-    title: "That needs another seat",
-    body: `Your plan covers the people already in it. Adding a teammate costs $${SEAT_PRICE_USD} a month, charged from today.`,
+    title: `Teammates are on ${PLANS.max.name}`,
+    body: `${PLANS.pro.name} is one seat. ${PLANS.max.name} brings ${PLANS.max.includedSeats} seats and ${PLANS.max.allowanceMultiplier}× the generation allowance, shared across the team, for $${MAX_PRICE_USD} a month.`,
   },
   plugin: {
     title: `Chat plugins are part of ${PLANS.pro.name}`,
@@ -82,6 +84,8 @@ export interface TrialPayload {
 export interface LimitsResponse {
   plan: PlanPayload;
   seats: { used: number; max: number };
+  /** The team policy, decided by the API. Absent from an API older than it. */
+  team?: TeamPolicy;
   /** This month's plugin meters. Absent from an API older than the meters. */
   usage?: PluginUsage;
   trial: TrialPayload;
@@ -105,6 +109,7 @@ interface UpgradeContextValue {
   trial?: TrialPayload;
   subscription?: LimitsResponse["subscription"];
   usage?: PluginUsage;
+  team?: TeamPolicy;
   canInvite: boolean;
   /** Re-read the plan and meters now — after a generation, say. */
   refresh: () => void;
@@ -186,7 +191,9 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
     (err: unknown) => {
       const code = (err as { error?: { code?: string }; code?: string } | null)?.error?.code ??
         (err as { code?: string } | null)?.code;
-      if (code === "PLAN_REQUIRES_PRO" || code === "SEAT_LIMIT_REACHED") {
+      // Only a refusal an upgrade lifts is an upsell; a full Max team is a
+      // sentence for the form.
+      if (code === "PLAN_REQUIRES_UPGRADE") {
         openUpgrade("seats");
         return true;
       }
@@ -205,6 +212,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       trial: data?.trial,
       subscription: data?.subscription,
       usage: data?.usage,
+      team: data?.team,
       canInvite: data?.plan.canInvite ?? false,
       refresh: () => void queryClient.invalidateQueries({ queryKey: limitsQueryKey }),
     }),
@@ -273,8 +281,9 @@ function UpgradeModal({
             {copy.title}
           </h2>
           <p className="mt-2 text-[0.929rem] leading-relaxed text-text-secondary">{copy.body}</p>
+          {/* A seats refusal is answered by Max; everything else by Pro. */}
           <ul className="mt-4 space-y-1.5">
-            {PLANS.pro.features.map((feature) => (
+            {PLANS[reason === "seats" ? "max" : "pro"].features.map((feature) => (
               <li key={feature} className="flex items-start gap-2 text-[0.857rem] text-text-secondary">
                 <svg viewBox="0 0 16 16" className="mt-1 size-3 shrink-0 text-success" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />

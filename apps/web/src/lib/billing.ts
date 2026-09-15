@@ -11,25 +11,25 @@ import { track } from "@/lib/analytics";
  */
 
 /** The one paid plan. Free is the absence of a subscription, not a purchase. */
-export type PurchasablePlan = "pro";
+export type PurchasablePlan = "pro" | "max";
 
 /**
- * Start checkout and send the browser to the provider. Never returns.
- *
- * `seats` is how many people the subscription should cover from day one. The
- * server never buys fewer than the org's headcount; this only raises it — the
- * upgrade modal opened for an invite passes the seat that invite needs.
+ * Start checkout and send the browser to the provider. Never returns. A plan
+ * is the whole of its seats — Pro one, Max five — so there is nothing to
+ * size; the server refuses a plan too small for the org.
  */
 export async function startCheckout(
   plan: PurchasablePlan,
   reason?: UpgradeReason,
-  seats?: number,
-): Promise<void> {
+): Promise<"redirected" | "changed"> {
   track("upgrade_checkout_started", { plan, reason });
-  const { url } = await api<{ url: string }>("/api/billing/checkout", {
-    json: { plan, ...(seats ? { seats } : {}) },
+  const res = await api<{ url?: string; changed?: boolean }>("/api/billing/checkout", {
+    json: { plan },
   });
-  window.location.href = url;
+  // A live subscription changes plan in place — nothing to pay at now.
+  if (res.changed) return "changed";
+  window.location.href = res.url!;
+  return "redirected";
 }
 
 export async function openBillingPortal(): Promise<void> {

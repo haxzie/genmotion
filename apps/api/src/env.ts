@@ -123,9 +123,8 @@ const schema = z.object({
     .default("test_mode"),
   // The single paid product: Pro, one seat included.
   DODOPAYMENT_PRO_PRODUCT_ID: z.string().min(1).optional(),
-  // Every teammate beyond the first is a quantity on this add-on, at the same
-  // price as the base seat. See docs.dodopayments.com/features/seat-based-billing.
-  DODOPAYMENT_SEAT_ADDON_ID: z.string().min(1).optional(),
+  /** Max — five seats, one price. The default is the live product; test mode needs its own id. */
+  DODOPAYMENT_MAX_PRODUCT_ID: z.string().min(1).default("pdt_0NnfKT91iLcUe8FPJXsWK"),
   // Standard Webhooks signing secret. Without it the receiver refuses every
   // delivery rather than trusting an unverified payload.
   DODOPAYMENT_WEBHOOK_KEY: z.string().min(1).optional(),

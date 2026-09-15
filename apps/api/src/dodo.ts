@@ -38,55 +38,34 @@ export function resetDodoClient(): void {
   client = null;
 }
 
-/** Which provider product backs each purchasable plan. Only Pro is buyable. */
+/** Which provider product backs each purchasable plan. */
 export function productForPlan(plan: PlanId): string | undefined {
-  return plan === "pro" ? env.DODOPAYMENT_PRO_PRODUCT_ID : undefined;
-}
-
-/** The add-on that carries every seat past the one Pro includes. */
-export function seatAddonId(): string | undefined {
-  return env.DODOPAYMENT_SEAT_ADDON_ID;
+  if (plan === "pro") return env.DODOPAYMENT_PRO_PRODUCT_ID;
+  if (plan === "max") return env.DODOPAYMENT_MAX_PRODUCT_ID;
+  return undefined;
 }
 
 /**
- * Add-on lines for a given headcount.
+ * Move a live subscription to another plan — Pro to Max, or back.
  *
- * Pro carries one seat, so the add-on quantity is everyone *else*. A solo org
- * buys no add-on at all — an empty array rather than a zero quantity, which is
- * also how Dodo wants seats removed.
+ * Up is prorated from today: the team gets its seats and allowance now and
+ * pays the difference for the rest of the period. Down is `do_not_bill`: the
+ * smaller plan takes effect at the next renewal, with nothing to refund (the
+ * period was paid for) — a prorated shrink observed in test mode restarted
+ * the cycle and produced an extra full charge. Note that Dodo also moves the
+ * billing date to the day of the change for every prorated mode.
  */
-export function seatAddons(totalSeats: number): { addon_id: string; quantity: number }[] {
-  const addonId = seatAddonId();
-  const extra = Math.max(0, totalSeats - 1);
-  return addonId && extra > 0 ? [{ addon_id: addonId, quantity: extra }] : [];
-}
-
-/**
- * Resize an active subscription to cover `totalSeats`.
- *
- * Growing is prorated immediately: a teammate invited today should be paid for
- * from today, and the alternative — billing at renewal — means carrying
- * unbilled seats for up to a month. Note that Dodo also moves the billing date
- * to the day of the change for every prorated mode.
- *
- * Shrinking is `do_not_bill`: the seat simply comes off at the next renewal.
- * There is no refund to make (the seat was paid for through the period), and
- * a prorated shrink observed in test mode restarted the cycle and produced an
- * extra full charge — see the E2E notes in the billing plan.
- */
-export async function changeSeats(
+export async function changePlan(
   subscriptionId: string,
-  totalSeats: number,
-  direction: "grow" | "shrink" = "grow",
+  plan: PlanId,
+  direction: "up" | "down",
 ): Promise<void> {
-  const productId = env.DODOPAYMENT_PRO_PRODUCT_ID;
-  if (!productId) throw new Error("DODOPAYMENT_PRO_PRODUCT_ID is not set");
+  const productId = productForPlan(plan);
+  if (!productId) throw new Error(`No product for plan ${plan}`);
   await dodoClient().subscriptions.changePlan(subscriptionId, {
     product_id: productId,
     quantity: 1,
-    proration_billing_mode:
-      direction === "grow" ? "prorated_immediately" : "do_not_bill",
-    addons: seatAddons(totalSeats),
+    proration_billing_mode: direction === "up" ? "prorated_immediately" : "do_not_bill",
   });
 }
 
@@ -100,5 +79,6 @@ export function planForProduct(
 ): PlanId | null {
   if (!productId) return null;
   if (productId === env.DODOPAYMENT_PRO_PRODUCT_ID) return "pro";
+  if (productId === env.DODOPAYMENT_MAX_PRODUCT_ID) return "max";
   return null;
 }

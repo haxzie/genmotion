@@ -78,12 +78,12 @@ describe.skipIf(!dbReady)("events feed", () => {
 
     const { status } = await requestJson("/api/billing/checkout", {
       as: session,
-      json: { plan: "pro", seats: 3 },
+      json: { plan: "pro" },
     });
     expect(status).toBe(200);
 
     expect(await feed("events")).toEqual([
-      '🛒 *Ada Lovelace* (ada@example.test) started checkout for Pro (3 seats) · "Analytical Engines"',
+      '🛒 *Ada Lovelace* (ada@example.test) started checkout for Pro (1 seat) · "Analytical Engines"',
     ]);
     expect(await feed("signups")).toEqual([]);
   });
@@ -96,7 +96,7 @@ describe.skipIf(!dbReady)("events feed", () => {
     );
     expect((await postWebhook(active)).status).toBe(200);
     expect(await feed("events")).toEqual([
-      '✅ Subscription started · "Analytical Engines" · Pro, 3 seats · buyer@example.test',
+      '✅ Subscription started · "Analytical Engines" · Pro, 1 seat · buyer@example.test',
     ]);
 
     // A redelivery changed nothing, so it says nothing.
@@ -124,7 +124,7 @@ describe.skipIf(!dbReady)("events feed", () => {
     );
     expect((await postWebhook(cancelled)).body.status).toBe("processed");
     expect((await feed("events"))[1]).toBe(
-      '❌ Subscription cancelled · "Analytical Engines" · Pro, 3 seats · buyer@example.test · ends 2026-10-14',
+      '❌ Subscription cancelled · "Analytical Engines" · Pro, 1 seat · buyer@example.test · ends 2026-10-14',
     );
   });
 
@@ -137,7 +137,7 @@ describe.skipIf(!dbReady)("events feed", () => {
   it("announces invitations sent, accepted, and members removed", async () => {
     const owner = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
     const { orgId } = await createOrg({ ownerId: owner.id, name: "Analytical Engines" });
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
+    await setSubscription(orgId, { plan: "max", status: "active" });
     const ownerSession = await createSession(owner.id, orgId);
 
     const invite = await app.request("/api/auth/organization/invite-member", {

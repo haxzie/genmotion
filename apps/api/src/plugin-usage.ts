@@ -1,6 +1,7 @@
 import { and, eq, gte, sql, db, schema } from "@genmotion/db";
 import {
   pluginAllowance,
+  type PlanId,
   type PluginMeter,
   type PluginUsage,
   type QuotaBody,
@@ -24,7 +25,7 @@ export function periodOf(now = new Date()): { start: Date; end: Date } {
   };
 }
 
-export async function pluginUsage(organizationId: string, seats: number): Promise<PluginUsage> {
+export async function pluginUsage(organizationId: string, plan: PlanId): Promise<PluginUsage> {
   const { start, end } = periodOf();
   const rows = await db
     .select({
@@ -42,7 +43,7 @@ export async function pluginUsage(organizationId: string, seats: number): Promis
     )
     .groupBy(schema.pluginCalls.plugin);
   const by = new Map(rows.map((r) => [r.plugin, r]));
-  const limit = pluginAllowance(seats);
+  const limit = pluginAllowance(plan);
   return {
     period: { start: start.toISOString(), end: end.toISOString() },
     characters: { used: by.get("voiceover")?.units ?? 0, limit: limit.characters },
@@ -63,11 +64,11 @@ const METER_LABEL: Record<PluginMeter, string> = {
  */
 export async function checkQuota(
   organizationId: string,
-  seats: number,
+  plan: PlanId,
   meter: PluginMeter,
   cost: number,
 ): Promise<QuotaBody | null> {
-  const usage = await pluginUsage(organizationId, seats);
+  const usage = await pluginUsage(organizationId, plan);
   const { used, limit } = usage[meter];
   if (used + cost <= limit) return null;
   const resetsAt = usage.period.end;

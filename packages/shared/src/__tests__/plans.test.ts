@@ -7,6 +7,7 @@ import {
   isPlanId,
   isTrialActive,
   monthlyTotalUsd,
+  pluginAllowance,
   planPrice,
   trialDaysLeft,
   trialEndsAt,
@@ -32,16 +33,26 @@ describe("plans", () => {
     expect(PLANS.free.includedSeats).toBe(1);
   });
 
-  it("totals a team at the per-seat price", () => {
-    expect(monthlyTotalUsd(1)).toBe(19);
-    expect(monthlyTotalUsd(5)).toBe(95);
-    // A nonsensical seat count still costs at least one seat rather than zero.
-    expect(monthlyTotalUsd(0)).toBe(19);
+  it("prices a plan whole, whatever the headcount within it", () => {
+    expect(monthlyTotalUsd("pro")).toBe(19);
+    expect(monthlyTotalUsd("max")).toBe(199);
+    expect(monthlyTotalUsd("free")).toBe(0);
   });
 
-  it("only lets Pro invite", () => {
+  it("only lets Max invite — Pro is one person", () => {
     expect(PLANS.free.canInvite).toBe(false);
-    expect(PLANS.pro.canInvite).toBe(true);
+    expect(PLANS.pro.canInvite).toBe(false);
+    expect(PLANS.max.canInvite).toBe(true);
+    expect(PLANS.pro.includedSeats).toBe(1);
+    expect(PLANS.max.includedSeats).toBe(5);
+  });
+
+  it("gives Max five Pro allowances, pooled", () => {
+    const pro = pluginAllowance("pro");
+    const max = pluginAllowance("max");
+    expect(pro).toEqual({ characters: 15_000, sfx: 60, images: 100 });
+    expect(max).toEqual({ characters: 75_000, sfx: 300, images: 500 });
+    expect(pluginAllowance("free")).toEqual({ characters: 0, sfx: 0, images: 0 });
   });
 
   it("recognises plan ids and rejects the plan that no longer exists", () => {

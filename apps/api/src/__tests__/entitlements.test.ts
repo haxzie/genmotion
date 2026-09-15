@@ -52,23 +52,24 @@ describe("entitlementsFromRow", () => {
     expect(ent.manageable).toBe(false);
   });
 
-  it("grants Pro on an active subscription", () => {
+  it("grants Pro on an active subscription — one seat, no invites", () => {
     const ent = entitlementsFromRow("org-1", row({ plan: "pro", status: "active" }), NOW);
     expect(ent.plan).toBe("pro");
     expect(ent.paid).toBe(true);
-    // Pro carries one seat and may invite — every teammate is an add-on seat.
-    expect(ent.seats).toBe(PLANS.pro.includedSeats);
+    expect(ent.seats).toBe(1);
+    expect(ent.canInvite).toBe(false);
+  });
+
+  it("grants Max five seats and invites", () => {
+    const ent = entitlementsFromRow("org-1", row({ plan: "max", status: "active" }), NOW);
+    expect(ent.plan).toBe("max");
+    expect(ent.seats).toBe(PLANS.max.includedSeats);
     expect(ent.canInvite).toBe(true);
   });
 
-  it("reports the seats the subscription actually covers, not the base", () => {
-    const ent = entitlementsFromRow(
-      "org-1",
-      row({ plan: "pro", status: "active", seats: 6 }),
-      NOW,
-    );
-    // Six people: the included seat plus five add-on seats.
-    expect(ent.seats).toBe(6);
+  it("reports the plan's seats, not a count left over from add-ons", () => {
+    const ent = entitlementsFromRow("org-1", row({ plan: "pro", status: "active", seats: 6 }), NOW);
+    expect(ent.seats).toBe(1);
   });
 
   it("keeps a cancelled plan until the period ends", () => {
@@ -184,58 +185,58 @@ describe.skipIf(!dbReady)("countSeats", () => {
 describe.skipIf(!dbReady)("assertCanInvite", () => {
   beforeEach(truncateAll);
 
-  it("refuses on Free", async () => {
+  it("refuses on Free, pointing at Max", async () => {
     const { orgId } = await createOrg();
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
     if (!gate.ok) {
-      expect(gate.code).toBe("PLAN_REQUIRES_PRO");
-      expect(gate.message).toContain("Pro");
+      expect(gate.code).toBe("PLAN_REQUIRES_UPGRADE");
+      expect(gate.upgrade).toBe("max");
+      expect(gate.message).toContain("Max");
     }
   });
 
-  it("refuses on Pro once the bought seats are used up", async () => {
+  it("refuses on Pro — it is one person — pointing at Max", async () => {
     const { orgId } = await createOrg();
-    // One seat, taken by the owner — another teammate needs another seat.
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 1 });
+    await setSubscription(orgId, { plan: "pro", status: "active" });
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
-    if (!gate.ok) expect(gate.code).toBe("SEAT_LIMIT_REACHED");
+    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_UPGRADE");
   });
 
-  it("allows on Pro while a bought seat is free", async () => {
+  it("allows on Max while a seat is free", async () => {
     const { orgId } = await createOrg();
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 2 });
+    await setSubscription(orgId, { plan: "max", status: "active" });
     expect((await assertCanInvite(orgId)).ok).toBe(true);
   });
 
-  it("refuses once every seat the subscription covers is taken", async () => {
+  it("refuses once every one of Max's five seats is taken", async () => {
     const { orgId } = await createOrg();
-    // Three seats bought: the included one plus two add-ons.
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 3 });
-    await addMembers(orgId, 2); // owner + 2 = 3
+    await setSubscription(orgId, { plan: "max", status: "active" });
+    await addMembers(orgId, 4); // owner + 4 = 5
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
     if (!gate.ok) {
       expect(gate.code).toBe("SEAT_LIMIT_REACHED");
-      expect(gate.seats).toEqual({ used: 3, max: 3 });
+      expect(gate.seats).toEqual({ used: 5, max: 5 });
+      expect(gate.upgrade).toBeUndefined();
+      expect(gate.message).toMatch(/contact us/i);
     }
   });
 
   it("counts pending invitations toward the cap", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "pro", status: "active" });
-    await addMembers(orgId, 7); // owner + 7 = 8
+    await setSubscription(orgId, { plan: "max", status: "active" });
+    await addMembers(orgId, 2); // owner + 2 = 3
     await createPendingInvitation(orgId, { inviterId: ownerId });
     await createPendingInvitation(orgId, { inviterId: ownerId });
-    const gate = await assertCanInvite(orgId); // 8 + 2 = 10
-    expect(gate.ok).toBe(false);
+    expect((await assertCanInvite(orgId)).ok).toBe(false); // 3 + 2 = 5
   });
 
   it("does not let expired invitations hold seats", async () => {
     const { orgId, ownerId } = await createOrg();
-    await setSubscription(orgId, { plan: "pro", status: "active", seats: 10 });
-    await addMembers(orgId, 7);
+    await setSubscription(orgId, { plan: "max", status: "active" });
+    await addMembers(orgId, 2);
     for (let i = 0; i < 2; i++) {
       await createPendingInvitation(orgId, {
         inviterId: ownerId,
@@ -245,16 +246,29 @@ describe.skipIf(!dbReady)("assertCanInvite", () => {
     expect((await assertCanInvite(orgId)).ok).toBe(true);
   });
 
-  it("refuses once a Pro subscription has expired", async () => {
+  it("reads the invitee's side as a full team, without counting their own invitation", async () => {
+    const { orgId, ownerId } = await createOrg();
+    await setSubscription(orgId, { plan: "max", status: "active" });
+    await addMembers(orgId, 4); // 5 in
+    await createPendingInvitation(orgId, { inviterId: ownerId });
+    const gate = await assertCanInvite(orgId, { includePendingInvitations: false });
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.code).toBe("TEAM_FULL");
+      expect(gate.message).toMatch(/already full/i);
+    }
+  });
+
+  it("refuses once a subscription has expired", async () => {
     const { orgId } = await createOrg();
     await setSubscription(orgId, {
-      plan: "pro",
+      plan: "max",
       status: "expired",
       currentPeriodEnd: new Date(Date.now() - 1000),
     });
     const gate = await assertCanInvite(orgId);
     expect(gate.ok).toBe(false);
-    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_PRO");
+    if (!gate.ok) expect(gate.code).toBe("PLAN_REQUIRES_UPGRADE");
   });
 });
 

@@ -12,10 +12,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PAYWALL_STATUS,
   PLANS,
+  MAX_PRICE_USD,
   SEAT_PRICE_USD,
   TRIAL_DAYS,
   isPaywallBody,
   type PlanId,
+  type TeamPolicy,
   type UpgradeReason,
 } from "@genmotion/shared";
 import { ApiError, api } from "@/lib/api";
@@ -30,8 +32,8 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
     body: `The ${TRIAL_DAYS}-day trial covered the whole studio. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting — unlimited projects, no watermark.`,
   },
   seats: {
-    title: "That needs another seat",
-    body: `Your plan covers the people already in it. Adding a teammate costs $${SEAT_PRICE_USD} a month, charged from today.`,
+    title: `Teammates are on ${PLANS.max.name}`,
+    body: `${PLANS.pro.name} is one seat. ${PLANS.max.name} brings ${PLANS.max.includedSeats} seats and ${PLANS.max.allowanceMultiplier}× the generation allowance, shared across the team, for $${MAX_PRICE_USD} a month.`,
   },
   plugin: {
     title: `Chat plugins are part of ${PLANS.pro.name}`,
@@ -57,6 +59,8 @@ export interface TrialPayload {
 export interface LimitsResponse {
   plan: PlanPayload;
   seats: { used: number; max: number };
+  /** The team policy, decided by the API. Absent from an API older than it. */
+  team?: TeamPolicy;
   trial: TrialPayload;
   /** Whether the org may do paid-tier work right now: paying, or still in trial. */
   entitled: boolean;
@@ -84,6 +88,7 @@ interface UpgradeContextValue {
   handleAuthClientError: (err: unknown) => boolean;
   plan?: PlanPayload;
   seats?: LimitsResponse["seats"];
+  team?: TeamPolicy;
   trial?: TrialPayload;
   subscription?: LimitsResponse["subscription"];
   /** Whether the org may invite at all — false while loading. */
@@ -128,15 +133,14 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Only the Free gate is an upsell. On a paid plan, inviting buys the seat
-   * itself, so a refusal there (`SEAT_LIMIT_REACHED` when the subscription
-   * can't be resized, `SEAT_PURCHASE_FAILED` when the provider said no) is a
-   * message for the form, not a reason to sell a plan the org already has.
+   * A plan without teammates is an upsell — the API says which plan lifts
+   * it. A full Max team (`SEAT_LIMIT_REACHED`) is a message for the form:
+   * there is no plan past Max to sell, only a conversation.
    */
   const handleAuthClientError = useCallback(
     (err: unknown) => {
       const code = (err as { code?: string } | null)?.code;
-      if (code === "PLAN_REQUIRES_PRO") {
+      if (code === "PLAN_REQUIRES_UPGRADE") {
         openUpgrade("seats");
         return true;
       }
@@ -152,6 +156,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       handleAuthClientError,
       plan: data?.plan,
       seats: data?.seats,
+      team: data?.team,
       trial: data?.trial,
       subscription: data?.subscription,
       canInvite: data?.plan.canInvite ?? false,
@@ -165,7 +170,6 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       <UpgradeModal
         reason={reason}
         planName={data?.plan.name}
-        seatsUsed={data?.seats.used}
         onClose={() => setReason(null)}
       />
     </UpgradeContext.Provider>
@@ -254,12 +258,10 @@ function PlanCard({
 function UpgradeModal({
   reason,
   planName,
-  seatsUsed,
   onClose,
 }: {
   reason: UpgradeReason | null;
   planName?: string;
-  seatsUsed?: number;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState<PurchasablePlan | null>(null);
@@ -271,11 +273,8 @@ function UpgradeModal({
     setBusy(plan);
     setError(null);
     try {
-      // Opened for an invite, the checkout should cover the person being
-      // invited as well as everyone already here. Navigates away on success,
-      // so there's no success state to render.
-      const seats = reason === "seats" ? (seatsUsed ?? 1) + 1 : undefined;
-      await startCheckout(plan, reason, seats);
+      // Navigates away on success, so there's no success state to render.
+      await startCheckout(plan, reason);
     } catch (err) {
       // A subscription that exists but is stuck (dunning, paused) is fixed in
       // the provider's portal, not by buying a second one.
@@ -317,9 +316,10 @@ function UpgradeModal({
           </h2>
           <p className="mt-1.5 text-[0.9rem] text-text-secondary">{copy.body}</p>
 
+          {/* A seats refusal is answered by Max; everything else by Pro. */}
           <div className="mt-5">
             <PlanCard
-              plan="pro"
+              plan={reason === "seats" ? "max" : "pro"}
               reason={reason}
               featured
               busy={busy}

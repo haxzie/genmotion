@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SEAT_PRICE_USD } from "@genmotion/shared";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
@@ -75,14 +74,13 @@ export function MembersSection() {
   const auth = useAuth();
   const me = auth.status === "signed-in" ? auth.user : null;
   const orgId = auth.status === "signed-in" ? (auth.organization?.id ?? null) : null;
-  const { seats, canInvite, openUpgrade, handleLimitError } = useUpgrade();
+  const { team, openUpgrade, handleLimitError } = useUpgrade();
   const org = useFullOrg(orgId);
   const queryClient = useQueryClient();
 
   const myRole = org.data?.members.find((m) => m.user.id === me?.id)?.role ?? "member";
   const admin = myRole === "owner" || myRole === "admin";
   const pending = (org.data?.invitations ?? []).filter((i) => i.status === "pending");
-  const seatsFull = seats ? seats.used >= seats.max : false;
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -100,7 +98,7 @@ export function MembersSection() {
     mutationFn: () =>
       api("/api/org/invite-member", { method: "POST", json: { email: email.trim(), role, organizationId: orgId } }),
     onSuccess: () => {
-      setNotice(seatsFull ? `Invitation sent to ${email.trim()}. A seat was added to your subscription.` : `Invitation sent to ${email.trim()}.`);
+      setNotice(`Invitation sent to ${email.trim()}.`);
       setEmail("");
       setInviteOpen(false);
       refresh();
@@ -131,15 +129,20 @@ export function MembersSection() {
 
   const busy = invite.isPending || remove.isPending || cancelInvite.isPending;
 
+  // The API decides whether an invite may go and what to say; this section
+  // draws it. When an upgrade lifts the refusal the modal pitches that plan;
+  // when nothing does (a full team) the API's sentence is shown.
   const inviteButton = admin && org.data && (
     <Button
       size="sm"
       variant="primary"
+      disabled={Boolean(team && !team.canInvite && !team.upgrade)}
+      title={team && !team.canInvite ? team.message : undefined}
       onClick={() => {
         setError(null);
         setNotice(null);
-        if (!canInvite) {
-          openUpgrade("seats");
+        if (team && !team.canInvite) {
+          if (team.upgrade) openUpgrade("seats");
           return;
         }
         setInviteOpen(true);
@@ -154,7 +157,7 @@ export function MembersSection() {
       title="Members"
       description={
         admin
-          ? `Invite teammates to ${org.data?.name ?? "your organization"}. Each seat is $${SEAT_PRICE_USD} a month; the allowances add up.`
+          ? (team?.message ?? `Invite teammates to ${org.data?.name ?? "your organization"}.`)
           : "Who's in your organization. An owner or admin can invite more."
       }
       action={inviteButton || undefined}
@@ -213,12 +216,7 @@ export function MembersSection() {
             ))}
           </ul>
 
-          {admin && seats && (
-            <p className="mt-3 text-[0.786rem] text-text-tertiary">
-              {seats.used} of {seats.max} {seats.max === 1 ? "seat" : "seats"} in use
-              {seatsFull && canInvite ? ` · the next invite adds a seat at $${SEAT_PRICE_USD}/month` : ""}
-            </p>
-          )}
+
           {notice && <p className="mt-3 text-[0.857rem] text-green">{notice}</p>}
           {error && <p className="mt-3 text-[0.857rem] text-danger">{error}</p>}
         </>
@@ -237,7 +235,6 @@ export function MembersSection() {
           </h2>
           <p className="mt-1 text-[0.9rem] text-text-secondary">
             They&rsquo;ll get an email with a link to join {org.data?.name ?? "your organization"}.
-            {seatsFull ? ` This adds a seat at $${SEAT_PRICE_USD} a month.` : ""}
           </p>
           <label className="mb-1.5 mt-4 block text-[0.857rem] text-text-secondary">Email</label>
           <Input

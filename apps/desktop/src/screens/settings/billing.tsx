@@ -1,4 +1,4 @@
-import { PLUGIN_ALLOWANCE, SEAT_PRICE_USD, type MeterUsage, type PluginMeter } from "@genmotion/shared";
+import { SEAT_PRICE_USD, planPrice, type MeterUsage, type PluginMeter } from "@genmotion/shared";
 import { Button, Spinner, cx } from "@/components/ui";
 import { useUpgrade } from "@/components/upgrade-modal";
 import { api as desktop } from "../../api";
@@ -19,7 +19,7 @@ const METERS: { id: PluginMeter; label: string; unit: (n: number) => string; not
     id: "characters",
     label: "Voiceover",
     unit: (n) => `${n.toLocaleString("en-US")} characters`,
-    note: `About ${Math.round(PLUGIN_ALLOWANCE.characters / 1500)} minutes of narration a month per seat.`,
+    note: "Roughly 1,500 characters per minute of narration.",
   },
   { id: "sfx", label: "Sound effects", unit: (n) => `${n.toLocaleString("en-US")}`, note: "One per generated effect." },
   { id: "images", label: "Images", unit: (n) => `${n.toLocaleString("en-US")}`, note: "One per generated image." },
@@ -68,7 +68,7 @@ export function BillingSection() {
               <span className="text-lg text-text-primary">{paid ? plan.name : trial?.active ? "Free trial" : "Trial ended"}</span>
               {paid ? (
                 <span className="text-[0.857rem] text-text-secondary">
-                  ${SEAT_PRICE_USD} × {seats?.max ?? plan.seats} {(seats?.max ?? plan.seats) === 1 ? "seat" : "seats"} a month
+                  {planPrice(plan.id)} a month · {plan.seats} {plan.seats === 1 ? "seat" : "seats"}
                   {renews && (subscription?.cancelAtPeriodEnd ? ` · ends ${renews}` : ` · renews ${renews}`)}
                 </span>
               ) : trial?.active ? (
@@ -103,7 +103,7 @@ export function BillingSection() {
         title="Usage this month"
         description={
           usage
-            ? `Resets on ${resetLabel(usage.period.end)}. Allowances are per seat and shared across your team.`
+            ? `Resets on ${resetLabel(usage.period.end)}.${(seats?.max ?? 1) > 1 ? " Shared across your team." : ""}`
             : "What the chat's voiceover, sound-effect and image tools have generated."
         }
       >
