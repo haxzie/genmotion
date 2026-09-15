@@ -455,6 +455,35 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   },
 
   {
+    name: "pick_voice",
+    description:
+      "Ask the user to choose a narrator. Shows the available voices in the chat with a play button on each, and returns the one they picked, with its id — pass that id as `voice` to generate_voiceover for every narration in this project. Call it before the first voiceover of a project unless the user has already named a voice; do not call it again once one is chosen. The user may also decline, in which case use the default.",
+    shape: {
+      question: z
+        .string()
+        .max(200)
+        .optional()
+        .describe('What to ask, e.g. "Which voice should narrate the launch video?"'),
+      // Filled in by the app once the user has clicked — the harness parks
+      // the call until then (see `canUseTool`). The model never sets these.
+      voiceId: z.string().optional().describe("Set by the app. Leave empty."),
+      voiceName: z.string().optional().describe("Set by the app. Leave empty."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { voiceId, voiceName } = args as unknown as { voiceId?: string; voiceName?: string };
+      if (voiceId) {
+        return text(
+          `The user chose ${voiceName ?? "a voice"} (id ${voiceId}). Use voice "${voiceId}" for every generate_voiceover call in this project.`,
+        );
+      }
+      return text(
+        "The user did not pick a voice. Use the default narrator (omit `voice`), and don't ask again this turn.",
+      );
+    },
+  },
+
+  {
     name: "generate_sfx",
     description:
       "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For the whoosh on a transition, a click on a button, a rising swell under a reveal, rain behind a scene. Describe the sound itself, not the picture — 'a soft airy whoosh, rising, 1 second', 'rain on a window, steady, no thunder'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",

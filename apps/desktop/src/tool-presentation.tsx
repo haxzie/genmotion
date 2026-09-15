@@ -7,6 +7,7 @@ import {
 import { API_URL } from "@/lib/api";
 import { parseMcpToolName } from "@genmotion/shared";
 import { useMcpServers } from "./lib/use-mcp-servers";
+import { VoicePickerCard } from "./editor/components/voice-picker";
 
 const CodeBlock = lazy(() => import("@/components/editor/code-block"));
 
@@ -166,9 +167,9 @@ const QuestionGlyph = ({ className }: { className?: string }) => (
   </svg>
 );
 const SoundGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M4 10v4h3l4 4V6L7 10H4z" />
-    <path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" />
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 6.5v3h2l3 2.5v-8l-3 2.5z" />
+    <path d="M10 6a3 3 0 0 1 0 4M12 4a5.5 5.5 0 0 1 0 8" />
   </svg>
 );
 
@@ -686,6 +687,21 @@ registerToolPresentation({
       const text = outputText(part);
       return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
     },
+  },
+
+  mcp__genmotion__pick_voice: {
+    labels: { active: "Waiting for you to pick a voice", done: "Picked a voice" },
+    icon: MicGlyph,
+    expandWhileRunning: true,
+    subject: () => undefined,
+    body: (part) => (
+      <VoicePickerCard
+        toolCallId={part.toolCallId ?? ""}
+        question={str(part, "question") || "Which voice should narrate this video?"}
+        answered={(part as { output?: unknown }).output !== undefined}
+        output={outputText(part)}
+      />
+    ),
   },
 
   mcp__genmotion__generate_sfx: {

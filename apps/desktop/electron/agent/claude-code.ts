@@ -54,6 +54,8 @@ function describeTool(name: string, input: unknown): string {
       return short ? `Saving ${short}` : "Saving an asset";
     case "AskUserQuestion":
       return "Waiting for your answer";
+    case "mcp__genmotion__pick_voice":
+      return "Waiting for you to pick a voice";
     default: {
       const mcp = parseMcpToolName(name);
       return mcp ? `${mcp.tool} · ${mcp.server}` : name;
@@ -203,6 +205,19 @@ async function turnOptions(
         return {
           behavior: "allow" as const,
           updatedInput: answers ? { ...input, answers } : input,
+        };
+      }
+      // Our voice picker rides the same rails: the chat shows the voices,
+      // the click lands as an answer, and the tool runs with the choice on
+      // its input. Unanswered, it runs without one and says so.
+      if (toolName === "mcp__genmotion__pick_voice") {
+        const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
+        const answers = await waitForAnswer(toolUseID, signal);
+        return {
+          behavior: "allow" as const,
+          updatedInput: answers?.voiceId
+            ? { ...input, voiceId: answers.voiceId, voiceName: answers.voiceName }
+            : input,
         };
       }
 

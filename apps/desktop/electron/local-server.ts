@@ -252,6 +252,26 @@ export async function startLocalServer(
       await mcpCatalogProxy(`/api/mcp/favicon/${encodeURIComponent(rest[1])}`, req, res, 15_000);
       return;
     }
+    // The voices a voiceover can use, and a few seconds of each — for the
+    // picker the agent puts in the chat. Signed calls to the API on the
+    // account's behalf; the preview comes back through here because the
+    // renderer's CSP plays media from this server only.
+    if (rest[0] === "voices" && method === "GET") {
+      const { desktopAuth } = await import("./auth");
+      if (rest[1] && rest[2] === "preview") {
+        const result = await desktopAuth.requestBinary(`/api/plugins/voices/${encodeURIComponent(rest[1])}/preview`);
+        if (!result.ok) {
+          send(res, result.status, result.body);
+          return;
+        }
+        res.writeHead(200, { "content-type": result.mime, "cache-control": "private, max-age=86400" });
+        res.end(result.bytes);
+        return;
+      }
+      const result = await desktopAuth.request<unknown>("/api/plugins/voices");
+      send(res, result.status, result.body);
+      return;
+    }
 
     // Entitlement is a property of the account, not of a folder, so this sits
     // above the "no project is open" check with the harness route.
