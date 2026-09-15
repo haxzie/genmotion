@@ -10,6 +10,7 @@ import { captureCompositionFrame, captureFrame } from "../export/capture";
 import { resolveFrameTarget, SAMPLE_AT } from "../export/frame-target";
 import { openCompositionWindow } from "../export/hyperframes-window";
 import type { ProjectSession } from "../project-session";
+import { getSecrets, listConfigs } from "../mcp/store";
 import type { AgentSdkModule } from "./load-sdk";
 
 function text(body: string): ToolResult {
@@ -83,6 +84,26 @@ export interface GenmotionTool {
  * What it can't do is compile a scene against the app's runtime and render it,
  * so that is what we hand over.
  */
+/**
+ * The header the user's GitHub marketplace connection sends, if they made
+ * one — our tool rides on the same key rather than asking for another.
+ */
+async function githubToken(): Promise<string | null> {
+  const github = (await listConfigs()).find((c) => c.catalogId === "github" && c.enabled);
+  if (!github) return null;
+  const value = (await getSecrets(github.id)).headers?.Authorization;
+  return value ?? null;
+}
+
+async function githubError(res: Response, repo: string): Promise<string> {
+  if (res.status === 404) return `FAILED: ${repo} was not found (or the connected key can't see it).`;
+  if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
+    return "FAILED: GitHub's rate limit is spent. Connect GitHub in the Marketplace, or wait an hour.";
+  }
+  if (res.status === 401) return "FAILED: GitHub rejected the connected key. Replace it in the Marketplace.";
+  return `FAILED: GitHub answered ${res.status}.`;
+}
+
 export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "validate_scene",
@@ -256,6 +277,59 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         ].join("\n"),
         image: { base64: jpeg.toString("base64"), mimeType: "image/jpeg" },
       };
+    },
+  },
+
+  {
+    name: "github_stargazers",
+    description:
+      "Who starred a GitHub repository, newest first, with the total: login, avatar URL and when. For a milestone or community video. Needs GitHub connected in the Marketplace — GitHub only lists stargazers to a signed-in caller.",
+    shape: {
+      owner: z.string().describe("Repository owner, e.g. `vercel`"),
+      repo: z.string().describe("Repository name, e.g. `ai`"),
+      limit: z.number().int().min(1).max(500).optional().describe("How many, newest first. Default 100."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { owner, repo, limit = 100 } = args as unknown as { owner: string; repo: string; limit?: number };
+      const token = await githubToken();
+      if (!token) {
+        return failure("FAILED: GitHub isn't connected. Connect it in the Marketplace (it needs an API key) and try again.");
+      }
+      const headers: Record<string, string> = {
+        accept: "application/vnd.github.star+json",
+        "user-agent": "GenMotion",
+        authorization: token,
+      };
+      const repoRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, { headers });
+      if (!repoRes.ok) return failure(await githubError(repoRes, `${owner}/${repo}`));
+      const info = (await repoRes.json()) as { stargazers_count: number; full_name: string };
+
+      // Newest first means walking from the last page backwards — GitHub only
+      // sorts stargazers oldest-first, and stops paging at 40,000 of them.
+      const perPage = 100;
+      const maxPage = 400;
+      const lastPage = Math.min(maxPage, Math.max(1, Math.ceil(info.stargazers_count / perPage)));
+      const rows: { login: string; avatar: string; starredAt: string }[] = [];
+      for (let page = lastPage; page >= 1 && rows.length < limit; page--) {
+        const res = await fetch(
+          `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/stargazers?per_page=${perPage}&page=${page}`,
+          { headers },
+        );
+        if (!res.ok) return failure(await githubError(res, `${owner}/${repo}`));
+        const batch = (await res.json()) as { starred_at: string; user: { login: string; avatar_url: string } }[];
+        for (const s of batch.reverse()) {
+          if (rows.length >= limit) break;
+          rows.push({ login: s.user.login, avatar: s.user.avatar_url, starredAt: s.starred_at });
+        }
+      }
+      return text(
+        [
+          `${info.full_name}: ${info.stargazers_count.toLocaleString("en-US")} stars${info.stargazers_count > maxPage * perPage ? " (GitHub lists only the first 40,000; the newest shown are from that range)" : ""}`,
+          "",
+          ...rows.map((r) => `${r.login} · ${r.starredAt.slice(0, 10)} · ${r.avatar}`),
+        ].join("\n"),
+      );
     },
   },
 

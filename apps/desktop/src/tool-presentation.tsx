@@ -1,9 +1,12 @@
 import { lazy, Suspense, useState, type ReactNode } from "react";
 import {
   registerToolPresentation,
+  registerToolPresentationFallback,
   type ToolPartLike,
 } from "@/components/editor/tool-card";
 import { API_URL } from "@/lib/api";
+import { parseMcpToolName } from "@genmotion/shared";
+import { useMcpServers } from "./lib/use-mcp-servers";
 
 const CodeBlock = lazy(() => import("@/components/editor/code-block"));
 
@@ -645,6 +648,20 @@ registerToolPresentation({
     },
   },
 
+  mcp__genmotion__github_stargazers: {
+    labels: { active: "Fetching stargazers", done: "Fetched stargazers" },
+    icon: ListGlyph,
+    subject: (part) => {
+      const owner = str(part, "owner");
+      const repo = str(part, "repo");
+      return owner && repo ? `${owner}/${repo}` : undefined;
+    },
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
   mcp__genmotion__project_overview: {
     labels: { active: "Reading the timeline", done: "Read the timeline" },
     icon: ListGlyph,
@@ -673,4 +690,42 @@ registerToolPresentation({
       return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
     },
   },
+});
+
+const PlugGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
+  </svg>
+);
+
+/**
+ * The mark on a call to a user's MCP server: the server's own icon, looked up
+ * from the same list the Marketplace draws, with the plug for a server that
+ * has since been removed — the transcript outlives the config.
+ */
+function McpServerGlyph({ server, className }: { server: string; className?: string }) {
+  const { servers } = useMcpServers();
+  const iconUrl = servers?.find((s) => s.id === server)?.iconUrl;
+  return iconUrl ? (
+    <img src={iconUrl} alt="" className={`size-3.5 shrink-0 rounded-[3px] object-contain ${className ?? ""}`} />
+  ) : (
+    <PlugGlyph className={className} />
+  );
+}
+
+/**
+ * A tool from one of the user's MCP servers. Nothing here knows what it does,
+ * so the card says who it belongs to and shows what came back — which, for a
+ * server the user chose, is usually what they want to read anyway.
+ */
+registerToolPresentationFallback((name) => {
+  const mcp = parseMcpToolName(name);
+  if (!mcp || mcp.server === "genmotion") return undefined;
+  const tool = mcp.tool.replace(/[_-]+/g, " ");
+  return {
+    labels: { active: `Using ${tool}`, done: `Used ${tool}` },
+    icon: (props) => <McpServerGlyph server={mcp.server} {...props} />,
+    subject: () => mcp.server,
+    body: (part) => <Text value={outputText(part)} />,
+  };
 });
