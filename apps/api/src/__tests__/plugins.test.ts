@@ -128,6 +128,10 @@ describe.skipIf(!dbReady)("chat plugins", () => {
       integration: "elevenlabs",
       ok: true,
       bytes: audio.byteLength,
+      // No `character-cost` header from the stub, so the script's length.
+      units: "Welcome to GenMotion.".length,
+      unit: "characters",
+      costUsdMicros: "Welcome to GenMotion.".length * 300,
     });
   });
 
@@ -151,7 +155,15 @@ describe.skipIf(!dbReady)("chat plugins", () => {
     const [url, init] = spy.mock.calls[0]!;
     expect(String(url)).toContain("/v1/sound-generation?output_format=mp3_44100_128");
     expect(JSON.parse(String(init?.body))).toEqual({ text: "a soft airy whoosh, rising", duration_seconds: 1.5 });
-    expect((await calls(orgId))[0]).toMatchObject({ plugin: "sfx", integration: "elevenlabs", ok: true });
+    // Metered from the request when the provider did not say: 1.5s × 40.
+    expect((await calls(orgId))[0]).toMatchObject({
+      plugin: "sfx",
+      integration: "elevenlabs",
+      ok: true,
+      units: 60,
+      unit: "characters",
+      costUsdMicros: 60 * 300,
+    });
   });
 
   it("logs a provider failure too, with the error", async () => {

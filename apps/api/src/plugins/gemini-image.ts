@@ -33,6 +33,18 @@ interface GeminiResponse {
 export interface GeneratedMedia {
   bytes: Buffer;
   mime: string;
+  /**
+   * What the provider metered the call in, and how many. Every provider
+   * reports it: from the response where the provider says, from the request
+   * where it does not (and then it is an estimate at the provider's stated
+   * rate). The route turns it into a cost and logs both.
+   */
+  usage: Usage;
+}
+
+export interface Usage {
+  units: number;
+  unit: "characters" | "images";
 }
 
 /**
@@ -94,5 +106,5 @@ export async function generateImage(prompt: string): Promise<GeneratedMedia> {
     );
   }
 
-  return { bytes, mime: (image.mimeType ?? "image/png").toLowerCase() };
+  return { bytes, mime: (image.mimeType ?? "image/png").toLowerCase(), usage: { units: 1, unit: "images" } };
 }

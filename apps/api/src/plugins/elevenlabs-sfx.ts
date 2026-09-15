@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { PluginProviderError, type GeneratedMedia } from "./gemini-image";
+import { characterCost } from "./elevenlabs-voice";
 
 /**
  * ElevenLabs sound generation: a description in, a sound effect out.
@@ -61,5 +62,9 @@ export async function generateSfx(text: string, options: SfxOptions = {}): Promi
     );
   }
 
-  return { bytes, mime: "audio/mpeg" };
+  // The rate card: a generation with the length left to the model is 100
+  // characters; a fixed length is 40 a second. Used only when the response
+  // does not say.
+  const estimate = options.durationSeconds !== undefined ? Math.ceil(options.durationSeconds * 40) : 100;
+  return { bytes, mime: "audio/mpeg", usage: { units: characterCost(res, estimate), unit: "characters" } };
 }

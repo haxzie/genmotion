@@ -234,6 +234,21 @@ export const pluginCalls = pgTable(
     bytes: integer("bytes").notNull().default(0),
     /** Round-trip to the provider, in milliseconds. */
     ms: integer("ms").notNull().default(0),
+    /**
+     * What the provider metered the call in — characters for ElevenLabs
+     * (what it calls credits), images for Gemini — and how many. Read off
+     * the response where the provider reports it, estimated from the request
+     * where it does not; 0 on a refused call.
+     */
+    units: integer("units").notNull().default(0),
+    unit: text("unit"),
+    /**
+     * Our cost, in millionths of a dollar, from a price table in the route —
+     * an estimate at list price, kept as an integer so a month's total is a
+     * SUM and nothing else. The point of the column: a per-org cap needs a
+     * number that adds up across providers.
+     */
+    costUsdMicros: integer("cost_usd_micros").notNull().default(0),
     error: text("error"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

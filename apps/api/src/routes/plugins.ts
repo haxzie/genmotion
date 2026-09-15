@@ -8,8 +8,8 @@ import { PAYWALL_STATUS, type ChatPluginId, type IntegrationId } from "@genmotio
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { getEntitlements } from "../entitlements";
 import { pluginPaywall } from "../limits";
-import { generateImage, PluginProviderError, type GeneratedMedia } from "../plugins/gemini-image";
-import { generateVoiceover } from "../plugins/elevenlabs-voice";
+import { generateImage, PluginProviderError, type GeneratedMedia, type Usage } from "../plugins/gemini-image";
+import { generateVoiceover, listVoices, voicePreview } from "../plugins/elevenlabs-voice";
 import { generateSfx, SFX_MAX_SECONDS, SFX_MAX_TEXT, SFX_MIN_SECONDS } from "../plugins/elevenlabs-sfx";
 
 /**
@@ -59,16 +59,44 @@ const imageSchema = z.object({
  * the provider, hence the swallowed error.
  */
 async function log(
-  plugin: ChatPluginId,
+  plugin: ChatPluginId | "voices",
   integration: IntegrationId,
   organizationId: string,
   userId: string,
-  outcome: { ok: boolean; bytes: number; ms: number; error?: string },
+  outcome: { ok: boolean; bytes: number; ms: number; error?: string; usage?: Usage },
 ): Promise<void> {
+  const { usage, ...rest } = outcome;
   await db
     .insert(schema.pluginCalls)
-    .values({ organizationId, userId, plugin, integration, ...outcome })
+    .values({
+      organizationId,
+      userId,
+      plugin,
+      integration,
+      ...rest,
+      units: usage?.units ?? 0,
+      unit: usage?.unit ?? null,
+      costUsdMicros: usage ? costUsdMicros(integration, usage) : 0,
+    })
     .catch(() => undefined);
+}
+
+/**
+ * What a call costs us, at list price, in millionths of a dollar.
+ *
+ * ElevenLabs sells characters by the plan; the Creator tier works out near
+ * $0.30 per thousand once the allowance is spent, and that is the number a
+ * per-org cap should be sized against. Gemini's image model is priced per
+ * image. Estimates, not invoices — but they add up the same way across
+ * providers, which is what makes a single limit possible.
+ */
+const PRICE_USD_MICROS: Record<IntegrationId, Record<Usage["unit"], number>> = {
+  elevenlabs: { characters: 300, images: 0 },
+  gemini: { characters: 0, images: 39_000 },
+};
+
+function costUsdMicros(integration: IntegrationId, usage: Usage): number {
+  return Math.round(usage.units * (PRICE_USD_MICROS[integration]?.[usage.unit] ?? 0));
 }
 
 /** Bytes back, with the content type the caller writes the file under. */
@@ -110,6 +138,7 @@ async function handle(
       ok: true,
       bytes: media.bytes.byteLength,
       ms: Date.now() - started,
+      usage: media.usage,
     });
     return respond(media);
   } catch (err) {
@@ -124,6 +153,45 @@ async function handle(
     return c.json({ error: message }, status as ContentfulStatusCode);
   }
 }
+
+/**
+ * The voices a voiceover can use, for the chat's picker. Not paywalled: a
+ * list of names costs nothing, and hearing what Pro would buy is the point.
+ */
+pluginRoutes.get("/voices", async (c) => {
+  const started = Date.now();
+  try {
+    const { voices, fetched } = await listVoices();
+    // Only a call that reached ElevenLabs is a call worth a row; a cache
+    // hit is ours. Free of charge either way, and logged so "every call we
+    // make" is literally true.
+    if (fetched) {
+      await log("voices", "elevenlabs", c.get("organizationId"), c.get("user").id, {
+        ok: true,
+        bytes: 0,
+        ms: Date.now() - started,
+        usage: { units: 0, unit: "characters" },
+      });
+    }
+    c.header("Cache-Control", "private, max-age=600");
+    return c.json({ voices });
+  } catch (err) {
+    const status = err instanceof PluginProviderError ? err.status : 502;
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, status as ContentfulStatusCode);
+  }
+});
+
+pluginRoutes.get("/voices/:id/preview", async (c) => {
+  try {
+    const media = await voicePreview(c.req.param("id"));
+    return new Response(new Uint8Array(media.bytes), {
+      headers: { "content-type": media.mime, "cache-control": "private, max-age=86400" },
+    });
+  } catch (err) {
+    const status = err instanceof PluginProviderError ? err.status : 502;
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, status as ContentfulStatusCode);
+  }
+});
 
 pluginRoutes.post("/voiceover", zValidator("json", voiceoverSchema), (c) => {
   const { text, voice } = c.req.valid("json");
