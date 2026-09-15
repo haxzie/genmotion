@@ -149,11 +149,11 @@ const money = (amount: number, currency: string) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
 
 /**
- * Payments and their invoices, from the provider by way of our API. Shown
- * only once there is a billing account — a trial has nothing to list — and
- * quietly absent when the list cannot be read, since the portal has it too.
+ * Payments and their invoices, from the provider by way of our API. Always
+ * on the page for an owner or admin — before the first payment it says so,
+ * rather than leaving them to wonder where invoices will be.
  */
-function PaymentsSection() {
+function PaymentsSection({ paid }: { paid: boolean }) {
   const payments = useQuery({
     queryKey: ["billing-payments"],
     queryFn: () => api<{ payments: PaymentRow[] }>("/api/billing/payments"),
@@ -161,7 +161,6 @@ function PaymentsSection() {
     retry: false,
   });
   const rows = payments.data?.payments ?? [];
-  if (payments.isError || (payments.isSuccess && rows.length === 0)) return null;
   return (
     <>
       <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Payments</h2>
@@ -170,6 +169,16 @@ function PaymentsSection() {
           <div className="flex justify-center py-8">
             <Spinner />
           </div>
+        ) : payments.isError ? (
+          <p className="px-5 py-6 text-[0.9rem] text-text-tertiary">
+            Couldn&apos;t load payments just now. They&apos;re also in the billing portal.
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="px-5 py-6 text-[0.9rem] text-text-tertiary">
+            {paid
+              ? "No payments yet. Invoices appear here after each charge, as PDFs."
+              : "No payments yet. Once you upgrade, every charge and its invoice will be listed here."}
+          </p>
         ) : (
           <table className="w-full text-[0.9rem]">
             <thead>
@@ -631,7 +640,7 @@ export default function BillingPage() {
               </>
             )}
 
-            {data.subscription.manageable && <PaymentsSection />}
+            <PaymentsSection paid={data.subscription.paid} />
 
             {actionError && (
               <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-[0.9rem] text-danger">{actionError}</p>
