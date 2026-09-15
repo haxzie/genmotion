@@ -13,6 +13,7 @@ import { openBillingPortal, startCheckout, type PurchasablePlan } from "@/lib/bi
 import { limitsQueryKey } from "@/components/upgrade-modal";
 import { Button, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
+import { useFeedback } from "@/components/feedback-modal";
 import { PLUGIN_ALLOWANCE, type PluginUsage } from "@genmotion/shared";
 
 /** /api/billing/plugin-usage — the month's meters, and who spent them. */
@@ -405,6 +406,7 @@ export default function BillingPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [pluginUsage, setPluginUsage] = useState<PluginUsageResponse | null>(null);
+  const { openFeedback } = useFeedback();
   // "polling" while we wait for the webhook after checkout; "slow" once we've
   // given up waiting but the payment may still be landing.
   const [activation, setActivation] = useState<"idle" | "polling" | "slow">("idle");
@@ -493,10 +495,17 @@ export default function BillingPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-8 pb-20 pt-10">
-      <h1 className="text-2xl font-medium">Billing</h1>
-      <p className="mb-8 text-[0.95rem] text-text-secondary">
-        Your plan and AI token usage.
-      </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-medium">Billing</h1>
+          <p className="text-[0.95rem] text-text-secondary">Your plan and generation usage.</p>
+        </div>
+        {/* A question about a charge, an invoice, or a plan that doesn't fit —
+            the same form as Help & feedback, on the billing topic. */}
+        <Button variant="secondary" onClick={() => openFeedback("billing")} className="h-9 shrink-0">
+          Contact us
+        </Button>
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
