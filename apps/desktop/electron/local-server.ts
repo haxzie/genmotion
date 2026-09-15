@@ -53,6 +53,15 @@ const HANDLED = Symbol("handled");
  */
 let serverUrl: string | null = null;
 
+/** Organization endpoints the members page may reach — see the `org` route. */
+const ORG_ACTIONS = new Set([
+  "get-full-organization",
+  "invite-member",
+  "remove-member",
+  "cancel-invitation",
+  "update-member-role",
+]);
+
 export function localServerUrl(): string {
   if (!serverUrl) throw new Error("The local server is not running");
   return serverUrl;
@@ -250,6 +259,30 @@ export async function startLocalServer(
     }
     if (rest[0] === "mcp-favicon" && rest[1]) {
       await mcpCatalogProxy(`/api/mcp/favicon/${encodeURIComponent(rest[1])}`, req, res, 15_000);
+      return;
+    }
+    // The team: the auth server's organization endpoints, called with the
+    // desktop's bearer token. Only the handful Settings › Members needs;
+    // an allowlist rather than a wildcard so this stays a members page and
+    // not a tunnel to every auth route.
+    if (rest[0] === "org" && rest[1] && ORG_ACTIONS.has(rest[1])) {
+      const { desktopAuth } = await import("./auth");
+      const action = rest[1];
+      if (action === "get-full-organization") {
+        const query = new URL(req.url ?? "/", "http://localhost").search;
+        const result = await desktopAuth.request<unknown>(`/api/auth/organization/${action}${query}`);
+        send(res, result.status, result.body);
+        return;
+      }
+      if (method !== "POST") {
+        send(res, 405, { error: "POST only" });
+        return;
+      }
+      const result = await desktopAuth.request<unknown>(`/api/auth/organization/${action}`, {
+        method: "POST",
+        json: await readJson<unknown>(req),
+      });
+      send(res, result.status, result.body);
       return;
     }
     // The voices a voiceover can use, and a few seconds of each — for the

@@ -77,3 +77,56 @@ export async function checkQuota(
     quota: { meter, used, limit, resetsAt },
   };
 }
+
+/** One member's share of the month, for the dashboard's breakdown. */
+export interface MemberUsage {
+  userId: string;
+  name: string;
+  email: string;
+  characters: number;
+  sfx: number;
+  images: number;
+}
+
+/**
+ * The month split by who spent it. Members with no calls are listed at zero
+ * so the table is the team, not just the busy half of it.
+ */
+export async function pluginUsageByMember(organizationId: string): Promise<MemberUsage[]> {
+  const { start } = periodOf();
+  const [members, rows] = await Promise.all([
+    db
+      .select({ userId: schema.user.id, name: schema.user.name, email: schema.user.email })
+      .from(schema.member)
+      .innerJoin(schema.user, eq(schema.user.id, schema.member.userId))
+      .where(eq(schema.member.organizationId, organizationId)),
+    db
+      .select({
+        userId: schema.pluginCalls.userId,
+        plugin: schema.pluginCalls.plugin,
+        calls: sql<number>`count(*)::int`,
+        units: sql<number>`coalesce(sum(${schema.pluginCalls.units}), 0)::int`,
+      })
+      .from(schema.pluginCalls)
+      .where(
+        and(
+          eq(schema.pluginCalls.organizationId, organizationId),
+          eq(schema.pluginCalls.ok, true),
+          gte(schema.pluginCalls.createdAt, start),
+        ),
+      )
+      .groupBy(schema.pluginCalls.userId, schema.pluginCalls.plugin),
+  ]);
+  const byUser = new Map<string, MemberUsage>(
+    members.map((m) => [m.userId, { userId: m.userId, name: m.name, email: m.email, characters: 0, sfx: 0, images: 0 }]),
+  );
+  for (const r of rows) {
+    // A user who has since left still spent the org's allowance; keep the row.
+    const entry = byUser.get(r.userId) ?? { userId: r.userId, name: "Former member", email: "", characters: 0, sfx: 0, images: 0 };
+    if (r.plugin === "voiceover") entry.characters += r.units;
+    else if (r.plugin === "sfx") entry.sfx += r.calls;
+    else if (r.plugin === "image") entry.images += r.calls;
+    byUser.set(r.userId, entry);
+  }
+  return [...byUser.values()].sort((a, b) => b.characters + b.sfx * 100 + b.images * 100 - (a.characters + a.sfx * 100 + a.images * 100));
+}

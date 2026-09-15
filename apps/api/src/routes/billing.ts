@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, gte, isNotNull, sql, db, schema } from "@genmotion/db";
@@ -6,7 +6,7 @@ import { CHAT_MODEL_ID } from "@genmotion/ai";
 import { PLANS, TEAM_SEATS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { trialState } from "../limits";
-import { pluginUsage } from "../plugin-usage";
+import { pluginUsage, pluginUsageByMember } from "../plugin-usage";
 import {
   countSeats,
   getEntitlements,
@@ -105,6 +105,57 @@ billingRoutes.get("/limits", async (c) => {
     subscription: subscriptionPayload(ent),
   });
 });
+
+/**
+ * GET /plugin-usage — this month's meters for the org, and who spent them.
+ * For the web dashboard; the desktop's Settings reads the totals off /limits.
+ */
+billingRoutes.get("/plugin-usage", async (c) => {
+  const organizationId = c.get("organizationId");
+  const ent = await getEntitlements(organizationId);
+  const [totals, members] = await Promise.all([
+    pluginUsage(organizationId, ent.seats),
+    pluginUsageByMember(organizationId),
+  ]);
+  return c.json({ ...totals, members });
+});
+
+/**
+ * POST /cancel — stop the subscription at the end of the paid period; POST
+ * /resume — take that back before it lands. Both through Dodo, which then
+ * tells us by webhook; the row here is updated eagerly so the page that
+ * asked sees the answer without waiting for it.
+ */
+async function setCancelling(c: Context<AuthEnv>, cancel: boolean): Promise<Response> {
+  const user = c.get("user");
+  const organizationId = c.get("organizationId");
+  if (!dodoEnabled) return c.json({ error: "Billing isn't configured." }, 503);
+  if (!(await isBillingAdmin(organizationId, user.id))) {
+    return c.json({ error: "Only an owner or admin can manage billing." }, 403);
+  }
+  const row = await getSubscriptionRow(organizationId);
+  if (!row?.dodoSubscriptionId || row.status !== "active") {
+    return c.json({ error: "There is no active subscription to change." }, 409);
+  }
+  if (row.cancelAtPeriodEnd === cancel) return c.json({ ok: true, cancelAtPeriodEnd: cancel });
+  try {
+    await dodoClient().subscriptions.update(row.dodoSubscriptionId, {
+      cancel_at_next_billing_date: cancel,
+      ...(cancel ? { cancel_reason: "cancelled_by_customer" } : {}),
+    });
+  } catch (err) {
+    console.error("[billing] cancel/resume failed:", err);
+    return c.json({ error: cancel ? "Couldn't schedule the cancellation." : "Couldn't resume the subscription." }, 502);
+  }
+  await db
+    .update(schema.organizationSubscriptions)
+    .set({ cancelAtPeriodEnd: cancel, updatedAt: new Date() })
+    .where(eq(schema.organizationSubscriptions.organizationId, organizationId));
+  return c.json({ ok: true, cancelAtPeriodEnd: cancel });
+}
+
+billingRoutes.post("/cancel", (c) => setCancelling(c, true));
+billingRoutes.post("/resume", (c) => setCancelling(c, false));
 
 const checkoutSchema = z.object({
   plan: z.literal("pro"),

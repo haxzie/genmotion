@@ -209,6 +209,20 @@ describe.skipIf(!dbReady)("chat plugins", () => {
     void orgId;
   });
 
+  it("splits the month by member for the dashboard", async () => {
+    const { session, orgId, userId } = await paying();
+    stubFetch(async () => new Response(new Uint8Array(Buffer.from("ID3")), { status: 200, headers: { "content-type": "audio/mpeg" } }));
+    await request(SFX, { as: session, json: { text: "a click" } });
+    await request(VOICEOVER, { as: session, json: { text: "Ten chars." } });
+
+    const { status, body } = await requestJson("/api/billing/plugin-usage", { as: session });
+    expect(status).toBe(200);
+    const usage = body as { sfx: { used: number }; members: { userId: string; characters: number; sfx: number; images: number }[] };
+    expect(usage.sfx.used).toBe(1);
+    expect(usage.members).toEqual([{ userId, name: expect.any(String), email: expect.any(String), characters: 10, sfx: 1, images: 0 }]);
+    void orgId;
+  });
+
   it("logs a provider failure too, with the error", async () => {
     stubFetch(async () => new Response("upstream is down", { status: 500 }));
     const { session, orgId } = await paying();

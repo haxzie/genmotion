@@ -11,6 +11,7 @@ import {
 } from "./general";
 import { AccountSection } from "./account";
 import { BillingSection } from "./billing";
+import { MembersSection } from "./members";
 
 type IconProps = { className?: string };
 
@@ -66,10 +67,23 @@ function BillingIcon({ className }: IconProps) {
   );
 }
 
+// Solar "Users Group Rounded" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
+function MembersIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <circle cx="9" cy="7" r="4" />
+      <path opacity="0.5" d="M15 21H3c0-4 2.7-6.5 6-6.5s6 2.5 6 6.5Z" />
+      <path opacity="0.5" d="M15.5 3.4a3.5 3.5 0 0 1 0 7.2 5.5 5.5 0 0 0 0-7.2Z" />
+      <path d="M21 21h-4.2c0-2.6-.9-4.7-2.4-6.2 3.4.2 6.6 2.1 6.6 6.2Z" />
+    </svg>
+  );
+}
+
 const ICONS: Record<SettingsSection, (props: IconProps) => React.ReactElement> = {
   general: GeneralIcon,
   agent: AgentIcon,
   billing: BillingIcon,
+  members: MembersIcon,
   account: AccountIcon,
 };
 
@@ -141,6 +155,8 @@ export function Settings({
               <AgentSection />
             ) : section === "billing" ? (
               <BillingSection />
+            ) : section === "members" ? (
+              <MembersSection />
             ) : (
               <AccountSection user={user} organization={organization} />
             )}

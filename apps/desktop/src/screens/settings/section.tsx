@@ -4,18 +4,26 @@ import { cx } from "@/components/ui";
 export function Section({
   title,
   description,
+  action,
   children,
 }: {
   title: string;
   description?: string;
+  /** A control for the header's right — the section's one primary action. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-md border border-border bg-surface-raised p-5">
-      <h2 className="text-[1.05rem] font-medium text-text-primary">{title}</h2>
-      {description && (
-        <p className="mt-1 text-[0.857rem] leading-snug text-text-tertiary">{description}</p>
-      )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-[1.05rem] font-medium text-text-primary">{title}</h2>
+          {description && (
+            <p className="mt-1 text-[0.857rem] leading-snug text-text-tertiary">{description}</p>
+          )}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
       <div className="mt-4">{children}</div>
     </section>
   );

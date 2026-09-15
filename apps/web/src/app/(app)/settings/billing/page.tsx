@@ -13,6 +13,96 @@ import { track } from "@/lib/analytics";
 import { openBillingPortal, startCheckout } from "@/lib/billing";
 import { limitsQueryKey } from "@/components/upgrade-modal";
 import { Spinner, cx } from "@/components/ui";
+import { PLUGIN_ALLOWANCE, type PluginUsage } from "@genmotion/shared";
+
+/** /api/billing/plugin-usage — the month's meters, and who spent them. */
+interface PluginUsageResponse extends PluginUsage {
+  members: {
+    userId: string;
+    name: string;
+    email: string;
+    characters: number;
+    sfx: number;
+    images: number;
+  }[];
+}
+
+const METERS: { id: "characters" | "sfx" | "images"; label: string; format: (n: number) => string }[] = [
+  { id: "characters", label: "Voiceover", format: (n) => `${n.toLocaleString("en-US")} chars` },
+  { id: "sfx", label: "Sound effects", format: (n) => n.toLocaleString("en-US") },
+  { id: "images", label: "Images", format: (n) => n.toLocaleString("en-US") },
+];
+
+function Meter({ label, format, used, limit }: { label: string; format: (n: number) => string; used: number; limit: number }) {
+  const ratio = limit > 0 ? Math.min(1, used / limit) : 0;
+  const spent = used >= limit;
+  const nearly = !spent && ratio >= 0.8;
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <span className="text-[0.9rem] text-text-primary">{label}</span>
+        <span className={cx("text-[0.857rem] tabular-nums", spent ? "text-danger" : nearly ? "text-warning" : "text-text-secondary")}>
+          {format(used)} <span className="text-text-tertiary">/ {format(limit)}</span>
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-hover" role="progressbar" aria-valuemin={0} aria-valuemax={limit} aria-valuenow={used} aria-label={label}>
+        <div className={cx("h-full rounded-full", spent ? "bg-danger" : nearly ? "bg-warning" : "bg-accent")} style={{ width: `${ratio * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The generation meters — what the chat's voiceover, sound-effect and image
+ * tools have used this month against the plan's allowance — and the same
+ * split by member, so a team can see where it went.
+ */
+function PluginUsageSection({ usage, seats }: { usage: PluginUsageResponse; seats: number }) {
+  const resets = new Date(usage.period.end).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+  const showMembers = usage.members.length > 1;
+  return (
+    <>
+      <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Generation this month</h2>
+      <div className="rounded-xl border border-border bg-surface-raised p-5">
+        <p className="mb-4 text-[0.857rem] text-text-tertiary">
+          Resets on {resets}. Each seat adds {PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover,{" "}
+          {PLUGIN_ALLOWANCE.sfx} sound effects and {PLUGIN_ALLOWANCE.images} images, shared across the team
+          {seats > 1 ? ` (${seats} seats)` : ""}.
+        </p>
+        <div className="flex flex-col gap-4">
+          {METERS.map((m) => (
+            <Meter key={m.id} label={m.label} format={m.format} used={usage[m.id].used} limit={usage[m.id].limit} />
+          ))}
+        </div>
+        {showMembers && (
+          <table className="mt-6 w-full text-[0.857rem]">
+            <thead>
+              <tr className="text-left text-text-tertiary">
+                <th className="pb-2 font-normal">Member</th>
+                <th className="pb-2 text-right font-normal">Voiceover</th>
+                <th className="pb-2 text-right font-normal">Sound effects</th>
+                <th className="pb-2 text-right font-normal">Images</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {usage.members.map((m) => (
+                <tr key={m.userId}>
+                  <td className="py-2 pr-3">
+                    <span className="block truncate text-text-primary">{m.name || m.email}</span>
+                    {m.name && m.email && <span className="block truncate text-[0.786rem] text-text-tertiary">{m.email}</span>}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.characters.toLocaleString("en-US")}</td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.sfx}</td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.images}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+}
 
 interface UsageTotals {
   inputTokens: number;
@@ -304,6 +394,8 @@ export default function BillingPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState<"pro" | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [pluginUsage, setPluginUsage] = useState<PluginUsageResponse | null>(null);
   // "polling" while we wait for the webhook after checkout; "slow" once we've
   // given up waiting but the payment may still be landing.
   const [activation, setActivation] = useState<"idle" | "polling" | "slow">("idle");
@@ -326,7 +418,25 @@ export default function BillingPage() {
 
   useEffect(() => {
     load();
+    // The meters are their own read: a failure here must not blank the plan.
+    api<PluginUsageResponse>("/api/billing/plugin-usage").then(setPluginUsage).catch(() => null);
   }, [load]);
+
+  /** Schedule the cancellation, or take it back — then re-read the plan. */
+  async function setCancelling(cancel: boolean) {
+    if (cancel && !confirm("Cancel your subscription at the end of the current period? You keep Pro until then.")) return;
+    setCancelBusy(true);
+    setError(null);
+    try {
+      await api(`/api/billing/${cancel ? "cancel" : "resume"}`, { method: "POST" });
+      await load();
+      queryClient.invalidateQueries({ queryKey: limitsQueryKey });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't update the subscription.");
+    } finally {
+      setCancelBusy(false);
+    }
+  }
 
   /**
    * Returning from checkout, the subscription webhook usually lands within a
@@ -487,9 +597,32 @@ export default function BillingPage() {
                   >
                     {portalBusy ? <Spinner /> : "Manage billing"}
                   </button>
+                  {data.subscription.status === "active" && (
+                    <button
+                      type="button"
+                      disabled={cancelBusy}
+                      onClick={() => void setCancelling(!data.subscription.cancelAtPeriodEnd)}
+                      className={cx(
+                        "mt-2 inline-flex h-9 w-full cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
+                        data.subscription.cancelAtPeriodEnd
+                          ? "border-border bg-surface text-text-primary hover:bg-surface-hover"
+                          : "border-transparent bg-transparent text-danger hover:bg-danger/10",
+                      )}
+                    >
+                      {cancelBusy ? (
+                        <Spinner />
+                      ) : data.subscription.cancelAtPeriodEnd ? (
+                        "Resume subscription"
+                      ) : (
+                        "Cancel subscription"
+                      )}
+                    </button>
+                  )}
                 </div>
               ) : null}
             </div>
+
+            {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
 
             {/* One card per purchasable plan the org isn't already on, so each
                 plan states its own price and features instead of sharing a box. */}
