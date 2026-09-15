@@ -1,4 +1,5 @@
-import type { ChatPluginId } from "@genmotion/shared";
+import { isMcpChipId, type ChatPlugin } from "@genmotion/shared";
+import { cx } from "@/components/ui";
 
 type Props = { className?: string };
 
@@ -27,10 +28,38 @@ function PaperclipGlyph({ className }: Props) {
   );
 }
 
-/** Glyph for a chat plugin — shared by the `+` menu, the composer chip, and the
- *  pill on a sent message, so one plugin always looks like itself. */
-export function PluginIcon({ id, className }: { id: ChatPluginId; className?: string }) {
+function PlugGlyph({ className }: Props) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
+    </svg>
+  );
+}
+
+/**
+ * Glyph for a chat plugin — shared by the `+` menu, the composer chip, and the
+ * pill on a sent message, so one plugin always looks like itself.
+ *
+ * An MCP server brings its own mark from the marketplace; a custom one, or a
+ * message saved before the icon was known, gets a plug.
+ */
+export function PluginIcon({
+  id,
+  iconUrl,
+  className,
+}: {
+  id: ChatPlugin["id"];
+  iconUrl?: string;
+  className?: string;
+}) {
   if (id === "voiceover") return <MicGlyph className={className} />;
   if (id === "image") return <ImageGlyph className={className} />;
+  if (isMcpChipId(id)) {
+    return iconUrl ? (
+      <img src={iconUrl} alt="" className={cx("rounded-[3px] object-contain", className)} />
+    ) : (
+      <PlugGlyph className={className} />
+    );
+  }
   return <PaperclipGlyph className={className} />;
 }

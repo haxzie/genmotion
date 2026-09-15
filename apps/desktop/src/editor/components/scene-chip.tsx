@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type { AssetData, ChatPlugin, ChatPluginId } from "@genmotion/shared";
+import type { AssetData, ChatPlugin } from "@genmotion/shared";
 import { useEditorStore } from "@/stores/editor-store";
 import { cx } from "@/components/ui";
 import { laneTheme } from "./audio-lane-theme";
@@ -40,7 +40,7 @@ export interface MessageContextData {
   audioClips?: { name: string; track?: number }[];
   elements?: { label: string; sceneName: string; timecode: string }[];
   /** Chat plugins the message was sent with. Absent on older messages. */
-  plugins?: { id: ChatPluginId; label: string }[];
+  plugins?: { id: ChatPlugin["id"]; label: string; iconUrl?: string }[];
 }
 
 /**
@@ -107,7 +107,7 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
       ))}
       {plugins.map((p, i) => (
         <span key={`p${i}`} className={cx(pill, PLUGIN_PILL)}>
-          <PluginIcon id={p.id} className="size-3 shrink-0" />
+          <PluginIcon id={p.id} iconUrl={p.iconUrl} className="size-3 shrink-0" />
           <span className="max-w-[140px] truncate">{p.label}</span>
         </span>
       ))}
@@ -282,7 +282,7 @@ export function PluginChips({
   onRemove,
 }: {
   plugins: ChatPlugin[];
-  onRemove: (id: ChatPluginId) => void;
+  onRemove: (id: ChatPlugin["id"]) => void;
 }) {
   return (
     <div className="flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-1.5">
@@ -296,7 +296,7 @@ export function PluginChips({
               PLUGIN_PILL,
             )}
           >
-            <PluginIcon id={plugin.id} className="size-3.5 shrink-0" />
+            <PluginIcon id={plugin.id} iconUrl={plugin.iconUrl} className="size-3.5 shrink-0" />
             {plugin.label}
             <button
               type="button"

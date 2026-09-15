@@ -6,13 +6,14 @@ import { useTabsStore } from "../tabs/tabs-store";
 import { Home } from "./Home";
 import { Templates } from "./Templates";
 import { Exports } from "./Exports";
-import { Settings } from "./Settings";
+import { Settings } from "./settings";
+import { Marketplace } from "./marketplace";
 import type { AuthOrganization, AuthUser, DesktopProject } from "../../electron/shared";
 
 /**
  * Everything that is not the editor — the Home tab.
  *
- * The three destinations share one frame — a nav rail and an inset panel — so
+ * The destinations share one frame — a nav rail and an inset panel — so
  * moving between them changes only what is inside the panel. The frameless
  * window's drag strip is the tab strip above, which every screen sits under.
  */
@@ -64,6 +65,8 @@ export function HomeShell({
             />
           ) : tab === "templates" ? (
             <Templates onRemixed={onAdopt} />
+          ) : tab === "marketplace" ? (
+            <Marketplace />
           ) : tab === "exports" ? (
             <Exports onOpenProject={onOpenProject} />
           ) : (

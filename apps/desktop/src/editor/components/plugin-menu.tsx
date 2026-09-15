@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CHAT_PLUGINS, isPremiumPlugin, type ChatPlugin } from "@genmotion/shared";
+import { CHAT_PLUGINS, isPremiumPlugin, mcpServerChip, type ChatPlugin } from "@genmotion/shared";
 import { cx } from "@/components/ui";
 import { PluginIcon } from "./plugin-icon";
 import { useUpgrade } from "@/components/upgrade-modal";
+import { connectedServers, useMcpServers } from "../../lib/use-mcp-servers";
+import { HOME_TAB, useTabsStore } from "../../tabs/tabs-store";
+import { ServerIcon } from "../../screens/marketplace/server-icon";
 
 /**
  * What the `+` offers.
@@ -16,6 +19,12 @@ import { useUpgrade } from "@/components/upgrade-modal";
  *
  * Availability is read from the plan the upgrade provider already polls, so
  * this adds no request of its own.
+ *
+ * Below the plugins: the MCP servers this machine has connected. Picking one
+ * is a chip too — a steer toward that server's tools, not a bypass of the
+ * agent's own judgement. With none connected, the row points at the
+ * Marketplace rather than vanishing, so the feature is discoverable from
+ * the place it is used.
  */
 
 function FolderIcon({ className }: { className?: string }) {
@@ -59,6 +68,16 @@ export function PluginMenu({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { subscription, openUpgrade } = useUpgrade();
+  const { servers } = useMcpServers();
+  const connected = connectedServers(servers);
+  const activate = useTabsStore((s) => s.activate);
+  const setHomeView = useTabsStore((s) => s.setHomeView);
+
+  function goToMarketplace() {
+    setOpen(false);
+    setHomeView("marketplace");
+    activate(HOME_TAB);
+  }
 
   // Paid, specifically — not `entitled`, which a trial also satisfies. Chat
   // plugins spend provider credit, so they are the one thing the free week
@@ -159,6 +178,55 @@ export function PluginMenu({
               </button>
             );
           })}
+
+          <p className="border-t border-border px-3 pb-1 pt-2.5 text-[0.72rem] uppercase tracking-wider text-text-tertiary">
+            Connected servers
+          </p>
+          {connected.length === 0 ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={goToMarketplace}
+              className="flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover"
+            >
+              <PluginIcon id="mcp:none" className="mt-0.5 size-4 shrink-0 text-text-tertiary" />
+              <span className="min-w-0 flex-1">
+                <span className="truncate text-[0.929rem] text-text-primary">Connect an MCP server</span>
+                <span className="mt-0.5 block text-[0.786rem] leading-snug text-text-tertiary">
+                  Figma, Notion, Linear and more, from the Marketplace.
+                </span>
+              </span>
+            </button>
+          ) : (
+            connected.map((server) => {
+              const chip = mcpServerChip(server);
+              const attached = disabledIds.includes(chip.id);
+              return (
+                <button
+                  key={server.id}
+                  type="button"
+                  role="menuitem"
+                  disabled={attached}
+                  onClick={() => {
+                    setOpen(false);
+                    onPick(chip);
+                  }}
+                  className={cx(
+                    "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors",
+                    attached ? "cursor-default opacity-45" : "hover:bg-surface-hover",
+                  )}
+                >
+                  <ServerIcon name={server.name} iconUrl={server.iconUrl} size="sm" className="mt-0.5" />
+                  <span className="min-w-0 flex-1">
+                    <span className="truncate text-[0.929rem] text-text-primary">{server.name}</span>
+                    <span className="mt-0.5 block text-[0.786rem] leading-snug text-text-tertiary">
+                      {attached ? "Already added to this message" : chip.hint}
+                    </span>
+                  </span>
+                </button>
+              );
+            })
+          )}
 
           {onShareFolder && (
             <button

@@ -1158,7 +1158,7 @@ function ChatPanelInner({
         sceneName: e.sceneName,
         timecode: e.timecode,
       })),
-      plugins: plugins.map((p) => ({ id: p.id, label: p.label })),
+      plugins: plugins.map((p) => ({ id: p.id, label: p.label, ...(p.iconUrl ? { iconUrl: p.iconUrl } : {}) })),
     };
     // The note prepended to the message (model input); pills (above) are display.
     const note = buildContextNote(

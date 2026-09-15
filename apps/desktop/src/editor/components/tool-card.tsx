@@ -70,6 +70,27 @@ export function registerToolPresentation(
   Object.assign(REGISTERED, entries);
 }
 
+type PresentationFallback = (toolName: string) => ToolPresentation | undefined;
+const FALLBACKS: PresentationFallback[] = [];
+
+/**
+ * For tools nobody could list in advance — a user's MCP server brings its own,
+ * named `mcp__<server>__<tool>`. A fallback derives a presentation from the
+ * name; the first that answers wins.
+ */
+export function registerToolPresentationFallback(fallback: PresentationFallback): void {
+  FALLBACKS.push(fallback);
+}
+
+function presentationFor(toolName: string): ToolPresentation | undefined {
+  if (REGISTERED[toolName]) return REGISTERED[toolName];
+  for (const fallback of FALLBACKS) {
+    const found = fallback(toolName);
+    if (found) return found;
+  }
+  return undefined;
+}
+
 const RESEARCH_TOOLS = new Set([
   "analyzeWebsiteBranding",
   "readWebsite",
@@ -768,7 +789,7 @@ export function ToolCard({
 }) {
   const [open, setOpen] = useState(false);
   const toolName = parts[0]!.type.replace(/^tool-/, "");
-  const registered = REGISTERED[toolName];
+  const registered = presentationFor(toolName);
   const labels =
     registered?.labels ?? TOOL_LABELS[toolName] ?? { active: toolName, done: toolName };
   const ToolIcon = registered?.icon ?? TOOL_ICONS[toolName] ?? DotIcon;

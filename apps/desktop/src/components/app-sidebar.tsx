@@ -4,7 +4,7 @@ import { AccountMenu } from "./account-menu";
 import { hasUpdate } from "../lib/use-update";
 import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
 
-export type HomeTab = "create" | "templates" | "exports" | "settings";
+export type HomeTab = "create" | "templates" | "marketplace" | "exports" | "settings";
 
 type IconProps = { className?: string };
 
@@ -31,6 +31,26 @@ function NotesIcon({ className }: IconProps) {
       <path
         d="M16.415 17.975a4 4 0 0 1-1.068 1.677c-.731.685-1.859.987-4.114 1.591s-3.383.907-4.358.679a4 4 0 0 1-2.011-1.161c-.685-.731-.988-1.859-1.592-4.114l-.517-1.932c-.605-2.255-.907-3.383-.68-4.358a4 4 0 0 1 1.162-2.011c.731-.685 1.859-.987 4.114-1.592q.638-.172 1.165-.309l-.244.906l-.517 1.932c-.605 2.255-.907 3.382-.68 4.358a4 4 0 0 0 1.162 2.011c.731.685 1.859.987 4.114 1.592c2.032.544 3.149.843 4.064.73"
         opacity=".5"
+      />
+    </svg>
+  );
+}
+
+// Solar "Shop" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
+function ShopIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M14.5 21.991V18.5c0-.935 0-1.402-.201-1.75a1.5 1.5 0 0 0-.549-.549C13.402 16 12.935 16 12 16s-1.402 0-1.75.201a1.5 1.5 0 0 0-.549.549c-.201.348-.201.815-.201 1.75v3.491z" />
+      <path
+        fillRule="evenodd"
+        d="M5.732 12c-.89 0-1.679-.376-2.232-.967V14c0 3.771 0 5.657 1.172 6.828c.943.944 2.348 1.127 4.828 1.163h5c2.48-.036 3.885-.22 4.828-1.163C20.5 19.657 20.5 17.771 20.5 14v-2.966a3.06 3.06 0 0 1-5.275-1.789l-.073-.728a3.167 3.167 0 1 1-6.307.038l-.069.69A3.06 3.06 0 0 1 5.732 12m8.768 6.5v3.491h-5V18.5c0-.935 0-1.402.201-1.75a1.5 1.5 0 0 1 .549-.549C10.598 16 11.065 16 12 16s1.402 0 1.75.201a1.5 1.5 0 0 1 .549.549c.201.348.201.815.201 1.75"
+        clipRule="evenodd"
+        opacity=".5"
+      />
+      <path d="M9.5 2h5l.652 6.517a3.167 3.167 0 1 1-6.304 0z" />
+      <path
+        d="M3.33 5.351c.178-.89.267-1.335.448-1.696a3 3 0 0 1 1.889-1.548C6.057 2 6.51 2 7.418 2h2.083l-.725 7.245a3.06 3.06 0 1 1-6.044-.904zm17.34 0c-.178-.89-.267-1.335-.448-1.696a3 3 0 0 0-1.888-1.548C17.944 2 17.49 2 16.582 2H14.5l.725 7.245a3.06 3.06 0 1 0 6.043-.904z"
+        opacity=".7"
       />
     </svg>
   );
@@ -67,6 +87,7 @@ function DownloadIcon({ className }: IconProps) {
 const NAV: readonly { id: HomeTab; label: string; Icon: (props: IconProps) => React.ReactElement }[] = [
   { id: "create", label: "Create", Icon: ClapperboardIcon },
   { id: "templates", label: "Templates", Icon: NotesIcon },
+  { id: "marketplace", label: "Marketplace", Icon: ShopIcon },
   { id: "exports", label: "Exports", Icon: DownloadIcon },
   { id: "settings", label: "Settings", Icon: SettingsIcon },
 ];
