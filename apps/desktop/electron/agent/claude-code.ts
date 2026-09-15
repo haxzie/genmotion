@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parseMcpToolName } from "@genmotion/shared";
 import type { ProjectSession } from "../project-session";
 import { agentEnv, resolveExecutable } from "./detect";
 import { loadAgentSdk, type AgentSdkModule } from "./load-sdk";
@@ -16,6 +17,7 @@ import { isReadable, listReadRoots } from "./read-roots";
 import { getLaunchDir } from "../cli";
 import { pluginDir } from "../hyperframes/vendor";
 import { activeModel } from "./registry";
+import { mcpManager } from "../mcp/manager";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
 /** A human line for the status pill while a tool runs. */
@@ -52,8 +54,10 @@ function describeTool(name: string, input: unknown): string {
       return short ? `Saving ${short}` : "Saving an asset";
     case "AskUserQuestion":
       return "Waiting for your answer";
-    default:
-      return name;
+    default: {
+      const mcp = parseMcpToolName(name);
+      return mcp ? `${mcp.tool} · ${mcp.server}` : name;
+    }
   }
 }
 
@@ -150,6 +154,9 @@ async function turnOptions(
   // Null when the user has not chosen one, which leaves the CLI on whatever it
   // considers default — the same thing they would get in a terminal.
   const model = await activeModel("claude-code").catch(() => null);
+  // The user's MCP servers, as of the last probe. Never fatal: a server that
+  // cannot be reached is left out and its row in the marketplace says why.
+  const external = await mcpManager.harnessConfigs().catch(() => ({ claude: {} }));
   return {
     cwd: projectDir,
     // Use the CLI the user signed in with, not the SDK's bundled copy —
@@ -176,7 +183,9 @@ async function turnOptions(
     // the pack the agent reads is the one this build was tested with, not
     // whatever the user has under ~/.claude/skills.
     ...(session.engine === "hyperframes" ? { plugins: [{ type: "local" as const, path: pluginDir() }] } : {}),
-    mcpServers: { genmotion: createGenmotionTools(sdk, session) },
+    // Ours first, so a user's server named the same cannot shadow it — the
+    // store reserves the name, this is the belt to that suspender.
+    mcpServers: { ...external.claude, genmotion: createGenmotionTools(sdk, session) },
     includePartialMessages: true,
     canUseTool: async (
       toolName: string,
@@ -195,6 +204,16 @@ async function turnOptions(
           behavior: "allow" as const,
           updatedInput: answers ? { ...input, answers } : input,
         };
+      }
+
+      // A tool from a server the user connected in the Marketplace. Its
+      // inputs mean whatever that server says they mean — a `path` on a
+      // filesystem server is the folder the user pointed it at, not a write
+      // this harness is making — so the containment check below does not
+      // apply. Our own `genmotion` tools carry no paths to check either.
+      const external = parseMcpToolName(toolName);
+      if (external && external.server !== "genmotion") {
+        return { behavior: "allow" as const, updatedInput: input };
       }
 
       // Bash has no `file_path`/`path`/`file` input to check — a shell command
@@ -255,6 +274,21 @@ export function warmClaudeCode(session: ProjectSession): void {
       warm = null;
     }
   })();
+}
+
+/**
+ * Re-spawn the warm process, if there is one, so it reads today's options.
+ *
+ * For a change that is not about any one project — an MCP server connected
+ * or removed — but that a process spawned earlier cannot see. No warm
+ * process means nothing to do: the next turn spawns cold with fresh options.
+ */
+export function refreshWarmClaudeCode(resolve: (dir: string) => ProjectSession | null): void {
+  const held = warm;
+  if (!held) return;
+  const session = resolve(held.dir);
+  if (session) warmClaudeCode(session);
+  else void disposeWarmClaudeCode();
 }
 
 /** Release a warm subprocess nobody used — closing a project must not leak one. */

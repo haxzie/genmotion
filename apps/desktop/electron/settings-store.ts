@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { app } from "electron";
 import type { StoredTabs } from "./shared";
+import type { McpServerConfig } from "./mcp/store";
 
 /**
  * `<userData>/settings.json`, with one writer.
@@ -20,6 +21,8 @@ export interface Settings {
   defaults?: { width?: number; height?: number; fps?: number; engine?: string };
   /** The tabs open when the app last quit, so a launch picks up where it left off. */
   openTabs?: StoredTabs;
+  /** MCP servers the chat agent may use. Secrets live elsewhere — see `mcp/store.ts`. */
+  mcpServers?: McpServerConfig[];
 }
 
 function settingsFile(): string {

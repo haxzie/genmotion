@@ -6,6 +6,7 @@ import { MCP_TOKEN, MCP_TOKEN_ENV } from "./mcp-http";
 import { buildCodexPreamble } from "./prompt";
 import { listReadRoots } from "./read-roots";
 import { activeModel } from "./registry";
+import { codexServerId, mcpManager } from "../mcp/manager";
 import { getLaunchDir } from "../cli";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
@@ -114,7 +115,7 @@ function toolNameFor(item: CodexItem): string | null {
       // Reuse the Claude-side names so one presentation serves both harnesses.
       return item.server === "genmotion"
         ? `mcp__genmotion__${item.tool ?? "tool"}`
-        : `${item.server ?? "mcp"}__${item.tool ?? "tool"}`;
+        : `mcp__${codexServerId(item.server ?? "mcp")}__${item.tool ?? "tool"}`;
     default:
       return null;
   }
@@ -248,11 +249,20 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
       const model = await activeModel("codex").catch(() => null);
       const modelConfig = model ? [`model="${model}"`] : [];
 
+      // The user's MCP servers, as of the last probe — same source as the
+      // Claude backend, spelt as config overrides with secrets in env.
+      const external = await mcpManager
+        .harnessConfigs()
+        .then((c) => c.codex)
+        .catch(() => ({ configLines: [], env: {} }));
+
       const baseArgs = [
         "--json",
         // A video project is a folder, not necessarily a repo.
         "--skip-git-repo-check",
-        ...[...CONFIG, ...modelConfig, ...mcpConfig(mcpUrl)].flatMap((entry) => ["-c", entry]),
+        ...[...CONFIG, ...modelConfig, ...mcpConfig(mcpUrl), ...external.configLines].flatMap(
+          (entry) => ["-c", entry],
+        ),
       ];
 
       const run = (resume: string | null) =>
@@ -263,7 +273,7 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
             : ["exec", ...baseArgs, "-"],
           {
             cwd: projectDir,
-            env: { ...agentEnv(), [MCP_TOKEN_ENV]: MCP_TOKEN },
+            env: { ...agentEnv(), ...external.env, [MCP_TOKEN_ENV]: MCP_TOKEN },
             stdio: ["pipe", "pipe", "pipe"],
           },
         );

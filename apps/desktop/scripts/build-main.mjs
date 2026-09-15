@@ -88,7 +88,9 @@ export const entries = [
  */
 function cloudDefines() {
   return Object.fromEntries(
-    ["GM_CLOUD_API_URL", "GM_CLOUD_WEB_URL"]
+    // The third is the SEP-991 client document (see `mcp/oauth.ts`); a local
+    // build can point it at a tunnel, a release leaves it on the hosted API.
+    ["GM_CLOUD_API_URL", "GM_CLOUD_WEB_URL", "GM_MCP_CLIENT_METADATA_URL"]
       .filter((name) => process.env[name])
       .map((name) => [`process.env.${name}`, JSON.stringify(process.env[name])]),
   );

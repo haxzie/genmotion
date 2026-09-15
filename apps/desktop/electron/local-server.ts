@@ -3,7 +3,13 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { randomUUID, randomBytes } from "node:crypto";
 import type { UIMessage } from "ai";
-import { PAYWALL_STATUS, type AssetData } from "@genmotion/shared";
+import {
+  PAYWALL_STATUS,
+  type AssetData,
+  type McpCatalog,
+  type McpServerInput,
+  type McpServerPatch,
+} from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
@@ -72,6 +78,11 @@ export function previewUrl(
 }
 
 /** Thrown by a route that was asked about a project no tab has open. */
+/** See `handle()`: the one route that lives outside the secret prefix. */
+const MCP_OAUTH_CALLBACK_PATH = "/mcp-oauth/callback";
+/** The loopback port to try first — named in the API's OAuth client document. */
+export const PREFERRED_PORT = 41297;
+
 class ProjectNotOpen extends Error {
   constructor() {
     super("That project isn't open");
@@ -180,6 +191,14 @@ export async function startLocalServer(
 
   async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     const rawUrl = req.url ?? "/";
+    // Where an MCP server's OAuth sends the browser back. Outside the secret
+    // prefix on purpose: this URL is registered with a third party and sits
+    // in the browser's history, so it must not carry the secret. The `state`
+    // in the query is what ties it to a server, and it is good for one use.
+    if (rawUrl.startsWith(MCP_OAUTH_CALLBACK_PATH) && (req.method ?? "GET") === "GET") {
+      await mcpOAuthCallback(new URL(rawUrl, "http://localhost"), res);
+      return;
+    }
     if (!rawUrl.startsWith(`${prefix}/`)) {
       // Static UI files aren't secret, so they sit outside the secret prefix —
       // which is also what lets `/logo.svg` resolve.
@@ -212,6 +231,25 @@ export async function startLocalServer(
     // offers them before any folder exists.
     if (rest[0] === "preferences") {
       send(res, 200, await preferenceRoutes(method, req));
+      return;
+    }
+
+    // MCP servers are a property of the machine too, and the marketplace is
+    // browsed from the start screen before any project is open.
+    if (rest[0] === "mcp-servers") {
+      send(res, 200, await mcpServerRoutes(method, rest.slice(1), req));
+      return;
+    }
+    if (rest[0] === "mcp-catalog" && rest[1] && rest[2] === "token-link" && method === "POST") {
+      send(res, 200, await openCatalogTokenLink(rest[1]));
+      return;
+    }
+    if (rest[0] === "mcp-catalog") {
+      await mcpCatalogProxy("/api/mcp/catalog", req, res, 15_000);
+      return;
+    }
+    if (rest[0] === "mcp-favicon" && rest[1]) {
+      await mcpCatalogProxy(`/api/mcp/favicon/${encodeURIComponent(rest[1])}`, req, res, 15_000);
       return;
     }
 
@@ -371,6 +409,95 @@ export async function startLocalServer(
       return;
     }
     await pipeUpstream(upstream, res);
+  }
+
+  /**
+   * The MCP marketplace and its favicons, proxied from the hosted API for the
+   * same reason the templates are: the renderer's CSP only lets it talk to
+   * this server.
+   */
+  async function mcpCatalogProxy(
+    upstreamPath: string,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    timeoutMs: number,
+  ): Promise<void> {
+    const { cloudFetch } = await import("./auth");
+    const upstream = await cloudFetch(upstreamPath, {
+      headers: { accept: req.headers.accept ?? "*/*" },
+      signal: AbortSignal.timeout(timeoutMs),
+    }).catch(() => null);
+    if (!upstream) {
+      send(res, 503, { error: "Can't reach GenMotion." });
+      return;
+    }
+    await pipeUpstream(upstream, res);
+  }
+
+  /**
+   * "Create a token" on a marketplace card: open the vendor's page for it.
+   *
+   * The renderer names a catalog entry, not a URL — the catalog is served by
+   * us, so the browser only ever opens somewhere we listed. Agent-authored
+   * code runs in this renderer, which is why no "open anything" IPC exists.
+   */
+  async function openCatalogTokenLink(id: string): Promise<{ ok: boolean }> {
+    const [{ cloudFetch }, { shell }] = await Promise.all([import("./auth"), import("electron")]);
+    const catalog = (await cloudFetch("/api/mcp/catalog", { signal: AbortSignal.timeout(15_000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)) as McpCatalog | null;
+    const entry = catalog?.entries.find((e) => e.id === id);
+    const url = entry?.auth.kind === "header" ? entry.auth.tokenUrl : undefined;
+    if (!url || !url.startsWith("https://")) return { ok: false };
+    await shell.openExternal(url);
+    return { ok: true };
+  }
+
+  /**
+   * The user's MCP servers: list, add, edit, remove, re-probe, authenticate.
+   *
+   * Every change rewarms the open sessions (see `onChange` below): the
+   * pre-spawned harness fixed its server list when it started.
+   */
+  async function mcpServerRoutes(
+    method: string,
+    rest: string[],
+    req: http.IncomingMessage,
+  ): Promise<unknown> {
+    const { mcpManager } = await import("./mcp/manager");
+    await mcpManager.start();
+    const [id, action] = rest;
+
+    if (!id) {
+      if (method === "POST") {
+        return mcpManager.add(await readJson<McpServerInput>(req));
+      }
+      return { servers: await mcpManager.list() };
+    }
+    if (action === "refresh" && method === "POST") return mcpManager.refresh(id);
+    if (action === "auth" && method === "POST") return mcpManager.authenticate(id);
+    if (action) throw new Error(`No route for ${method} /mcp-servers/${rest.join("/")}`);
+    if (method === "PATCH") {
+      return mcpManager.update(id, await readJson<McpServerPatch>(req));
+    }
+    if (method === "DELETE") {
+      await mcpManager.remove(id);
+      return { ok: true };
+    }
+    throw new Error(`No route for ${method} /mcp-servers/${rest.join("/")}`);
+  }
+
+  async function mcpOAuthCallback(url: URL, res: http.ServerResponse): Promise<void> {
+    const { mcpManager } = await import("./mcp/manager");
+    const state = url.searchParams.get("state") ?? "";
+    const code = url.searchParams.get("code");
+    const denied = url.searchParams.get("error");
+    const result = !code
+      ? { ok: false as const, error: denied ? `Sign-in was cancelled (${denied}).` : "No authorization code came back." }
+      : await mcpManager.finishAuth(state, code);
+    const page = oauthResultPage(result);
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "content-length": Buffer.byteLength(page) });
+    res.end(page);
   }
 
   async function preferenceRoutes(
@@ -907,12 +1034,51 @@ export async function startLocalServer(
     return url;
   }
 
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  // A fixed port first, so the OAuth redirect an authorization server sees
+  // is the one our client document names (see `mcp/oauth.ts`); any port when
+  // it is taken — a second copy of the app, or something else on it.
+  await new Promise<void>((resolve, reject) => {
+    const onError = (err: NodeJS.ErrnoException) => {
+      if (err.code !== "EADDRINUSE" && err.code !== "EACCES") {
+        reject(err);
+        return;
+      }
+      server.removeListener("error", onError);
+      server.listen(0, "127.0.0.1", resolve);
+    };
+    server.once("error", onError);
+    server.listen(PREFERRED_PORT, "127.0.0.1", () => {
+      server.removeListener("error", onError);
+      resolve();
+    });
+  });
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("server has no port");
 
   origin = `http://127.0.0.1:${address.port}`;
   serverUrl = `${origin}${prefix}`;
+
+  // MCP servers: the OAuth redirect needs the port, so this waits for it. A
+  // change to the list — or to a server's reachability — replaces every
+  // pre-spawned harness, which fixed its `mcpServers` when it started.
+  // Debounced: a launch-time probe of ten servers is ten changes.
+  void (async () => {
+    const [{ setCallbackUrl }, { mcpManager }] = await Promise.all([
+      import("./mcp/oauth"),
+      import("./mcp/manager"),
+    ]);
+    setCallbackUrl(`${origin}${MCP_OAUTH_CALLBACK_PATH}`);
+    let timer: NodeJS.Timeout | null = null;
+    mcpManager.onChange(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        timer = null;
+        const { refreshWarmClaudeCode } = await import("./agent/claude-code");
+        refreshWarmClaudeCode(getSession);
+      }, 500);
+    });
+    await mcpManager.start();
+  })();
   return {
     url: `${origin}${prefix}`,
     origin,
@@ -1176,6 +1342,20 @@ async function serveStatic(
   });
   res.end(body);
   return true;
+}
+
+/** What the browser shows after an MCP server's OAuth redirect. */
+function oauthResultPage(result: { ok: true; name: string } | { ok: false; error: string }): string {
+  const escape = (text: string) =>
+    text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  const title = result.ok ? `Connected to ${escape(result.name)}` : "Couldn\u2019t connect";
+  const body = result.ok
+    ? "You can close this tab and go back to GenMotion."
+    : `${escape(result.error)} Go back to GenMotion and try again.`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0d;color:#e8e8ea;font:15px/1.5 -apple-system,system-ui,sans-serif}
+main{max-width:26rem;padding:2rem;text-align:center}h1{font-size:1.25rem;font-weight:500;margin:0 0 .5rem}p{margin:0;color:#9a9aa2}</style></head>
+<body><main><h1>${title}</h1><p>${body}</p></main></body></html>`;
 }
 
 function send(res: http.ServerResponse, status: number, body: unknown): void {
