@@ -190,7 +190,12 @@ export const auth = betterAuth({
       // Long enough to sign up from scratch in a browser, short enough that an
       // abandoned code is not left lying around.
       expiresIn: "10m",
-      interval: "3s",
+      // The poll is one indexed read and one write, and only a desktop mid
+      // sign-in makes it; the interval is what the user waits after clicking
+      // Approve, so it is as short as it sensibly can be. The endpoint answers
+      // `slow_down` to anything faster — before it looks at approval — so the
+      // app must never poll early (see `pollNow` in the desktop's auth.ts).
+      interval: "1s",
       verificationUri: `${WEB_URL}/device`,
       // Only our own desktop build may open a device request.
       validateClient: (clientId) => clientId === DESKTOP_CLIENT_ID,

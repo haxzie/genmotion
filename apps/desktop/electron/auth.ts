@@ -48,8 +48,18 @@ export const WEB_URL = (process.env.GM_CLOUD_WEB_URL ?? "https://genmotion.dev")
 );
 
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
-/** RFC 8628's prescribed penalty for polling too eagerly. */
-const SLOW_DOWN_STEP_MS = 5_000;
+/**
+ * The server stamps a poll when it processes it, a few milliseconds after
+ * the app sent it; a poll timed to the exact interval can still arrive a
+ * hair early and be told to slow down. This covers that.
+ */
+const POLL_MARGIN_MS = 250;
+/**
+ * Backoff after `slow_down`. RFC 8628 says five seconds; against our own
+ * server — which only rejects early polls, and never escalates — a full
+ * interval's wait is enough, and five seconds is what the user notices.
+ */
+const SLOW_DOWN_STEP_MS = 1_000;
 
 interface DeviceCodeResponse {
   device_code: string;
@@ -166,6 +176,8 @@ interface Attempt {
   email?: string;
   expiresAt: number;
   intervalMs: number;
+  /** When the last token request went out; the next may not go before `intervalMs` later. */
+  lastPollAt: number;
   timer: NodeJS.Timeout | null;
   cancelled: boolean;
 }
@@ -308,6 +320,7 @@ export class DesktopAuth {
       email,
       expiresAt: Date.now() + res.body.expires_in * 1000,
       intervalMs: Math.max(res.body.interval, 1) * 1000,
+      lastPollAt: 0,
       timer: null,
       cancelled: false,
     };
@@ -349,11 +362,17 @@ export class DesktopAuth {
   }
 
   /**
-   * The deep link landed, so approval almost certainly just happened — poll now
-   * rather than sitting out the rest of the interval.
+   * The deep link landed, so approval almost certainly just happened — poll
+   * as soon as the server will have it rather than sitting out the rest of
+   * the interval. Not sooner: the token endpoint answers `slow_down` to a
+   * poll inside the interval *before* it looks at approval, and the penalty
+   * for that is a longer interval — the deep link would make sign-in slower,
+   * not faster.
    */
   pollNow(): void {
-    if (this.attempt) this.schedule(0);
+    const attempt = this.attempt;
+    if (!attempt) return;
+    this.schedule(Math.max(0, attempt.lastPollAt + attempt.intervalMs + POLL_MARGIN_MS - Date.now()));
   }
 
   async signOut(): Promise<void> {
@@ -383,6 +402,7 @@ export class DesktopAuth {
       return;
     }
 
+    attempt.lastPollAt = Date.now();
     const res = await callApi<{ access_token?: string; error?: string }>(
       "/api/auth/device/token",
       {

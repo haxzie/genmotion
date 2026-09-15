@@ -90,7 +90,7 @@ describe.skipIf(!dbReady)("device authorization", () => {
     expect(body.verification_uri_complete).toBe(
       `${env.WEB_URL}/device?user_code=${body.user_code}`,
     );
-    expect(body.interval).toBe(3);
+    expect(body.interval).toBe(1);
   });
 
   it("rejects a client id that is not the desktop app", async () => {
