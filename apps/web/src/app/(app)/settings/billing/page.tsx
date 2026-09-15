@@ -383,12 +383,9 @@ function PlanCard({
         type="button"
         disabled={disabled}
         onClick={onSelect}
-        className={cx(
-          "mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
-          featured
-            ? "border-transparent bg-cta text-background hover:bg-cta-hover"
-            : "border-border bg-surface text-text-primary hover:bg-surface-hover",
-        )}
+        // The one thing to do on a plan card is buy it, whichever plan: the
+        // button is the primary one on every card.
+        className="mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-transparent bg-cta font-medium text-background transition-colors hover:bg-cta-hover disabled:opacity-60"
       >
         {busy ? <Spinner /> : label}
       </button>
