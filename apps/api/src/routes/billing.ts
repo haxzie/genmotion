@@ -6,6 +6,7 @@ import { CHAT_MODEL_ID } from "@genmotion/ai";
 import { PLANS, TEAM_SEATS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { trialState } from "../limits";
+import { pluginUsage } from "../plugin-usage";
 import {
   countSeats,
   getEntitlements,
@@ -87,9 +88,13 @@ billingRoutes.get("/limits", async (c) => {
     countSeats(organizationId),
     trialState(organizationId),
   ]);
+  // The three plugin meters, from the same rows that gate a call. One
+  // GROUP BY — cheap enough for a poll.
+  const usage = await pluginUsage(organizationId, ent.seats);
   return c.json({
     plan: planPayload(ent),
     seats: { used: seatsUsed, max: ent.seats },
+    usage,
     trial: {
       active: trial.active,
       daysLeft: trial.daysLeft,

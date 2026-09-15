@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { z } from "zod";
 import { readManifest } from "@genmotion/project";
 import { validateSceneFile } from "@genmotion/project/validate";
-import { PAYWALL_STATUS } from "@genmotion/shared";
+import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
 import { desktopAuth } from "../auth";
 import { captureCompositionFrame, captureFrame } from "../export/capture";
@@ -790,6 +790,11 @@ function describeGenerationFailure(label: string, status: number, body: unknown)
   }
   if (status === PAYWALL_STATUS) {
     return `FAILED — ${parsed?.paywall?.message ?? `${label} is a Pro feature.`} Tell the user plainly and continue without the file; do not call this tool again this turn.`;
+  }
+  // Paying, but this month's allowance is spent. The body says which meter
+  // and when it comes back; the user can see the same in Settings.
+  if (status === QUOTA_STATUS) {
+    return `FAILED — ${parsed?.error ?? `This month's ${label.toLowerCase()} allowance is used up.`} Tell the user plainly (they can see their usage under Settings → Usage & billing) and continue without the file; do not call this tool again this turn.`;
   }
   if (status === 503) {
     return `FAILED — ${label} is not available on this server${detail ? `: ${detail}` : "."} Tell the user, and continue without the file.`;

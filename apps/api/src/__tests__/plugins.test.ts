@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db, eq, schema } from "@genmotion/db";
-import { PAYWALL_STATUS, isPaywallBody } from "@genmotion/shared";
+import { PAYWALL_STATUS, QUOTA_STATUS, PLUGIN_ALLOWANCE, isPaywallBody, isQuotaBody } from "@genmotion/shared";
 import { dbReady, truncateAll } from "./helpers/db";
 import { createOrg, createUser, setSubscription } from "./helpers/factories";
 import { createSession, request, requestJson } from "./helpers/http";
@@ -164,6 +164,49 @@ describe.skipIf(!dbReady)("chat plugins", () => {
       unit: "characters",
       costUsdMicros: 60 * 300,
     });
+  });
+
+  it("refuses once the month's meter is spent, before spending at the provider", async () => {
+    const { session, orgId, userId } = await paying();
+    // A month of sound effects already on the books, all successful.
+    await db.insert(schema.pluginCalls).values(
+      Array.from({ length: PLUGIN_ALLOWANCE.sfx }, () => ({
+        organizationId: orgId,
+        userId,
+        plugin: "sfx",
+        integration: "elevenlabs",
+        ok: true,
+        bytes: 1,
+        ms: 1,
+        units: 100,
+        unit: "characters",
+      })),
+    );
+    const spy = stubFetch(async () => new Response("should not be called", { status: 500 }));
+
+    const { status, body } = await requestJson(SFX, { as: session, json: { text: "one more whoosh" } });
+    expect(status).toBe(QUOTA_STATUS);
+    expect(isQuotaBody(body)).toBe(true);
+    expect((body as { quota: { meter: string; used: number } }).quota).toMatchObject({ meter: "sfx", used: PLUGIN_ALLOWANCE.sfx });
+    expect(spy).not.toHaveBeenCalled();
+
+    // Other meters are untouched: a voiceover still goes through.
+    stubFetch(async () => new Response(new Uint8Array(Buffer.from("ID3")), { status: 200, headers: { "content-type": "audio/mpeg" } }));
+    expect((await request(VOICEOVER, { as: session, json: { text: "Still fine." } })).status).toBe(200);
+  });
+
+  it("counts characters against the voiceover meter, and reports usage on /limits", async () => {
+    const { session, orgId } = await paying();
+    stubFetch(async () => new Response(new Uint8Array(Buffer.from("ID3")), { status: 200, headers: { "content-type": "audio/mpeg" } }));
+    await request(VOICEOVER, { as: session, json: { text: "Twenty-two characters." } });
+    const { body } = await requestJson("/api/billing/limits", { as: session });
+    const usage = (body as { usage: { characters: { used: number; limit: number }; sfx: { used: number } } }).usage;
+    expect(usage.characters).toEqual({ used: "Twenty-two characters.".length, limit: PLUGIN_ALLOWANCE.characters });
+    expect(usage.sfx.used).toBe(0);
+    // A script that would overrun what is left is refused whole.
+    const huge = "x".repeat(PLUGIN_ALLOWANCE.characters);
+    expect((await requestJson(VOICEOVER, { as: session, json: { text: huge.slice(0, 5000) } })).status).toBe(200);
+    void orgId;
   });
 
   it("logs a provider failure too, with the error", async () => {

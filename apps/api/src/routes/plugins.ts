@@ -4,13 +4,14 @@ import { zValidator } from "@hono/zod-validator";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import { db, schema } from "@genmotion/db";
-import { PAYWALL_STATUS, type ChatPluginId, type IntegrationId } from "@genmotion/shared";
+import { PAYWALL_STATUS, QUOTA_STATUS, type PluginMeter, type ChatPluginId, type IntegrationId } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 import { getEntitlements } from "../entitlements";
 import { pluginPaywall } from "../limits";
 import { generateImage, PluginProviderError, type GeneratedMedia, type Usage } from "../plugins/gemini-image";
 import { generateVoiceover, listVoices, voicePreview } from "../plugins/elevenlabs-voice";
 import { generateSfx, SFX_MAX_SECONDS, SFX_MAX_TEXT, SFX_MIN_SECONDS } from "../plugins/elevenlabs-sfx";
+import { checkQuota } from "../plugin-usage";
 
 /**
  * Chat plugins — the media the agent cannot make on its own.
@@ -124,11 +125,16 @@ async function handle(
   c: Context<AuthEnv>,
   plugin: ChatPluginId,
   integration: IntegrationId,
+  /** Which monthly meter this call draws on, and by how much. */
+  draw: { meter: PluginMeter; cost: number },
   work: () => Promise<GeneratedMedia>,
 ): Promise<Response> {
   const organizationId = c.get("organizationId");
-  const { paid } = await getEntitlements(organizationId);
+  const { paid, seats } = await getEntitlements(organizationId);
   if (!paid) return c.json(pluginPaywall(), PAYWALL_STATUS);
+  // Paying, but this month's allowance is spent. Also before any provider byte.
+  const quota = await checkQuota(organizationId, seats, draw.meter, draw.cost);
+  if (quota) return c.json(quota, QUOTA_STATUS);
 
   const userId = c.get("user").id;
   const started = Date.now();
@@ -195,15 +201,17 @@ pluginRoutes.get("/voices/:id/preview", async (c) => {
 
 pluginRoutes.post("/voiceover", zValidator("json", voiceoverSchema), (c) => {
   const { text, voice } = c.req.valid("json");
-  return handle(c, "voiceover", "elevenlabs", () => generateVoiceover(text, voice));
+  return handle(c, "voiceover", "elevenlabs", { meter: "characters", cost: text.length }, () =>
+    generateVoiceover(text, voice),
+  );
 });
 
 pluginRoutes.post("/sfx", zValidator("json", sfxSchema), (c) => {
   const { text, ...options } = c.req.valid("json");
-  return handle(c, "sfx", "elevenlabs", () => generateSfx(text, options));
+  return handle(c, "sfx", "elevenlabs", { meter: "sfx", cost: 1 }, () => generateSfx(text, options));
 });
 
 pluginRoutes.post("/image", zValidator("json", imageSchema), (c) => {
   const { prompt } = c.req.valid("json");
-  return handle(c, "image", "gemini", () => generateImage(prompt));
+  return handle(c, "image", "gemini", { meter: "images", cost: 1 }, () => generateImage(prompt));
 });

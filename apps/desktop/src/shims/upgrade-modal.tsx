@@ -16,6 +16,7 @@ import {
   TRIAL_DAYS,
   isPaywallBody,
   type PlanId,
+  type PluginUsage,
   type UpgradeReason,
 } from "@genmotion/shared";
 import { ApiError, api } from "@/lib/api";
@@ -81,6 +82,8 @@ export interface TrialPayload {
 export interface LimitsResponse {
   plan: PlanPayload;
   seats: { used: number; max: number };
+  /** This month's plugin meters. Absent from an API older than the meters. */
+  usage?: PluginUsage;
   trial: TrialPayload;
   /** Paying, or still in trial. Not enough for a plugin — see `subscription.paid`. */
   entitled: boolean;
@@ -101,7 +104,10 @@ interface UpgradeContextValue {
   seats?: LimitsResponse["seats"];
   trial?: TrialPayload;
   subscription?: LimitsResponse["subscription"];
+  usage?: PluginUsage;
   canInvite: boolean;
+  /** Re-read the plan and meters now — after a generation, say. */
+  refresh: () => void;
 }
 
 const UpgradeContext = createContext<UpgradeContextValue | null>(null);
@@ -198,9 +204,11 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       seats: data?.seats,
       trial: data?.trial,
       subscription: data?.subscription,
+      usage: data?.usage,
       canInvite: data?.plan.canInvite ?? false,
+      refresh: () => void queryClient.invalidateQueries({ queryKey: limitsQueryKey }),
     }),
-    [openUpgrade, handleLimitError, handleAuthClientError, data],
+    [openUpgrade, handleLimitError, handleAuthClientError, data, queryClient],
   );
 
   return (
@@ -226,6 +234,7 @@ export function useUpgrade(): UpgradeContextValue {
       handleLimitError: () => false,
       handleAuthClientError: () => false,
       canInvite: false,
+      refresh: () => {},
     };
   }
   return value;

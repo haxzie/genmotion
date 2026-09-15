@@ -26,6 +26,67 @@ export const PLAN_IDS = ["free", "pro"] as const;
 /** Price per person, per month, in whole USD. One number, everywhere. */
 export const SEAT_PRICE_USD = 19;
 
+/**
+ * What a Pro seat may generate in a calendar month, per meter.
+ *
+ * Sized so a seat that uses all three costs us about a third of its price
+ * at list rates, and a typical one far less: 15,000 characters is roughly
+ * ten minutes of narration, or fifteen to twenty short videos. Allowances
+ * are per seat and pooled across the org — a three-seat team draws on
+ * three times this. The API enforces it; the app shows it.
+ */
+export const PLUGIN_ALLOWANCE = {
+  /** Characters of narration through `generate_voiceover`. */
+  characters: 15_000,
+  /** Sound effects generated. */
+  sfx: 60,
+  /** Images generated. */
+  images: 100,
+} as const;
+
+export type PluginMeter = keyof typeof PLUGIN_ALLOWANCE;
+
+/** The allowance an org has this month: the per-seat figure times its seats. */
+export function pluginAllowance(seats: number): Record<PluginMeter, number> {
+  const n = Math.max(1, seats);
+  return {
+    characters: PLUGIN_ALLOWANCE.characters * n,
+    sfx: PLUGIN_ALLOWANCE.sfx * n,
+    images: PLUGIN_ALLOWANCE.images * n,
+  };
+}
+
+/** One meter as the API reports it and the app draws it. */
+export interface MeterUsage {
+  used: number;
+  limit: number;
+}
+
+export interface PluginUsage {
+  /** ISO timestamps: the calendar month, UTC. */
+  period: { start: string; end: string };
+  characters: MeterUsage;
+  sfx: MeterUsage;
+  images: MeterUsage;
+}
+
+/**
+ * HTTP 429 body when a meter is spent. Not a paywall — the org is paying —
+ * so a different shape, and the message says when it comes back.
+ */
+export interface QuotaBody {
+  error: string;
+  quota: { meter: PluginMeter; used: number; limit: number; resetsAt: string };
+}
+
+export const QUOTA_STATUS = 429;
+
+export function isQuotaBody(body: unknown): body is QuotaBody {
+  if (!body || typeof body !== "object") return false;
+  const quota = (body as QuotaBody).quota;
+  return Boolean(quota && typeof quota === "object" && typeof quota.meter === "string");
+}
+
 /** How long a new organization may use the app before it has to pay. */
 export const TRIAL_DAYS = 7;
 
@@ -74,7 +135,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion watermark",
-      "Voiceover, sound effects and image generation in chat",
+      `${PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx} sound effects and ${PLUGIN_ALLOWANCE.images} images a month`,
       `Invite teammates at $${SEAT_PRICE_USD} each`,
       "Priority support",
     ],

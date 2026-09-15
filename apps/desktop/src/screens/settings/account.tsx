@@ -13,7 +13,7 @@ export function AccountSection({
   return (
     <Section
       title="Account"
-      description="Billing and team settings live on the web — there is no checkout in here, and those pages need the browser's session."
+      description="Profile and team settings live on the web, where the browser's session is. Your plan and this month's usage are under Usage & billing."
     >
       <div className="mb-4">
         <div className="text-[0.929rem] text-text-primary">{user.name || user.email}</div>
@@ -25,9 +25,6 @@ export function AccountSection({
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={() => void desktop.openWeb("/settings")}>
           Account settings
-        </Button>
-        <Button size="sm" onClick={() => void desktop.openWeb("/settings/billing")}>
-          Billing
         </Button>
         <Button size="sm" variant="danger" onClick={() => void desktop.auth.signOut()}>
           Sign out
