@@ -396,7 +396,10 @@ function PlanCard({
 export default function BillingPage() {
   const [data, setData] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  /** The page could not load at all — replaces the content. */
   const [error, setError] = useState<string | null>(null);
+  /** An action failed — shown beside the cards; the page stays. */
+  const [actionError, setActionError] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState<PurchasablePlan | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -437,7 +440,7 @@ export default function BillingPage() {
    */
   async function setCancelling(cancel: boolean) {
     setCancelBusy(true);
-    setError(null);
+    setActionError(null);
     setCancelError(null);
     try {
       await api(`/api/billing/${cancel ? "cancel" : "resume"}`, { method: "POST" });
@@ -447,7 +450,7 @@ export default function BillingPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Couldn't update the subscription.";
       if (cancel) setCancelError(message);
-      else setError(message);
+      else setActionError(message);
     } finally {
       setCancelBusy(false);
     }
@@ -612,11 +615,11 @@ export default function BillingPage() {
                     disabled={portalBusy}
                     onClick={async () => {
                       setPortalBusy(true);
-                      setError(null);
+                      setActionError(null);
                       try {
                         await openBillingPortal();
                       } catch (e) {
-                        setError(
+                        setActionError(
                           e instanceof Error
                             ? e.message
                             : "Couldn't open the billing portal.",
@@ -711,7 +714,7 @@ export default function BillingPage() {
                       disabled={checkoutBusy !== null}
                       onSelect={async () => {
                         setCheckoutBusy(p);
-                        setError(null);
+                        setActionError(null);
                         try {
                           // In place for a live subscription: reload the page's
                           // data rather than leaving for a checkout that isn't.
@@ -721,7 +724,7 @@ export default function BillingPage() {
                             setCheckoutBusy(null);
                           }
                         } catch (e) {
-                          setError(
+                          setActionError(
                             e instanceof Error
                               ? e.message
                               : "Couldn't start checkout.",
@@ -733,6 +736,10 @@ export default function BillingPage() {
                   ))}
                 </div>
               </>
+            )}
+
+            {actionError && (
+              <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-[0.9rem] text-danger">{actionError}</p>
             )}
 
             {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
