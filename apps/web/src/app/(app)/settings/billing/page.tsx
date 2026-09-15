@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PLANS,
   planPrice,
   type PlanId,
 } from "@genmotion/shared";
-import { api } from "@/lib/api";
+import { api, API_URL } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { openBillingPortal, startCheckout, type PurchasablePlan } from "@/lib/billing";
 import { limitsQueryKey } from "@/components/upgrade-modal";
@@ -34,6 +34,8 @@ interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
   seats: { used: number; max: number };
   team?: { message: string };
+  /** The caller's role: billing is an owner's or admin's page. */
+  role?: string;
   subscription: Subscription;
   trial: Trial;
   entitled: boolean;
@@ -134,6 +136,88 @@ const ACTIVATION_ATTEMPTS = 30;
  * charged should be legible at the point of commitment, not only in the
  * heading above it.
  */
+interface PaymentRow {
+  id: string;
+  createdAt: string;
+  amount: number;
+  currency: string;
+  status: string;
+  subscriptionId: string | null;
+}
+
+const money = (amount: number, currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+
+/**
+ * Payments and their invoices, from the provider by way of our API. Shown
+ * only once there is a billing account — a trial has nothing to list — and
+ * quietly absent when the list cannot be read, since the portal has it too.
+ */
+function PaymentsSection() {
+  const payments = useQuery({
+    queryKey: ["billing-payments"],
+    queryFn: () => api<{ payments: PaymentRow[] }>("/api/billing/payments"),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const rows = payments.data?.payments ?? [];
+  if (payments.isError || (payments.isSuccess && rows.length === 0)) return null;
+  return (
+    <>
+      <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Payments</h2>
+      <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
+        {payments.isLoading ? (
+          <div className="flex justify-center py-8">
+            <Spinner />
+          </div>
+        ) : (
+          <table className="w-full text-[0.9rem]">
+            <thead>
+              <tr className="text-left text-[0.857rem] text-text-tertiary">
+                <th className="px-5 py-3 font-normal">Date</th>
+                <th className="px-5 py-3 font-normal">Amount</th>
+                <th className="px-5 py-3 font-normal">Status</th>
+                <th className="px-5 py-3 text-right font-normal">Invoice</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((p) => (
+                <tr key={p.id}>
+                  <td className="px-5 py-3 text-text-primary">
+                    {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
+                  <td className="px-5 py-3 tabular-nums text-text-primary">{money(p.amount, p.currency)}</td>
+                  <td className="px-5 py-3">
+                    <span
+                      className={cx(
+                        "rounded-full px-2 py-0.5 text-[0.786rem] capitalize",
+                        p.status === "succeeded" ? "bg-success/15 text-success" : p.status === "failed" || p.status === "cancelled" ? "bg-danger/15 text-danger" : "bg-surface-hover text-text-secondary",
+                      )}
+                    >
+                      {p.status.replace(/_/g, " ")}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    {p.status === "succeeded" && (
+                      <a
+                        href={`${API_URL}/api/billing/payments/${encodeURIComponent(p.id)}/invoice`}
+                        className="text-accent hover:underline"
+                        download
+                      >
+                        Download PDF
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+}
+
 function PlanCard({
   plan,
   current,
@@ -315,6 +399,14 @@ export default function BillingPage() {
       ) : error ? (
         <div className="rounded-md border border-dashed border-border py-14 text-center text-text-tertiary">
           {error}
+        </div>
+      ) : data && data.role !== undefined && data.role !== "owner" && data.role !== "admin" ? (
+        <div className="rounded-xl border border-border bg-surface-raised p-6">
+          <p className="font-medium text-text-primary">Billing is managed by your organization&apos;s owner</p>
+          <p className="mt-1.5 text-[0.9rem] text-text-secondary">
+            You&apos;re on the {data.plan.name} plan. Plan changes, invoices and cancellation are for an owner or admin — ask
+            yours, or use Contact us above.
+          </p>
         </div>
       ) : (
         data && (
@@ -538,6 +630,8 @@ export default function BillingPage() {
                 </div>
               </>
             )}
+
+            {data.subscription.manageable && <PaymentsSection />}
 
             {actionError && (
               <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-[0.9rem] text-danger">{actionError}</p>

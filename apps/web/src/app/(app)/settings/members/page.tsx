@@ -151,9 +151,9 @@ export default function MembersPage() {
     <div className="mx-auto max-w-3xl px-8 pb-20 pt-10">
       <div className="mb-1 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-medium">Members</h1>
-        {!loading && org && canManage && (
+        {!loading && org && (
           <div className="flex items-center gap-2">
-          {team?.full && (
+          {canManage && team?.full && (
             <Button variant="secondary" onClick={() => openFeedback("seats")} className="h-9">
               Contact us for more seats
             </Button>
@@ -165,9 +165,10 @@ export default function MembersPage() {
             // upgrade lifts the refusal the modal pitches that plan; when
             // nothing does (a full team) the button rests and the sentence
             // under the title says why.
-            disabled={!canInvite && !team?.upgrade}
-            title={!canInvite ? team?.message : undefined}
+            disabled={!canManage || (!canInvite && !team?.upgrade)}
+            title={!canManage ? "Only an owner or admin can invite." : !canInvite ? team?.message : undefined}
             onClick={() => {
+              if (!canManage) return;
               if (!canInvite) {
                 if (team?.upgrade) openUpgrade("seats");
                 return;

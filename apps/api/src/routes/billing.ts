@@ -91,10 +91,17 @@ billingRoutes.get("/limits", async (c) => {
   ]);
   // The three plugin meters, from the same rows that gate a call. One
   // GROUP BY — cheap enough for a poll.
-  const [usage, team] = await Promise.all([pluginUsage(organizationId, ent.plan), teamPolicy(organizationId)]);
+  const [usage, team, role] = await Promise.all([
+    pluginUsage(organizationId, ent.plan),
+    teamPolicy(organizationId),
+    memberRole(organizationId, c.get("user").id),
+  ]);
   return c.json({
     plan: planPayload(ent),
     seats: { used: seatsUsed, max: ent.seats },
+    // Who is asking: billing and invitations are for an owner or admin, and
+    // the pages say so rather than fail on the click.
+    role,
     usage,
     // The team policy, decided here: whether an invite may go, what to say,
     // and which plan to pitch. The apps render it and branch on nothing.
@@ -192,10 +199,8 @@ function checkoutConflict(
 }
 
 /** Only an owner or admin may commit the organization to a charge. */
-async function isBillingAdmin(
-  organizationId: string,
-  userId: string,
-): Promise<boolean> {
+/** The caller's role in the org — `member` when the row is missing. */
+async function memberRole(organizationId: string, userId: string): Promise<string> {
   const [row] = await db
     .select({ role: schema.member.role })
     .from(schema.member)
@@ -205,7 +210,15 @@ async function isBillingAdmin(
         eq(schema.member.userId, userId),
       ),
     );
-  return row?.role === "owner" || row?.role === "admin";
+  return row?.role ?? "member";
+}
+
+async function isBillingAdmin(
+  organizationId: string,
+  userId: string,
+): Promise<boolean> {
+  const role = await memberRole(organizationId, userId);
+  return role === "owner" || role === "admin";
 }
 
 /**
@@ -324,6 +337,73 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
   );
 
   return c.json({ url: session.checkout_url, sessionId: session.session_id });
+});
+
+/**
+ * GET /payments — the org's payment history at the provider, newest first,
+ * and GET /payments/:id/invoice — the PDF for one of them. Both through us,
+ * so the customer id never reaches the browser and the invoice is only
+ * ever a payment of *this* org's customer. Owner or admin, like the portal.
+ */
+billingRoutes.get("/payments", async (c) => {
+  const user = c.get("user");
+  const organizationId = c.get("organizationId");
+  if (!dodoEnabled) return c.json({ payments: [] });
+  if (!(await isBillingAdmin(organizationId, user.id))) {
+    return c.json({ error: "Only an owner or admin can see payments." }, 403);
+  }
+  const row = await getSubscriptionRow(organizationId);
+  if (!row?.dodoCustomerId) return c.json({ payments: [] });
+
+  try {
+    const page = await dodoClient().payments.list({ customer_id: row.dodoCustomerId, page_size: 24 });
+    const payments = page.getPaginatedItems().map((p) => ({
+      id: p.payment_id,
+      createdAt: p.created_at,
+      // Minor units at the provider; whole currency here.
+      amount: p.total_amount / 100,
+      currency: p.currency,
+      status: p.status ?? "unknown",
+      subscriptionId: p.subscription_id ?? null,
+    }));
+    return c.json({ payments });
+  } catch (err) {
+    console.error("[billing] payments list failed:", err);
+    return c.json({ error: "Couldn't load payments." }, 502);
+  }
+});
+
+billingRoutes.get("/payments/:id/invoice", async (c) => {
+  const user = c.get("user");
+  const organizationId = c.get("organizationId");
+  const paymentId = c.req.param("id");
+  if (!dodoEnabled) return c.json({ error: "Billing isn't configured." }, 503);
+  if (!(await isBillingAdmin(organizationId, user.id))) {
+    return c.json({ error: "Only an owner or admin can download invoices." }, 403);
+  }
+  const row = await getSubscriptionRow(organizationId);
+  if (!row?.dodoCustomerId) return c.json({ error: "No billing account." }, 404);
+
+  try {
+    // The payment has to be this customer's: the provider's invoice route
+    // takes any id, so the check is ours.
+    const payment = await dodoClient().payments.retrieve(paymentId);
+    if (payment.customer?.customer_id !== row.dodoCustomerId) {
+      return c.json({ error: "Not your payment." }, 404);
+    }
+    const pdf = await dodoClient().invoices.payments.retrieve(paymentId);
+    const bytes = new Uint8Array(await pdf.arrayBuffer());
+    return new Response(bytes, {
+      headers: {
+        "content-type": "application/pdf",
+        "content-disposition": `attachment; filename="genmotion-invoice-${paymentId}.pdf"`,
+        "cache-control": "private, max-age=3600",
+      },
+    });
+  } catch (err) {
+    console.error("[billing] invoice failed:", err);
+    return c.json({ error: "Couldn't fetch the invoice." }, 502);
+  }
 });
 
 /**
@@ -511,17 +591,19 @@ billingRoutes.get("/usage", async (c) => {
 
   // Same resolver as /limits, so the two endpoints can never disagree about
   // which plan an org is on.
-  const [ent, seatsUsed, trial, team] = await Promise.all([
+  const [ent, seatsUsed, trial, team, role] = await Promise.all([
     getEntitlements(organizationId),
     countSeats(organizationId),
     trialState(organizationId),
     teamPolicy(organizationId),
+    memberRole(organizationId, c.get("user").id),
   ]);
 
   return c.json({
     plan: planPayload(ent),
     seats: { used: seatsUsed, max: ent.seats },
     team,
+    role,
     // The billing page is where an org learns its trial is over, so it needs
     // the same trial block /limits carries.
     trial: {
