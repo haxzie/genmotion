@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { DesktopProject } from "../api";
 import type { HomeTab } from "../components/app-sidebar";
+import type { SettingsSection } from "../screens/settings/sections";
+import { formatHomeRoute, parseHomeRoute } from "./home-route";
 
 /** The Home tab's id. Project tabs are keyed by their folder path. */
 export const HOME_TAB = "home";
@@ -30,6 +32,9 @@ interface TabsState {
    */
   homeView: HomeTab;
   setHomeView(view: HomeTab): void;
+  /** Which of Settings' sections is showing; here for the same reason. */
+  settingsSection: SettingsSection;
+  setSettingsSection(section: SettingsSection): void;
   /** Add a project's tab, or update the one it already has. Does not focus it. */
   upsert(project: DesktopProject): void;
   /** A remembered tab, not yet opened. */
@@ -45,12 +50,19 @@ interface TabsState {
  * and which is in front. Everything else — selection, playhead, chat — lives
  * per tab.
  */
+/** Where the URL says Home was, at load — see `home-route.ts`. */
+const initialRoute = typeof window !== "undefined" ? parseHomeRoute(window.location.hash) : null;
+
 export const useTabsStore = create<TabsState>((set) => ({
   tabs: [],
   activeId: HOME_TAB,
-  homeView: "create",
+  homeView: initialRoute?.homeView ?? "create",
   setHomeView(homeView) {
     set({ homeView });
+  },
+  settingsSection: initialRoute?.settingsSection ?? "general",
+  setSettingsSection(settingsSection) {
+    set({ settingsSection });
   },
   upsert(project) {
     set((state) => {
@@ -121,4 +133,22 @@ export const useTabsStore = create<TabsState>((set) => ({
  */
 export function reportTabBusy(dir: string, busy: boolean): void {
   useTabsStore.getState().setBusy(dir, busy);
+}
+
+// The Home view mirrors into the hash, and the hash (back/forward, a typed
+// link) mirrors into the view. `replaceState` for our own writes so every
+// click is not a history entry; navigation only makes entries the user made.
+if (typeof window !== "undefined") {
+  useTabsStore.subscribe((state, previous) => {
+    if (state.homeView === previous.homeView && state.settingsSection === previous.settingsSection) return;
+    const next = formatHomeRoute({ homeView: state.homeView, settingsSection: state.settingsSection });
+    if (window.location.hash !== next) window.history.replaceState(null, "", next);
+  });
+  window.addEventListener("hashchange", () => {
+    const route = parseHomeRoute(window.location.hash);
+    if (!route) return;
+    const { homeView, settingsSection, setHomeView, setSettingsSection } = useTabsStore.getState();
+    if (route.homeView !== homeView) setHomeView(route.homeView);
+    if (route.settingsSection && route.settingsSection !== settingsSection) setSettingsSection(route.settingsSection);
+  });
 }
