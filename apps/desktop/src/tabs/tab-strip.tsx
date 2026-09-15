@@ -77,7 +77,10 @@ function TabButton({
       aria-selected={active}
       aria-label={label}
       className={cx(
-        "group relative flex h-8 max-w-52 shrink-0 items-center gap-1.5 rounded-t-lg pl-2.5 text-[0.857rem]",
+        // Nearly the strip's full height, so the label sits at its centre
+        // rather than in the lower two thirds; the 4px left over is the
+        // frame showing above the tab.
+        "group relative flex h-9 max-w-52 shrink-0 items-center gap-1.5 rounded-t-lg pl-2.5 text-[0.857rem]",
         "transition-colors duration-150",
         onClose ? "pr-1" : "pr-2.5",
         // The active tab is the content colour and runs straight into the
@@ -174,8 +177,6 @@ export function TabStrip({
         </TabButton>
       </div>
 
-      <div className="mb-2 h-4 w-px shrink-0 self-end bg-border" />
-
       {/* Scrolls sideways when the row overflows; the export button stays put. */}
       <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* A tab grows in from nothing and shrinks away when closed, with
@@ -195,8 +196,12 @@ export function TabStrip({
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               // Room on both sides for the active tab's flares, which hang
               // outside its box; the same room is the spacing between tabs.
-              className="shrink-0 overflow-hidden px-1.5"
+              className="flex shrink-0 items-end overflow-hidden px-1.5"
             >
+              {/* A short rule before every tab — between Home and the first,
+                  and between neighbours — the way a browser separates its
+                  tabs. Inside the wrapper so it collapses with the tab. */}
+              <div className="mb-2.5 mr-3 h-4 w-px shrink-0 bg-border" />
               <TabButton
                 active={activeId === tab.dir}
                 onSelect={() => onActivate(tab.dir)}

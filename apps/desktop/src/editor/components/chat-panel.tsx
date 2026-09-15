@@ -1068,6 +1068,25 @@ function ChatPanelInner({
     if (el.scrollTop < LOAD_OLDER_SLOP) void loadOlder();
   };
 
+  /**
+   * The composer floats over the list, so the list ends with padding the
+   * composer's height — measured, because the composer grows: context
+   * pills, queued messages, an error, the model hint. A fixed padding was
+   * 140px against a composer that starts at 155px and goes up from there,
+   * and the newest messages sat under it.
+   */
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [composerHeight, setComposerHeight] = useState(160);
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    // Border box, not `contentRect`: the overlay's own padding is part of
+    // what covers the list.
+    const observer = new ResizeObserver(() => setComposerHeight(Math.ceil(el.offsetHeight)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!stickToBottom.current) return;
     if (scrollRaf.current != null) cancelAnimationFrame(scrollRaf.current);
@@ -1082,7 +1101,8 @@ function ChatPanelInner({
         scrollRaf.current = null;
       }
     };
-  }, [messages]);
+    // A taller composer pushes the end of the list up; stay pinned to it.
+  }, [messages, composerHeight]);
 
   /**
    * Bring a newly sent message to the top of the view and hold it there.
@@ -1274,7 +1294,11 @@ function ChatPanelInner({
             </p>
           </div>
         ) : (
-          <div ref={listRef} className="flex min-w-0 max-w-full flex-col px-4 pb-40 pt-4">
+          <div
+            ref={listRef}
+            className="flex min-w-0 max-w-full flex-col px-4 pt-4"
+            style={{ paddingBottom: composerHeight + 16 }}
+          >
             {/* Scrolling here is what loads the next page; the button is for
                 keyboards and for a trackpad that never quite reaches the top. */}
             {hasMore && (
@@ -1356,7 +1380,10 @@ function ChatPanelInner({
         )}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-60% to-transparent px-3 pb-3 pt-12">
+      <div
+        ref={composerRef}
+        className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-60% to-transparent px-3 pb-3 pt-12"
+      >
         <div className="pointer-events-auto">
         {queue.length > 0 && (
           <div className="mb-2 flex flex-col gap-1.5">

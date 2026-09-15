@@ -16,12 +16,12 @@ export interface ProjectDefaults {
   engine: ProjectEngine;
 }
 
-/** 1080p at 30, on HyperFrames — what `createProject` falls back to when nothing is passed. */
+/** 1080p at 30, on GenMotion's React runtime — what `createProject` falls back to when nothing is passed. */
 export const DEFAULT_PROJECT: ProjectDefaults = {
   width: 1920,
   height: 1080,
   fps: 30,
-  engine: "hyperframes",
+  engine: "react",
 };
 
 /** What is on disk: unvalidated, and possibly from a build that knew fewer fields. */

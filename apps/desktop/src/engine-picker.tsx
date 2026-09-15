@@ -22,16 +22,16 @@ type EngineRow = "genmotion" | "hyperframes";
 
 const ENGINES: { id: EngineRow; engine: ProjectEngine; label: string; detail: string }[] = [
   {
-    id: "hyperframes",
-    engine: "hyperframes",
-    label: "HyperFrames",
-    detail: "HTML compositions with GSAP, authored with the HyperFrames skills",
-  },
-  {
     id: "genmotion",
     engine: "react",
     label: "GenMotion",
     detail: "React scenes on the frame-driven @genmotion/motion runtime",
+  },
+  {
+    id: "hyperframes",
+    engine: "hyperframes",
+    label: "HyperFrames",
+    detail: "HTML compositions with GSAP, authored with the HyperFrames skills",
   },
 ];
 
