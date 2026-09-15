@@ -48,7 +48,8 @@ export default function AccountHomePage() {
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-border bg-surface-raised p-6">
+      <div className="mt-4 flex items-start justify-between gap-4 rounded-xl border border-border bg-surface-raised p-6">
+        <div className="min-w-0">
         <h2 className="font-medium text-text-primary">Plan</h2>
         {/* Absent while loading rather than guessed at — a wrong trial count
             reads worse than no trial count. */}
@@ -77,14 +78,13 @@ export default function AccountHomePage() {
         ) : (
           <p className="mt-1.5 text-[0.9rem] text-text-tertiary">Loading…</p>
         )}
-        <div className="mt-4 flex gap-3 text-[0.9rem]">
-          <Link href="/settings/billing" className="text-accent hover:underline">
-            Billing
-          </Link>
-          <Link href="/settings/members" className="text-accent hover:underline">
-            Members
-          </Link>
         </div>
+        <Link
+          href="/settings/billing"
+          className="inline-flex h-9 shrink-0 items-center rounded-md border border-border bg-surface px-3 text-[0.9rem] font-medium text-text-primary transition-colors hover:bg-surface-hover"
+        >
+          Manage
+        </Link>
       </div>
 
       {/* What the plan gives, and how much of it is used: the month's
