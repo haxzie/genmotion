@@ -134,8 +134,11 @@ async function setCancelling(c: Context<AuthEnv>, cancel: boolean): Promise<Resp
     return c.json({ error: "Only an owner or admin can manage billing." }, 403);
   }
   const row = await getSubscriptionRow(organizationId);
-  if (!row?.dodoSubscriptionId || row.status !== "active") {
+  if (row?.status !== "active") {
     return c.json({ error: "There is no active subscription to change." }, 409);
+  }
+  if (!row.dodoSubscriptionId) {
+    return c.json({ error: "This subscription isn't managed by the billing provider, so it can't be changed here." }, 409);
   }
   if (row.cancelAtPeriodEnd === cancel) return c.json({ ok: true, cancelAtPeriodEnd: cancel });
   try {

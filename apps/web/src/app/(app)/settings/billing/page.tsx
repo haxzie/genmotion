@@ -12,7 +12,8 @@ import { api } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { openBillingPortal, startCheckout } from "@/lib/billing";
 import { limitsQueryKey } from "@/components/upgrade-modal";
-import { Spinner, cx } from "@/components/ui";
+import { Button, Spinner, cx } from "@/components/ui";
+import { Modal } from "@/components/modal";
 import { PLUGIN_ALLOWANCE, type PluginUsage } from "@genmotion/shared";
 
 /** /api/billing/plugin-usage — the month's meters, and who spent them. */
@@ -395,6 +396,8 @@ export default function BillingPage() {
   const [checkoutBusy, setCheckoutBusy] = useState<"pro" | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [pluginUsage, setPluginUsage] = useState<PluginUsageResponse | null>(null);
   // "polling" while we wait for the webhook after checkout; "slow" once we've
   // given up waiting but the payment may still be landing.
@@ -422,17 +425,24 @@ export default function BillingPage() {
     api<PluginUsageResponse>("/api/billing/plugin-usage").then(setPluginUsage).catch(() => null);
   }, [load]);
 
-  /** Schedule the cancellation, or take it back — then re-read the plan. */
+  /**
+   * Schedule the cancellation, or take it back — then re-read the plan.
+   * Cancelling is confirmed in the modal below, so its error shows there;
+   * resuming is one click and its error shows on the page.
+   */
   async function setCancelling(cancel: boolean) {
-    if (cancel && !confirm("Cancel your subscription at the end of the current period? You keep Pro until then.")) return;
     setCancelBusy(true);
     setError(null);
+    setCancelError(null);
     try {
       await api(`/api/billing/${cancel ? "cancel" : "resume"}`, { method: "POST" });
       await load();
       queryClient.invalidateQueries({ queryKey: limitsQueryKey });
+      setCancelOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't update the subscription.");
+      const message = e instanceof Error ? e.message : "Couldn't update the subscription.";
+      if (cancel) setCancelError(message);
+      else setError(message);
     } finally {
       setCancelBusy(false);
     }
@@ -523,7 +533,7 @@ export default function BillingPage() {
             <div
               className={cx(
                 "grid gap-4",
-                data.subscription.manageable && "sm:grid-cols-2",
+                (data.subscription.manageable || data.subscription.status === "active") && "sm:grid-cols-2",
               )}
             >
               <div className="rounded-xl border border-border bg-surface-raised p-5">
@@ -565,7 +575,11 @@ export default function BillingPage() {
                 )}
               </div>
 
-              {data.subscription.manageable ? (
+              {/* Anyone paying sees how to stop paying. The portal needs a
+                  billing account at the provider; the cancel button only
+                  needs an active subscription, and the API says so if
+                  there is nothing behind it to cancel. */}
+              {data.subscription.manageable || data.subscription.status === "active" ? (
                 <div className="rounded-xl border border-border bg-surface-raised p-5">
                   <span className="text-[0.857rem] text-text-tertiary">
                     Billing
@@ -574,8 +588,13 @@ export default function BillingPage() {
                     Manage subscription
                   </p>
                   <p className="mt-2 text-[0.9rem] text-text-secondary">
-                    Update your payment method, download invoices, or cancel.
+                    {data.subscription.manageable
+                      ? "Update your payment method, download invoices, or cancel."
+                      : data.subscription.cancelAtPeriodEnd
+                        ? "Your subscription ends at the close of this billing period."
+                        : "Cancel any time; Pro stays on until the end of the period you've paid for."}
                   </p>
+                  {data.subscription.manageable && (
                   <button
                     type="button"
                     disabled={portalBusy}
@@ -597,13 +616,21 @@ export default function BillingPage() {
                   >
                     {portalBusy ? <Spinner /> : "Manage billing"}
                   </button>
+                  )}
                   {data.subscription.status === "active" && (
                     <button
                       type="button"
                       disabled={cancelBusy}
-                      onClick={() => void setCancelling(!data.subscription.cancelAtPeriodEnd)}
+                      onClick={() => {
+                        if (data.subscription.cancelAtPeriodEnd) void setCancelling(false);
+                        else {
+                          setCancelError(null);
+                          setCancelOpen(true);
+                        }
+                      }}
                       className={cx(
-                        "mt-2 inline-flex h-9 w-full cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
+                        "inline-flex h-9 w-full cursor-pointer items-center justify-center rounded-md border font-medium transition-colors disabled:opacity-60",
+                        data.subscription.manageable ? "mt-2" : "mt-4",
                         data.subscription.cancelAtPeriodEnd
                           ? "border-border bg-surface text-text-primary hover:bg-surface-hover"
                           : "border-transparent bg-transparent text-danger hover:bg-danger/10",
@@ -621,6 +648,34 @@ export default function BillingPage() {
                 </div>
               ) : null}
             </div>
+
+            <Modal open={cancelOpen} onClose={() => !cancelBusy && setCancelOpen(false)} dismissible={!cancelBusy} labelledBy="cancel-title">
+              <div className="p-6">
+                <h2 id="cancel-title" className="font-display text-lg font-semibold tracking-tight">
+                  Cancel your subscription?
+                </h2>
+                <p className="mt-2 text-[0.9rem] text-text-secondary">
+                  Pro stays on until{" "}
+                  <span className="text-text-primary">
+                    {data.subscription.currentPeriodEnd
+                      ? new Date(data.subscription.currentPeriodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                      : "the end of the period you've paid for"}
+                  </span>
+                  . After that, exports stop and the chat&rsquo;s voiceover, sound-effect and image tools turn off.
+                  Your projects and files are untouched, and you can resume any time before then.
+                </p>
+                {cancelError && <p className="mt-3 text-[0.857rem] text-danger">{cancelError}</p>}
+                <div className="mt-6 flex justify-end gap-2">
+                  <Button type="button" variant="secondary" onClick={() => setCancelOpen(false)} disabled={cancelBusy} className="h-9">
+                    Keep Pro
+                  </Button>
+                  <Button type="button" variant="danger" onClick={() => void setCancelling(true)} disabled={cancelBusy} className="h-9">
+                    {cancelBusy && <Spinner className="size-3.5" />}
+                    Cancel subscription
+                  </Button>
+                </div>
+              </div>
+            </Modal>
 
             {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
 
