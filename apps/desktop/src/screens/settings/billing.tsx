@@ -1,4 +1,4 @@
-import { SEAT_PRICE_USD, planPrice, type MeterUsage, type PluginMeter } from "@genmotion/shared";
+import { PLANS, SEAT_PRICE_USD, planPrice, type MeterUsage, type PluginMeter } from "@genmotion/shared";
 import { Button, Spinner, cx } from "@/components/ui";
 import { useUpgrade } from "@/components/upgrade-modal";
 import { api as desktop } from "../../api";
@@ -95,6 +95,24 @@ export function BillingSection() {
                 </span>
               )}
             </div>
+            {/* The step up from Pro, as a strip on the same card: Max is the
+                only other thing to buy, so it is said here rather than on a
+                page of its own. The change itself happens on the web. */}
+            {paid && plan.id === "pro" && (
+              <div className="mt-5 flex items-center justify-between gap-4 rounded-md border border-border bg-surface px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[0.929rem] text-text-primary">
+                    Get {PLANS.max.allowanceMultiplier}× more usage and {PLANS.max.includedSeats} seats with {PLANS.max.name}
+                  </p>
+                  <p className="mt-0.5 text-[0.786rem] text-text-tertiary">
+                    {planPrice("max")} a month for the whole team. Prorated from today.
+                  </p>
+                </div>
+                <Button size="sm" variant="primary" className="shrink-0" onClick={() => void desktop.openWeb("/settings/billing")}>
+                  Upgrade now
+                </Button>
+              </div>
+            )}
           </>
         )}
       </Section>
