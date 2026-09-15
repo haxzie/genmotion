@@ -38,7 +38,7 @@ import {
 } from "./scene-chip";
 import { PluginMenu } from "./plugin-menu";
 import { useShareFolder } from "../../folder-access";
-import { ToolCard, type ToolPartLike } from "./tool-card";
+import { ToolRun, type RunItem, type ToolPartLike } from "./tool-card";
 import { Spinner, cx } from "@/components/ui";
 
 /**
@@ -462,40 +462,50 @@ function MessageBubble({
     if (p.type === "reasoning") return Boolean((p as { text?: string }).text?.trim());
     return p.type.startsWith("tool-") || p.type === "dynamic-tool";
   });
+  const isTool = (p: (typeof parts)[number]) => p.type.startsWith("tool-") || p.type === "dynamic-tool";
   for (let i = 0; i < parts.length; ) {
     const part = parts[i]!;
-    if (part.type === "reasoning") {
-      const isLast = i === parts.length - 1;
-      elements.push(
-        <ReasoningBlock
-          key={i}
-          text={(part as { text?: string }).text ?? ""}
-          streaming={live && isLast}
-        />,
-      );
-      i++;
-      continue;
-    }
     if (part.type === "text") {
       elements.push(<ChatMarkdown key={i}>{part.text}</ChatMarkdown>);
       i++;
       continue;
     }
-    if (part.type.startsWith("tool-") || part.type === "dynamic-tool") {
-      // Collapse consecutive calls of the SAME tool into one accordion.
-      const group: ToolPartLike[] = [part as unknown as ToolPartLike];
-      let j = i + 1;
-      while (j < parts.length && parts[j]!.type === part.type) {
-        group.push(parts[j] as unknown as ToolPartLike);
+    // A run: every tool call and stretch of reasoning up to the next text.
+    // Consecutive calls of the SAME tool club into one card; the run as a
+    // whole folds what has finished into one line (see `ToolRun`).
+    const items: RunItem[] = [];
+    let j = i;
+    while (j < parts.length && parts[j]!.type !== "text") {
+      const p = parts[j]!;
+      if (p.type === "reasoning") {
+        const isLast = j === parts.length - 1;
+        items.push({ kind: "reasoning", text: (p as { text?: string }).text ?? "", streaming: live && isLast });
         j++;
+        continue;
       }
-      elements.push(
-        <ToolCard key={i} parts={group} scenes={scenes} live={live} />,
-      );
-      i = j;
-      continue;
+      if (isTool(p)) {
+        const group: ToolPartLike[] = [];
+        while (j < parts.length && parts[j]!.type === p.type) {
+          group.push(parts[j] as unknown as ToolPartLike);
+          j++;
+        }
+        items.push({ kind: "tools", parts: group });
+        continue;
+      }
+      j++;
     }
-    i++;
+    if (items.length > 0) {
+      elements.push(
+        <ToolRun
+          key={i}
+          items={items}
+          scenes={scenes}
+          live={live}
+          renderReasoning={(text, streaming, key) => <ReasoningBlock key={key} text={text} streaming={streaming} />}
+        />,
+      );
+    }
+    i = Math.max(j, i + 1);
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { parseMcpToolName } from "@genmotion/shared";
 import dynamic from "next/dynamic";
 import type { SceneData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
@@ -347,7 +348,7 @@ export interface ToolPartLike {
   };
 }
 
-type ToolStatus = "running" | "done" | "failed" | "interrupted";
+export type ToolStatus = "running" | "done" | "failed" | "interrupted";
 
 /**
  * A part stuck without an output (stream aborted, reload mid-generation)
@@ -391,7 +392,7 @@ function inferStaleStatus(
   }
 }
 
-function StatusIcon({ status }: { status: ToolStatus }) {
+export function StatusIcon({ status }: { status: ToolStatus }) {
   if (status === "running") return <Spinner className="size-3 shrink-0" />;
   if (status === "interrupted") {
     return (
@@ -416,7 +417,7 @@ function StatusIcon({ status }: { status: ToolStatus }) {
   );
 }
 
-function Chevron({ open }: { open: boolean }) {
+export function Chevron({ open }: { open: boolean }) {
   return (
     <svg
       viewBox="0 0 16 16"
@@ -739,7 +740,7 @@ function ExpandedBody({
   );
 }
 
-function computeStatus(
+export function computeStatus(
   part: ToolPartLike,
   toolName: string,
   scenes: SceneData[],
@@ -752,7 +753,7 @@ function computeStatus(
   return inferStaleStatus(toolName, part, scenes);
 }
 
-function aggregateStatus(statuses: ToolStatus[]): ToolStatus {
+export function aggregateStatus(statuses: ToolStatus[]): ToolStatus {
   if (statuses.includes("running")) return "running";
   if (statuses.includes("failed")) return "failed";
   if (statuses.includes("interrupted")) return "interrupted";
@@ -889,6 +890,123 @@ export function ToolCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** A tool's glyph, the same one its card shows. */
+export function toolIconFor(toolName: string): Glyph {
+  return presentationFor(toolName)?.icon ?? TOOL_ICONS[toolName] ?? DotIcon;
+}
+
+/** One thing in a run: a club of same-tool calls, or a stretch of reasoning. */
+export type RunItem =
+  | { kind: "tools"; parts: ToolPartLike[] }
+  | { kind: "reasoning"; text: string; streaming: boolean };
+
+/**
+ * A run of tool calls and thinking, as one line.
+ *
+ * A turn is mostly tool calls — a dozen reads, edits and checks between
+ * two sentences — with thought in between, and a stack of a dozen cards is
+ * noise. What matters at a glance is what the agent is doing *now*; the
+ * rest is a count. So what has finished folds into one row — the tools
+ * used, as a stack of their icons, then "13 tool calls · 3 thoughts" —
+ * expandable to the cards themselves, and the call still running, or
+ * waiting on the user (a question, the voice picker), stands out below
+ * it. When the last one finishes it folds in too.
+ *
+ * `items` are the same-tool clubs the message renderer already makes,
+ * with the reasoning blocks between them; this is the layer above.
+ */
+export function ToolRun({
+  items,
+  scenes,
+  live,
+  renderReasoning,
+}: {
+  items: RunItem[];
+  scenes: SceneData[];
+  live: boolean;
+  renderReasoning: (text: string, streaming: boolean, key: number) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const status = (item: RunItem): ToolStatus => {
+    if (item.kind === "reasoning") return item.streaming ? "running" : "done";
+    const toolName = item.parts[0]!.type.replace(/^tool-/, "");
+    return aggregateStatus(item.parts.map((p) => computeStatus(p, toolName, scenes, live)));
+  };
+  const withStatus = items.map((item) => ({ item, status: status(item) }));
+  const settled = withStatus.filter((x) => x.status !== "running");
+  const active = withStatus.filter((x) => x.status === "running");
+
+  const calls = settled.reduce((n, x) => n + (x.item.kind === "tools" ? x.item.parts.length : 0), 0);
+  const thoughts = settled.filter((x) => x.item.kind === "reasoning").length;
+
+  const render = (x: { item: RunItem; status: ToolStatus }, key: number) =>
+    x.item.kind === "tools" ? (
+      <ToolCard key={key} parts={x.item.parts} scenes={scenes} live={live} />
+    ) : (
+      renderReasoning(x.item.text, x.item.streaming, key)
+    );
+
+  // Fewer than three finished calls is not a run worth folding — the
+  // cards say more than a digest would.
+  if (calls < 3) return <>{withStatus.map(render)}</>;
+
+  const runStatus = aggregateStatus(settled.map((x) => x.status));
+  // Unique by glyph, not by name: a marketplace server's tools all wear
+  // the server's icon, so three Sequel tools are one mark, not three.
+  const tools: string[] = [];
+  const marks = new Set<string>();
+  for (const x of settled) {
+    if (x.item.kind !== "tools") continue;
+    const name = x.item.parts[0]!.type.replace(/^tool-/, "");
+    const mcp = parseMcpToolName(name);
+    const mark = mcp && mcp.server !== "genmotion" ? `mcp:${mcp.server}` : name;
+    if (marks.has(mark)) continue;
+    marks.add(mark);
+    tools.push(name);
+  }
+  const shown = tools.slice(0, 5);
+  const more = tools.length - shown.length;
+
+  return (
+    <div className="w-full min-w-0 max-w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="group flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-[0.857rem]"
+      >
+        <StatusIcon status={runStatus} />
+        {/* The tools used, as a row of their glyphs; past five, a count. */}
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface-raised px-2 py-0.5">
+          {shown.map((name) => {
+            const Icon = toolIconFor(name);
+            return <Icon key={name} className="size-3 text-text-secondary" />;
+          })}
+          {more > 0 && <span className="text-[0.7rem] font-medium text-text-tertiary">+{more}</span>}
+        </span>
+        <span
+          className={cx(
+            "truncate",
+            runStatus === "failed" ? "text-warning" : runStatus === "interrupted" ? "text-text-tertiary" : "text-text-secondary",
+          )}
+        >
+          {calls} tool {calls === 1 ? "call" : "calls"}
+          {thoughts > 0 && (
+            <span className="text-text-tertiary">
+              {" · "}
+              {thoughts} {thoughts === 1 ? "thought" : "thoughts"}
+            </span>
+          )}
+        </span>
+        <span className="ml-auto opacity-60 transition-opacity group-hover:opacity-100">
+          <Chevron open={open} />
+        </span>
+      </button>
+      {open && <div className="ml-2 border-l border-border pl-2">{settled.map(render)}</div>}
+      {active.map((x, i) => render(x, 1000 + i))}
     </div>
   );
 }
