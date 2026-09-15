@@ -10,6 +10,7 @@ import { getEntitlements } from "../entitlements";
 import { pluginPaywall } from "../limits";
 import { generateImage, PluginProviderError, type GeneratedMedia } from "../plugins/gemini-image";
 import { generateVoiceover } from "../plugins/elevenlabs-voice";
+import { generateSfx, SFX_MAX_SECONDS, SFX_MAX_TEXT, SFX_MIN_SECONDS } from "../plugins/elevenlabs-sfx";
 
 /**
  * Chat plugins — the media the agent cannot make on its own.
@@ -34,6 +35,13 @@ const voiceoverSchema = z.object({
   text: z.string().min(3).max(5000),
   /** An ElevenLabs voice id. Omitted means the server default. */
   voice: z.string().min(1).max(64).optional(),
+});
+
+const sfxSchema = z.object({
+  text: z.string().min(3).max(SFX_MAX_TEXT),
+  durationSeconds: z.number().min(SFX_MIN_SECONDS).max(SFX_MAX_SECONDS).optional(),
+  promptInfluence: z.number().min(0).max(1).optional(),
+  loop: z.boolean().optional(),
 });
 
 const imageSchema = z.object({
@@ -120,6 +128,11 @@ async function handle(
 pluginRoutes.post("/voiceover", zValidator("json", voiceoverSchema), (c) => {
   const { text, voice } = c.req.valid("json");
   return handle(c, "voiceover", "elevenlabs", () => generateVoiceover(text, voice));
+});
+
+pluginRoutes.post("/sfx", zValidator("json", sfxSchema), (c) => {
+  const { text, ...options } = c.req.valid("json");
+  return handle(c, "sfx", "elevenlabs", () => generateSfx(text, options));
 });
 
 pluginRoutes.post("/image", zValidator("json", imageSchema), (c) => {

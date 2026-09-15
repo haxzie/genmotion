@@ -97,7 +97,7 @@ export function pluginPaywall(): PaywallBody {
     error: "Chat plugins are a Pro feature.",
     paywall: {
       reason: "plugin",
-      message: `Voiceover and image generation are included with Pro. Upgrade to use them — ${planPrice("pro")} a month.`,
+      message: `Voiceover, sound effects and image generation are included with Pro. Upgrade to use them — ${planPrice("pro")} a month.`,
     },
   };
 }

@@ -64,7 +64,7 @@ const TIERS: Tier[] = [
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion badge",
-      "Voiceover and image generation in chat",
+      "Voiceover, sound effects and image generation in chat",
       `Add teammates at $${SEAT_PRICE_USD} each`,
       "Renders on your machine — no queue",
       "Priority support",

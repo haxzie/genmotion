@@ -74,7 +74,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "Everything in the trial, without the clock",
       "Unlimited projects, exports and scenes",
       "Exports with no GenMotion watermark",
-      "Voiceover and image generation in chat",
+      "Voiceover, sound effects and image generation in chat",
       `Invite teammates at $${SEAT_PRICE_USD} each`,
       "Priority support",
     ],

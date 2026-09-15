@@ -165,6 +165,13 @@ const QuestionGlyph = ({ className }: { className?: string }) => (
     <path d="M8 11.6h.01" strokeLinecap="round" />
   </svg>
 );
+const SoundGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M4 10v4h3l4 4V6L7 10H4z" />
+    <path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" />
+  </svg>
+);
+
 const MicGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
     <rect x="6" y="1.5" width="4" height="8" rx="2" />
@@ -674,6 +681,16 @@ registerToolPresentation({
     icon: MicGlyph,
     // The script itself, trimmed — it is what the user actually wants to check,
     // and a filename they did not choose tells them nothing.
+    subject: (part) => truncate(str(part, "text"), 60),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__generate_sfx: {
+    labels: { active: "Making a sound effect", done: "Made a sound effect" },
+    icon: SoundGlyph,
     subject: (part) => truncate(str(part, "text"), 60),
     body: (part) => {
       const text = outputText(part);

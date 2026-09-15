@@ -3,6 +3,15 @@ import { cx } from "@/components/ui";
 
 type Props = { className?: string };
 
+function SoundGlyph({ className }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 10v4h3l4 4V6L7 10H4z" />
+      <path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" />
+    </svg>
+  );
+}
+
 function MicGlyph({ className }: Props) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -53,6 +62,7 @@ export function PluginIcon({
   className?: string;
 }) {
   if (id === "voiceover") return <MicGlyph className={className} />;
+  if (id === "sfx") return <SoundGlyph className={className} />;
   if (id === "image") return <ImageGlyph className={className} />;
   if (isMcpChipId(id)) {
     return iconUrl ? (

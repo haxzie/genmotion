@@ -35,7 +35,7 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
   },
   plugin: {
     title: `Chat plugins are part of ${PLANS.pro.name}`,
-    body: `Voiceover and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of the trial. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
+    body: `Voiceover, sound effects and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of the trial. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
   },
 };
 

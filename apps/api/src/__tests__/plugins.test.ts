@@ -20,6 +20,7 @@ import { checkPaywall } from "../limits";
  */
 
 const VOICEOVER = "/api/plugins/voiceover";
+const SFX = "/api/plugins/sfx";
 const IMAGE = "/api/plugins/image";
 
 /** A signed-in owner of a fresh org, with that org active on the session. */
@@ -128,6 +129,29 @@ describe.skipIf(!dbReady)("chat plugins", () => {
       ok: true,
       bytes: audio.byteLength,
     });
+  });
+
+  it("gates sound effects the same way, and passes the options through", async () => {
+    const { session: free } = await signedIn();
+    const refused = await requestJson(SFX, { as: free, json: { text: "a soft whoosh" } });
+    expect(refused.status).toBe(PAYWALL_STATUS);
+
+    const audio = Buffer.from("ID3 whoosh");
+    const spy = stubFetch(
+      async () => new Response(new Uint8Array(audio), { status: 200, headers: { "content-type": "audio/mpeg" } }),
+    );
+    const { session, orgId } = await paying();
+    const res = await request(SFX, {
+      as: session,
+      json: { text: "a soft airy whoosh, rising", durationSeconds: 1.5, loop: false },
+    });
+    expect(res.status).toBe(200);
+    expect(Buffer.from(await res.arrayBuffer())).toEqual(audio);
+
+    const [url, init] = spy.mock.calls[0]!;
+    expect(String(url)).toContain("/v1/sound-generation?output_format=mp3_44100_128");
+    expect(JSON.parse(String(init?.body))).toEqual({ text: "a soft airy whoosh, rising", duration_seconds: 1.5 });
+    expect((await calls(orgId))[0]).toMatchObject({ plugin: "sfx", integration: "elevenlabs", ok: true });
   });
 
   it("logs a provider failure too, with the error", async () => {

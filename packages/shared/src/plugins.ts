@@ -29,7 +29,7 @@ export const INTEGRATIONS: Record<IntegrationId, Integration> = {
   gemini: { id: "gemini", name: "Google Gemini", premium: true },
 };
 
-export type ChatPluginId = "voiceover" | "image" | "local-file";
+export type ChatPluginId = "voiceover" | "sfx" | "image" | "local-file";
 
 /** A connected MCP server, as a chip: `mcp:<server id>`. */
 export type McpChipId = `mcp:${string}`;
@@ -79,11 +79,20 @@ export const CHAT_PLUGINS: ChatPlugin[] = [
     label: "Voiceover",
     hint: "Generate narration from a script",
     integration: "elevenlabs",
-    hidden: true,
     tool: "generate_voiceover",
     placeholder: "Write the script to narrate…",
     directive:
       "Generate a voiceover for this request with the `generate_voiceover` tool, then place the audio it returns on the timeline.",
+  },
+  {
+    id: "sfx",
+    label: "Sound Effect",
+    hint: "Make a sound effect from a description",
+    integration: "elevenlabs",
+    tool: "generate_sfx",
+    placeholder: "Describe the sound — a whoosh, a click, rain on glass…",
+    directive:
+      "Generate the sound effect for this request with the `generate_sfx` tool, then place the audio it returns on the timeline at the moment it belongs to.",
   },
   {
     id: "image",

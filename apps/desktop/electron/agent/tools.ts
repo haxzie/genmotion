@@ -455,6 +455,49 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   },
 
   {
+    name: "generate_sfx",
+    description:
+      "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For the whoosh on a transition, a click on a button, a rising swell under a reveal, rain behind a scene. Describe the sound itself, not the picture — 'a soft airy whoosh, rising, 1 second', 'rain on a window, steady, no thunder'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",
+    shape: {
+      text: z
+        .string()
+        .min(3)
+        .max(450)
+        .describe("The sound, described plainly: what makes it, its character, how it moves."),
+      durationSeconds: z
+        .number()
+        .min(0.5)
+        .max(30)
+        .optional()
+        .describe("Seconds, 0.5–30. Omit to let the model choose a length that fits the sound."),
+      loop: z
+        .boolean()
+        .optional()
+        .describe("Ask for a seamless loop — ambience or a drone that runs under a whole scene."),
+      filename: z.string().optional().describe('Preferred filename, e.g. "whoosh-1.mp3"'),
+    },
+    async run(session, args) {
+      const { text: description, durationSeconds, loop, filename } = args as unknown as {
+        text: string;
+        durationSeconds?: number;
+        loop?: boolean;
+        filename?: string;
+      };
+      return generateMedia(session, {
+        label: "Sound effects",
+        path: "/api/plugins/sfx",
+        json: {
+          text: description,
+          ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+          ...(loop ? { loop } : {}),
+        },
+        filename: filename ?? "sfx",
+        fallbackExt: ".mp3",
+      });
+    },
+  },
+
+  {
     name: "generate_image",
     description:
       "Generate a bespoke image from a text prompt and save it into the project's assets/, returning the path to import. Good for illustrations, backgrounds, textures, product shots, or icons a scene needs. Write a precise prompt: subject, art style, composition, colour palette, lighting, and background — specify a solid or plain background when the image will be composited into a scene. One image per call.",
