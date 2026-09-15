@@ -1,0 +1,11 @@
+{
+  "name": "Firecrawl — 180K stars",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    { "file": "scenes/01-stars.tsx", "durationInFrames": 240, "name": "Star count" }
+  ],
+  "audio": []
+}
