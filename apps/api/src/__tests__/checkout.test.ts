@@ -335,6 +335,21 @@ describe.skipIf(!dbReady)("POST /api/billing/checkout", () => {
     expect(limits.plan.id).toBe("max");
   });
 
+  it("lets a plan with nothing at the provider buy another one afresh", async () => {
+    const { orgId, session } = await ownerSession();
+    // Pro by hand: active, but no Dodo subscription to change in place.
+    await setSubscription(orgId, { plan: "pro", status: "active" });
+
+    const same = await requestJson<{ error: string }>("/api/billing/checkout", { as: session, json: { plan: "pro" } });
+    expect(same.status).toBe(409);
+
+    const { status } = await requestJson("/api/billing/checkout", { as: session, json: { plan: "max" } });
+    expect(status).toBe(200);
+    expect(subscriptionChangePlan).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0]![0].product_cart[0].product_id).toBe(process.env.DODOPAYMENT_MAX_PRODUCT_ID);
+  });
+
   it("refuses Max for a team bigger than five, with a word to contact us", async () => {
     const { orgId, session } = await ownerSession();
     for (let i = 0; i < 5; i++) await addMember(orgId, "member"); // owner + 5 = 6

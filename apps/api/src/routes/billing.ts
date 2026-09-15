@@ -259,9 +259,15 @@ billingRoutes.post("/checkout", zValidator("json", checkoutSchema), async (c) =>
     return c.json({ changed: true, plan, effective: direction === "up" ? "now" : "renewal" });
   }
 
-  const conflict = row?.plan !== "free" && row
-    ? checkoutConflict(row.status, PLANS[row.plan].name)
-    : null;
+  // A plan with no subscription behind it at the provider — granted by
+  // hand, or a link that was lost — has nothing to change in place and
+  // nothing a second checkout would double-bill. Only the same plan again
+  // is refused; a different one goes through as a fresh purchase, and the
+  // webhook then writes the provider's ids onto the row.
+  const conflict =
+    row && row.plan !== "free" && (row.dodoSubscriptionId || row.plan === plan)
+      ? checkoutConflict(row.status, PLANS[row.plan].name)
+      : null;
   if (conflict) return c.json(conflict, 409);
 
   // A plan is the whole of its seats: a team bigger than the plan it is
