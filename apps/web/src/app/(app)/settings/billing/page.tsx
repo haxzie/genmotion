@@ -683,8 +683,6 @@ export default function BillingPage() {
               </div>
             </Modal>
 
-            {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
-
             {/* One card per purchasable plan the org isn't already on, so each
                 plan states its own price and features instead of sharing a box. */}
             {upgradable.length > 0 && (
@@ -730,6 +728,8 @@ export default function BillingPage() {
                 </div>
               </>
             )}
+
+            {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
 
             {/* Seats — the only thing that scales with what you pay */}
             <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
