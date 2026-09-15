@@ -165,8 +165,10 @@ jobs:
           # caches by full URL, so this is the copy users get, not a neighbour.
           url="$PUBLIC_URL/$PREFIX/$VERSION/$FILE?v=${SHA256:0:12}.$GITHUB_RUN_ID"
           # --speed-limit/--speed-time: fail on a stall, not only on an error.
-          # A copy that trickles at a few KB/s is the failure being guarded.
-          curl -fsSL --speed-limit 500000 --speed-time 20 -o mirrored.dmg "$url"
+          # A copy that trickles at a few KB/s is the failure being guarded;
+          # 100 KB/s is well under an uncached edge on a slow day (seen at
+          # ~440 KB/s, which a 500 KB/s floor failed twice for 0.0.12).
+          curl -fsSL --speed-limit 100000 --speed-time 30 -o mirrored.dmg "$url"
           got=$(sha256sum mirrored.dmg | cut -d' ' -f1)
           if [ "$got" != "$SHA256" ]; then
             echo "::error::$url read back with sha256 $got, expected $SHA256 — the copy on R2 is corrupt."
