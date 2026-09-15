@@ -61,6 +61,15 @@ function ChevronDownIcon({ className }: IconProps) {
     </svg>
   );
 }
+function AccountIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 19.5c1.4-3 4-4.5 7-4.5s5.6 1.5 7 4.5" />
+    </svg>
+  );
+}
+
 function UsersIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -105,15 +114,16 @@ function LogOutIcon({ className }: IconProps) {
  * The whole of the web app.
  *
  * Making a video happens in the desktop app now, so what is left here is
- * account management, and only two things in it are worth navigating to.
- * "Organization" pointed at `/settings`, which redirects to Members — a row
- * that led back to the row above it — and the account page is what the logo
- * already goes to.
+ * account management: the account page (the app download and a plan
+ * summary), the team, and billing. "Organization" once pointed at
+ * `/settings`, which redirects to Members — a row that led back to the row
+ * above it — so it is not here.
  *
- * The account page, templates and the editor are still reachable by URL; this
- * is the navigation, not the routing table.
+ * Templates and the editor are still reachable by URL; this is the
+ * navigation, not the routing table.
  */
 const NAV = [
+  { label: "Account", href: "/dashboard", Icon: AccountIcon },
   { label: "Members", href: "/settings/members", Icon: UsersIcon },
   { label: "Billing", href: "/settings/billing", Icon: CreditCardIcon },
 ] as const;

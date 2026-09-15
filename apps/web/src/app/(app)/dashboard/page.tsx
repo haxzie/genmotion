@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { SEAT_PRICE_USD, TRIAL_DAYS } from "@genmotion/shared";
+import { SEAT_PRICE_USD, TRIAL_DAYS, planPrice, type PlanId } from "@genmotion/shared";
 import { api } from "@/lib/api";
 import { DownloadButton } from "@/components/marketing/download-button";
+import { GenerationAndSeats } from "@/components/generation-and-seats";
 import { limitsQueryKey, type LimitsResponse } from "@/components/upgrade-modal";
 
 /**
@@ -56,8 +57,7 @@ export default function AccountHomePage() {
             {paid ? (
               <>
                 {data.plan.name} · {data.seats.used} of {data.seats.max}{" "}
-                {data.seats.max === 1 ? "seat" : "seats"} in use, at $
-                {SEAT_PRICE_USD} each a month.
+                {data.seats.max === 1 ? "seat" : "seats"} in use · {planPrice(data.plan.id)} a month.
               </>
             ) : trial?.active ? (
               <>
@@ -86,6 +86,13 @@ export default function AccountHomePage() {
           </Link>
         </div>
       </div>
+
+      {/* What the plan gives, and how much of it is used: the month's
+          generation and the seats. Only once the plan is known — a trial
+          has no meters worth a card. */}
+      {data && paid && (
+        <GenerationAndSeats plan={data.plan} seats={data.seats} team={data.team} />
+      )}
     </div>
   );
 }

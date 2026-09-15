@@ -14,114 +14,7 @@ import { limitsQueryKey } from "@/components/upgrade-modal";
 import { Button, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useFeedback } from "@/components/feedback-modal";
-import { PLUGIN_ALLOWANCE, type PluginUsage } from "@genmotion/shared";
 
-/** /api/billing/plugin-usage — the month's meters, and who spent them. */
-interface PluginUsageResponse extends PluginUsage {
-  members: {
-    userId: string;
-    name: string;
-    email: string;
-    characters: number;
-    sfx: number;
-    images: number;
-  }[];
-}
-
-const METERS: { id: "characters" | "sfx" | "images"; label: string; format: (n: number) => string }[] = [
-  { id: "characters", label: "Voiceover", format: (n) => `${n.toLocaleString("en-US")} chars` },
-  { id: "sfx", label: "Sound effects", format: (n) => n.toLocaleString("en-US") },
-  { id: "images", label: "Images", format: (n) => n.toLocaleString("en-US") },
-];
-
-function Meter({ label, format, used, limit }: { label: string; format: (n: number) => string; used: number; limit: number }) {
-  const ratio = limit > 0 ? Math.min(1, used / limit) : 0;
-  const spent = used >= limit;
-  const nearly = !spent && ratio >= 0.8;
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-[0.9rem] text-text-primary">{label}</span>
-        <span className={cx("text-[0.857rem] tabular-nums", spent ? "text-danger" : nearly ? "text-warning" : "text-text-secondary")}>
-          {format(used)} <span className="text-text-tertiary">/ {format(limit)}</span>
-        </span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-hover" role="progressbar" aria-valuemin={0} aria-valuemax={limit} aria-valuenow={used} aria-label={label}>
-        <div className={cx("h-full rounded-full", spent ? "bg-danger" : nearly ? "bg-warning" : "bg-accent")} style={{ width: `${ratio * 100}%` }} />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The generation meters — what the chat's voiceover, sound-effect and image
- * tools have used this month against the plan's allowance — and the same
- * split by member, so a team can see where it went.
- */
-function PluginUsageSection({ usage, seats }: { usage: PluginUsageResponse; seats: number }) {
-  const resets = new Date(usage.period.end).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
-  const showMembers = usage.members.length > 1;
-  return (
-    <>
-      <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Generation this month</h2>
-      <div className="rounded-xl border border-border bg-surface-raised p-5">
-        <p className="mb-4 text-[0.857rem] text-text-tertiary">
-          Resets on {resets}. Your plan includes {usage.characters.limit.toLocaleString("en-US")} characters of voiceover,{" "}
-          {usage.sfx.limit} sound effects and {usage.images.limit} images a month
-          {seats > 1 ? ", shared across the team" : ""}.
-        </p>
-        <div className="flex flex-col gap-4">
-          {METERS.map((m) => (
-            <Meter key={m.id} label={m.label} format={m.format} used={usage[m.id].used} limit={usage[m.id].limit} />
-          ))}
-        </div>
-        {showMembers && (
-          <table className="mt-6 w-full text-[0.857rem]">
-            <thead>
-              <tr className="text-left text-text-tertiary">
-                <th className="pb-2 font-normal">Member</th>
-                <th className="pb-2 text-right font-normal">Voiceover</th>
-                <th className="pb-2 text-right font-normal">Sound effects</th>
-                <th className="pb-2 text-right font-normal">Images</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {usage.members.map((m) => (
-                <tr key={m.userId}>
-                  <td className="py-2 pr-3">
-                    <span className="block truncate text-text-primary">{m.name || m.email}</span>
-                    {m.name && m.email && <span className="block truncate text-[0.786rem] text-text-tertiary">{m.email}</span>}
-                  </td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.characters.toLocaleString("en-US")}</td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.sfx}</td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">{m.images}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </>
-  );
-}
-
-interface UsageTotals {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-  totalTokens: number;
-  messages: number;
-}
-interface ModelUsage extends UsageTotals {
-  model: string;
-  estimatedCostUsd: number;
-}
-interface ProjectUsage extends UsageTotals {
-  projectId: string;
-  name: string;
-  estimatedCostUsd: number;
-}
 interface Subscription {
   status: string;
   currentPeriodEnd: string | null;
@@ -136,6 +29,7 @@ interface Trial {
   endsAt: string | null;
 }
 
+
 interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
   seats: { used: number; max: number };
@@ -143,10 +37,6 @@ interface UsageResponse {
   subscription: Subscription;
   trial: Trial;
   entitled: boolean;
-  period: { start: string; end: string };
-  totals: UsageTotals & { estimatedCostUsd: number };
-  byModel: ModelUsage[];
-  byProject: ProjectUsage[];
 }
 
 /**
@@ -228,90 +118,6 @@ function statusLine(s: Subscription, trial: Trial): string | null {
     : `Renews ${when}`;
 }
 
-const SEGMENTS = [
-  {
-    key: "uncachedInput",
-    label: "Input",
-    hint: "Prompt tokens billed at full rate",
-    color: "#4f7df8",
-  },
-  {
-    key: "cacheReadTokens",
-    label: "Cache read",
-    hint: "Reused prompt prefix — about 10% of the input rate",
-    color: "#0e9d5e",
-  },
-  {
-    key: "cacheWriteTokens",
-    label: "Cache write",
-    hint: "Writing the prompt prefix to cache — about 1.25x the input rate",
-    color: "#8b6cf0",
-  },
-  {
-    key: "outputTokens",
-    label: "Output",
-    hint: "Tokens the model generated",
-    color: "#c9781f",
-  },
-] as const;
-
-const compact = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-const exact = new Intl.NumberFormat("en-US");
-
-function money(usd: number): string {
-  if (usd === 0) return "$0.00";
-  if (usd < 0.01) return "<$0.01";
-  return `$${usd.toFixed(2)}`;
-}
-
-function periodLabel(startIso: string): string {
-  return new Date(startIso).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-/** Input already includes the cached tokens — subtract to get the full-rate part. */
-function uncachedInput(t: UsageTotals): number {
-  return Math.max(0, t.inputTokens - t.cacheReadTokens - t.cacheWriteTokens);
-}
-
-function segmentValue(t: UsageTotals, key: (typeof SEGMENTS)[number]["key"]) {
-  return key === "uncachedInput" ? uncachedInput(t) : t[key];
-}
-
-function Stat({
-  label,
-  value,
-  sub,
-  hero,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  hero?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-surface-raised px-5 py-4">
-      <p className="text-[0.857rem] text-text-tertiary">{label}</p>
-      <p
-        className={cx(
-          "mt-1 font-display tracking-tight text-text-primary tabular-nums",
-          hero ? "text-4xl" : "text-2xl",
-        )}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-1 text-[0.857rem] text-text-tertiary">{sub}</p>}
-    </div>
-  );
-}
-
-/** The plans a checkout can move this org to. There is one. */
 const PURCHASABLE = ["pro", "max"] as const;
 
 /**
@@ -405,7 +211,6 @@ export default function BillingPage() {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const [pluginUsage, setPluginUsage] = useState<PluginUsageResponse | null>(null);
   const { openFeedback } = useFeedback();
   // "polling" while we wait for the webhook after checkout; "slow" once we've
   // given up waiting but the payment may still be landing.
@@ -429,8 +234,6 @@ export default function BillingPage() {
 
   useEffect(() => {
     load();
-    // The meters are their own read: a failure here must not blank the plan.
-    api<PluginUsageResponse>("/api/billing/plugin-usage").then(setPluginUsage).catch(() => null);
   }, [load]);
 
   /**
@@ -488,8 +291,6 @@ export default function BillingPage() {
     return () => clearInterval(timer);
   }, [load, queryClient]);
 
-  const totals = data?.totals;
-  const hasUsage = (totals?.totalTokens ?? 0) > 0;
   // Never offer the plan they're already on.
   const upgradable = PURCHASABLE.filter((p) => p !== data?.plan.id);
 
@@ -742,197 +543,7 @@ export default function BillingPage() {
               <p className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-[0.9rem] text-danger">{actionError}</p>
             )}
 
-            {pluginUsage && <PluginUsageSection usage={pluginUsage} seats={data.plan.seats} />}
 
-            {/* Seats — the only thing that scales with what you pay */}
-            <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">
-              Seats
-            </h2>
-            <div className="rounded-xl border border-border bg-surface-raised px-5 py-4">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-[0.857rem] text-text-tertiary">People in this organization</p>
-                <p className="text-xl tabular-nums text-text-primary">
-                  {exact.format(data.seats?.used ?? 0)}
-                  <span className="text-text-tertiary">
-                    {" "}/ {exact.format(data.seats?.max ?? 0)}
-                  </span>
-                </p>
-              </div>
-              <p className="mt-2 text-[0.857rem] text-text-tertiary">
-                {data.team?.message ??
-                  `${data.plan.name} covers ${data.plan.seats} ${data.plan.seats === 1 ? "seat" : "seats"}.`}
-              </p>
-            </div>
-
-            {/* Usage */}
-            <div className="mb-3 mt-10 flex items-baseline justify-between gap-4">
-              <h2 className="text-[0.95rem] font-medium text-text-secondary">
-                Usage
-              </h2>
-              <span className="text-[0.857rem] text-text-tertiary">
-                {periodLabel(data.period.start)}
-              </span>
-            </div>
-
-            {!hasUsage ? (
-              <div className="rounded-xl border border-dashed border-border py-14 text-center text-text-tertiary">
-                No AI usage yet this month.
-              </div>
-            ) : (
-              totals && (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <Stat
-                      label="Total tokens"
-                      value={compact.format(totals.totalTokens)}
-                      sub={`${exact.format(totals.totalTokens)} tokens`}
-                      hero
-                    />
-                    <Stat
-                      label="Estimated cost"
-                      value={money(totals.estimatedCostUsd)}
-                      sub="At list prices"
-                    />
-                    <Stat
-                      label="AI responses"
-                      value={exact.format(totals.messages)}
-                      sub="Chat turns billed"
-                    />
-                  </div>
-
-                  {/* Composition. Segments are separated by a 2px surface gap
-                      rather than borders, and every segment is named in the
-                      legend below — identity is never colour alone. */}
-                  <div className="mt-4 rounded-xl border border-border bg-surface-raised p-5">
-                    <p className="text-[0.857rem] text-text-tertiary">
-                      Token breakdown
-                    </p>
-                    <div
-                      className="mt-3 flex h-5 gap-[2px] overflow-hidden rounded"
-                      role="img"
-                      aria-label={SEGMENTS.map(
-                        (s) =>
-                          `${s.label}: ${exact.format(segmentValue(totals, s.key))} tokens`,
-                      ).join(", ")}
-                    >
-                      {SEGMENTS.map((s) => {
-                        const value = segmentValue(totals, s.key);
-                        if (value === 0) return null;
-                        const pct = (value / totals.totalTokens) * 100;
-                        return (
-                          <div
-                            key={s.key}
-                            title={`${s.label}: ${exact.format(value)} (${pct.toFixed(1)}%)`}
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: s.color,
-                            }}
-                            className="first:rounded-l last:rounded-r"
-                          />
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-4 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-                      {SEGMENTS.map((s) => {
-                        const value = segmentValue(totals, s.key);
-                        const pct = (value / totals.totalTokens) * 100;
-                        return (
-                          <div key={s.key} className="flex items-baseline gap-2.5">
-                            <span
-                              aria-hidden
-                              className="mt-1 size-2.5 shrink-0 rounded-sm"
-                              style={{ backgroundColor: s.color }}
-                            />
-                            <span
-                              className="min-w-0 flex-1 truncate text-[0.9rem] text-text-secondary"
-                              title={s.hint}
-                            >
-                              {s.label}
-                            </span>
-                            <span className="text-[0.9rem] tabular-nums text-text-primary">
-                              {compact.format(value)}
-                            </span>
-                            <span className="w-11 text-right text-[0.857rem] tabular-nums text-text-tertiary">
-                              {pct.toFixed(1)}%
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Table view — the same numbers, ungated by colour. */}
-                  {data.byProject.length > 0 && (
-                    <div className="mt-8">
-                      <h3 className="mb-3 text-[0.95rem] font-medium text-text-secondary">
-                        By project
-                      </h3>
-                      <div className="overflow-hidden rounded-xl border border-border">
-                        {data.byProject.map((p, i) => (
-                          <div
-                            key={p.projectId}
-                            className={cx(
-                              "flex items-center gap-3 px-4 py-3",
-                              i > 0 && "border-t border-border",
-                            )}
-                          >
-                            <span className="min-w-0 flex-1 truncate text-[0.95rem] text-text-primary">
-                              {p.name}
-                            </span>
-                            <span className="text-[0.857rem] tabular-nums text-text-tertiary">
-                              {exact.format(p.messages)}{" "}
-                              {p.messages === 1 ? "turn" : "turns"}
-                            </span>
-                            <span className="w-20 text-right text-[0.9rem] tabular-nums text-text-secondary">
-                              {compact.format(p.totalTokens)}
-                            </span>
-                            <span className="w-16 text-right text-[0.9rem] tabular-nums text-text-primary">
-                              {money(p.estimatedCostUsd)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {data.byModel.length > 1 && (
-                    <div className="mt-8">
-                      <h3 className="mb-3 text-[0.95rem] font-medium text-text-secondary">
-                        By model
-                      </h3>
-                      <div className="overflow-hidden rounded-xl border border-border">
-                        {data.byModel.map((m, i) => (
-                          <div
-                            key={m.model}
-                            className={cx(
-                              "flex items-center gap-3 px-4 py-3",
-                              i > 0 && "border-t border-border",
-                            )}
-                          >
-                            <span className="min-w-0 flex-1 truncate font-mono text-[0.857rem] text-text-primary">
-                              {m.model}
-                            </span>
-                            <span className="w-20 text-right text-[0.9rem] tabular-nums text-text-secondary">
-                              {compact.format(m.totalTokens)}
-                            </span>
-                            <span className="w-16 text-right text-[0.9rem] tabular-nums text-text-primary">
-                              {money(m.estimatedCostUsd)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <p className="mt-6 text-[0.857rem] text-text-tertiary">
-                    Costs are estimates from published model list prices, not an
-                    invoice. Usage covers editor chat turns recorded since token
-                    tracking was enabled.
-                  </p>
-                </>
-              )
-            )}
           </>
         )
       )}

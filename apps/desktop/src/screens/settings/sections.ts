@@ -8,8 +8,8 @@
 export const SETTINGS_SECTIONS = [
   { id: "general", label: "General" },
   { id: "agent", label: "Agent" },
-  { id: "billing", label: "Usage & billing" },
   { id: "members", label: "Members" },
+  { id: "billing", label: "Usage & billing" },
   { id: "account", label: "Account" },
 ] as const;
 
