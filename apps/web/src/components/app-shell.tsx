@@ -8,6 +8,7 @@ import { signOut, useSession, organization } from "@/lib/auth-client";
 import { identify, resetAnalytics } from "@/lib/analytics";
 import { cx } from "@/components/ui";
 import { useUpgrade } from "@/components/upgrade-modal";
+import { useFeedback } from "@/components/feedback-modal";
 
 function slugify(input: string): string {
   return (
@@ -360,12 +361,33 @@ function Sidebar() {
         })}
       </nav>
 
+      <HelpButton />
       <UpgradeCard />
 
       <div className="border-t border-border p-2">
         <UserMenu />
       </div>
     </aside>
+  );
+}
+
+/** Help & feedback: the form that reaches a person, at the foot of the nav. */
+function HelpButton() {
+  const { openFeedback } = useFeedback();
+  return (
+    <div className="px-3 pb-1">
+      <button
+        type="button"
+        onClick={() => openFeedback("help")}
+        className="flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-[0.95rem] text-text-secondary transition-colors duration-150 hover:bg-surface-raised hover:text-text-primary"
+      >
+        <svg viewBox="0 0 24 24" className="size-[1.05rem] shrink-0" fill="currentColor" aria-hidden>
+          <path opacity="0.5" d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Z" />
+          <path d="M12 16.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-2.9-6.3a.75.75 0 0 0 1.5 0c0-.8.6-1.45 1.4-1.45s1.4.65 1.4 1.45c0 .5-.3.8-.9 1.2-.7.5-1.65 1.15-1.65 2.6a.75.75 0 0 0 1.5 0c0-.65.35-.95 1-1.4.7-.5 1.55-1.1 1.55-2.4A2.9 2.9 0 0 0 12 7.3a2.9 2.9 0 0 0-2.9 2.9Z" />
+        </svg>
+        Help &amp; feedback
+      </button>
+    </div>
   );
 }
 

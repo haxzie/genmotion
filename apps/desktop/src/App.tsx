@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { projectQueryKey } from "@/hooks/use-project";
 import { UpgradeProvider } from "@/components/upgrade-modal";
+import { FeedbackProvider } from "./components/feedback-modal";
 import { registerNavigate } from "./shims/next-link";
 import { api, type DesktopProject } from "./api";
 import { uploadProjectAsset } from "@/hooks/use-assets";
@@ -21,6 +22,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UpgradeProvider>
+        <FeedbackProvider>
         <Shell />
         {/* The dev-only admin panel. `import.meta.env.DEV` is a literal by the
             time Vite builds, so the branch and the import behind it are dropped
@@ -28,6 +30,7 @@ export function App() {
             accident. Mounted here rather than inside Shell so it is there on
             the login screen too. */}
         {import.meta.env.DEV && <DevPanel />}
+        </FeedbackProvider>
       </UpgradeProvider>
     </QueryClientProvider>
   );

@@ -7,6 +7,7 @@ import { useSession, organization } from "@/lib/auth-client";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
+import { useFeedback } from "@/components/feedback-modal";
 
 interface OrgMember {
   id: string;
@@ -46,6 +47,7 @@ export default function MembersPage() {
   const meId = data?.user.id;
   const orgId = data?.session.activeOrganizationId ?? null;
   const { openUpgrade, handleAuthClientError, team } = useUpgrade();
+  const { openFeedback } = useFeedback();
   // The API decides whether an invite may go and what to say; this page
   // draws it. Absent (an older API), assume the door is open and let the
   // request answer.
@@ -150,6 +152,12 @@ export default function MembersPage() {
       <div className="mb-1 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-medium">Members</h1>
         {!loading && org && canManage && (
+          <div className="flex items-center gap-2">
+          {team?.full && (
+            <Button variant="secondary" onClick={() => openFeedback("seats")} className="h-9">
+              Contact us for more seats
+            </Button>
+          )}
           <Button
             variant="primary"
             // Kept visible rather than hidden when the plan can't invite:
@@ -177,6 +185,7 @@ export default function MembersPage() {
               </span>
             )}
           </Button>
+          </div>
         )}
       </div>
       <p className="mb-8 text-[0.95rem] text-text-secondary">

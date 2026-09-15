@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
+import { useFeedback } from "../../components/feedback-modal";
 import { api } from "@/lib/api";
 import { useAuth } from "../../lib/use-auth";
 import { Choices, Section } from "./section";
@@ -75,6 +76,7 @@ export function MembersSection() {
   const me = auth.status === "signed-in" ? auth.user : null;
   const orgId = auth.status === "signed-in" ? (auth.organization?.id ?? null) : null;
   const { team, openUpgrade, handleLimitError } = useUpgrade();
+  const { openFeedback } = useFeedback();
   const org = useFullOrg(orgId);
   const queryClient = useQueryClient();
 
@@ -132,24 +134,33 @@ export function MembersSection() {
   // The API decides whether an invite may go and what to say; this section
   // draws it. When an upgrade lifts the refusal the modal pitches that plan;
   // when nothing does (a full team) the API's sentence is shown.
+  // A full team's "contact us" is a real button: it opens the same form the
+  // sidebar's Help does, on the seats topic.
   const inviteButton = admin && org.data && (
-    <Button
-      size="sm"
-      variant="primary"
-      disabled={Boolean(team && !team.canInvite && !team.upgrade)}
-      title={team && !team.canInvite ? team.message : undefined}
-      onClick={() => {
-        setError(null);
-        setNotice(null);
-        if (team && !team.canInvite) {
-          if (team.upgrade) openUpgrade("seats");
-          return;
-        }
-        setInviteOpen(true);
-      }}
-    >
-      Invite a teammate
-    </Button>
+    <div className="flex items-center gap-2">
+      {team?.full && (
+        <Button size="sm" variant="secondary" onClick={() => openFeedback("seats")}>
+          Contact us for more seats
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="primary"
+        disabled={Boolean(team && !team.canInvite && !team.upgrade)}
+        title={team && !team.canInvite ? team.message : undefined}
+        onClick={() => {
+          setError(null);
+          setNotice(null);
+          if (team && !team.canInvite) {
+            if (team.upgrade) openUpgrade("seats");
+            return;
+          }
+          setInviteOpen(true);
+        }}
+      >
+        Invite a teammate
+      </Button>
+    </div>
   );
 
   return (

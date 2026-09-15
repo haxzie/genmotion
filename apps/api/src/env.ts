@@ -54,6 +54,8 @@ const schema = z.object({
   // changes; `signups` gets every new account. Unset means nothing is posted.
   SLACK_EVENTS_WEBHOOK_URL: z.url().optional(),
   SLACK_SIGNUPS_WEBHOOK_URL: z.url().optional(),
+  /** Help & feedback from the apps, and "contact us" for more seats. */
+  SLACK_REQUESTS_WEBHOOK_URL: z.url().optional(),
 
   // ── Email (Amazon SES) — optional ───────────────────────────────────
   EMAIL_FROM: z.email().optional(),

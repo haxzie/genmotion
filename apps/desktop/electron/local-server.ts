@@ -285,6 +285,19 @@ export async function startLocalServer(
       send(res, result.status, result.body);
       return;
     }
+    // Help & feedback, and "contact us": forwarded to the API with this
+    // build's version stamped on, so the channel knows what they were on.
+    if (rest[0] === "feedback" && method === "POST") {
+      const { desktopAuth } = await import("./auth");
+      const { app } = await import("electron");
+      const body = await readJson<{ message?: string; topic?: string }>(req);
+      const result = await desktopAuth.request<unknown>("/api/feedback", {
+        method: "POST",
+        json: { ...body, source: `desktop ${app.getVersion()} · ${process.platform}` },
+      });
+      send(res, result.status, result.body);
+      return;
+    }
     // The voices a voiceover can use, and a few seconds of each — for the
     // picker the agent puts in the chat. Signed calls to the API on the
     // account's behalf; the preview comes back through here because the

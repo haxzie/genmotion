@@ -1,6 +1,7 @@
 import { Button, cx } from "@/components/ui";
 import { useUpgrade } from "@/components/upgrade-modal";
 import { AccountMenu } from "./account-menu";
+import { useFeedback } from "./feedback-modal";
 import { hasUpdate } from "../lib/use-update";
 import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
 
@@ -100,6 +101,31 @@ const NAV: readonly { id: HomeTab; label: string; Icon: (props: IconProps) => Re
  * offers the same upgrade from its Account section — mirrors the web
  * dashboard's `UpgradeCard`, hidden the same way on its own billing page.
  */
+// Solar "Question Circle" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
+function HelpIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path opacity="0.5" d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Z" />
+      <path d="M12 16.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-2.9-6.3a.75.75 0 0 0 1.5 0c0-.8.6-1.45 1.4-1.45s1.4.65 1.4 1.45c0 .5-.3.8-.9 1.2-.7.5-1.65 1.15-1.65 2.6a.75.75 0 0 0 1.5 0c0-.65.35-.95 1-1.4.7-.5 1.55-1.1 1.55-2.4A2.9 2.9 0 0 0 12 7.3a2.9 2.9 0 0 0-2.9 2.9Z" />
+    </svg>
+  );
+}
+
+/** Help & feedback: the form that reaches a person, at the foot of the nav. */
+function HelpButton() {
+  const { openFeedback } = useFeedback();
+  return (
+    <button
+      type="button"
+      onClick={() => openFeedback("help")}
+      className="mb-1 flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-[0.929rem] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+    >
+      <HelpIcon className="size-4 shrink-0 text-text-tertiary" />
+      Help &amp; feedback
+    </button>
+  );
+}
+
 function UpgradeCard({ hidden }: { hidden: boolean }) {
   const { plan, trial, openUpgrade } = useUpgrade();
   if (hidden || plan?.id !== "free") return null;
@@ -201,6 +227,7 @@ export function AppSidebar({
         </button>
       )}
 
+      <HelpButton />
       <UpgradeCard hidden={tab === "settings"} />
 
       <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">

@@ -17,12 +17,40 @@ import type { WebhookEnvelope } from "./billing/webhook-handler";
  * go to the log, not the caller.
  */
 
-export type SlackFeed = "events" | "signups";
+export type SlackFeed = "events" | "signups" | "requests";
 
 const WEBHOOKS: Record<SlackFeed, string | undefined> = {
   events: env.SLACK_EVENTS_WEBHOOK_URL,
   signups: env.SLACK_SIGNUPS_WEBHOOK_URL,
+  requests: env.SLACK_REQUESTS_WEBHOOK_URL,
 };
+
+export function feedConfigured(feed: SlackFeed): boolean {
+  return Boolean(WEBHOOKS[feed]);
+}
+
+/**
+ * The awaited cousin of `postToSlack`, for the one feed where the sender is
+ * a person waiting to hear that their message went: a request from the app
+ * must not vanish into a fire-and-forget. Resolves false when it did not go.
+ */
+export async function sendToSlack(feed: SlackFeed, text: string): Promise<boolean> {
+  const url = WEBHOOKS[feed];
+  if (!url) return false;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) console.error(`[slack] ${feed} webhook answered ${res.status}`);
+    return res.ok;
+  } catch (err) {
+    console.error(`[slack] ${feed} post failed:`, err instanceof Error ? err.message : err);
+    return false;
+  }
+}
 
 export const slackEnabled = Boolean(
   env.SLACK_EVENTS_WEBHOOK_URL || env.SLACK_SIGNUPS_WEBHOOK_URL,

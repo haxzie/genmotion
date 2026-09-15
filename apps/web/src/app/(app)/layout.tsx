@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { currentPathForNext } from "@/lib/safe-next";
 import { AppShell } from "@/components/app-shell";
 import { UpgradeProvider } from "@/components/upgrade-modal";
+import { FeedbackProvider } from "@/components/feedback-modal";
 import { Spinner } from "@/components/ui";
 
 export default function AppLayout({
@@ -40,7 +41,9 @@ export default function AppLayout({
 
   return (
     <UpgradeProvider>
+      <FeedbackProvider>
       <AppShell>{children}</AppShell>
+      </FeedbackProvider>
     </UpgradeProvider>
   );
 }

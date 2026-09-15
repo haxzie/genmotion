@@ -16,6 +16,7 @@ import { eventRoutes } from "./routes/events";
 import { releaseRoutes } from "./routes/releases";
 import { templateRoutes } from "./routes/templates";
 import { mcpCatalogRoutes } from "./routes/mcp-catalog";
+import { feedbackRoutes } from "./routes/feedback";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -74,6 +75,8 @@ app.route("/api/releases", releaseRoutes);
 app.route("/api/templates", templateRoutes);
 // MCP marketplace. Public for the same reasons as the templates.
 app.route("/api/mcp", mcpCatalogRoutes);
+// Help & feedback from both apps, straight to a Slack channel.
+app.route("/api/feedback", feedbackRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.
