@@ -15,6 +15,7 @@ import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
 import { releaseRoutes } from "./routes/releases";
 import { templateRoutes } from "./routes/templates";
+import { mcpCatalogRoutes } from "./routes/mcp-catalog";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -71,6 +72,8 @@ app.route("/api/releases", releaseRoutes);
 // in the image, and the desktop app browses the gallery before it has a
 // project (or, on a fresh install, before it has a session).
 app.route("/api/templates", templateRoutes);
+// MCP marketplace. Public for the same reasons as the templates.
+app.route("/api/mcp", mcpCatalogRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.

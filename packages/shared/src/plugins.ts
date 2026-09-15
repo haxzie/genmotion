@@ -31,8 +31,19 @@ export const INTEGRATIONS: Record<IntegrationId, Integration> = {
 
 export type ChatPluginId = "voiceover" | "image" | "local-file";
 
+/** A connected MCP server, as a chip: `mcp:<server id>`. */
+export type McpChipId = `mcp:${string}`;
+
 export interface ChatPlugin {
-  id: ChatPluginId;
+  id: ChatPluginId | McpChipId;
+  /**
+   * Absent on the built-in plugins. `"mcp"` marks a chip made from a connected
+   * MCP server by `mcpServerChip` — same shape, so the menu, the chip and the
+   * note prepended to the message treat both alike.
+   */
+  kind?: "mcp";
+  /** For an `mcp` chip: the server's icon, when it has one. */
+  iconUrl?: string;
   /** Menu row title, and the chip's text. */
   label: string;
   /** Menu row subtitle — what it does, in one line. */
@@ -94,6 +105,37 @@ export const CHAT_PLUGINS: ChatPlugin[] = [
     directive: "",
   },
 ];
+
+/**
+ * A chip for a connected MCP server.
+ *
+ * The directive is a steer, like a plugin's: it names the server's tools so the
+ * agent reaches for them first rather than guessing at what the server could
+ * have told it.
+ */
+export function mcpServerChip(server: {
+  id: string;
+  name: string;
+  iconUrl?: string;
+  tools: { name: string }[];
+}): ChatPlugin {
+  const count = server.tools.length;
+  return {
+    kind: "mcp",
+    id: `mcp:${server.id}`,
+    label: server.name,
+    hint: `${count} tool${count === 1 ? "" : "s"}`,
+    integration: null,
+    tool: null,
+    iconUrl: server.iconUrl,
+    placeholder: `Ask something that uses ${server.name}…`,
+    directive: `Use the "${server.name}" MCP server for this request — its tools are named \`mcp__${server.id}__*\`. Call them rather than guessing at what they would return.`,
+  };
+}
+
+export function isMcpChipId(id: string): id is McpChipId {
+  return id.startsWith("mcp:");
+}
 
 export function chatPlugin(id: ChatPluginId): ChatPlugin {
   const found = CHAT_PLUGINS.find((p) => p.id === id);

@@ -7,3 +7,4 @@ export * from "./limits";
 export * from "./plans";
 export * from "./plugins";
 export * from "./desktop";
+export * from "./mcp";
