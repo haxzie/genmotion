@@ -61,11 +61,13 @@ function ChevronDownIcon({ className }: IconProps) {
     </svg>
   );
 }
-function AccountIcon({ className }: IconProps) {
+function DashboardIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 19.5c1.4-3 4-4.5 7-4.5s5.6 1.5 7 4.5" />
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
     </svg>
   );
 }
@@ -114,8 +116,8 @@ function LogOutIcon({ className }: IconProps) {
  * The whole of the web app.
  *
  * Making a video happens in the desktop app now, so what is left here is
- * account management: the account page (the app download and a plan
- * summary), the team, and billing. "Organization" once pointed at
+ * account management: the dashboard (the app download, the plan, and the
+ * month's usage), the team, and billing. "Organization" once pointed at
  * `/settings`, which redirects to Members — a row that led back to the row
  * above it — so it is not here.
  *
@@ -123,7 +125,7 @@ function LogOutIcon({ className }: IconProps) {
  * navigation, not the routing table.
  */
 const NAV = [
-  { label: "Account", href: "/dashboard", Icon: AccountIcon },
+  { label: "Dashboard", href: "/dashboard", Icon: DashboardIcon },
   { label: "Members", href: "/settings/members", Icon: UsersIcon },
   { label: "Billing", href: "/settings/billing", Icon: CreditCardIcon },
 ] as const;
