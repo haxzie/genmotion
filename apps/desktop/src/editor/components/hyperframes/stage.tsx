@@ -58,6 +58,13 @@ type RuntimeMessage =
   | { source: "hf-preview"; type: "pick-mode-cancelled" }
   | { source: "hf-preview"; type: string };
 
+/** A compiled page the stage is showing, or loading behind the one it shows. */
+interface Page {
+  revision: number;
+  /** Its runtime has announced itself and been put at the current frame. */
+  ready: boolean;
+}
+
 /** Purple, the same as the React inspector's. */
 const HILITE = "#a855f7";
 const BUBBLE_W = 300;
@@ -110,9 +117,24 @@ export function HyperframesStage({
   const frame = usePlaybackStore(selectDisplayFrame);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
   const tabActive = useTabActive();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
+
+  // Two pages at most: the one on screen, and the next compile loading
+  // behind it. The agent writes a composition a file at a time, so
+  // revisions come in bursts; reloading the visible iframe on each would
+  // flash black and drop the playhead every few seconds. The new page loads
+  // hidden, is put at the current frame, and is swapped in on its ready
+  // handshake — the old one goes only once the new one can take over. A
+  // burst collapses: a further revision replaces the one still loading.
+  const [live, setLive] = useState<Page | null>(null);
+  const [pending, setPending] = useState<Page | null>(null);
+  const liveRef = useRef<Page | null>(null);
+  liveRef.current = live;
+  const pendingRef = useRef<Page | null>(null);
+  pendingRef.current = pending;
+  const frames = useRef(new Map<number, HTMLIFrameElement>());
+  const ready = live?.ready ?? false;
+  const liveFrame = () => (liveRef.current ? frames.current.get(liveRef.current.revision) : undefined);
 
   // Element picking. The composition lives in a cross-origin iframe, so the
   // React inspector's DOM walk can't reach it; the runtime has a pick mode
@@ -137,48 +159,79 @@ export function HyperframesStage({
    * parent. The hovered element is the one the user means.
    */
   const hoveredRef = useRef<PickedElement | null>(null);
-  /** Mirrors `ready` for the message handler, which must not be re-bound per render. */
-  const readyRef = useRef(false);
-
   /** The last frame the runtime told us about, so its echo isn't sent back as a seek. */
   const echoed = useRef<number | null>(null);
 
-  const send = (message: Record<string, unknown>) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      { source: "hf-parent", type: "control", ...message },
-      "*",
-    );
+  const post = (target: HTMLIFrameElement | undefined, message: Record<string, unknown>) => {
+    target?.contentWindow?.postMessage({ source: "hf-parent", type: "control", ...message }, "*");
   };
+  const send = (message: Record<string, unknown>) => post(liveFrame(), message);
 
-  // A new compile is a new page; nothing about the old one carries over.
+  // A compile landed. The first is the page; every later one loads behind it.
   useEffect(() => {
-    setReady(false);
-    readyRef.current = false;
-    echoed.current = null;
+    const current = liveRef.current;
+    if (!current) {
+      setLive({ revision, ready: false });
+      return;
+    }
+    if (current.revision === revision) return;
+    setPending({ revision, ready: false });
   }, [revision]);
+
+  /** Everything a freshly loaded page is told before it may be looked at. */
+  function handshake(target: HTMLIFrameElement | undefined) {
+    const state = store.getState();
+    // Land on the store's frame: a reload mid-scrub should not snap the
+    // picture back to zero while the playhead says otherwise.
+    post(target, { action: "seek", timeSeconds: state.frame / fps, seekMode: "commit" });
+    post(target, { action: "set-muted", muted: !tabActiveRef.current });
+    post(target, { action: "enable-pick-mode" });
+    if (state.isPlaying) post(target, { action: "play" });
+  }
+  const tabActiveRef = useRef(tabActive);
+  tabActiveRef.current = tabActive;
+  const handshakeRef = useRef(handshake);
+  handshakeRef.current = handshake;
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      const frameWindow = iframeRef.current?.contentWindow;
-      if (!frameWindow || event.source !== frameWindow) return;
+      // Which of our pages is talking — the one on screen, or the one loading.
+      let from: number | null = null;
+      for (const [rev, el] of frames.current) {
+        if (el.contentWindow === event.source) from = rev;
+      }
+      if (from === null) return;
       const data = event.data as RuntimeMessage | null;
       if (!data || data.source !== "hf-preview") return;
+      const isLive = liveRef.current?.revision === from;
+      const isPending = pendingRef.current?.revision === from;
 
       if (data.type === "timeline" && "durationSeconds" in data) {
         const seconds = Number.isFinite(data.durationSeconds) ? data.durationSeconds : 0;
-        store.getState().setTotalFrames(Math.max(0, Math.round(seconds * fps)));
+        const total = Math.max(0, Math.round(seconds * fps));
         // The runtime re-announces its timeline as it goes — on play, on a
         // media settle — so only the first one after a load is the
         // handshake. Seeking on the later ones would pause playback.
-        if (readyRef.current) return;
-        readyRef.current = true;
-        // Land on the store's frame: a reload mid-scrub should not snap the
-        // picture back to zero while the playhead says otherwise.
-        send({ action: "seek", timeSeconds: store.getState().frame / fps, seekMode: "commit" });
-        if (store.getState().isPlaying) send({ action: "play" });
-        setReady(true);
+        if (isLive) {
+          store.getState().setTotalFrames(total);
+          if (liveRef.current?.ready) return;
+          handshakeRef.current(frames.current.get(from));
+          setLive({ revision: from, ready: true });
+          return;
+        }
+        if (isPending && !pendingRef.current?.ready) {
+          // The next page is up: put it where the old one is, then swap.
+          handshakeRef.current(frames.current.get(from));
+          store.getState().setTotalFrames(total);
+          echoed.current = null;
+          hoveredRef.current = null;
+          setPending(null);
+          setLive({ revision: from, ready: true });
+        }
         return;
       }
+      // Everything else is only heard from the page on screen.
+      if (!isLive) return;
 
       if (data.type === "pick-mode-cancelled") {
         // Escape inside the composition. Keep the mode on — it is how every
@@ -255,7 +308,7 @@ export function HyperframesStage({
    */
   function toStage(p: { x: number; y: number }): { x: number; y: number } {
     const stage = stageRef.current?.getBoundingClientRect();
-    const box = iframeRef.current?.getBoundingClientRect();
+    const box = liveFrame()?.getBoundingClientRect();
     if (!stage || !box) return p;
     return { x: box.left - stage.left + p.x * scale, y: box.top - stage.top + p.y * scale };
   }
@@ -397,16 +450,34 @@ export function HyperframesStage({
             still load — the preview routes answer with CORS open. The pointer
             does reach it: that is how the runtime's pick mode sees hover and
             click, and the keyboard is taken back on every pick. */}
-        <iframe
-          key={revision}
-          ref={iframeRef}
-          title="Composition preview"
-          src={previewUrlFor(dir, revision)}
-          width={width}
-          height={height}
-          style={{ border: 0, display: "block" }}
-          sandbox="allow-scripts"
-        />
+        {[live, pending].map(
+          (page) =>
+            page && (
+              <iframe
+                key={page.revision}
+                ref={(el) => {
+                  if (el) frames.current.set(page.revision, el);
+                  else frames.current.delete(page.revision);
+                }}
+                title="Composition preview"
+                src={previewUrlFor(dir, page.revision)}
+                width={width}
+                height={height}
+                style={{
+                  border: 0,
+                  display: "block",
+                  position: "absolute",
+                  inset: 0,
+                  // The loading page is present but unseen until it is
+                  // ready; `opacity` rather than `visibility` so its runtime
+                  // keeps a live clock and reports itself.
+                  opacity: page === live ? 1 : 0,
+                  pointerEvents: page === live ? "auto" : "none",
+                }}
+                sandbox="allow-scripts"
+              />
+            ),
+        )}
       </div>
 
       {/* The picked element, held under a solid outline, and the comment

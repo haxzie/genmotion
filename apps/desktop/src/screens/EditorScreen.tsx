@@ -361,7 +361,12 @@ function EditorBody({
                   <div className="flex min-h-0 flex-1 flex-col">
                     <div className="relative min-h-0 flex-1 p-4">
                       <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
-                        {hf.compileError || hf.width === null || hf.height === null ? (
+                        {/* A compile error alone does not take the stage away: the
+                            last good page stays up under the banner above, since
+                            the agent breaks and mends the folder several times a
+                            turn. Only a project that has never compiled has
+                            nothing to show. */}
+                        {hf.width === null || hf.height === null ? (
                           <div className="flex h-full items-center justify-center">
                             <div className="max-w-md text-center text-text-tertiary">
                               <p className="text-lg">Nothing to show yet</p>

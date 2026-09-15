@@ -131,6 +131,21 @@ export function appRuntimeScript(): string {
  * frame. It is the same switch `@hyperframes/producer` throws for its own
  * captures; the preview iframe loads the document without it.
  */
+/**
+ * The runtime's pick mode outlines what the pointer is over in its own blue.
+ * The editor's inspector is purple, and the two previews sit side by side in
+ * the same product, so the page carries an override: more specific than the
+ * runtime's rule, which it appends to `<head>` after this one.
+ */
+const PICK_STYLE = `<style data-gm-pick="1">
+html .__hf-pick-highlight{outline:1.5px solid #a855f7!important;outline-offset:0!important;border-radius:3px!important;box-shadow:0 0 0 1px rgba(168,85,247,.33),inset 0 0 0 9999px rgba(168,85,247,.13)!important}
+</style>`;
+
+/** The preview document as the editor's stage loads it. */
+export function forPreview(html: string): string {
+  return html.replace(/<\/head>/i, `${PICK_STYLE}</head>`);
+}
+
 export function forRender(html: string): string {
   return injectScriptsAtHeadStart(html, ["globalThis.__HF_RENDER_CAPTURE_MODE = true;"]);
 }
