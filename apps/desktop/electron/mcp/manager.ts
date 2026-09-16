@@ -6,6 +6,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { UnauthorizedError, auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { McpServerInput, McpServerPatch, McpServerView, McpToolSummary } from "@genmotion/shared";
 import { agentEnv } from "../agent/detect";
+import { track } from "../analytics";
 import { localServerUrl } from "../local-server";
 import {
   AuthRequiredError,
@@ -122,8 +123,18 @@ class McpManager {
 
   async probeAll(): Promise<void> {
     const configs = await listConfigs();
+    // The launch sweep re-checks what was already integrated; nothing
+    // happened, so nothing is reported.
+    for (const c of configs) this.reported.add(c.id);
     await Promise.all(configs.filter((c) => c.enabled).map((c) => this.probe(c.id)));
   }
+
+  /**
+   * Servers whose first connection has been reported. "Integrated" is a
+   * once-per-server event: a re-probe, a second overlapping probe, or the
+   * launch sweep must not count it again.
+   */
+  private readonly reported = new Set<string>();
 
   /**
    * Connect, list tools, disconnect. `interactive` lets an OAuth server send
@@ -160,6 +171,13 @@ class McpManager {
       // "connected" would be a promise the first tool call breaks.
       const secrets = await getSecrets(id);
       const unsigned = config.auth === "oauth" && usesOAuth(config, secrets) && !secrets.oauth?.tokens;
+      // "Integrated" is the first time it answers with its tools — not the
+      // add, which may sit in Needs attention for a week. Once per server
+      // per session; a re-probe of a connected server is not news.
+      if (!unsigned && !this.reported.has(id)) {
+        this.reported.add(id);
+        track("mcp_server_connected", { ...integrationProps(config), tools: result.tools.length });
+      }
       this.runtime.set(id, {
         status: unsigned ? "needs-auth" : "connected",
         tools: unsigned ? [] : result.tools,
@@ -250,6 +268,10 @@ class McpManager {
 
   async add(input: McpServerInput): Promise<McpServerView> {
     const config = await addServer(input);
+    // Which integrations people reach for is the marketplace's whole
+    // question. A custom server is counted without its URL — that is
+    // theirs.
+    track("mcp_server_added", integrationProps(config));
     void this.probe(config.id);
     this.emit();
     return this.view(config);
@@ -264,6 +286,9 @@ class McpManager {
   }
 
   async remove(id: string): Promise<void> {
+    const config = await getConfig(id);
+    if (config) track("mcp_server_removed", integrationProps(config));
+    this.reported.delete(id);
     await removeServer(id);
     this.runtime.delete(id);
     this.authTransports.delete(id);
@@ -288,6 +313,7 @@ class McpManager {
       throw new Error("This server does not sign in through the browser.");
     }
     await resetOAuth(id);
+    track("mcp_auth_started", integrationProps(config));
     // Straight to the SDK's flow — discovery, registration, the browser —
     // rather than connecting and hoping for a 401: a server that lists its
     // tools to anyone never sends one, and we still owe the user a sign-in.
@@ -316,6 +342,7 @@ class McpManager {
     if (!id) return { ok: false, error: "This sign-in link has expired. Try Authenticate again." };
     const config = await getConfig(id);
     if (!config?.url) return { ok: false, error: "That server is no longer configured." };
+    track("mcp_auth_completed", integrationProps(config));
     try {
       const transport = this.authTransports.get(id);
       if (transport) {
@@ -327,6 +354,7 @@ class McpManager {
         });
       }
     } catch (err) {
+      track("mcp_auth_failed", { ...integrationProps(config), error: describeError(err) });
       this.runtime.set(id, { status: "error", tools: [], error: describeError(err), checkedAt: Date.now() });
       this.emit();
       return { ok: false, error: describeError(err) };
@@ -519,3 +547,16 @@ function describeError(err: unknown): string {
 }
 
 export const mcpManager = new McpManager();
+
+/**
+ * What an event says about a server: the catalog id for a marketplace one,
+ * only "custom" for one the user typed in — its name and URL are theirs.
+ */
+function integrationProps(config: { source: string; catalogId?: string; transport: string; auth: string }) {
+  return {
+    integration: config.source === "marketplace" ? (config.catalogId ?? "marketplace") : "custom",
+    source: config.source,
+    transport: config.transport,
+    auth: config.auth,
+  };
+}

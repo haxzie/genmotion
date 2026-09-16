@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
+import { parseMcpToolName } from "@genmotion/shared";
 import type { AgentBackend, AgentEvent } from "./types";
+import { track } from "../analytics";
 
 /** How often a checkpoint is written while only plain text is streaming in.
  *  Tool events bypass this entirely — those are rare and worth writing
@@ -92,6 +94,8 @@ export function runTurnAsUiStream(input: {
       let openText: { type: "text"; text: string } | null = null;
       let openReasoning: { type: "reasoning"; text: string } | null = null;
       const toolPartIndex = new Map<string, number>();
+      /** Call id → tool name, so the end event can be attributed. */
+      const toolNames = new Map<string, string>();
       let lastCheckpointAt = 0;
       /**
        * A failure is held rather than thrown where it arrives — see the
@@ -152,6 +156,13 @@ export function runTurnAsUiStream(input: {
           }
 
           case "tool-start": {
+            // A call to one of the user's servers is the marketplace being
+            // used — the event names the server and the tool, never the
+            // input. Our own genmotion tools are not integrations.
+            const mcp = parseMcpToolName(event.name);
+            if (mcp && mcp.server !== "genmotion") {
+              track("mcp_tool_called", { server: mcp.server, tool: mcp.tool, harness: input.backend.id });
+            }
             // Close the text part first: a tool call ends the prose block, and
             // leaving it open would append later text to the wrong bubble.
             closeText();
@@ -165,6 +176,7 @@ export function runTurnAsUiStream(input: {
               input: event.input,
             });
             toolPartIndex.set(event.id, parts.length);
+            toolNames.set(event.id, event.name);
             parts.push({
               type: `tool-${event.name}`,
               toolCallId: event.id,
@@ -178,6 +190,11 @@ export function runTurnAsUiStream(input: {
           }
 
           case "tool-end": {
+            const ended = toolNames.get(event.id);
+            const endedMcp = ended ? parseMcpToolName(ended) : null;
+            if (endedMcp && endedMcp.server !== "genmotion") {
+              track("mcp_tool_finished", { server: endedMcp.server, tool: endedMcp.tool, ok: !event.isError });
+            }
             const output = withoutImages(event.output);
             if (event.isError) {
               writer.write({

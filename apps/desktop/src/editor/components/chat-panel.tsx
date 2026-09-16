@@ -1251,6 +1251,10 @@ function ChatPanelInner({
     track("chat_message_sent", {
       length: text.length,
       hasSelection: editorStore.getState().selectedSceneIds.length > 0,
+      // Which plugins and connected servers the message was pointed at —
+      // the "is the marketplace used" half of the marketplace's question.
+      plugins: plugins.filter((p) => p.kind !== "mcp").map((p) => p.id),
+      mcpServers: plugins.filter((p) => p.kind === "mcp").map((p) => p.id.replace(/^mcp:/, "")),
     });
 
     const send = buildSendPayload(text);
