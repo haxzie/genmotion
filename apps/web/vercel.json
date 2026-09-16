@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} ${VERCEL_GIT_COMMIT_SHA:-HEAD} -- . ../../packages ../../scripts/install.sh ../../pnpm-lock.yaml"
+  "ignoreCommand": "b=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e \"$b^{commit}\" 2>/dev/null || git fetch --deepen=100 origin 2>/dev/null; git cat-file -e \"$b^{commit}\" 2>/dev/null || b=HEAD^; if git diff --quiet \"$b\" HEAD -- . ../../packages ../../scripts/install.sh ../../pnpm-lock.yaml; then exit 0; else exit 1; fi"
 }
