@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../packages ../../scripts/install.sh ../../pnpm-lock.yaml"
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} ${VERCEL_GIT_COMMIT_SHA:-HEAD} -- . ../../packages ../../scripts/install.sh ../../pnpm-lock.yaml"
 }
