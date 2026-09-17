@@ -15,6 +15,15 @@ function join(...parts: (string | false | undefined)[]): string {
 const CLAUDE_PATH =
   "M21 10.5h3v3h-3v3h-1.5v3H18v-3h-1.5v3H15v-3H9v3H7.5v-3H6v3H4.5v-3H3v-3H0v-3h3v-6h18Zm-15 0h1.5v-3H6Zm10.5 0H18v-3h-1.5z";
 
+/** The mark on its own, in brand orange, for use inline in copy. */
+export function ClaudeMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="#D97757" aria-hidden>
+      <path d={CLAUDE_PATH} />
+    </svg>
+  );
+}
+
 /**
  * One glyph in its own disc. No border and a translucent fill, so where the
  * discs overlap the one underneath shows through rather than being cut out —
@@ -48,9 +57,7 @@ export function AgentBadges({ className }: { className?: string }) {
           the overlap is a deliberate part of the look. */}
       <span className="flex -space-x-2.5">
         <Disc>
-          <svg viewBox="0 0 24 24" className="size-[1.15rem]" fill="#D97757" aria-hidden>
-            <path d={CLAUDE_PATH} />
-          </svg>
+          <ClaudeMark className="size-[1.15rem]" />
         </Disc>
         <Disc>
           {/* OpenAI ships no public SVG of this mark and it isn't in the icon

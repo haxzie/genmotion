@@ -16,7 +16,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
-import { AgentBadges } from "@/components/marketing/agent-badges";
+import { AgentBadges, ClaudeMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
@@ -165,8 +165,13 @@ export default async function HomePage() {
           {/* Balanced wrapping instead of a hardcoded <br />: the line is long
               enough that a fixed break lands badly at one of the two sizes. */}
           <h1 className="max-w-3xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
-            Create your product launch video in{" "}
-            <span className="chromatic-word">minutes</span>
+            Create <span className="chromatic-word">viral</span> launch videos using{" "}
+            {/* Kept on one line as a unit: the mark belongs to the name, and a
+                wrap between them would leave it orphaned at a line end. */}
+            <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
+              <ClaudeMark className="size-[0.8em] shrink-0" />
+              Claude Code
+            </span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-text-secondary">
             AI-powered motion graphics editor for your product videos.
