@@ -51,7 +51,7 @@ The chart draws month by month while the number counts alongside it, so the curv
 
 One technical note we're mildly proud of. GitHub's own stargazers API stops paginating after 400 pages — about 40,000 stars — so any tool built on it simply cannot see the recent half of a popular repository's timeline. Ours reads GH Archive's public event stream instead, which has no such ceiling. That clip above is react/react's **full** history, all 247,144 stars back to 2013, not a sample that flatlines at 40k.
 
-**[Chart a repository's history →](/tools/github-star-history)**
+**[Chart a repository's history →](/tools/github-star-count)**
 
 ---
 

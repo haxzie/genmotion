@@ -3,6 +3,7 @@ import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
 import { alpha, fitSize, shade, textEm } from "./shared";
 import { BrandMark } from "./brand";
+import { CountUpIcon } from "./icons";
 import { RollingNumber } from "./rolling-number";
 import { Sparkline } from "./sparkline";
 
@@ -204,6 +205,7 @@ function CountUpScene({ data }: { data: MetricVideoData }) {
 export const countUp: VideoTemplate = {
   id: "count-up",
   name: "Count up",
+  Icon: CountUpIcon,
   supports: () => true,
   Scene: CountUpScene,
 };

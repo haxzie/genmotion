@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Player, defaultPlaybackStore, usePlaybackStore } from "@genmotion/player";
 import { FaqSection } from "@/components/marketing/faq";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
 import { Button, Spinner, cx } from "@/components/ui";
 import { UpsellModal, type ExportPhase } from "@/components/tools/upsell-modal";
+import { track } from "@/lib/analytics";
 import { getTool } from "@/lib/marketing/tools";
 import { getGenerator } from "@/lib/video-tools/registry";
 import { SAMPLES } from "@/lib/video-tools/samples";
@@ -94,8 +95,19 @@ export function VideoTool({ slug }: { slug: string }) {
           setError("error" in body ? body.error : "Something went wrong.");
           return;
         }
-        setData(body as MetricVideoData);
+        const live = body as MetricVideoData;
+        setData(live);
         setIsSample(false);
+        track("tool_video_generated", {
+          tool: generator.slug,
+          source: live.source,
+          query: trimmed,
+          title: live.title,
+          value: live.value,
+          hasSeries: (live.series?.length ?? 0) >= 2,
+          template: template.id,
+          aspect,
+        });
         // Restart the preview so the visitor sees the animation for their data.
         // This page has one player on the default clock, so it is addressed
         // directly rather than through a provider.
@@ -107,7 +119,7 @@ export function VideoTool({ slug }: { slug: string }) {
         setLoading(false);
       }
     },
-    [generator.slug, loading],
+    [aspect, generator.slug, loading, template.id],
   );
 
   const download = useCallback(async () => {
@@ -120,6 +132,7 @@ export function VideoTool({ slug }: { slug: string }) {
     setUpsell({ phase: "rendering", filename: null });
 
     const Scene = template.Scene;
+    const startedAt = performance.now();
     try {
       const { exportVideo, downloadBlob } = await import(
         "@/lib/video-tools/render/export-video"
@@ -136,6 +149,19 @@ export function VideoTool({ slug }: { slug: string }) {
       });
       downloadBlob(result.blob, result.filename);
       setUpsell({ phase: "done", filename: result.filename });
+      track("tool_video_exported", {
+        tool: generator.slug,
+        source: data.source,
+        title: data.title,
+        // Whether they exported the example or their own lookup.
+        sample: isSample,
+        template: template.id,
+        aspect,
+        width,
+        height,
+        format: result.blob.type === "video/webm" ? "webm" : "mp4",
+        durationMs: Math.round(performance.now() - startedAt),
+      });
       if (result.blob.type === "video/webm") {
         setExportError(
           "Your browser can't encode MP4, so this downloaded as a WebM. Chrome, Edge, or Safari will give you an MP4.",
@@ -156,7 +182,7 @@ export function VideoTool({ slug }: { slug: string }) {
       setExporting(false);
       abortRef.current = null;
     }
-  }, [data, exporting, generator.slug, height, template, width]);
+  }, [aspect, data, exporting, generator.slug, height, isSample, template, width]);
 
   return (
     <>
@@ -221,7 +247,7 @@ export function VideoTool({ slug }: { slug: string }) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Chips
                 label="Style"
-                options={available.map((t) => ({ value: t.id, label: t.name }))}
+                options={available.map((t) => ({ value: t.id, label: t.name, Icon: t.Icon }))}
                 value={template.id}
                 onChange={(value) => setTemplateId(value as TemplateId)}
               />
@@ -318,7 +344,7 @@ function Chips({
   onChange,
 }: {
   label: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; Icon?: ComponentType<{ className?: string }> }[];
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -333,12 +359,13 @@ function Chips({
             onClick={() => onChange(option.value)}
             aria-pressed={value === option.value}
             className={cx(
-              "h-8 rounded-md border px-3 text-[0.9rem] transition-colors duration-150",
+              "flex h-8 items-center gap-1.5 rounded-md border px-3 text-[0.9rem] transition-colors duration-150",
               value === option.value
                 ? "border-border-strong bg-surface-raised text-text-primary"
                 : "border-border text-text-secondary hover:border-border-strong hover:text-text-primary",
             )}
           >
+            {option.Icon && <option.Icon className="size-4 shrink-0" />}
             {option.label}
           </button>
         ))}

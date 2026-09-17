@@ -29,17 +29,8 @@ export const GENERATORS: Record<string, Generator> = {
     inputLabel: "Repository",
     inputPlaceholder: "facebook/react",
     examples: ["facebook/react", "vercel/next.js", "microsoft/vscode"],
-    templates: ["count-up", "stat-card"],
+    templates: ["count-up", "stat-card", "chart-rise"],
     hint: "Any public repository — owner/repo or a GitHub URL.",
-  },
-  "github-star-history": {
-    slug: "github-star-history",
-    source: "github-star-history",
-    inputLabel: "Repository",
-    inputPlaceholder: "facebook/react",
-    examples: ["facebook/react", "vercel/next.js", "tailwindlabs/tailwindcss"],
-    templates: ["chart-rise", "count-up", "stat-card"],
-    hint: "Any public repository — the chart covers its whole life, month by month.",
   },
   "npm-downloads": {
     slug: "npm-downloads",
@@ -58,6 +49,15 @@ export const GENERATORS: Record<string, Generator> = {
     examples: ["@mkbhd", "@veritasium", "@fireship"],
     templates: ["count-up", "stat-card"],
     hint: "A channel handle, a channel URL, or a UC… channel ID.",
+  },
+  "product-hunt-launch": {
+    slug: "product-hunt-launch",
+    source: "producthunt-launch",
+    inputLabel: "Launch",
+    inputPlaceholder: "producthunt.com/posts/…",
+    examples: ["lovable", "bolt-new", "chatgpt"],
+    templates: ["launch-card", "count-up", "stat-card"],
+    hint: "Paste the launch's Product Hunt link, or just its slug.",
   },
 };
 

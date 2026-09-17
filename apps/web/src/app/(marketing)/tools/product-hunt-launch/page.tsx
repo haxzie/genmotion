@@ -8,7 +8,7 @@ import { Tool } from "./tool";
 // The tool itself is a client component, which can't export metadata — hence
 // this server wrapper. It also owns the structured data: it's static, so there
 // is no reason to ship it in the client bundle.
-const TOOL = getTool("github-star-history")!;
+const TOOL = getTool("product-hunt-launch")!;
 
 export const metadata: Metadata = pageMetadata({
   title: `${TOOL.name} — Free Online Tool | GenMotion`,

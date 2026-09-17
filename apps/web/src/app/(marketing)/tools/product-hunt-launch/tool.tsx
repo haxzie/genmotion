@@ -3,5 +3,5 @@
 import { VideoTool } from "@/components/tools/video-tool";
 
 export function Tool() {
-  return <VideoTool slug="github-star-history" />;
+  return <VideoTool slug="product-hunt-launch" />;
 }

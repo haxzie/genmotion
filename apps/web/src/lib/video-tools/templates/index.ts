@@ -2,12 +2,14 @@ import type { MetricVideoData } from "../types";
 import { countUp } from "./count-up";
 import { chartRise } from "./chart-rise";
 import { statCard } from "./stat-card";
+import { launchCard } from "./launch-card";
 import type { TemplateId, VideoTemplate } from "./types";
 
 export const TEMPLATES: Record<TemplateId, VideoTemplate> = {
   "count-up": countUp,
   "chart-rise": chartRise,
   "stat-card": statCard,
+  "launch-card": launchCard,
 };
 
 /**

@@ -3,6 +3,7 @@ import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
 import { alpha, fitSize, formatSigned, shade, textEm } from "./shared";
 import { BrandMark } from "./brand";
+import { StatCardIcon } from "./icons";
 import { RollingNumber } from "./rolling-number";
 import { Sparkline } from "./sparkline";
 
@@ -182,6 +183,7 @@ function StatCardScene({ data }: { data: MetricVideoData }) {
 export const statCard: VideoTemplate = {
   id: "stat-card",
   name: "Stat card",
+  Icon: StatCardIcon,
   supports: () => true,
   Scene: StatCardScene,
 };

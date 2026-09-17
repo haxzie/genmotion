@@ -34,23 +34,23 @@ export const TOOLS: Tool[] = [
     slug: "github-star-count",
     name: "GitHub Star Count Video Generator",
     description:
-      "Turn any public repository's star count into a shareable animated video.",
+      "Turn any public repository's star count or star history into a shareable animated video.",
     icon: "github",
     metaDescription:
-      "Turn any public GitHub repository's star count into a shareable animated video. Free, no sign-up — renders in your browser and downloads as an MP4.",
+      "Turn any GitHub repository's star count or star history chart into a shareable animated video. Free, no sign-up — renders in your browser, downloads as an MP4.",
     shortName: "star count video",
     steps: [
       {
         icon: "github",
         title: "Paste a repository",
         body:
-          "Type any public repo as owner/repo, or paste its GitHub URL. We read the live star count straight from the public GitHub API.",
+          "Type any public repo as owner/repo, or paste its GitHub URL. We read the live star count from the public GitHub API and its month-by-month history alongside.",
       },
       {
         icon: "palette",
         title: "Pick a style and size",
         body:
-          "Choose Count up or Stat card, then 16:9 for YouTube, 1:1 for the feed, or 9:16 for Reels, Shorts and Stories.",
+          "Choose Count up, Stat card, or Chart rise to draw the star history as a curve — then 16:9 for YouTube, 1:1 for the feed, or 9:16 for Reels, Shorts and Stories.",
       },
       {
         icon: "export",
@@ -64,7 +64,7 @@ export const TOOLS: Tool[] = [
         icon: "github",
         title: "Open-source maintainers",
         body:
-          "Mark the moment a project crosses 1k, 10k or 100k stars with something more shareable than a screenshot of the repo page.",
+          "Mark the moment a project crosses 1k, 10k or 100k stars — or show the shape of its growth — with something more shareable than a screenshot of the repo page.",
       },
       {
         icon: "rocket",
@@ -93,6 +93,18 @@ export const TOOLS: Tool[] = [
         a: "Straight from the public GitHub API, cached for an hour. It's the same number shown on the repository page, so it's accurate to within that hour.",
       },
       {
+        q: "Can I make a star history chart video?",
+        a: "Yes — pick the Chart rise style. It draws the repository's star history month by month while the number counts alongside it, so both land together on the live figure.",
+      },
+      {
+        q: "Where does the star history come from?",
+        a: "From OSS Insight, which derives it from GH Archive — GitHub's public event stream. GitHub's own stargazers API stops paginating at about 40,000 stars, so the recent part of a popular repository's timeline would be unreachable; the event-stream data has no such ceiling. Today's exact total still comes from the GitHub API, so the chart ends on the live figure.",
+      },
+      {
+        q: "My repository has no Chart rise style — why?",
+        a: "The chart needs at least two months of history. Very new repositories don't have it yet, and it can take OSS Insight a while to catch up after a rename or transfer. The Count up and Stat card styles work regardless.",
+      },
+      {
         q: "Can I use the video on social media?",
         a: "Yes — that's what it's for. Pick 1:1 or 9:16 for feed and Stories posts, or 16:9 for YouTube and slides. The MP4 is H.264, which every platform accepts.",
       },
@@ -103,74 +115,74 @@ export const TOOLS: Tool[] = [
     ],
   },
   {
-    slug: "github-star-history",
-    name: "GitHub Star History Video Generator",
+    slug: "product-hunt-launch",
+    name: "Product Hunt Launch Video Generator",
     description:
-      "Animate a repository's growth over time as a star history chart video.",
-    icon: "timeline",
+      "Turn a Product Hunt launch — upvotes, comments and rank — into an animated video.",
+    icon: "producthunt",
     metaDescription:
-      "Turn any public GitHub repository's star history into an animated chart video. Free, no sign-up \u2014 renders in your browser and downloads as an MP4.",
-    shortName: "star history video",
+      "Turn your Product Hunt launch into a shareable animated video with its upvotes, comments and rank. Free, no sign-up — renders in your browser as an MP4.",
+    shortName: "launch video",
     steps: [
       {
-        icon: "github",
-        title: "Paste a repository",
+        icon: "producthunt",
+        title: "Paste your launch",
         body:
-          "Type any public repo as owner/repo, or paste its GitHub URL. We chart its whole life, from its first star to today's total.",
+          "Drop in the launch's Product Hunt link. We read the live upvote and comment counts, the product icon and the day's rank from the Product Hunt API.",
       },
       {
-        icon: "timeline",
-        title: "Watch the curve draw",
+        icon: "palette",
+        title: "Pick a style and size",
         body:
-          "The Chart rise style draws the line month by month while the number counts alongside it, so both land together on the live figure.",
+          "Launch card shows the whole result with a rank ribbon; Count up and Stat card put the upvotes front and centre. Then 16:9, 1:1 or 9:16.",
       },
       {
         icon: "export",
         title: "Download the MP4",
         body:
-          "Rendered in your browser in a few seconds and saved straight to your machine. No account, no queue.",
+          "The video renders in your browser in a few seconds and saves straight to your machine. No account, no queue.",
       },
     ],
     personas: [
       {
-        icon: "github",
-        title: "Open-source maintainers",
-        body:
-          "Show the shape of a project's growth, not just today's number \u2014 the curve tells the story a star count can't.",
-      },
-      {
         icon: "rocket",
-        title: "Founders and indie hackers",
+        title: "Makers on launch day",
         body:
-          "A rising line is the clearest traction slide you can make. Drop it into a launch thread, deck or investor update.",
+          "Post a clip of the climbing count mid-launch to bring people back to vote, then a final one when the rank is in.",
       },
       {
         icon: "sparkles",
-        title: "Developer advocates",
+        title: "Founders and marketers",
         body:
-          "Mark an anniversary or a breakout month with a chart that animates, without opening After Effects.",
+          "A #1 Product of the Day badge deserves more than a static image. Drop the video into a thread, a newsletter, or a landing page.",
+      },
+      {
+        icon: "producthunt",
+        title: "Hunters and communities",
+        body:
+          "Celebrate the launches you hunted or supported with a clip that carries the product's icon and tagline.",
       },
     ],
     faqs: [
       {
-        q: "How do I make a GitHub star history video?",
-        a: "Enter a repository as owner/repo \u2014 for example facebook/react \u2014 pick the Chart rise style and a size, then hit Download. The video renders in your browser and saves as an MP4.",
+        q: "How do I make a Product Hunt launch video?",
+        a: "Paste the launch's link — for example producthunt.com/posts/your-product — pick a style and a size, then hit Download. The video renders in your browser and saves as an MP4.",
       },
       {
-        q: "Where does the star history come from?",
-        a: "From OSS Insight, which derives it from GH Archive \u2014 GitHub's public event stream. That gives monthly totals across the repository's whole life, and today's exact total comes from the GitHub API so the chart ends on the live figure.",
+        q: "Where do the numbers come from?",
+        a: "From the official Product Hunt API, cached for an hour. Upvotes, comments and the daily, weekly and monthly rank are the same figures shown on the launch page.",
       },
       {
-        q: "Why not use GitHub's own stargazers API?",
-        a: "It stops paginating after 400 pages, about 40,000 stars, so for any popular repository the recent part of the timeline is simply unreachable. The event-stream data has no such ceiling \u2014 a repo with 250,000 stars charts in full.",
+        q: "Can I use it during the launch, before the rank is final?",
+        a: "Yes. The counts are live, and the rank ribbon shows the current position — make one clip mid-day and another once the day closes.",
       },
       {
-        q: "My repository shows no history \u2014 why?",
-        a: "Usually because it was renamed or transferred; history follows the repository's current name, which we resolve automatically. Very new repositories may also not have enough months to chart yet.",
+        q: "Which links work?",
+        a: "Any Product Hunt launch URL — the /posts/… form, the /products/…/launches/… form, or the product page with a ?launch= parameter — or just the launch's slug.",
       },
       {
-        q: "Is the star history video generator free?",
-        a: "Yes \u2014 free, no sign-up, and no limit on how many videos you make.",
+        q: "Is it free?",
+        a: "Yes — free, no sign-up, and no limit on how many videos you make. Videos carry a small GenMotion badge.",
       },
     ],
   },
@@ -591,9 +603,9 @@ export const TOOLS: Tool[] = [
  */
 export const GENERATOR_SLUGS: ReadonlySet<string> = new Set([
   "github-star-count",
-  "github-star-history",
   "npm-downloads",
   "youtube-subscribers",
+  "product-hunt-launch",
 ]);
 
 export function getTool(slug: string): Tool | undefined {

@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { Container, Eyebrow, Section } from "@/components/marketing/primitives";
 import { FeatureIcon } from "@/components/marketing/icons";
-import { TOOLS, type Tool, type ToolCard } from "@/lib/marketing/tools";
-
-/** Slugs that generate a video, as opposed to the calculators and references. */
-const GENERATOR_SLUGS = new Set([
-  "github-star-count",
-  "npm-downloads",
-  "youtube-subscribers",
-]);
+import { GENERATOR_SLUGS, TOOLS, type Tool, type ToolCard } from "@/lib/marketing/tools";
 
 /**
  * The marketing strips every tool page carries below its tool: how it works,

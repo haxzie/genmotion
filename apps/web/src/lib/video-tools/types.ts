@@ -8,9 +8,9 @@
 
 export const SOURCE_IDS = [
   "github-stars",
-  "github-star-history",
   "npm-downloads",
   "youtube-subscribers",
+  "producthunt-launch",
 ] as const;
 
 export type SourceId = (typeof SOURCE_IDS)[number];
@@ -42,6 +42,15 @@ export interface MetricVideoData {
    * rasterizer cannot draw a cross-origin image, so sources inline it.
    */
   avatar?: string | null;
+  /**
+   * One-line pitch under the title — a Product Hunt tagline. Only the launch
+   * card draws it, and `launch-card` filters itself out when it is missing.
+   */
+  tagline?: string | null;
+  /** An honour to call out — "#1 Product of the Day". */
+  badge?: string | null;
+  /** A second, smaller figure beside the headline — comments next to upvotes. */
+  secondary?: { value: number; unit: string } | null;
   /** Canonical link to the subject, shown as a caption. */
   url: string;
   /** Hex accent that drives the template palette. */

@@ -11,6 +11,7 @@ import type { MetricVideoData } from "../types";
 import type { VideoTemplate } from "./types";
 import { alpha, fitSize, linePath, resample, shade, textEm } from "./shared";
 import { BrandMark } from "./brand";
+import { ChartRiseIcon } from "./icons";
 import { RollingNumber } from "./rolling-number";
 
 /** Points the curve is resampled onto — enough to read as smooth at 1080p. */
@@ -33,6 +34,8 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
   // Width budget for the header block — see `fitSize`. The header is inset by
   // `unit * 10` on each side.
   const content = width - unit * 20;
+  // The avatar and its gap come out of the title's budget.
+  const titleWidth = content - (data.avatar ? unit * 7.8 : 0);
 
   const values = resample(data.series ?? [], RESOLUTION);
   const peak = Math.max(...values, 1);
@@ -136,17 +139,36 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
             {data.subtitle}
           </span>
         </div>
-        <span
+        <div
           data-head
-          style={{
-            fontSize: fitSize(unit * 5.2, content, textEm(data.title)),
-            fontWeight: 550,
-            letterSpacing: "-0.015em",
-            whiteSpace: "nowrap",
-          }}
+          style={{ display: "flex", alignItems: "center", gap: unit * 1.8 }}
         >
-          {data.title}
-        </span>
+          {data.avatar && (
+            // A plain <img>, as in count-up: GSAP owns the transform, and the
+            // data: URI needs no decode barrier.
+            <img
+              src={data.avatar}
+              alt=""
+              style={{
+                width: unit * 6,
+                height: unit * 6,
+                borderRadius: "50%",
+                border: `${unit * 0.2}px solid ${alpha("#ffffff", 0.14)}`,
+                objectFit: "cover",
+              }}
+            />
+          )}
+          <span
+            style={{
+              fontSize: fitSize(unit * 5.2, titleWidth, textEm(data.title)),
+              fontWeight: 550,
+              letterSpacing: "-0.015em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {data.title}
+          </span>
+        </div>
         <span data-head style={{ fontWeight: 650 }}>
           {/* Tied to the curve: the number starts and lands with the line, so
               the two finish together rather than the headline settling early
@@ -219,6 +241,7 @@ function ChartRiseScene({ data }: { data: MetricVideoData }) {
 export const chartRise: VideoTemplate = {
   id: "chart-rise",
   name: "Chart rise",
+  Icon: ChartRiseIcon,
   // Two points is the minimum that draws as a line rather than a dot.
   supports: (data) => (data.series?.length ?? 0) >= 2,
   Scene: ChartRiseScene,

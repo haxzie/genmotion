@@ -20,6 +20,12 @@ export interface FetchOptions {
   /** Seconds Next should serve this response from its data cache. */
   revalidate: number;
   headers?: Record<string, string>;
+  /**
+   * A JSON body makes the request a POST. Next caches POSTs with a
+   * `revalidate` just like GETs, keyed on the body, which is what a GraphQL
+   * lookup needs.
+   */
+  body?: unknown;
   /** Message shown to the user on a 404 from upstream. */
   notFound?: string;
   /**
@@ -42,7 +48,13 @@ export async function fetchJson<T>(url: string, options: FetchOptions): Promise<
   const send = async (headers: Record<string, string>) => {
     try {
       return await fetch(url, {
-        headers: { accept: "application/json", ...headers },
+        method: options.body === undefined ? "GET" : "POST",
+        headers: {
+          accept: "application/json",
+          ...(options.body === undefined ? {} : { "content-type": "application/json" }),
+          ...headers,
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
         next: { revalidate: options.revalidate },
         signal: AbortSignal.timeout(15_000),
       });
@@ -98,6 +110,7 @@ const IMAGE_HOSTS = [
   "yt3.ggpht.com",
   "yt3.googleusercontent.com",
   "lh3.googleusercontent.com",
+  "ph-files.imgix.net",
 ];
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];

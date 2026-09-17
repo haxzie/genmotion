@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
     return [
       // Projects were merged into the app home (alongside the create composer).
       { source: "/projects", destination: "/dashboard", permanent: false },
+      // The star history generator was folded into the star count one as its
+      // "Chart rise" style; the old URLs had already been shared and indexed.
+      {
+        source: "/tools/github-star-history",
+        destination: "/tools/github-star-count",
+        permanent: true,
+      },
+      {
+        source: "/api/tools/github-star-history",
+        destination: "/api/tools/github-star-count",
+        permanent: true,
+      },
     ];
   },
 };
