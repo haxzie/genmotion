@@ -52,7 +52,12 @@ export type AnalyticsEvent =
   | "billing_portal_opened"
   // Marketing
   | "cta_clicked" // { location, label }
-  | "showcase_video_opened"; // { slug }
+  | "showcase_video_opened" // { slug }
+  // Free tools (/tools/*). Separate from the editor's export events: these are
+  // anonymous visitors and the video is a fixed 6s template, so mixing them
+  // into `export_started` would swamp the product funnel.
+  | "tool_video_generated" // { tool, source, query, title, value, hasSeries, template, aspect }
+  | "tool_video_exported"; // { tool, source, title, template, aspect, width, height, format, durationMs }
 
 /**
  * Capture a typed custom event, fanned out to every enabled destination.
