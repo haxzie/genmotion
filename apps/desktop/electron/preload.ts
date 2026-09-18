@@ -84,6 +84,14 @@ const api: DesktopApi = {
       ipcRenderer.off(IPC.launchContextChanged, handler);
     };
   },
+  fullScreen: () => ipcRenderer.invoke(IPC.fullScreen),
+  onFullScreen: (listener) => {
+    const handler = (_event: unknown, fullScreen: boolean) => listener(fullScreen);
+    ipcRenderer.on(IPC.fullScreenChanged, handler);
+    return () => {
+      ipcRenderer.off(IPC.fullScreenChanged, handler);
+    };
+  },
   cli: {
     status: () => ipcRenderer.invoke(IPC.cliStatus),
     install: () => ipcRenderer.invoke(IPC.cliInstall),

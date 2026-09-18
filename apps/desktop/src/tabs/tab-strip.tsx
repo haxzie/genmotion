@@ -1,9 +1,26 @@
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { API_URL } from "@/lib/api";
 import { cx } from "@/components/ui";
+import { api } from "../api";
 import { HOME_TAB, useTabsStore, type ProjectTab } from "./tabs-store";
 import { ExportsButton } from "./exports-panel";
 
 const isMac = navigator.platform.startsWith("Mac");
+
+/**
+ * Whether the window is in macOS full screen — where the traffic lights are
+ * hidden and the strip has no reason to leave their corner empty.
+ */
+function useFullScreen(): boolean {
+  const [fullScreen, setFullScreen] = useState(false);
+  useEffect(() => {
+    if (!isMac) return;
+    void api.fullScreen().then(setFullScreen);
+    return api.onFullScreen(setFullScreen);
+  }, []);
+  return fullScreen;
+}
 
 function HomeIcon({ className }: { className?: string }) {
   return (
@@ -38,21 +55,61 @@ function Activity({ tab }: { tab: ProjectTab }) {
   return null;
 }
 
-/**
- * The outward curve where a tab meets the content, one per side — the
- * Chrome shape. A square hanging off the tab's bottom corner, filled with the
- * content colour except for a quarter circle cut out of its top corner, so
- * the tab's edge appears to flare into the pane below it.
- */
-function TabFlare({ side }: { side: "left" | "right" }) {
+function FilmIcon({ className }: { className?: string }) {
   return (
-    <span
-      aria-hidden
-      className={cx("pointer-events-none absolute bottom-0 size-1.5", side === "left" ? "-left-1.5" : "-right-1.5")}
-      style={{
-        background: `radial-gradient(circle at ${side === "left" ? "0 0" : "100% 0"}, transparent 6px, var(--color-background) 6.5px)`,
-      }}
-    />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M7 5v14M17 5v14M3 10h4M3 14h4M17 10h4M17 14h4" />
+    </svg>
+  );
+}
+
+/**
+ * The project's card image, small, or a film glyph until there is one.
+ *
+ * Fetched from the local server rather than carried in the tab store — the
+ * picture is the heaviest thing about a project and the tab re-renders on
+ * every activity tick. Re-requested when a turn ends, since that is when
+ * the picture is most likely to have changed.
+ */
+function TabThumb({ tab }: { tab: ProjectTab }) {
+  const [version, setVersion] = useState(0);
+  const [missing, setMissing] = useState(false);
+  const retries = useRef(0);
+  const wasBusy = useRef(tab.busy);
+  useEffect(() => {
+    if (wasBusy.current && !tab.busy) {
+      setVersion((v) => v + 1);
+      setMissing(false);
+    }
+    wasBusy.current = tab.busy;
+  }, [tab.busy]);
+  // A project opened for the first time has no picture yet; one is captured
+  // a few seconds after it opens. Look again, a few times, then give up.
+  useEffect(() => {
+    if (!missing || retries.current >= 3) return;
+    const t = setTimeout(() => {
+      retries.current += 1;
+      setVersion((v) => v + 1);
+      setMissing(false);
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [missing]);
+
+  return (
+    <span className="flex h-4 w-6 shrink-0 items-center justify-center overflow-hidden rounded-[3px] bg-white/[0.08] text-text-tertiary">
+      {missing ? (
+        <FilmIcon className="size-3" />
+      ) : (
+        <img
+          src={`${API_URL}/api/projects/${tab.dir}/thumbnail?v=${version}`}
+          alt=""
+          draggable={false}
+          onError={() => setMissing(true)}
+          className="size-full object-cover"
+        />
+      )}
+    </span>
   );
 }
 
@@ -77,24 +134,19 @@ function TabButton({
       aria-selected={active}
       aria-label={label}
       className={cx(
-        // Nearly the strip's full height, so the label sits at its centre
-        // rather than in the lower two thirds; the 4px left over is the
-        // frame showing above the tab.
-        "group relative flex h-9 max-w-52 shrink-0 items-center gap-1.5 rounded-t-lg pl-2.5 text-[0.857rem]",
+        "group relative flex h-7 max-w-56 shrink-0 items-center gap-2 rounded-lg pl-2 text-[0.857rem]",
         "transition-colors duration-150",
-        onClose ? "pr-1" : "pr-2.5",
-        // The active tab is the content colour and runs straight into the
-        // pane beneath with no edge between them — the strip is the frame
-        // around the page, and this tab is the page. Inactive tabs sit on
-        // the frame and only pick up a tint on hover.
+        onClose ? "pr-1" : "pr-2",
+        // The active tab is a rounded card one step up from the strip, the
+        // app's raised surface — the same material as the chat's input box,
+        // lifted enough to read against black, with no outline. Inactive
+        // tabs only pick up a tint on hover.
         active
-          ? "bg-background text-text-primary"
+          ? "bg-surface-raised text-text-primary"
           : "text-text-secondary hover:bg-white/[0.06] hover:text-text-primary",
         className,
       )}
     >
-      {active && <TabFlare side="left" />}
-      {active && <TabFlare side="right" />}
       {/* The tab's face is a button so the drag strip lets clicks through (see
           `.titlebar-drag button` in styles.css). Middle-click closes, as
           browsers do. */}
@@ -105,7 +157,7 @@ function TabButton({
           if (e.button === 1) onClose?.();
         }}
         title={label}
-        className="flex min-w-0 items-center gap-1.5 outline-none"
+        className="flex min-w-0 items-center gap-2 outline-none"
       >
         {children}
       </button>
@@ -154,17 +206,16 @@ export function TabStrip({
   const tabs = useTabsStore((s) => s.tabs);
   const activeId = useTabsStore((s) => s.activeId);
   const reduceMotion = useReducedMotion();
+  const fullScreen = useFullScreen();
 
   return (
-    // The frame: a step darker than the page, with the tabs standing on its
-    // bottom edge so the active one reads as part of the pane below — the way
-    // a browser draws its tab strip. Nothing separates the two; the active
-    // tab's colour is the pane's colour.
+    // The frame: a step darker than the page, with the tabs sitting in its
+    // middle as rounded cards, the active one lit.
     <div
       role="tablist"
       className={cx(
-        "titlebar-drag flex h-10 shrink-0 items-end bg-black pr-2",
-        isMac ? "pl-[78px]" : "pl-2",
+        "titlebar-drag flex h-10 shrink-0 items-center bg-black pr-2",
+        isMac && !fullScreen ? "pl-[78px]" : "pl-2",
       )}
     >
       <div className="px-1.5">
@@ -178,7 +229,7 @@ export function TabStrip({
       </div>
 
       {/* Scrolls sideways when the row overflows; the export button stays put. */}
-      <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* A tab grows in from nothing and shrinks away when closed, with
             its neighbours sliding to fill the gap — so opening a project
             reads as a tab arriving, and closing one as the row closing
@@ -194,21 +245,20 @@ export function TabStrip({
               animate={{ width: "auto", opacity: 1, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { width: 0, opacity: 0, scale: 0.92 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              // Room on the right for the active tab's flare, which hangs
-              // outside its box; on the left the rule's margin is that room.
-              className="flex shrink-0 items-end overflow-hidden pr-1.5"
+              className="flex shrink-0 items-center overflow-hidden pr-1"
             >
               {/* A short rule before every tab — between Home and the first,
                   and between neighbours — the way a browser separates its
                   tabs, 6px from each. Inside the wrapper so it collapses
                   with the tab. */}
-              <div className="mb-2.5 mr-1.5 h-4 w-px shrink-0 bg-border" />
+              <div className="mr-1 h-4 w-px shrink-0 bg-border" />
               <TabButton
                 active={activeId === tab.dir}
                 onSelect={() => onActivate(tab.dir)}
                 onClose={() => onClose(tab.dir)}
                 label={tab.name}
               >
+                <TabThumb tab={tab} />
                 <Activity tab={tab} />
                 <span className={cx("truncate", tab.project === null && "italic text-text-tertiary")}>
                   {tab.name}
@@ -219,7 +269,7 @@ export function TabStrip({
         </AnimatePresence>
       </div>
 
-      <div className="mb-1 self-end">
+      <div>
         <ExportsButton onOpenProject={onOpenProject} onShowAll={onShowAllExports} />
       </div>
     </div>

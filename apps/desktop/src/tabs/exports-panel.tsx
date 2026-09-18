@@ -32,13 +32,29 @@ function Row({
     job.status === "done"
       ? [job.sizeBytes ? formatBytes(job.sizeBytes) : null, job.fileMissing ? "file moved" : null]
       : [EXPORT_STATUS_LABEL[job.status], job.status === "rendering" ? `${job.progress}%` : null];
+  // A finished export's row is the file: click anywhere on it to see it in
+  // Finder, the way a browser's downloads panel opens what it lists. The
+  // project name inside is its own link and keeps its own click.
+  const revealable = job.status === "done" && !job.fileMissing;
   return (
-    <li className="flex flex-col gap-1.5 rounded-md px-2.5 py-2 hover:bg-surface">
+    <li
+      className={cx(
+        "flex flex-col gap-1.5 rounded-md px-2.5 py-2 hover:bg-surface",
+        revealable && "cursor-pointer",
+      )}
+      title={revealable ? "Show in Finder" : undefined}
+      onClick={() => {
+        if (revealable) void api.revealExport(job.id);
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <button
             type="button"
-            onClick={() => onOpenProject(job.projectDir)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenProject(job.projectDir);
+            }}
             title="Open project"
             className="block max-w-full truncate text-left text-[0.857rem] font-medium text-text-primary hover:underline"
           >
@@ -57,19 +73,13 @@ function Row({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 text-[0.786rem]">
-          {job.status === "done" && !job.fileMissing && (
-            <button
-              type="button"
-              onClick={() => void api.revealExport(job.id)}
-              className="rounded px-2 py-1 text-text-secondary transition-colors hover:bg-surface-raised hover:text-text-primary"
-            >
-              Show in Finder
-            </button>
-          )}
           {active && (
             <button
               type="button"
-              onClick={() => void http(`/api/exports/${job.id}/cancel`, { method: "POST" })}
+              onClick={(e) => {
+                e.stopPropagation();
+                void http(`/api/exports/${job.id}/cancel`, { method: "POST" });
+              }}
               className="rounded px-2 py-1 text-text-secondary transition-colors hover:bg-surface-raised hover:text-danger"
             >
               Cancel

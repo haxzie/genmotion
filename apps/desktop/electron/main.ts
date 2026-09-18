@@ -377,6 +377,7 @@ function registerIpc(): void {
   });
 
   ipcMain.handle(IPC.paths, async () => ({ projectsRoot: projectsRoot() }));
+  ipcMain.handle(IPC.fullScreen, async () => window?.isFullScreen() ?? false);
 
   /**
    * Show a folder the app owns.
@@ -621,6 +622,14 @@ function createWindow(): void {
       // Not a URL we can reason about — dropping it is the safe outcome.
     }
   });
+
+  // The tab strip leaves room for the traffic lights; in full screen macOS
+  // hides them, and the room should close up with them.
+  const announceFullScreen = () => {
+    window?.webContents.send(IPC.fullScreenChanged, window.isFullScreen());
+  };
+  window.on("enter-full-screen", announceFullScreen);
+  window.on("leave-full-screen", announceFullScreen);
 
   window.on("closed", () => {
     window = null;
