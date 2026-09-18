@@ -251,6 +251,41 @@ export function Home({
     void loadMore();
   }, [loadMore]);
 
+  /**
+   * A new account's first start screen fills itself with the sample projects.
+   *
+   * Asked alongside the first page rather than before it: for everyone but a
+   * new user the answer is an immediate zero, and the list should not wait on
+   * it. When something *was* written, the list starts over from the top —
+   * which is safe to do here, because the seed only ever writes into a
+   * workspace that was empty, so the page it replaces was empty too.
+   */
+  const [seeding, setSeeding] = useState(true);
+  useEffect(() => {
+    let live = true;
+    void api
+      .seedSampleProjects()
+      .then(({ seeded }) => {
+        if (!live || seeded === 0) return;
+        cursorRef.current = 0;
+        setCursor(0);
+        setProjects(null);
+        void loadMore();
+      })
+      .finally(() => {
+        if (live) setSeeding(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [loadMore]);
+
+  // An empty list is not yet an empty workspace while the seed is still out:
+  // for a new user it is about to hold three projects, and the skeleton is
+  // the honest thing to show in the meantime. Anyone with projects never
+  // sees this — their list is not empty.
+  const settling = projects === null || (projects.length === 0 && seeding);
+
   const hasMore = projects !== null && cursor < total;
 
   // Pull the next page in as the trigger comes into view. It is a real button
@@ -353,7 +388,7 @@ export function Home({
             )}
           </div>
 
-          {projects === null ? (
+          {settling ? (
             <div className={GRID}>
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="overflow-hidden rounded-md border border-border bg-surface-raised">

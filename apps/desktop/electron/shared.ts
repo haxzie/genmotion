@@ -324,6 +324,14 @@ export interface DesktopApi {
   /** Show a finished export in the file manager, by job id. */
   revealExport(id: string): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
+  /**
+   * Write the sample projects into an empty workspace, if this account has
+   * never had them. Cheap to call on every visit to the start screen — after
+   * the first time it is a readdir — and shared if called twice at once.
+   * `seeded` is how many were written; the list should be reloaded when it
+   * is more than zero.
+   */
+  seedSampleProjects(): Promise<{ seeded: number }>;
   revealProject(dir: string): Promise<void>;
   /**
    * Confirm with the user, then move the project folder to the Trash and drop
@@ -398,6 +406,7 @@ export const IPC = {
   tabCommand: "tabs:command",
   revealExport: "export:reveal",
   recentProjects: "project:recent",
+  seedSampleProjects: "project:seed-samples",
   revealProject: "project:reveal",
   deleteProject: "project:delete",
   updateState: "update:state",

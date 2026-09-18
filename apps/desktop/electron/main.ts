@@ -44,6 +44,8 @@ import {
 } from "./shared";
 import { cliStatus, getLaunchDir, installCli, launchDirFromArgv, setLaunchDir } from "./cli";
 import { fetchRemixBundle, writeRemix } from "./remix";
+import { allocateProjectDir, projectsRoot } from "./projects-dir";
+import { seedSampleProjects } from "./samples";
 import { projectDefaults } from "./preferences";
 import { readSettings, update as updateSettings } from "./settings-store";
 import { applySessionRoots } from "./agent/read-roots";
@@ -169,31 +171,6 @@ async function remixTemplateAndOpen(templateId: string, name?: string): Promise<
   }
   track("template_remixed", { templateId, revision: bundle.revision });
   return openSession(dir);
-}
-
-/**
- * Where projects live. The app owns this folder so creating a video never
- * involves a save dialog — you type what you want and it exists.
- */
-function projectsRoot(): string {
-  return path.join(app.getPath("home"), ".genmotion", "projects");
-}
-
-/** A filesystem-safe folder for `name`, suffixed if it's taken. */
-async function allocateProjectDir(name: string): Promise<string> {
-  const slug =
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "untitled";
-  const root = projectsRoot();
-  await fs.mkdir(root, { recursive: true });
-  for (let n = 0; n < 500; n++) {
-    const dir = path.join(root, n === 0 ? slug : `${slug}-${n + 1}`);
-    if (!(await exists(dir))) return dir;
-  }
-  return path.join(root, `${slug}-${Date.now()}`);
 }
 
 /** Replace the pre-spawned agent process, which fixed its roots when it started. */
@@ -372,6 +349,12 @@ function registerIpc(): void {
   ipcMain.handle(IPC.recentProjects, async (_event, range: RecentProjectRange | undefined) =>
     listRecents(range ?? {}),
   );
+  // Never throws to the renderer: an offline first launch is an empty start
+  // screen, which is what it would have been anyway.
+  ipcMain.handle(IPC.seedSampleProjects, async () => {
+    const seeded = await seedSampleProjects().catch(() => []);
+    return { seeded: seeded.length };
+  });
   ipcMain.handle(IPC.revealProject, async (_event, dir: string) => {
     shell.openPath(dir);
   });

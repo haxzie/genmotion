@@ -4,7 +4,14 @@ import fs from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { readManifest } from "@genmotion/project";
 import type { TemplateRemixBundle } from "@genmotion/templates/types";
-import { allowedExtension, readRemixOrigin, safePath, writeRemix } from "../remix";
+import {
+  allowedExtension,
+  checkRemixBundle,
+  readRemixOrigin,
+  safePath,
+  writeBundle,
+  writeRemix,
+} from "../remix";
 import { buildRemixNote } from "../agent/prompt";
 
 /**
@@ -172,6 +179,30 @@ describe("writeRemix", () => {
     const dir = await tempDir();
     await writeRemix(dir, "My Copy", bundle([SCENE]));
     expect((await readRemixOrigin(dir))?.title).toBe("Demo");
+  });
+});
+
+describe("writeBundle", () => {
+  it("writes the project without a remix record — a sample is just a project", async () => {
+    const dir = await tempDir();
+    await writeBundle(dir, "Sample - Demo", { ...bundle([SCENE]), title: "Sample - Demo" });
+    expect((await readManifest(dir)).name).toBe("Sample - Demo");
+    await expect(fs.readFile(path.join(dir, SCENE.path), "utf8")).resolves.toContain("Scene");
+    expect(await readRemixOrigin(dir)).toBeNull();
+  });
+});
+
+describe("checkRemixBundle", () => {
+  it("accepts a well-formed bundle", () => {
+    expect(checkRemixBundle(bundle([SCENE])).id).toBe("demo");
+  });
+
+  it("refuses a bundle that is not one, or that carries a file it shouldn't", () => {
+    expect(() => checkRemixBundle({ nope: true })).toThrow();
+    expect(() => checkRemixBundle(bundle([{ ...SCENE, path: "../escape.tsx" }]))).toThrow();
+    expect(() =>
+      checkRemixBundle(bundle([{ path: "scenes/run.sh", encoding: "text", contents: "rm -rf" }])),
+    ).toThrow();
   });
 });
 

@@ -121,7 +121,15 @@ export async function fetchRemixBundle(templateId: string): Promise<TemplateRemi
     throw new RemixError(body?.error ?? `The template could not be fetched (${res.status}).`);
   }
 
-  const parsed = remixBundleSchema.safeParse(await res.json());
+  return checkRemixBundle(await res.json());
+}
+
+/**
+ * Re-parse and check a bundle that came off the network — a template's or a
+ * sample's, the shape is the same. Throws before anything touches disk.
+ */
+export function checkRemixBundle(json: unknown): TemplateRemixBundle {
+  const parsed = remixBundleSchema.safeParse(json);
   if (!parsed.success) throw new RemixError("That template arrived in a shape we don't recognise.");
 
   const bundle = parsed.data;
@@ -137,13 +145,37 @@ export async function fetchRemixBundle(templateId: string): Promise<TemplateRemi
 }
 
 /**
- * Scaffold `dir` from an already-checked bundle.
+ * Scaffold `dir` from an already-checked bundle, and record where it came from.
  *
  * The caller allocates the folder and owns cleaning it up: everything here
  * happens inside a directory that did not exist a moment ago, so a failure
  * halfway through is recoverable by deleting it.
  */
 export async function writeRemix(
+  dir: string,
+  name: string,
+  bundle: TemplateRemixBundle,
+): Promise<void> {
+  await writeBundle(dir, name, bundle);
+
+  // Last, once everything it describes is in place. `createProject` has
+  // already made `.genmotion/` (the cache lives there), so this is one file.
+  const origin: RemixOrigin = {
+    templateId: bundle.id,
+    revision: bundle.revision,
+    title: bundle.title ?? bundle.manifest.name,
+    ...(bundle.description ? { description: bundle.description } : {}),
+    remixedAt: new Date().toISOString(),
+  };
+  await fs.writeFile(path.join(dir, REMIX_FILE), `${JSON.stringify(origin, null, 2)}\n`, "utf8");
+}
+
+/**
+ * The write itself: scaffold, files, manifest. No origin record — a sample
+ * seeded into a new workspace is just a project, and its agent should treat
+ * it as one rather than as a template the user chose to adapt.
+ */
+export async function writeBundle(
   dir: string,
   name: string,
   bundle: TemplateRemixBundle,
@@ -182,15 +214,4 @@ export async function writeRemix(
     audio: bundle.manifest.audio.filter((clip) => arrived.has(clip.file)),
   });
   await writeManifest(dir, manifest);
-
-  // Last, once everything it describes is in place. `createProject` has
-  // already made `.genmotion/` (the cache lives there), so this is one file.
-  const origin: RemixOrigin = {
-    templateId: bundle.id,
-    revision: bundle.revision,
-    title: bundle.title ?? bundle.manifest.name,
-    ...(bundle.description ? { description: bundle.description } : {}),
-    remixedAt: new Date().toISOString(),
-  };
-  await fs.writeFile(path.join(dir, REMIX_FILE), `${JSON.stringify(origin, null, 2)}\n`, "utf8");
 }

@@ -64,6 +64,7 @@ const api: DesktopApi = {
   retryScaffold: (dir) => ipcRenderer.invoke(IPC.retryScaffold, dir),
   revealExport: (id) => ipcRenderer.invoke(IPC.revealExport, id),
   recentProjects: (range) => ipcRenderer.invoke(IPC.recentProjects, range),
+  seedSampleProjects: () => ipcRenderer.invoke(IPC.seedSampleProjects),
   revealProject: (dir) => ipcRenderer.invoke(IPC.revealProject, dir),
   onProjectChanged: (listener) => {
     const handler = (_event: unknown, project: DesktopProject) => listener(project);
