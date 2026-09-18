@@ -10,6 +10,10 @@ export const user = pgTable("user", {
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   // Self-reported job role captured during onboarding (Founder, Engineering, …).
   jobRole: text("job_role"),
+  // When the desktop app wrote the sample projects into this account's first,
+  // empty workspace. Set once, ever: they are for a new user, not for every
+  // empty workspace the account is ever signed into.
+  samplesClaimedAt: timestamp("samples_claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

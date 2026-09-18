@@ -1,0 +1,147 @@
+{
+  "name": "Sample - Product Showcase",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "durationInFrames": 300
+    }
+  ],
+  "audio": [
+    {
+      "id": "snap-0",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 32,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-1",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 56,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-2",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 80,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-3",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 104,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-4",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 128,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-5",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 152,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-6",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 176,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-7",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 200,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-8",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 224,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-9",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 248,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "snap-10",
+      "file": "assets/click.wav",
+      "track": 0,
+      "startFrame": 272,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 0.38,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

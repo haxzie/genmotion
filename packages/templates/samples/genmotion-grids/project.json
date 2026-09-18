@@ -1,0 +1,28 @@
+{
+  "name": "Sample - Genmotion grids",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "durationInFrames": 190,
+      "name": "Grid animation"
+    }
+  ],
+  "audio": [
+    {
+      "id": "tile-clinks",
+      "file": "assets/tile-clinks.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 190,
+      "startFrom": 0,
+      "volume": 1.9952623149688795,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    }
+  ]
+}

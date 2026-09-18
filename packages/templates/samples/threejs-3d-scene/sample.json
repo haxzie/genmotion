@@ -1,0 +1,6 @@
+{
+  "id": "threejs-3d-scene",
+  "title": "Sample - Threejs 3D scene",
+  "description": "A wireframe globe with arcs travelling between cities, built with Three.js.",
+  "order": 3
+}

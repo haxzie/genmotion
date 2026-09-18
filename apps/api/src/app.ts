@@ -15,6 +15,7 @@ import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
 import { releaseRoutes } from "./routes/releases";
 import { templateRoutes } from "./routes/templates";
+import { sampleRoutes } from "./routes/samples";
 import { mcpCatalogRoutes } from "./routes/mcp-catalog";
 import { feedbackRoutes } from "./routes/feedback";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
@@ -73,6 +74,9 @@ app.route("/api/releases", releaseRoutes);
 // in the image, and the desktop app browses the gallery before it has a
 // project (or, on a fresh install, before it has a session).
 app.route("/api/templates", templateRoutes);
+// The projects a new account's workspace is seeded with. Session-authed:
+// they are handed out once per account, and the user row keeps the score.
+app.route("/api/samples", sampleRoutes);
 // MCP marketplace. Public for the same reasons as the templates.
 app.route("/api/mcp", mcpCatalogRoutes);
 // Help & feedback from both apps, straight to a Slack channel.

@@ -86,6 +86,38 @@ export interface TemplateCatalog {
  */
 export const TRIPWIRE_PREFIX = "gm-template-asset://";
 
+// ── Samples ────────────────────────────────────────────────────────────────
+
+/**
+ * One sample project, as `GET /api/samples` lists it.
+ *
+ * Enough to name the project on disk and show a card if anything ever wants
+ * to; the files come from `GET /api/samples/:id/files`, in the same bundle
+ * shape a remix uses.
+ */
+export interface SampleSummary {
+  id: string;
+  title: string;
+  description: string;
+  fps: number;
+  width: number;
+  height: number;
+  durationInFrames: number;
+  sceneCount: number;
+  /** Content hash of the folder. */
+  revision: string;
+}
+
+export interface SampleList {
+  /**
+   * Whether this account may still receive them. False once it has claimed
+   * them: they are for a new user's empty workspace, once — not something
+   * that reappears every time a workspace happens to be empty.
+   */
+  eligible: boolean;
+  samples: SampleSummary[];
+}
+
 // ── Remix ──────────────────────────────────────────────────────────────────
 
 /**

@@ -75,3 +75,25 @@ export type TemplateMeta = z.infer<typeof templateMetaSchema>;
 export const TEMPLATE_FILE = "template.json";
 /** The card image, captured from the template's own first scene. */
 export const POSTER_FILE = "poster.jpg";
+
+/**
+ * A sample project's sidecar — `sample.json`.
+ *
+ * Samples are the three projects a brand-new account finds in its workspace.
+ * They live beside the templates (`packages/templates/samples/`) and travel
+ * over the same bundle format, but they are not in the gallery, have no
+ * poster or rendered video, and carry no SEO page — so the sidecar is the
+ * bare minimum: an id, a name, a sentence, and an order.
+ */
+export const sampleMetaSchema = z.object({
+  /** Stable and URL-safe. Must equal the folder name. */
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  /** The order they are written into a workspace; lower is first. */
+  order: z.number().int().default(100),
+});
+
+export type SampleMeta = z.infer<typeof sampleMetaSchema>;
+
+export const SAMPLE_FILE = "sample.json";

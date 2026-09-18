@@ -13,10 +13,13 @@ import {
 } from "@genmotion/project";
 import {
   POSTER_FILE,
+  SAMPLE_FILE,
   TEMPLATE_FILE,
   TEMPLATE_TAGS,
+  sampleMetaSchema,
   templateMetaSchema,
   templateTagSchema,
+  type SampleMeta,
   type TemplateMeta,
   type TemplateTag,
 } from "./schema";
@@ -25,6 +28,7 @@ import {
   TEMPLATE_PAGE_SIZE,
   TEMPLATE_PAGE_SIZE_MAX,
   TRIPWIRE_PREFIX,
+  type SampleSummary,
   type TemplateRemixBundle,
   type TemplateRemixFile,
   type TemplateSummary,
@@ -32,11 +36,14 @@ import {
 
 export * from "./types";
 export {
+  sampleMetaSchema,
   templateMetaSchema,
   templateTagSchema,
+  SAMPLE_FILE,
   TEMPLATE_FILE,
   POSTER_FILE,
   TEMPLATE_TAGS,
+  type SampleMeta,
   type TemplateMeta,
   type TemplateTag,
 };
@@ -55,10 +62,11 @@ export {
 export const TEMPLATE_INLINE_LIMIT = 512 * 1024;
 
 /**
- * Files that make a template a *template* rather than a project. They stay
- * behind on a remix: the copy is a video of the user's own, not a catalog entry.
+ * Files that make a template a *template* (or a sample a sample) rather than
+ * a project. They stay behind on a remix: the copy is a video of the user's
+ * own, not a catalog entry.
  */
-const TEMPLATE_ONLY = new Set([TEMPLATE_FILE, POSTER_FILE]);
+const TEMPLATE_ONLY = new Set([TEMPLATE_FILE, POSTER_FILE, SAMPLE_FILE]);
 
 /**
  * Written fresh by `createProject` on every remix, so never copied.
@@ -371,13 +379,24 @@ function encodingFor(relative: string): "text" | "base64" | null {
 }
 
 /**
+ * What a bundle is built from: a template or a sample. Both are a project
+ * folder with a sidecar naming it, and the bundle needs nothing more.
+ */
+interface Bundleable {
+  dir: string;
+  meta: { id: string; title: string; description: string };
+  manifest: ProjectManifest;
+  revision: string;
+}
+
+/**
  * Everything a remix should receive, as one document.
  *
  * The manifest travels parsed rather than as bytes — the client writes it under
  * the new project's own name — so `project.json` is filtered out of the files
  * alongside the rest of the scaffold.
  */
-export async function buildRemixBundle(record: TemplateRecord): Promise<TemplateRemixBundle> {
+export async function buildRemixBundle(record: Bundleable): Promise<TemplateRemixBundle> {
   const walked = await walkTemplate(record.dir);
   const files: TemplateRemixFile[] = [];
   let totalBytes = 0;
@@ -417,3 +436,100 @@ export async function buildRemixBundle(record: TemplateRecord): Promise<Template
 }
 
 export { walkTemplate as listTemplateFiles };
+
+// ── Samples ────────────────────────────────────────────────────────────────
+
+/**
+ * The sample projects — what a new account's workspace is seeded with.
+ *
+ * A second root beside the catalog rather than a flag on a template: a sample
+ * is not in the gallery, has no poster, no rendered video and no page, and
+ * the tests that hold templates to those things should not have to know
+ * about an exception. What the two share — the walk, the hash, the bundle —
+ * is shared by construction, because it is the same code.
+ */
+export function samplesDir(): string {
+  return (
+    process.env.GM_SAMPLES_DIR ??
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "samples")
+  );
+}
+
+/** Absolute path for a sample id, checked the way `templateDir` checks. */
+export function sampleDir(id: string): string {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) throw new TemplateError(`Not a sample id: ${id}`);
+  const root = samplesDir();
+  const dir = path.resolve(root, id);
+  if (path.dirname(dir) !== root) throw new TemplateError(`Not a sample id: ${id}`);
+  return dir;
+}
+
+export interface SampleRecord {
+  dir: string;
+  meta: SampleMeta;
+  manifest: ProjectManifest;
+  /** Content hash of every first-party file. */
+  revision: string;
+}
+
+const sampleCache = new Map<string, SampleRecord>();
+
+export async function listSampleIds(): Promise<string[]> {
+  const entries = await fs.readdir(samplesDir(), { withFileTypes: true }).catch(() => []);
+  return entries
+    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+    .map((e) => e.name)
+    .sort();
+}
+
+/** One sample, or null when there is no such folder. A folder that fails to parse throws, as with templates. */
+export async function getSample(id: string): Promise<SampleRecord | null> {
+  const cached = sampleCache.get(id);
+  if (cached && cacheable()) return cached;
+
+  const dir = sampleDir(id);
+  const raw = await fs.readFile(path.join(dir, SAMPLE_FILE), "utf8").catch(() => null);
+  if (raw === null) return null;
+
+  const parsed = sampleMetaSchema.safeParse(JSON.parse(raw));
+  if (!parsed.success) {
+    throw new TemplateError(`${id}/${SAMPLE_FILE} is invalid: ${parsed.error.message}`);
+  }
+  if (parsed.data.id !== id) {
+    throw new TemplateError(`${id}/${SAMPLE_FILE} declares id "${parsed.data.id}"`);
+  }
+
+  const manifest = await readManifest(dir);
+  const record: SampleRecord = {
+    dir,
+    meta: parsed.data,
+    manifest,
+    revision: await revisionOf(await walkTemplate(dir)),
+  };
+  sampleCache.set(id, record);
+  return record;
+}
+
+/** Every sample, in the order they are written into a workspace. */
+export async function listSamples(): Promise<SampleRecord[]> {
+  const ids = await listSampleIds();
+  const records = await Promise.all(ids.map((id) => getSample(id)));
+  return records
+    .filter((r): r is SampleRecord => r !== null)
+    .sort((a, b) => a.meta.order - b.meta.order || a.meta.title.localeCompare(b.meta.title));
+}
+
+export function toSampleSummary(record: SampleRecord): SampleSummary {
+  const { meta, manifest } = record;
+  return {
+    id: meta.id,
+    title: meta.title,
+    description: meta.description,
+    fps: manifest.fps,
+    width: manifest.width,
+    height: manifest.height,
+    durationInFrames: manifest.scenes.reduce((total, s) => total + s.durationInFrames, 0),
+    sceneCount: manifest.scenes.length,
+    revision: record.revision,
+  };
+}
