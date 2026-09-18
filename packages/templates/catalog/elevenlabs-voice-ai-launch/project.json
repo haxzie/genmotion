@@ -1,0 +1,352 @@
+{
+  "name": "Elevenlabs voice AI launch video",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-someones-calling.tsx",
+      "durationInFrames": 90,
+      "name": "Someone's calling"
+    },
+    {
+      "file": "scenes/02-desk-phone.tsx",
+      "durationInFrames": 55,
+      "name": "Desk phone"
+    },
+    {
+      "file": "scenes/03-book-job.tsx",
+      "durationInFrames": 60,
+      "name": "To book a job"
+    },
+    {
+      "file": "scenes/04-smartphone.tsx",
+      "durationInFrames": 45,
+      "name": "Smartphone"
+    },
+    {
+      "file": "scenes/05-schedule-meeting.tsx",
+      "durationInFrames": 60,
+      "name": "To schedule a meeting"
+    },
+    {
+      "file": "scenes/06-video-phone.tsx",
+      "durationInFrames": 55,
+      "name": "Video phone"
+    },
+    {
+      "file": "scenes/07-nobody-around.tsx",
+      "durationInFrames": 80,
+      "name": "Nobody's around"
+    },
+    {
+      "file": "scenes/08-until-now.tsx",
+      "durationInFrames": 75,
+      "name": "Until now"
+    },
+    {
+      "file": "scenes/09-orb.tsx",
+      "durationInFrames": 75,
+      "name": "Orb"
+    },
+    {
+      "file": "scenes/10-chat.tsx",
+      "durationInFrames": 260,
+      "name": "Chat demo"
+    },
+    {
+      "file": "scenes/11-stop-missing.tsx",
+      "durationInFrames": 105,
+      "name": "Stop missing calls"
+    },
+    {
+      "file": "scenes/12-agents.tsx",
+      "durationInFrames": 105,
+      "name": "Agents"
+    },
+    {
+      "file": "scenes/13-logo.tsx",
+      "durationInFrames": 120,
+      "name": "Reception.ai"
+    }
+  ],
+  "audio": [
+    {
+      "id": "music-bed",
+      "file": "assets/music-bed.m4a",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 1185,
+      "startFrom": 0,
+      "volume": 0.28,
+      "fadeInFrames": 15,
+      "fadeOutFrames": 45,
+      "muted": false
+    },
+    {
+      "id": "vo-calling",
+      "file": "assets/vo-01-calling.mp3",
+      "track": 0,
+      "startFrame": 8,
+      "durationInFrames": 64,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-book-job",
+      "file": "assets/vo-02-book-job.mp3",
+      "track": 0,
+      "startFrame": 140,
+      "durationInFrames": 34,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-meeting",
+      "file": "assets/vo-03-meeting.mp3",
+      "track": 0,
+      "startFrame": 245,
+      "durationInFrames": 35,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-nobody",
+      "file": "assets/vo-04-nobody.mp3",
+      "track": 0,
+      "startFrame": 362,
+      "durationInFrames": 48,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-until-now",
+      "file": "assets/vo-05-until-now.mp3",
+      "track": 0,
+      "startFrame": 452,
+      "durationInFrames": 28,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-chat-hi",
+      "file": "assets/vo-06-chat-hi.mp3",
+      "track": 0,
+      "startFrame": 598,
+      "durationInFrames": 63,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-chat-caller",
+      "file": "assets/vo-07-chat-caller.mp3",
+      "track": 0,
+      "startFrame": 666,
+      "durationInFrames": 95,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-chat-sure",
+      "file": "assets/vo-08-chat-sure.mp3",
+      "track": 0,
+      "startFrame": 770,
+      "durationInFrames": 63,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-stop-missing",
+      "file": "assets/vo-09-stop-missing.mp3",
+      "track": 0,
+      "startFrame": 858,
+      "durationInFrames": 74,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-agents",
+      "file": "assets/vo-10-agents.mp3",
+      "track": 0,
+      "startFrame": 964,
+      "durationInFrames": 103,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-logo",
+      "file": "assets/vo-11-logo.mp3",
+      "track": 0,
+      "startFrame": 1072,
+      "durationInFrames": 109,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "ring-desk",
+      "file": "assets/sfx-ring-landline.mp3",
+      "track": 2,
+      "startFrame": 90,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 4,
+      "muted": false
+    },
+    {
+      "id": "ring-mobile",
+      "file": "assets/sfx-ring-mobile.mp3",
+      "track": 2,
+      "startFrame": 205,
+      "durationInFrames": 42,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 4,
+      "muted": false
+    },
+    {
+      "id": "ring-video",
+      "file": "assets/sfx-ring-landline.mp3",
+      "track": 2,
+      "startFrame": 310,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 4,
+      "muted": false
+    },
+    {
+      "id": "wipe-1",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 68,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-2",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 127,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-3",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 187,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-4",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 232,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-5",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 292,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-6",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 347,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "wipe-7",
+      "file": "assets/sfx-block-wipe.mp3",
+      "track": 3,
+      "startFrame": 421,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "orb-swell",
+      "file": "assets/sfx-orb-swell.mp3",
+      "track": 2,
+      "startFrame": 488,
+      "durationInFrames": 90,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 10,
+      "fadeOutFrames": 20,
+      "muted": false
+    }
+  ]
+}
