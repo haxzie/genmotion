@@ -21,7 +21,7 @@ import { limitsQueryKey, type LimitsResponse } from "@/components/upgrade-modal"
  * along with every bookmark already pointing at it.
  */
 export default function AccountHomePage() {
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: limitsQueryKey,
     queryFn: () => api<LimitsResponse>("/api/billing/limits"),
     staleTime: 30_000,
@@ -75,6 +75,12 @@ export default function AccountHomePage() {
               </>
             )}
           </p>
+        ) : error ? (
+          // Said plainly rather than left on "Loading…" for good: the one
+          // thing worse than a plan card that fails is one that looks stuck.
+          <p className="mt-1.5 text-[0.9rem] text-danger">
+            Couldn&apos;t load your plan — {error.message || "try again in a moment."}
+          </p>
         ) : (
           <p className="mt-1.5 text-[0.9rem] text-text-tertiary">Loading…</p>
         )}
@@ -88,10 +94,21 @@ export default function AccountHomePage() {
       </div>
 
       {/* What the plan gives, and how much of it is used: the month's
-          generation and the seats. Only once the plan is known — a trial
-          has no meters worth a card. */}
+          generation and the seats. Only once the plan is known. A trial has
+          no meters — its generation allowance is zero — so instead of the
+          section silently missing, which reads as "usage didn't load", it
+          says where the meters come from. */}
       {data && paid && (
         <GenerationAndSeats plan={data.plan} seats={data.seats} team={data.team} />
+      )}
+      {data && !paid && (
+        <>
+          <h2 className="mb-3 mt-10 text-[0.95rem] font-medium text-text-secondary">Generation</h2>
+          <div className="rounded-xl border border-dashed border-border px-5 py-4 text-[0.857rem] text-text-tertiary">
+            Voiceover, sound effects and image generation come with Pro and Max. Once you
+            upgrade, this month&apos;s meters show here.
+          </div>
+        </>
       )}
     </div>
   );
