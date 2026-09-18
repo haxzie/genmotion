@@ -103,36 +103,203 @@ export function renderGitignore(): string {
   return ["node_modules/", `${INTERNAL_DIR}/cache/`, ".DS_Store", ""].join("\n");
 }
 
+/**
+ * The scene a new project opens with, so the preview is never blank.
+ *
+ * It is a welcome card, not an example: the notice at the top of the file
+ * tells the agent so, because the first thing it reads in a fresh project is
+ * this scene, and a starter copied as a reference produces a video that looks
+ * like the app rather than like what the user asked for. The logo is inline
+ * SVG rather than an asset so the scaffold is one file, and so deleting the
+ * scene leaves nothing behind.
+ */
 export function renderStarterScene(): string {
-  return `import {
-  AbsoluteFill,
-  TextAnimation,
-  interpolate,
-  useCurrentFrame,
-} from "@genmotion/motion";
+  return `/**
+ * PLACEHOLDER — NOT A REFERENCE.
+ *
+ * Agent: this is the scene every new project starts with, so the preview has
+ * something to show before you have written anything. It says nothing about
+ * what the user wants, and nothing about how a good scene is written — do not
+ * copy its layout, colours, copy, or structure.
+ *
+ * Understand the user's requirements first. Then delete this file and its
+ * entry in project.json, and start fresh.
+ */
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "@genmotion/motion";
+import { ImagePlus, MousePointerClick, Plug } from "lucide-react";
+
+const CARDS = [
+  {
+    id: "card-select",
+    Icon: MousePointerClick,
+    title: "Click to edit",
+    body: "Select any element on the video preview to quickly edit it.",
+  },
+  {
+    id: "card-assets",
+    Icon: ImagePlus,
+    title: "Drop your assets",
+    body: "Drag and drop images, videos and other assets to ask the agent to include them in a scene.",
+  },
+  {
+    id: "card-mcp",
+    Icon: Plug,
+    title: "Connect MCPs",
+    body: "Connect MCPs to your agent to generate images, videos and more.",
+  },
+];
+
+function Logo({ rotation }: { rotation: number }) {
+  return (
+    <svg
+      id="logo"
+      width={72}
+      height={72}
+      viewBox="0 0 512 512"
+      fill="none"
+      style={{ transform: \`rotate(\${rotation}deg)\` }}
+    >
+      <defs>
+        <linearGradient
+          id="logo-gradient"
+          x1="61"
+          y1="88.5"
+          x2="428.5"
+          y2="430"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#C6F91E" />
+          <stop offset="1" stopColor="#16F5BD" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M280.083 111.725V38.5C280.083 25.2083 269.208 14.3333 255.917 14.3333C179.55 14.3333 118.65 108.1 111.642 231.833H38.4167C25.125 231.833 14.25 242.708 14.25 256C14.25 332.367 108.017 393.267 231.75 400.275V473.5C231.75 486.792 242.625 497.667 255.917 497.667C332.283 497.667 393.183 403.9 400.192 280.167H473.417C486.708 280.167 497.583 269.292 497.583 256C497.583 179.633 403.817 118.733 280.083 111.725ZM255.917 292.25C235.858 292.25 219.667 276.058 219.667 256C219.667 235.942 235.858 219.75 255.917 219.75C275.975 219.75 292.167 235.942 292.167 256C292.167 276.058 275.975 292.25 255.917 292.25Z"
+        fill="url(#logo-gradient)"
+      />
+    </svg>
+  );
+}
 
 export default function Scene() {
   const frame = useCurrentFrame();
-  const fade = interpolate(frame, [30, 55], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const { fps } = useVideoConfig();
+  // One full turn every 6 seconds, driven purely by the frame clock.
+  const rotation = (frame / (fps * 6)) * 360;
 
   return (
     <AbsoluteFill
       style={{
-        background: "#0b0b10",
+        backgroundColor: "#ffffff",
         alignItems: "center",
         justifyContent: "center",
-        gap: 28,
+        gap: 20,
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <div style={{ fontSize: 112, fontWeight: 700, color: "#f5f5f7", letterSpacing: "-0.03em" }}>
-        <TextAnimation text="Your first scene" by="word" preset="fadeUp" />
+      <svg
+        id="bg-grid"
+        width="100%"
+        height="100%"
+        style={{
+          position: "absolute",
+          inset: 0,
+          maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, #000 40%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, #000 40%, transparent 100%)",
+        }}
+      >
+        <defs>
+          <pattern id="dotted-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0.5" x2="80" y2="0.5" stroke="#c7c7cf" strokeWidth="1" strokeDasharray="2 4" />
+            <line x1="0.5" y1="0" x2="0.5" y2="80" stroke="#c7c7cf" strokeWidth="1" strokeDasharray="2 4" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dotted-grid)" />
+      </svg>
+
+      <div
+        id="logo-tile"
+        style={{
+          width: 120,
+          height: 120,
+          borderRadius: 34,
+          backgroundColor: "#0b0b10",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 12,
+          boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+          position: "relative",
+        }}
+      >
+        <Logo rotation={rotation} />
       </div>
-      <div style={{ opacity: fade, fontSize: 32, color: "#8a8a93" }}>
-        Ask the agent to change it.
+
+      <h1
+        id="hero-title"
+        style={{
+          margin: 0,
+          position: "relative",
+          fontSize: 48,
+          fontWeight: 500,
+          color: "#111114",
+          letterSpacing: "-0.02em",
+        }}
+      >
+        Welcome to your first scene 🎉
+      </h1>
+      <p
+        id="hero-subtitle"
+        style={{ margin: 0, position: "relative", fontSize: 28, color: "#5c5c66" }}
+      >
+        Ask your agent to edit the video
+      </p>
+
+      <div
+        id="cards"
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "row",
+          gap: 24,
+          marginTop: 44,
+        }}
+      >
+        {CARDS.map(({ id, Icon, title, body }) => (
+          <div
+            key={id}
+            id={id}
+            style={{
+              width: 440,
+              padding: "32px 32px 36px",
+              borderRadius: 20,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e4e4ea",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 18,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 6,
+              }}
+            >
+              <Icon size={48} color="#16a34a" strokeWidth={1.5} />
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 500, color: "#111114", letterSpacing: "-0.01em" }}>
+              {title}
+            </div>
+            <div style={{ fontSize: 28, lineHeight: 1.35, color: "#5c5c66" }}>{body}</div>
+          </div>
+        ))}
       </div>
     </AbsoluteFill>
   );
