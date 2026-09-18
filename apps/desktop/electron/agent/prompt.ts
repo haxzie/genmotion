@@ -1,6 +1,7 @@
 import { SCENE_AUTHORING_GUIDE } from "@genmotion/ai/prompt";
 import { HYPERFRAMES_AUTHORING_GUIDE } from "@genmotion/hyperframes";
 import type { ProjectEngine } from "@genmotion/project";
+import type { RemixOrigin } from "../remix";
 
 /**
  * The folders the user has shared, as lines the agent can act on.
@@ -31,6 +32,35 @@ function sharedFolders(readRoots: string[], launchDir: string | null): string {
 ${list}${here}
 
 Read them the way you read the project — open files, search them, use what you find. You still **cannot write anywhere outside the project folder**, so treat them as reference: to use something from one, copy it into the project rather than reaching across the boundary. A scene that imports a path outside the project builds for nobody else and will not export.`;
+}
+
+/**
+ * What a remixed template's agent has to be told before it reads the request.
+ *
+ * Without this, a remix looks to the agent exactly like a project someone
+ * else left behind: a finished video, and a message asking for a different
+ * one. The rational move is to clear the scenes and build what was asked —
+ * which throws away the very thing the user chose the template for. So the
+ * note says what a remix is, and what the opening move is: work out what the
+ * template needs from the user to become theirs, ask for it, then change
+ * only that.
+ *
+ * Sent with the first message of a thread, the same way the Codex preamble
+ * travels, rather than in the system prompt: it belongs beside the request it
+ * qualifies, and a later thread (a harness switch, a pruned session) gets it
+ * again because that thread has no memory of the first. It is worded to stay
+ * true then too — it describes the project's origin, not the state of any
+ * one turn.
+ */
+export function buildRemixNote(origin: RemixOrigin): string {
+  const about = origin.description ? ` — ${origin.description}` : "";
+  return `<remix>
+This project is a remix of the **${origin.title}** template${about}. The user picked it because they want *this* video: its scenes, structure, design and motion, as they are on disk, are the deliverable. Their message is about making it theirs, not about making a different video.
+
+- **Alter the existing scenes. Never clear them and start over.** Read \`project.json\` and every scene before you touch anything, then change what the request needs changed — copy, names, colours, logos, figures, screenshots, links — and leave the rest exactly as the template made it. Keep the same scene files, order and durations unless the new copy genuinely cannot fit. Add a scene only when the request needs something the template has no equivalent for; remove one only when asked.
+- **Ask before you guess.** Work out what the template needs from the user to become their video: usually a product or company name, a logo or website to take it from, a tagline, the real figures, a screenshot. If the message does not supply it, ask for all of it in one go — with \`AskUserQuestion\` if you have that tool, otherwise in your reply — saying briefly what each thing is for, and end the turn there. Fill the template in once you have it. Whatever still reads as the template's own placeholder copy or brand is what has not been swapped yet.
+- Once the video is theirs, work on it as you would any other project.
+</remix>`;
 }
 
 /**

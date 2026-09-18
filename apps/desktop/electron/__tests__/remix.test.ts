@@ -4,7 +4,8 @@ import fs from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { readManifest } from "@genmotion/project";
 import type { TemplateRemixBundle } from "@genmotion/templates/types";
-import { allowedExtension, safePath, writeRemix } from "../remix";
+import { allowedExtension, readRemixOrigin, safePath, writeRemix } from "../remix";
+import { buildRemixNote } from "../agent/prompt";
 
 /**
  * A remix bundle arrives over the network, so every path in it is treated as
@@ -147,5 +148,69 @@ describe("writeRemix", () => {
       writeRemix(dir, "Escape", bundle([{ ...SCENE, path: "scenes/../../escaped.tsx" }])),
     ).rejects.toThrow();
     await expect(fs.stat(path.join(path.dirname(dir), "escaped.tsx"))).rejects.toThrow();
+  });
+
+  it("records where the project came from, for the agent's first turn", async () => {
+    const dir = await tempDir();
+    await writeRemix(dir, "My Copy", {
+      ...bundle([SCENE]),
+      title: "Demo Launch",
+      description: "A launch video with a hero and a CTA.",
+    });
+
+    const origin = await readRemixOrigin(dir);
+    expect(origin).toMatchObject({
+      templateId: "demo",
+      revision: "abc123",
+      title: "Demo Launch",
+      description: "A launch video with a hero and a CTA.",
+    });
+    expect(Date.parse(origin!.remixedAt)).not.toBeNaN();
+  });
+
+  it("falls back to the manifest's name when the bundle predates the title", async () => {
+    const dir = await tempDir();
+    await writeRemix(dir, "My Copy", bundle([SCENE]));
+    expect((await readRemixOrigin(dir))?.title).toBe("Demo");
+  });
+});
+
+describe("readRemixOrigin", () => {
+  it("is null for a project that was not remixed", async () => {
+    const dir = await tempDir();
+    await fs.mkdir(dir, { recursive: true });
+    expect(await readRemixOrigin(dir)).toBeNull();
+  });
+
+  it("is null for a record it cannot read, rather than failing the turn", async () => {
+    const dir = await tempDir();
+    await fs.mkdir(path.join(dir, ".genmotion"), { recursive: true });
+    await fs.writeFile(path.join(dir, ".genmotion", "remix.json"), "{ not json", "utf8");
+    expect(await readRemixOrigin(dir)).toBeNull();
+  });
+});
+
+describe("buildRemixNote", () => {
+  it("names the template and tells the agent to adapt, not rebuild", () => {
+    const note = buildRemixNote({
+      templateId: "demo",
+      revision: "abc123",
+      title: "Demo Launch",
+      description: "A launch video with a hero and a CTA.",
+      remixedAt: "2026-09-18T00:00:00.000Z",
+    });
+    expect(note).toContain("**Demo Launch** template — A launch video with a hero and a CTA.");
+    expect(note).toContain("Never clear them and start over");
+    expect(note).toContain("Ask before you guess");
+  });
+
+  it("reads cleanly without a description", () => {
+    const note = buildRemixNote({
+      templateId: "demo",
+      revision: "abc123",
+      title: "Demo Launch",
+      remixedAt: "",
+    });
+    expect(note).toContain("**Demo Launch** template. ");
   });
 });

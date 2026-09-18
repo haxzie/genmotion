@@ -67,6 +67,44 @@ export function allowedExtension(relative: string, encoding: "text" | "base64"):
 
 export class RemixError extends Error {}
 
+/**
+ * Where a remixed project came from — `.genmotion/remix.json`.
+ *
+ * Nothing else on disk says so. The template's own AGENTS.md mentions it in
+ * passing, but the harness loads no project instructions of its own, so an
+ * agent opening the folder sees a finished video and a request to change it,
+ * and nothing to tell it that the video *is* the point. This record is what
+ * the first turn's note is built from (see `buildRemixNote`).
+ */
+export interface RemixOrigin {
+  templateId: string;
+  revision: string;
+  title: string;
+  description?: string;
+  /** ISO timestamp of the remix. */
+  remixedAt: string;
+}
+
+const REMIX_FILE = path.join(".genmotion", "remix.json");
+
+export async function readRemixOrigin(dir: string): Promise<RemixOrigin | null> {
+  const raw = await fs.readFile(path.join(dir, REMIX_FILE), "utf8").catch(() => null);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<RemixOrigin>;
+    if (typeof parsed.templateId !== "string" || typeof parsed.title !== "string") return null;
+    return {
+      templateId: parsed.templateId,
+      revision: typeof parsed.revision === "string" ? parsed.revision : "",
+      title: parsed.title,
+      ...(typeof parsed.description === "string" ? { description: parsed.description } : {}),
+      remixedAt: typeof parsed.remixedAt === "string" ? parsed.remixedAt : "",
+    };
+  } catch {
+    return null; // a torn file is not worth failing a turn over
+  }
+}
+
 /** Fetch and check a template's bundle. Nothing has touched disk yet. */
 export async function fetchRemixBundle(templateId: string): Promise<TemplateRemixBundle> {
   // Lazily, like the loopback server's own proxies: `./auth` reaches for
@@ -144,4 +182,15 @@ export async function writeRemix(
     audio: bundle.manifest.audio.filter((clip) => arrived.has(clip.file)),
   });
   await writeManifest(dir, manifest);
+
+  // Last, once everything it describes is in place. `createProject` has
+  // already made `.genmotion/` (the cache lives there), so this is one file.
+  const origin: RemixOrigin = {
+    templateId: bundle.id,
+    revision: bundle.revision,
+    title: bundle.title ?? bundle.manifest.name,
+    ...(bundle.description ? { description: bundle.description } : {}),
+    remixedAt: new Date().toISOString(),
+  };
+  await fs.writeFile(path.join(dir, REMIX_FILE), `${JSON.stringify(origin, null, 2)}\n`, "utf8");
 }

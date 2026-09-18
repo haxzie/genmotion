@@ -120,6 +120,14 @@ export const remixFileSchema = z.object({
 export const remixBundleSchema = z.object({
   id: z.string().min(1),
   revision: z.string().min(1),
+  /**
+   * From the sidecar, for the note the desktop hands its agent on a remix's
+   * first turn. Optional so a client built after this field can still parse
+   * a bundle from an API deployed before it; the client falls back to the
+   * manifest's name.
+   */
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
   /** Re-serialized from the parsed manifest, not raw project.json bytes. */
   manifest: projectManifestSchema,
   files: z.array(remixFileSchema).max(MAX_REMIX_FILES),

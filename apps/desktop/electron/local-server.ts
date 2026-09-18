@@ -21,6 +21,7 @@ export { mimeForAsset };
 // the turn parks on one map and the answer lands in the other.
 import { answerQuestion } from "./agent/questions";
 import { beginTurn, endTurn } from "./agent/turns";
+import { readRemixOrigin } from "./remix";
 
 /**
  * A loopback HTTP server speaking the same routes as the hosted Hono API, so
@@ -1179,13 +1180,19 @@ async function chatTurn(
   const text = messageText(last);
   if (!text.trim()) return jsonResponse(400, { error: "Empty message" });
 
-  const [{ createClaudeCodeBackend }, { createCodexBackend }, { runTurnAsUiStream }, { harnessState }] =
-    await Promise.all([
-      import("./agent/claude-code"),
-      import("./agent/codex"),
-      import("./agent/ui-stream"),
-      import("./agent/registry"),
-    ]);
+  const [
+    { createClaudeCodeBackend },
+    { createCodexBackend },
+    { runTurnAsUiStream },
+    { harnessState },
+    { buildRemixNote },
+  ] = await Promise.all([
+    import("./agent/claude-code"),
+    import("./agent/codex"),
+    import("./agent/ui-stream"),
+    import("./agent/registry"),
+    import("./agent/prompt"),
+  ]);
 
   const { active, options } = await harnessState();
   const harness = options.find((o) => o.id === active);
@@ -1211,11 +1218,19 @@ async function chatTurn(
   const controller = beginTurn(session.dir);
   req.on("close", () => controller.abort());
 
+  // A remixed template's agent is told so with the first message of a thread
+  // — before it reads a request that, on its own, reads as "make a different
+  // video". Only the thread's first message: a resumed thread has it in
+  // history. The transcript keeps the user's message as they typed it; the
+  // note is for the agent, not the chat.
+  const resumeSessionId = await session.readAgentSession(backend.id);
+  const remix = resumeSessionId ? null : await readRemixOrigin(session.dir);
+
   return runTurnAsUiStream({
     backend,
     projectDir: session.dir,
-    text,
-    resumeSessionId: await session.readAgentSession(backend.id),
+    text: remix ? `${buildRemixNote(remix)}\n\n${text}` : text,
+    resumeSessionId,
     signal: controller.signal,
     // Best-effort: a checkpoint write failing must never take the turn down
     // with it, so errors are swallowed here rather than in ui-stream.ts,

@@ -405,7 +405,15 @@ export async function buildRemixBundle(record: TemplateRecord): Promise<Template
     );
   }
 
-  return { id: record.meta.id, revision: record.revision, manifest: record.manifest, files, totalBytes };
+  return {
+    id: record.meta.id,
+    revision: record.revision,
+    title: record.meta.title,
+    description: record.meta.description,
+    manifest: record.manifest,
+    files,
+    totalBytes,
+  };
 }
 
 export { walkTemplate as listTemplateFiles };
