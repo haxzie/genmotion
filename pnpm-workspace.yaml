@@ -7,6 +7,9 @@ allowBuilds:
   # electron's postinstall downloads the platform runtime — the desktop app
   # cannot start without it.
   electron: true
+  # Windows-only: its postinstall fetches Squirrel. Nothing here builds NSIS
+  # through it, and a macOS install has no use for the download.
+  electron-winstaller: false
   esbuild: true
   ffmpeg-static: true
   sharp: true

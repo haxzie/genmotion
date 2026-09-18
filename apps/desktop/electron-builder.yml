@@ -68,6 +68,25 @@ mac:
   # release: an un-notarized DMG is refused by Gatekeeper on every Mac but the
   # one that built it. `pnpm release:mac:sign-only` opts out for testing.
   notarize: true
+# The installer window, designed in Dmgly (build/dmgly/). The arrow, the
+# "Drag to Applications" line and the two label plates are painted into the
+# background; Finder draws the real icons and their names on top, at these
+# centres. The background is 1x — there is no @2x slice.
+dmg:
+  background: build/dmgly/assets/dmg-background.png
+  window:
+    width: 642
+    height: 406
+  iconSize: 128
+  contents:
+    # No `path`: the packaged .app.
+    - x: 134
+      y: 187
+      type: file
+    - x: 489
+      y: 187
+      type: link
+      path: /Applications
 win:
   icon: build/icon.png
   target: nsis
