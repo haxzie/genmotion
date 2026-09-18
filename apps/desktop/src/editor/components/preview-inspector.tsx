@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlaybackStore, usePlaybackStoreApi, type CompiledScene } from "@genmotion/player";
 import { framesToTimecode, globalToLocal } from "@genmotion/shared";
 import { useEditorStore, useEditorStoreApi, type ElementContext } from "@/stores/editor-store";
+import { PreviewMarkup } from "./preview-markup";
 
 /** Purple, react-grab style. */
 const HILITE = "#a855f7";
@@ -99,12 +100,14 @@ function SendGlyph() {
  * id'd element inside it at once.
  */
 export function PreviewInspector({
+  projectId,
   scenes,
   fps,
   width,
   height,
   children,
 }: {
+  projectId: string;
   scenes: CompiledScene[];
   fps: number;
   /** Composition dimensions — the frame test measures against these, not the
@@ -124,6 +127,16 @@ export function PreviewInspector({
   const requestPrompt = useEditorStore((s) => s.requestPrompt);
   const playback = usePlaybackStoreApi();
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
+  const tool = useEditorStore((s) => s.previewTool);
+  const drawing = tool === "draw";
+
+  // Switching to Draw takes the pointer away from the inspector; whatever it
+  // was showing — a hover box, an open bubble — goes with it.
+  useEffect(() => {
+    if (!drawing) return;
+    setBox(null);
+    setDraft(null);
+  }, [drawing]);
 
   // Drag bookkeeping (refs so it survives re-renders without re-binding).
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -216,6 +229,28 @@ export function PreviewInspector({
       .filter(({ box }) => !contains(box, area));
     // Keep only the deepest tagged elements (drop id'd ancestors of other hits).
     return hits.filter(({ el }) => !hits.some((o) => o.el !== el && el.contains(o.el)));
+  }
+
+  /**
+   * What sits under a mark the user drew, for the Draw tool: every id'd
+   * element the area touches, or — a scribble inside one big card touches
+   * nothing the marquee rule keeps — the element at its centre. Looked up
+   * through the drawing layer, which is on top of everything at the time.
+   */
+  function elementsUnder(area: Box): Pick<ElementContext, "elementId" | "tag" | "text">[] {
+    const hits = collect(area);
+    if (hits.length === 0 && ref.current) {
+      const c = ref.current.getBoundingClientRect();
+      const under = document
+        .elementsFromPoint(c.left + area.left + area.width / 2, c.top + area.top + area.height / 2)
+        .find((el) => ref.current!.contains(el) && !el.closest("[data-gm-markup]"));
+      const m = measure(under ?? null);
+      if (m) hits.push(m);
+    }
+    return hits.map(({ el }) => {
+      const ctx = buildContext(el);
+      return { elementId: ctx.elementId, tag: ctx.tag, text: ctx.text };
+    });
   }
 
   function buildContext(el: HTMLElement): ElementContext {
@@ -322,13 +357,14 @@ export function PreviewInspector({
       // ratio is most of two sides. The frame paints its own black.
       className="relative h-full cursor-crosshair select-none overflow-hidden"
       onPointerDown={(e) => {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || drawing) return;
         startRef.current = relPoint(e.clientX, e.clientY);
         movedRef.current = false;
         setBox(null);
         ref.current?.setPointerCapture(e.pointerId);
       }}
       onPointerMove={(e) => {
+        if (drawing) return;
         // Not pressing: plain hover highlight.
         if (!startRef.current) {
           setBox(measure(e.target)?.box ?? null);
@@ -345,6 +381,7 @@ export function PreviewInspector({
         setMarqueeHits(collect(area).map((h) => h.box));
       }}
       onPointerUp={(e) => {
+        if (drawing) return;
         const start = startRef.current;
         startRef.current = null;
         try {
@@ -374,6 +411,17 @@ export function PreviewInspector({
       }}
     >
       {children}
+
+      {drawing && (
+        <PreviewMarkup
+          projectId={projectId}
+          width={width}
+          height={height}
+          fps={fps}
+          scenes={scenes}
+          resolveElements={elementsUnder}
+        />
+      )}
 
       {/* Elements the open bubble is about, held under a solid outline. */}
       {draft?.boxes.map((hit, i) => (

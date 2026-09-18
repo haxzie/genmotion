@@ -40,6 +40,8 @@ type Listener = (job: DesktopExportJob) => void;
  * what the main process needs to run and reveal them.
  */
 interface Job extends DesktopExportJob {
+  /** The queue only renders video; a still (`png`) is filed straight into history. */
+  format: ExportFormat;
   /** Absolute path of the finished file, once there is one. */
   outputPath?: string;
   /** Set by `cancelExport`; the frame loop checks it between frames. */
@@ -752,7 +754,7 @@ async function muxAudio(
   return true;
 }
 
-function slug(name: string): string {
+export function slug(name: string): string {
   return (
     name
       .toLowerCase()

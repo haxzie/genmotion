@@ -11,6 +11,7 @@ import {
 import { framesToTimecode, type AudioClipData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { PreviewInspector } from "./preview-inspector";
+import { PreviewTools } from "./preview-tools";
 import { useTabActive } from "../../tabs/active-tab";
 
 function PlayIcon({ playing }: { playing: boolean }) {
@@ -64,9 +65,22 @@ function TransportButton({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "flex items-center justify-center text-text-primary transition-colors hover:bg-surface-hover disabled:opacity-40",
-        primary ? "size-11 rounded-full bg-surface-raised" : "size-9 rounded-md",
-        active && "bg-accent-muted text-accent",
+        "flex items-center justify-center transition-colors disabled:opacity-40",
+        // Play is the one button that changes state: green at rest, white
+        // while the video runs — the same signal as a live indicator. Raised
+        // like a real key: a light edge on top, a darker one underneath, and
+        // it sinks a pixel when pressed. No glow — the colour is the signal.
+        primary
+          ? cx(
+              "size-11 rounded-full active:translate-y-px active:shadow-none",
+              active
+                ? "bg-[linear-gradient(180deg,#ffffff_0%,#e4e4e8_100%)] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-2px_0_rgba(0,0,0,0.18)] hover:bg-[linear-gradient(180deg,#ffffff_0%,#f0f0f3_100%)]"
+                : "bg-[linear-gradient(180deg,#22d37f_0%,#06b35e_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.28)] hover:bg-[linear-gradient(180deg,#2fe08a_0%,#08bf65_100%)]",
+            )
+          : cx(
+              "size-9 rounded-md text-text-primary hover:bg-surface-hover",
+              active && "bg-accent-muted text-accent",
+            ),
       )}
       title={title}
     >
@@ -81,7 +95,7 @@ function TransportButton({
  * HyperFrames one — both run on the same playback store, so one set of
  * controls serves either.
  */
-export function PreviewTransport({ fps }: { fps: number }) {
+export function PreviewTransport({ projectId, fps }: { projectId: string; fps: number }) {
   // The readout describes the picture, so it follows a timeline hover along
   // with it — a timecode that disagreed with the frame on screen would be
   // worse than one that moves. The playhead itself stays put.
@@ -145,14 +159,15 @@ export function PreviewTransport({ fps }: { fps: number }) {
           <SkipEndIcon />
         </TransportButton>
       </div>
-      <span className="font-mono text-[0.786rem] text-text-tertiary">
-        frame {frame} · {fps}fps
-      </span>
+      {/* The tool dock sits here, under the frame rather than over it, so
+          nothing of the video is ever behind a button. */}
+      <PreviewTools projectId={projectId} />
     </div>
   );
 }
 
 export function PreviewStage({
+  projectId,
   scenes,
   fps,
   width,
@@ -160,6 +175,7 @@ export function PreviewStage({
   audioClips,
   initializing,
 }: {
+  projectId: string;
   scenes: CompiledScene[];
   fps: number;
   width: number;
@@ -172,8 +188,9 @@ export function PreviewStage({
       <div className="relative min-h-0 flex-1 p-4">
         {/* The stage. The dotted canvas lives here, not on the inspector, so it
             backs every state — compiling, empty and playing alike — and fills
-            whatever the window leaves rather than only the frame's footprint. */}
-        <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+            whatever the window leaves rather than only the frame's footprint.
+            Padded so the frame never touches the canvas's edge on either axis. */}
+        <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border p-6 shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
           {initializing ? (
             <div className="flex h-full items-center justify-center">
               <div className="flex flex-col items-center gap-3 text-text-tertiary">
@@ -191,7 +208,7 @@ export function PreviewStage({
               </div>
             </div>
           ) : (
-            <PreviewInspector scenes={scenes} fps={fps} width={width} height={height}>
+            <PreviewInspector projectId={projectId} scenes={scenes} fps={fps} width={width} height={height}>
               <Player
                 scenes={scenes}
                 fps={fps}
@@ -204,7 +221,7 @@ export function PreviewStage({
         </div>
       </div>
 
-      <PreviewTransport fps={fps} />
+      <PreviewTransport projectId={projectId} fps={fps} />
     </div>
   );
 }

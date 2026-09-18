@@ -276,18 +276,25 @@ function EditorBody({
 
         {/* Right column: tabs/export header (over the preview) + preview */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-12 shrink-0 items-center justify-between pr-3">
-            <div className="flex items-center rounded-md border border-border bg-surface-raised p-0.5 text-[0.857rem]">
+          <div className="flex h-12 shrink-0 items-end justify-between pr-3">
+            {/* File-folder tabs: the active one is cut from the same cloth as
+                the pane below — its colour, its border on three sides — and
+                hangs a pixel over the pane's top edge to cover the line
+                between them, so tab and page read as one surface. Flush with
+                the pane's left edge: the first tab's border is the pane's. */}
+            <div className="relative z-10 -mb-px flex items-end gap-0.5 text-[0.857rem]">
               {VIEW_TABS.map(({ id, label, Icon }) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setTab(id)}
+                  aria-selected={tab === id}
+                  role="tab"
                   className={cx(
-                    "inline-flex items-center gap-1.5 rounded px-2.5 py-1 transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-t-lg border border-b-0 px-3 transition-colors",
                     tab === id
-                      ? "bg-surface text-text-primary"
-                      : "text-text-secondary hover:text-text-primary",
+                      ? "h-9 border-border bg-surface text-text-primary"
+                      : "mb-px h-8 border-transparent text-text-secondary hover:bg-white/[0.05] hover:text-text-primary",
                   )}
                 >
                   <Icon className="size-3.5" />
@@ -295,6 +302,7 @@ function EditorBody({
                 </button>
               ))}
             </div>
+            <div className="mb-1.5">
             <ExportButton
               projectId={project.dir}
               project={project}
@@ -311,9 +319,10 @@ function EditorBody({
                   : undefined
               }
             />
+            </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-tl-lg border-l border-t border-border bg-surface">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-l border-t border-border bg-surface">
               {project.manifestError && (
                 <div className="border-b border-danger/30 bg-danger/10 px-4 py-1.5 text-[0.857rem] text-danger">
                   project.json: {project.manifestError}
@@ -360,7 +369,7 @@ function EditorBody({
                   )}
                   <div className="flex min-h-0 flex-1 flex-col">
                     <div className="relative min-h-0 flex-1 p-4">
-                      <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
+                      <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border p-6 shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
                         {/* A compile error alone does not take the stage away: the
                             last good page stays up under the banner above, since
                             the agent breaks and mends the folder several times a
@@ -389,7 +398,7 @@ function EditorBody({
                         )}
                       </div>
                     </div>
-                    <PreviewTransport fps={project.fps} />
+                    <PreviewTransport projectId={project.dir} fps={project.fps} />
                   </div>
                   {/* The same timeline as a React project: sub-compositions are
                       the scenes, `<audio>` elements the clips. Edits are not
@@ -434,6 +443,7 @@ function EditorBody({
                     </div>
                   )}
                   <PreviewStage
+                    projectId={project.dir}
                     scenes={compiled}
                     fps={project.fps}
                     width={project.width}

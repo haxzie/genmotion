@@ -6,6 +6,7 @@ import { framesToTimecode, globalToLocal, type SceneData } from "@genmotion/shar
 import { API_URL } from "@/lib/api";
 import { useEditorStore, useEditorStoreApi, type ElementContext } from "@/stores/editor-store";
 import { useTabActive } from "../../../tabs/active-tab";
+import { PreviewMarkup } from "../preview-markup";
 
 /**
  * The HyperFrames composition, in an iframe, wired to the tab's playback clock.
@@ -146,6 +147,12 @@ export function HyperframesStage({
   const [note, setNote] = useState("");
   const noteRef = useRef<HTMLInputElement>(null);
   const editorStore = useEditorStoreApi();
+  const drawing = useEditorStore((s) => s.previewTool === "draw");
+  // The drawing layer sits over the iframe and takes the pointer, so the
+  // runtime's pick mode sees nothing while it is up; an open bubble goes too.
+  useEffect(() => {
+    if (drawing) setDraft(null);
+  }, [drawing]);
   const addElement = useEditorStore((s) => s.addElement);
   const requestPrompt = useEditorStore((s) => s.requestPrompt);
   const scenesRef = useRef(scenes);
@@ -479,6 +486,13 @@ export function HyperframesStage({
             ),
         )}
       </div>
+
+      {/* The Draw tool. No hit test here: the composition is a cross-origin
+          iframe, so a mark carries its box and the picture, not what was
+          under it — the agent finds that from the frame. */}
+      {drawing && (
+        <PreviewMarkup projectId={dir} width={width} height={height} fps={fps} scenes={scenes} />
+      )}
 
       {/* The picked element, held under a solid outline, and the comment
           bubble anchored where the user clicked — the React preview's. */}

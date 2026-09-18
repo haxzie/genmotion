@@ -45,6 +45,33 @@ export interface CaptureInput {
   /** Scenes to mount, in order. `frame` indexes into their concatenation. */
   scenes: SceneEntry[];
   frame: number;
+  /**
+   * SVG content laid over the frame before it is captured, in composition
+   * pixels — the user's markup, burned in so the picture the model reads is
+   * the one they drew on. Omitted, the frame is captured as-is.
+   */
+  overlay?: string;
+}
+
+/**
+ * Lay `overlay` over a page's composition, above everything in it.
+ *
+ * A script rather than a second capture composited in the main process:
+ * Electron has no canvas of its own, and the page is already a browser. The
+ * `<svg>` is fixed to the viewport, which in an offscreen window sized to the
+ * composition is the composition, so a `viewBox` in composition pixels lands
+ * the marks exactly where they were drawn.
+ */
+function overlayScript(overlay: string, width: number, height: number): string {
+  const markup =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
+    `style="position:fixed;inset:0;width:100%;height:100%;z-index:2147483647;pointer-events:none">` +
+    `${overlay}</svg>`;
+  return `(() => {
+    const host = document.createElement("div");
+    host.innerHTML = ${JSON.stringify(markup)};
+    document.body.appendChild(host.firstElementChild);
+  })()`;
 }
 
 /**
@@ -72,6 +99,8 @@ export function captureFrame(session: ProjectSession, input: CaptureInput): Prom
 export function captureCompositionFrame(
   session: ProjectSession,
   timeSeconds: number,
+  /** As `CaptureInput.overlay`, in the composition's own pixels. */
+  overlay?: string,
 ): Promise<{ image: NativeImage; width: number; height: number; durationSeconds: number }> {
   return serialize(async () => {
     if (hasActiveExport()) {
@@ -88,6 +117,7 @@ export function captureCompositionFrame(
     try {
       const t = Math.max(0, Math.min(timeSeconds, Math.max(0, page.durationSeconds - 1 / 1000)));
       await page.seek(t);
+      if (overlay) await page.execute(overlayScript(overlay, page.width, page.height));
       const image = await page.capture();
       if (image.isEmpty()) throw new Error("the capture came back blank");
       return { image, width: page.width, height: page.height, durationSeconds: page.durationSeconds };
@@ -98,7 +128,7 @@ export function captureCompositionFrame(
 }
 
 async function render(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
-  const { manifest, scenes, frame } = input;
+  const { manifest, scenes, frame, overlay } = input;
 
   // An export already owns an offscreen window and the encoder; adding a
   // second composition-sized window mid-render would slow down the thing the
@@ -150,6 +180,7 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
     // asset reports loaded — without awaiting it the capture races the first
     // paint and comes back blank.
     await win.webContents.executeJavaScript(`window.__gm.setFrame(${frame})`);
+    if (overlay) await win.webContents.executeJavaScript(overlayScript(overlay, width, height));
 
     const image = await win.webContents.capturePage();
     if (image.isEmpty()) throw new Error("the capture came back blank");

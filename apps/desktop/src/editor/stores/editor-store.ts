@@ -21,7 +21,38 @@ export interface ElementContext {
   timecode: string;
 }
 
+/** One mark the user drew, as the chat describes it to the agent. */
+export interface MarkupMarkContext {
+  /** 1-based; matches the badge burned into the picture. */
+  n: number;
+  kind: "pen" | "rect";
+  /** Composition pixels. */
+  box: { left: number; top: number; width: number; height: number };
+  /** What was under the mark, when the preview could tell. */
+  elements: Pick<ElementContext, "elementId" | "tag" | "text">[];
+}
+
+/** A marked-up frame from the preview's Draw tool, as chat context. */
+export interface MarkupContext {
+  id: string;
+  label: string;
+  /** Project-relative path of the picture with the marks burned in. */
+  path: string;
+  width: number;
+  height: number;
+  sceneId: string | null;
+  sceneName: string;
+  timecode: string;
+  marks: MarkupMarkContext[];
+}
+
+/** What the pointer does on the preview. */
+export type PreviewTool = "select" | "draw";
+
 interface EditorState {
+  /** Select: pick elements to comment on. Draw: mark the frame up freehand. */
+  previewTool: PreviewTool;
+  setPreviewTool(tool: PreviewTool): void;
   selectedSceneIds: string[];
   /** Assets the user picked as chat context (mirrors scene selection). */
   selectedAssetIds: string[];
@@ -65,6 +96,11 @@ interface EditorState {
   addElement(element: ElementContext): void;
   removeElement(id: string): void;
   clearElements(): void;
+  /** Marked-up frames from the preview's Draw tool, attached as chat context. */
+  selectedMarkups: MarkupContext[];
+  addMarkup(markup: MarkupContext): void;
+  removeMarkup(id: string): void;
+  clearMarkups(): void;
 }
 
 /**
@@ -77,6 +113,10 @@ interface EditorState {
  */
 export function createEditorStore(): StoreApi<EditorState> {
   return createStore<EditorState>((set, get) => ({
+  previewTool: "select",
+  setPreviewTool(previewTool) {
+    set({ previewTool });
+  },
   selectedSceneIds: [],
   selectedAssetIds: [],
   selectedAudioClipIds: [],
@@ -209,6 +249,18 @@ export function createEditorStore(): StoreApi<EditorState> {
   },
   clearElements() {
     set({ selectedElements: [] });
+  },
+  selectedMarkups: [],
+  addMarkup(markup) {
+    set((state) => ({ selectedMarkups: [...state.selectedMarkups, markup] }));
+  },
+  removeMarkup(id) {
+    set((state) => ({
+      selectedMarkups: state.selectedMarkups.filter((m) => m.id !== id),
+    }));
+  },
+  clearMarkups() {
+    set({ selectedMarkups: [] });
   },
   }));
 }

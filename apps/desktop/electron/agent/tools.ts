@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import type { NativeImage } from "electron";
 import { z } from "zod";
 import { readManifest } from "@genmotion/project";
 import { validateSceneFile } from "@genmotion/project/validate";
@@ -264,9 +265,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       // twice the composition on a Retina screen. A vision model resolves
       // nothing like that, and the full-size original would be megabytes of
       // base64 — so it is scaled down once, for both the file and the model.
-      const jpeg = image
-        .resize({ width: Math.min(manifest.width, SNAPSHOT_WIDTH), quality: "good" })
-        .toJPEG(SNAPSHOT_QUALITY);
+      const jpeg = snapshotJpeg(image, manifest.width);
       const saved = await writeSnapshot(session.dir, owner.file, frame, jpeg);
 
       const { fps } = manifest;
@@ -613,9 +612,7 @@ async function captureComposition(
     return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  const jpeg = captured.image
-    .resize({ width: Math.min(captured.width, SNAPSHOT_WIDTH), quality: "good" })
-    .toJPEG(SNAPSHOT_QUALITY);
+  const jpeg = snapshotJpeg(captured.image, captured.width);
   const stem = input.scene ? window.label : "index.html";
   const saved = await writeSnapshot(session.dir, stem, Math.round(time * 1000), jpeg);
   return {
@@ -683,6 +680,16 @@ function describeComposition(
 const SNAPSHOT_QUALITY = 80;
 
 /**
+ * A captured frame at the size a model reads it. Shared with the user's
+ * markup (`../markup.ts`), which is a frame for the same reader.
+ */
+export function snapshotJpeg(image: NativeImage, compositionWidth: number): Buffer {
+  return image
+    .resize({ width: Math.min(compositionWidth, SNAPSHOT_WIDTH), quality: "good" })
+    .toJPEG(SNAPSHOT_QUALITY);
+}
+
+/**
  * Where captured frames land.
  *
  * Under `.genmotion/cache/`, which the file watcher ignores and the scaffolded
@@ -718,9 +725,10 @@ async function writeSnapshot(
   return [...SNAPSHOT_DIR, name].join("/");
 }
 
-async function prune(dir: string): Promise<void> {
+/** Keep the newest `keep` files in `dir`, by mtime. */
+export async function prune(dir: string, keep = SNAPSHOT_KEEP): Promise<void> {
   const files = await fs.readdir(dir);
-  if (files.length <= SNAPSHOT_KEEP) return;
+  if (files.length <= keep) return;
   const stamped = await Promise.all(
     files.map(async (file) => ({
       file,
@@ -732,7 +740,7 @@ async function prune(dir: string): Promise<void> {
   );
   stamped.sort((a, b) => b.at - a.at);
   await Promise.all(
-    stamped.slice(SNAPSHOT_KEEP).map(({ file }) => fs.rm(path.join(dir, file), { force: true })),
+    stamped.slice(keep).map(({ file }) => fs.rm(path.join(dir, file), { force: true })),
   );
 }
 

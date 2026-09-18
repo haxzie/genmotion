@@ -14,6 +14,7 @@ import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/pr
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
 import { mimeForAsset, serveAssetFile } from "./serve-file";
+import type { MarkupRequest } from "./markup";
 
 export { mimeForAsset };
 // Static, unlike the other agent imports: this is a two-line registry with no
@@ -715,6 +716,37 @@ export async function startLocalServer(
     if (section === "preview") {
       if (method !== "GET" && method !== "HEAD") return undefined;
       return previewRoutes(session, target ?? "index.html", req);
+    }
+
+    // The project's card image, for the tab strip. Served rather than
+    // inlined as a data URL: a tab re-renders often and the picture is the
+    // heaviest thing about a project. `no-store` so a fresh capture after a
+    // turn shows on the next request, not after a cache expires.
+    if (section === "thumbnail" && method === "GET") {
+      const { thumbnailPath } = await import("./export/thumbnail");
+      const served = await serveAssetFile(thumbnailPath(session.dir), new Request("http://localhost/"));
+      served.headers.set("cache-control", "no-store");
+      return served;
+    }
+
+    // The preview's Screenshot button: the frame under the playhead as a PNG,
+    // filed with the exports. See `export/screenshot.ts`.
+    if (section === "screenshot" && method === "POST") {
+      const body = await readJson<{ frame?: number }>(req);
+      if (typeof body.frame !== "number") throw new Error("Expected a frame");
+      const { captureScreenshot } = await import("./export/screenshot");
+      return captureScreenshot(session, body.frame);
+    }
+
+    // The preview's Draw tool: strokes over a frame, rendered into a picture
+    // for the agent to read. See `markup.ts`.
+    if (section === "markup" && method === "POST") {
+      const body = await readJson<Partial<MarkupRequest>>(req);
+      if (typeof body.frame !== "number" || !Array.isArray(body.marks) || body.marks.length === 0) {
+        throw new Error("Expected a frame and at least one mark");
+      }
+      const { renderMarkup } = await import("./markup");
+      return renderMarkup(session, { frame: body.frame, marks: body.marks });
     }
 
     if (rest.length === 0) {

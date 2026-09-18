@@ -23,6 +23,7 @@ export interface ExportRecord {
   id: string;
   projectDir: string;
   projectName: string;
+  /** A still — the preview's Screenshot button — is `png`; everything else is a video. */
   format: DesktopExportJob["format"];
   outputPath: string;
   sizeBytes: number;

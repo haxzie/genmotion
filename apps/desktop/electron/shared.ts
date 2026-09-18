@@ -90,7 +90,8 @@ export interface DesktopExportJob extends ExportJobData {
   /** The project folder — the same value as `projectId`, named for what it is. */
   projectDir: string;
   projectName: string;
-  format: ExportFormat;
+  /** `png` is a still from the preview's Screenshot button, listed with the videos. */
+  format: ExportFormat | "png";
   /** Epoch ms. */
   createdAt: number;
   startedAt?: number;
@@ -354,6 +355,13 @@ export interface DesktopApi {
   launchContext(): Promise<LaunchContext>;
   /** A later `genmotion <path>` reached the running app. */
   onLaunchContext(listener: (context: LaunchContext) => void): () => void;
+  /**
+   * Whether the window is in macOS full screen, now and as it changes. The
+   * traffic lights leave with it, and the tab strip's room for them should go
+   * too. Always false elsewhere — the room is never made there.
+   */
+  fullScreen(): Promise<boolean>;
+  onFullScreen(listener: (fullScreen: boolean) => void): () => void;
   /** The `genmotion` shell command: whether it is there, and putting it there. */
   cli: {
     status(): Promise<CliStatus>;
@@ -400,6 +408,8 @@ export const IPC = {
   openWeb: "shell:open-web",
   launchContext: "launch:context",
   launchContextChanged: "launch:changed",
+  fullScreen: "window:full-screen",
+  fullScreenChanged: "window:full-screen-changed",
   cliStatus: "cli:status",
   cliInstall: "cli:install",
   projectChanged: "project:changed",

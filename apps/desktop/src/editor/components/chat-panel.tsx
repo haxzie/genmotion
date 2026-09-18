@@ -22,7 +22,7 @@ import {
 import { limitsQueryKey } from "@/components/upgrade-modal";
 import { API_URL, api } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { useEditorStore, useEditorStoreApi } from "@/stores/editor-store";
+import { useEditorStore, useEditorStoreApi, type MarkupContext } from "@/stores/editor-store";
 import { useTabActive } from "../../tabs/active-tab";
 import { reportTabBusy } from "../../tabs/tabs-store";
 import { projectQueryKey } from "@/hooks/use-project";
@@ -32,6 +32,7 @@ import {
   AssetChips,
   AudioClipChips,
   ElementChips,
+  MarkupChips,
   PluginChips,
   MessageContextPills,
   type MessageContextData,
@@ -185,6 +186,7 @@ function buildContextNote(
     sceneName: string;
     timecode: string;
   }[],
+  markups: MarkupContext[],
   plugins: ChatPlugin[],
 ): string | null {
   const lines: string[] = [];
@@ -203,6 +205,26 @@ function buildContextNote(
         ? `#${e.elementId}`
         : `<${e.tag}>${e.text ? ` "${e.text}"` : ""}`;
       lines.push(`  • ${ref} — in scene "${e.sceneName}" at ${e.timecode}`);
+    }
+  }
+  // The picture carries the intent; the numbers carry the precision. A model
+  // reads "this is too low" off a circle well and "move it to y=340" off one
+  // badly, so every mark is quoted in composition pixels, with whatever the
+  // preview found underneath it.
+  for (const m of markups) {
+    lines.push(
+      `Marked-up frame — I drew on the preview at ${m.timecode} (scene "${m.sceneName}"). Read the image at ${m.path}; each mark is numbered on it. The frame is ${m.width}×${m.height}; boxes below are in those pixels.`,
+    );
+    for (const mark of m.marks) {
+      const b = mark.box;
+      const at = `(${Math.round(b.left)}, ${Math.round(b.top)})–(${Math.round(b.left + b.width)}, ${Math.round(b.top + b.height)})`;
+      const under =
+        mark.elements.length > 0
+          ? ` over ${mark.elements
+              .map((e) => (e.elementId ? `#${e.elementId}` : `<${e.tag}>${e.text ? ` "${e.text}"` : ""}`))
+              .join(", ")}`
+          : "";
+      lines.push(`  • Mark ${mark.n}: ${mark.kind === "rect" ? "rectangle" : "freehand stroke"} at ${at}${under}`);
     }
   }
   if (scenes.length > 0) {
@@ -582,6 +604,7 @@ function ChatPanelInner({
   const selectedAssetIds = useEditorStore((s) => s.selectedAssetIds);
   const selectedAudioClipIds = useEditorStore((s) => s.selectedAudioClipIds);
   const selectedElements = useEditorStore((s) => s.selectedElements);
+  const selectedMarkups = useEditorStore((s) => s.selectedMarkups);
   const setAiBusy = useEditorStore((s) => s.setAiBusy);
   const fixRequest = useEditorStore((s) => s.fixRequest);
   const promptRequest = useEditorStore((s) => s.promptRequest);
@@ -594,7 +617,8 @@ function ChatPanelInner({
     selectedSceneIds.length +
     selectedAssetIds.length +
     selectedAudioClipIds.length +
-    selectedElements.length;
+    selectedElements.length +
+    selectedMarkups.length;
   const prevSelectionCount = useRef(selectionCount);
   useEffect(() => {
     if (selectionCount > prevSelectionCount.current) {
@@ -895,12 +919,14 @@ function ChatPanelInner({
         s.selectedSceneIds.length ||
         s.selectedAssetIds.length ||
         s.selectedAudioClipIds.length ||
-        s.selectedElements.length
+        s.selectedElements.length ||
+        s.selectedMarkups.length
       ) {
         s.clearSelection();
         s.clearAssetSelection();
         s.clearAudioClipSelection();
         s.clearElements();
+        s.clearMarkups();
       }
       setPlugins([]);
     };
@@ -1006,16 +1032,8 @@ function ChatPanelInner({
     }
   }, [fixRequest, busy, sendMessage, editorStore]);
 
-  // Breathing room left above a focused message, so it reads as the top of the
-  // turn rather than being flush against the panel's edge.
-  const FOCUS_GAP = 12;
   // How close to the bottom counts as "following along".
   const STICK_SLOP = 80;
-  // Slack left below the focused turn, and the reason it is more than
-  // STICK_SLOP: without it the scroll lands flush against the bottom, `onScroll`
-  // reads that as the user following along, and the next token pins the view to
-  // the bottom again — undoing the focus a frame after it happened.
-  const FOCUS_SLACK = STICK_SLOP + 24;
 
   // Pin to bottom as messages stream in — but only while the user is already at
   // the bottom, and batched into a rAF so a burst of tokens coalesces to one
@@ -1114,56 +1132,23 @@ function ChatPanelInner({
     // A taller composer pushes the end of the list up; stay pinned to it.
   }, [messages, composerHeight]);
 
-  /**
-   * Bring a newly sent message to the top of the view and hold it there.
-   *
-   * Pinning to the bottom alone reads badly on a long turn: the question the
-   * user just asked scrolls away the moment the answer starts arriving, and
-   * they end up watching tool cards with no idea what prompted them. Lifting it
-   * to the top instead puts the question and the start of the reply on screen
-   * together, which is where the interesting part is.
-   *
-   * The last turn is usually shorter than the panel, so there is nothing below
-   * it to scroll against — hence the tail spacer, sized to whatever is missing.
-   */
-  const [tailSpace, setTailSpace] = useState(0);
-  const listRef = useRef<HTMLDivElement>(null);
-  // Mirrored, because the measurement below has to discount the spacer left
-  // over from the previous turn — it is part of `scrollHeight` but isn't
-  // content, and counting it would leave the new message short of the top.
-  const tailSpaceRef = useRef(0);
-  const focusedUserId = useRef<string | null>(null);
-
+  // Sending always follows the bottom, whatever the user had scrolled to: the
+  // message they just wrote, and the reply arriving under it, are what they
+  // want to see. (An earlier design lifted the question to the top of the
+  // panel instead; the spacer that needed left a panel of empty scroll under
+  // every turn, which read as a bug more than a feature.)
+  const lastUserId = useRef<string | null>(null);
   useEffect(() => {
     const last = [...messages].reverse().find((m) => m.role === "user");
     if (!last) return;
-    const first = focusedUserId.current === null;
-    if (last.id === focusedUserId.current) return;
-    focusedUserId.current = last.id;
-    // On mount the transcript is restored whole; its last question is old news,
-    // and the useful view is the bottom, where the conversation left off.
+    const first = lastUserId.current === null;
+    if (last.id === lastUserId.current) return;
+    lastUserId.current = last.id;
+    // On mount the transcript is restored whole; the pin below handles it.
     if (first) return;
-
+    stickToBottom.current = true;
     const el = scrollRef.current;
-    const list = listRef.current;
-    const node = el?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(last.id)}"]`);
-    if (!el || !list || !node) return;
-
-    const top = node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
-    // Measured off the list, not the scroller: a conversation shorter than the
-    // panel has `scrollHeight === clientHeight`, which overstates what is below
-    // the message and leaves the spacer too short to lift it to the top.
-    const below = list.getBoundingClientRect().height - top - tailSpaceRef.current;
-    tailSpaceRef.current = Math.max(0, el.clientHeight - below - FOCUS_GAP + FOCUS_SLACK);
-    setTailSpace(tailSpaceRef.current);
-    // Following the bottom would undo this on the next token; the user scrolling
-    // back down turns it on again through `handleMessagesScroll`.
-    stickToBottom.current = false;
-    // Let the spacer land before scrolling, or the target is still out of reach.
-    const raf = requestAnimationFrame(() => {
-      el.scrollTo({ top: Math.max(0, top - FOCUS_GAP), behavior: "smooth" });
-    });
-    return () => cancelAnimationFrame(raf);
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Build the exact (message, options) args for sendMessage from the current
@@ -1188,6 +1173,11 @@ function ChatPanelInner({
         sceneName: e.sceneName,
         timecode: e.timecode,
       })),
+      markups: selectedMarkups.map((m) => ({
+        label: m.label,
+        sceneName: m.sceneName,
+        timecode: m.timecode,
+      })),
       plugins: plugins.map((p) => ({ id: p.id, label: p.label, ...(p.iconUrl ? { iconUrl: p.iconUrl } : {}) })),
     };
     // The note prepended to the message (model input); pills (above) are display.
@@ -1202,6 +1192,7 @@ function ChatPanelInner({
         sceneName: e.sceneName,
         timecode: e.timecode,
       })),
+      selectedMarkups,
       plugins,
     );
 
@@ -1265,6 +1256,7 @@ function ChatPanelInner({
     store.clearAssetSelection();
     store.clearAudioClipSelection();
     store.clearElements();
+    store.clearMarkups();
     setPlugins([]);
 
     if (busy) {
@@ -1309,7 +1301,6 @@ function ChatPanelInner({
           </div>
         ) : (
           <div
-            ref={listRef}
             className="flex min-w-0 max-w-full flex-col px-4 pt-4"
             style={{ paddingBottom: composerHeight + 16 }}
           >
@@ -1389,7 +1380,6 @@ function ChatPanelInner({
               </div>
             )}
             {/* Scroll room for the focused message; see the tail-spacer note. */}
-            {tailSpace > 0 && <div aria-hidden style={{ height: tailSpace }} />}
           </div>
         )}
       </div>
@@ -1452,6 +1442,7 @@ function ChatPanelInner({
         )}
         <AudioClipChips clips={audioClips} />
         <ElementChips />
+        <MarkupChips />
         <form
           onSubmit={(e) => {
             e.preventDefault();

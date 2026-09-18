@@ -39,6 +39,8 @@ export interface MessageContextData {
   /** `track` is the lane, and the colour with it. Absent on older messages. */
   audioClips?: { name: string; track?: number }[];
   elements?: { label: string; sceneName: string; timecode: string }[];
+  /** Marked-up frames from the preview's Draw tool. Absent on older messages. */
+  markups?: { label: string; sceneName: string; timecode: string }[];
   /** Chat plugins the message was sent with. Absent on older messages. */
   plugins?: { id: ChatPlugin["id"]; label: string; iconUrl?: string }[];
 }
@@ -67,6 +69,16 @@ const CursorGlyph = () => (
     <path d="M5 3l15 9-6 1.5L11 20z" />
   </svg>
 );
+const PenGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className ?? "size-3 shrink-0"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+    <path d="M2 2l7.586 7.586" />
+  </svg>
+);
+
+/** The Draw tool's ink, so its pills match the marks on the preview. */
+const MARKUP_PILL = "border-[#ff2d75]/50 bg-[#ff2d75]/15 text-[#ff8fb3]";
 
 /** The pills shown inside a user message, snapshotting the attached context. */
 export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
@@ -74,12 +86,14 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
   const assets = ctx.assets ?? [];
   const audioClips = ctx.audioClips ?? [];
   const elements = ctx.elements ?? [];
+  const markups = ctx.markups ?? [];
   const plugins = ctx.plugins ?? [];
   if (
     !scenes.length &&
     !assets.length &&
     !audioClips.length &&
     !elements.length &&
+    !markups.length &&
     !plugins.length
   )
     return null;
@@ -120,6 +134,53 @@ export function MessageContextPills({ ctx }: { ctx: MessageContextData }) {
           </span>
         </span>
       ))}
+      {markups.map((m, i) => (
+        <span key={`k${i}`} className={cx(pill, MARKUP_PILL)}>
+          <PenGlyph />
+          <span className="max-w-[160px] truncate">
+            {m.label}
+            <span className="text-[#ff2d75]/70"> · {m.timecode}</span>
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function MarkupChips() {
+  const markups = useEditorStore((s) => s.selectedMarkups);
+  const removeMarkup = useEditorStore((s) => s.removeMarkup);
+
+  return (
+    <div className="relative flex flex-wrap gap-1.5 px-1 [&:not(:empty)]:pb-2">
+      <AnimatePresence mode="popLayout">
+        {markups.map((m) => (
+          <motion.span
+            key={m.id}
+            {...CHIP_ANIM}
+            className={cx(
+              "inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-[0.857rem] backdrop-blur-md",
+              MARKUP_PILL,
+            )}
+          >
+            <PenGlyph className="size-3.5 shrink-0" />
+            <span className="max-w-[200px] truncate">
+              {m.label}
+              <span className="text-[#ff2d75]/70">
+                {" "}
+                · {m.sceneName} · {m.timecode}
+              </span>
+            </span>
+            <button
+              onClick={() => removeMarkup(m.id)}
+              className={cx(removeButton, "hover:bg-[#ff2d75]/30")}
+              title="Remove from context"
+            >
+              <RemoveX />
+            </button>
+          </motion.span>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
