@@ -20,6 +20,16 @@ const cardVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: enterEase } },
 };
 
+/** "Sep 18, 2026" from a `YYYY-MM-DD`, read as UTC so the day never shifts. */
+function formatPublished(publishedAt: string): string {
+  return new Date(`${publishedAt}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function formatDuration(seconds: number): string {
   const total = Math.round(seconds);
   if (total < 60) return `${total}s`;
@@ -264,6 +274,8 @@ function TemplateCard({
           <span>
             {template.sceneCount} {template.sceneCount === 1 ? "scene" : "scenes"}
           </span>
+          <span aria-hidden>·</span>
+          <time dateTime={template.publishedAt}>{formatPublished(template.publishedAt)}</time>
         </div>
         {template.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -390,7 +402,8 @@ function TemplateDetailView({
           <p className="mt-2 text-[0.786rem] text-text-tertiary">
             {summary.width}×{summary.height} · {summary.fps}fps ·{" "}
             {formatDuration(summary.durationInFrames / summary.fps)} · {summary.sceneCount}{" "}
-            {summary.sceneCount === 1 ? "scene" : "scenes"}
+            {summary.sceneCount === 1 ? "scene" : "scenes"} ·{" "}
+            <time dateTime={summary.publishedAt}>{formatPublished(summary.publishedAt)}</time>
           </p>
           {summary.tags.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">

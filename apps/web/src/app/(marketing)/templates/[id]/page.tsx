@@ -6,7 +6,12 @@ import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatePlayer } from "@/components/marketing/template-player";
 import { TemplateRemixButton } from "@/components/marketing/template-remix-button";
-import { getAllTemplateSummaries, getTemplateSummary, templateApiUrl } from "@/lib/marketing/templates";
+import {
+  formatPublished,
+  getAllTemplateSummaries,
+  getTemplateSummary,
+  templateApiUrl,
+} from "@/lib/marketing/templates";
 import { templateFaqs } from "@/lib/marketing/template-faq";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
@@ -59,6 +64,7 @@ export default async function TemplateDetailPage({ params }: Params) {
       description: summary.description,
       thumbnailUrl: templateApiUrl(summary.posterPath),
       duration: `PT${Math.round(summary.durationInFrames / summary.fps)}S`,
+      uploadDate: summary.publishedAt,
       contentUrl: templateApiUrl(summary.posterPath),
       publisher: {
         "@type": "Organization",
@@ -109,6 +115,8 @@ export default async function TemplateDetailPage({ params }: Params) {
               <span>
                 {summary.sceneCount} {summary.sceneCount === 1 ? "scene" : "scenes"}
               </span>
+              <span>·</span>
+              <time dateTime={summary.publishedAt}>{formatPublished(summary.publishedAt)}</time>
               {summary.tags.map((tag) => (
                 <span key={tag} className="rounded-full border border-border px-2.5 py-0.5">
                   {tag}

@@ -45,7 +45,8 @@ describe("GET /api/templates", () => {
   });
 
   it("pages with a cursor, in the same order as an unpaged fetch", async () => {
-    const whole = (await (await get("/api/templates")).json()) as {
+    // Explicitly everything: the default page is 12, and the catalog is past that.
+    const whole = (await (await get("/api/templates?limit=1000")).json()) as {
       templates: { id: string }[];
     };
     expect(whole.templates.length).toBeGreaterThan(1);

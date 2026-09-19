@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { TemplateSummary } from "@genmotion/templates/types";
-import { templateApiUrl } from "@/lib/marketing/templates";
+import { formatPublished, templateApiUrl } from "@/lib/marketing/templates";
 
 function formatDuration(seconds: number): string {
   const total = Math.round(seconds);
@@ -80,6 +80,8 @@ export function TemplateCard({ template }: { template: TemplateSummary }) {
           </span>
           <span aria-hidden>·</span>
           <span>{formatDuration(template.durationInFrames / template.fps)}</span>
+          <span aria-hidden>·</span>
+          <time dateTime={template.publishedAt}>{formatPublished(template.publishedAt)}</time>
         </div>
         {template.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">

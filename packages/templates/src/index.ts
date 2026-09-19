@@ -257,6 +257,7 @@ export function toSummary(record: TemplateRecord): TemplateSummary {
     metaTitle: meta.metaTitle ?? defaultMetaTitle(meta.title),
     category: meta.category,
     tags: meta.tags,
+    publishedAt: meta.publishedAt,
     fps: manifest.fps,
     width: manifest.width,
     height: manifest.height,
@@ -273,7 +274,12 @@ export async function listTemplates(): Promise<TemplateRecord[]> {
   const records = await Promise.all(ids.map((id) => getTemplate(id)));
   return records
     .filter((r): r is TemplateRecord => r !== null)
-    .sort((a, b) => a.meta.order - b.meta.order || a.meta.title.localeCompare(b.meta.title));
+    .sort(
+      (a, b) =>
+        b.meta.publishedAt.localeCompare(a.meta.publishedAt) ||
+        a.meta.order - b.meta.order ||
+        a.meta.title.localeCompare(b.meta.title),
+    );
 }
 
 /** Opaque so a client never has reason to parse it — just the id, wrapped. */

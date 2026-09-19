@@ -67,6 +67,7 @@ all three, plus the checklist for adding a template in the first place.
      "metaTitle": "Specific SEO Title — GenMotion",
      "category": "product | social | intro | explainer | data",
      "tags": ["Two", "To three", "from TEMPLATE_TAGS"],
+     "publishedAt": "YYYY-MM-DD",
      "order": 100
    }
    ```
@@ -80,7 +81,10 @@ all three, plus the checklist for adding a template in the first place.
      Educational, Tutorial). **Every 9:16 (portrait) template must include
      "Social Media"** — a catalog test enforces this. Don't force a tag that
      doesn't honestly fit; an empty category is fine.
+   - `publishedAt`: today, `YYYY-MM-DD`. The gallery sorts newest-first on
+     this, so it is what puts a new template on the first page.
    - `order`: one past the current highest (`grep -rh '"order"' packages/templates/catalog/*/template.json`).
+     Only breaks ties between templates published the same day.
    - `sampleAt` (optional, 0–1): fraction into the first scene where the poster
      samples its frame. Only set this if the default (0.6) lands mid-transition
      — check after generating the poster (step 6), don't guess ahead of time.

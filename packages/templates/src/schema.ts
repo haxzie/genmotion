@@ -48,7 +48,14 @@ export const templateMetaSchema = z.object({
   category: z.enum(["intro", "social", "explainer", "product", "data"]),
   /** Two to three, from `TEMPLATE_TAGS`. Shown as pills; filters the gallery. */
   tags: z.array(templateTagSchema).min(2).max(3),
-  /** Sorts the gallery; lower is earlier. Ties break on title. */
+  /**
+   * The day the template went into the catalog, `YYYY-MM-DD`. The gallery
+   * sorts on it, newest first — so a new template lands on the first page
+   * rather than behind a "Load more" nobody presses, which is what a
+   * curated-only `order` did once the catalog outgrew one page.
+   */
+  publishedAt: z.iso.date(),
+  /** Breaks ties within a day; lower is earlier. Then title. */
   order: z.number().int().default(100),
   /**
    * Fraction into the first scene where `scripts/poster.mjs` samples its

@@ -34,6 +34,8 @@ export interface TemplateSummary {
   metaTitle: string;
   category: TemplateCategory;
   tags: TemplateTag[];
+  /** `YYYY-MM-DD`. The list comes newest-first on this. */
+  publishedAt: string;
   /** From project.json, so the card draws at the template's real ratio. */
   fps: number;
   width: number;

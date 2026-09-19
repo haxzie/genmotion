@@ -37,10 +37,11 @@ it("refuses an asset path that escapes the template", () => {
   expect(templateAssetPath(id, "/etc/passwd")).toBeNull();
 });
 
-it("sorts the catalog by order", async () => {
+it("sorts the catalog newest first, then by order", async () => {
   const templates = await listTemplates();
-  const orders = templates.map((t) => t.meta.order);
-  expect([...orders].sort((a, b) => a - b)).toEqual(orders);
+  const keys = templates.map((t) => [t.meta.publishedAt, t.meta.order] as const);
+  const sorted = [...keys].sort((a, b) => b[0].localeCompare(a[0]) || a[1] - b[1]);
+  expect(sorted).toEqual(keys);
 });
 
 it("pages through the whole catalog, in the same order listTemplates gives", async () => {

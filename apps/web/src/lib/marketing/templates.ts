@@ -72,6 +72,16 @@ export async function getTemplateSummary(id: string): Promise<TemplateSummary | 
   }
 }
 
+/** "Sep 18, 2026" from a `YYYY-MM-DD` — pinned to UTC and en-US so server and client agree. */
+export function formatPublished(publishedAt: string): string {
+  return new Date(`${publishedAt}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /** Join a template-relative path (a poster or asset route) onto the API's own origin. */
 export function templateApiUrl(path: string): string {
   return `${API_URL}${path}`;
