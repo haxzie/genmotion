@@ -237,7 +237,10 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
               setEffort.mutate(level, { onSettled: () => setDragIndex(null) });
             };
             return (
-              <div className="border-t border-border px-3 pb-2.5 pt-2">
+              // Pinned to the menu's bottom edge: the list above scrolls, and
+              // a slider that scrolled with it was off-screen on any machine
+              // with both harnesses' models.
+              <div className="sticky bottom-0 border-t border-border bg-surface-raised px-3 pb-2.5 pt-2">
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="text-[0.72rem] uppercase tracking-wider text-text-tertiary">
                     Effort
