@@ -287,10 +287,13 @@ function SceneBlock({
 
         {/* Title (left) + duration (top-right, aligned with the title) */}
         <div className="relative flex items-center justify-between gap-2 px-2 pt-1">
+          {/* White over the filmstrip: the frames underneath are any colour,
+              and the purple the card used to carry vanished into them. The
+              shadow keeps it legible over a light frame. */}
           <span
             className={cx(
-              "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
-              selected ? "text-purple" : "text-purple/80",
+              "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+              selected ? "text-white" : "text-white/85",
             )}
           >
             <SceneIcon className="size-3.5 shrink-0" />
@@ -301,7 +304,7 @@ function SceneBlock({
           </span>
           <span
             className={cx(
-              "shrink-0 font-mono text-[0.714rem] text-text-tertiary transition-opacity duration-150",
+              "shrink-0 font-mono text-[0.714rem] text-white/70 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] transition-opacity duration-150",
               // Fade the duration out when the mute button takes its corner.
               scene.audioUrl && (muted ? "opacity-0" : "group-hover:opacity-0"),
             )}
