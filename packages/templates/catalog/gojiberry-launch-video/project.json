@@ -1,0 +1,297 @@
+{
+  "name": "Gojiberry launch video",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-cold-dm.tsx",
+      "durationInFrames": 60,
+      "name": "Cold DM"
+    },
+    {
+      "file": "scenes/02-sent.tsx",
+      "durationInFrames": 30,
+      "name": "Sent"
+    },
+    {
+      "file": "scenes/03-hundred.tsx",
+      "durationInFrames": 102,
+      "name": "A hundred reach-outs"
+    },
+    {
+      "file": "scenes/04-reply.tsx",
+      "durationInFrames": 138,
+      "name": "The reply"
+    },
+    {
+      "file": "scenes/05-problem.tsx",
+      "durationInFrames": 66,
+      "name": "Your problem"
+    },
+    {
+      "file": "scenes/06-lists.tsx",
+      "durationInFrames": 66,
+      "name": "Building lists"
+    },
+    {
+      "file": "scenes/07-not-interested.tsx",
+      "durationInFrames": 78,
+      "name": "Not interested"
+    },
+    {
+      "file": "scenes/08-volume.tsx",
+      "durationInFrames": 69,
+      "name": "Volume"
+    },
+    {
+      "file": "scenes/09-change.tsx",
+      "durationInFrames": 99,
+      "name": "Time to change"
+    },
+    {
+      "file": "scenes/10-detects.tsx",
+      "durationInFrames": 81,
+      "name": "Detects"
+    },
+    {
+      "file": "scenes/11-engages.tsx",
+      "durationInFrames": 123,
+      "name": "Engages"
+    },
+    {
+      "file": "scenes/12-website.tsx",
+      "durationInFrames": 138,
+      "name": "Enter website"
+    },
+    {
+      "file": "scenes/13-target.tsx",
+      "durationInFrames": 96,
+      "name": "Target"
+    },
+    {
+      "file": "scenes/14-monitors.tsx",
+      "durationInFrames": 66,
+      "name": "Monitors"
+    },
+    {
+      "file": "scenes/15-intent.tsx",
+      "durationInFrames": 192,
+      "name": "Intent signals"
+    },
+    {
+      "file": "scenes/16-prioritize.tsx",
+      "durationInFrames": 108,
+      "name": "Prioritize"
+    },
+    {
+      "file": "scenes/17-campaigns.tsx",
+      "durationInFrames": 129,
+      "name": "Campaigns"
+    },
+    {
+      "file": "scenes/18-cold.tsx",
+      "durationInFrames": 81,
+      "name": "Cold prospects"
+    },
+    {
+      "file": "scenes/19-more.tsx",
+      "durationInFrames": 129,
+      "name": "3-5x more"
+    },
+    {
+      "file": "scenes/20-autopilot.tsx",
+      "durationInFrames": 75,
+      "name": "Autopilot"
+    },
+    {
+      "file": "scenes/21-outro.tsx",
+      "durationInFrames": 197,
+      "name": "Outro"
+    }
+  ],
+  "audio": [
+    {
+      "id": "vo-01-sent",
+      "file": "assets/vo-01-sent.mp3",
+      "track": 0,
+      "startFrame": 6,
+      "durationInFrames": 75,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-02-hundred",
+      "file": "assets/vo-02-hundred.mp3",
+      "track": 0,
+      "startFrame": 93,
+      "durationInFrames": 106,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-03-oh",
+      "file": "assets/vo-03-oh.mp3",
+      "track": 0,
+      "startFrame": 204,
+      "durationInFrames": 17,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-04-honest",
+      "file": "assets/vo-04-honest.mp3",
+      "track": 0,
+      "startFrame": 303,
+      "durationInFrames": 91,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-05-problem",
+      "file": "assets/vo-05-problem.mp3",
+      "track": 0,
+      "startFrame": 396,
+      "durationInFrames": 195,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-06-change",
+      "file": "assets/vo-06-change.mp3",
+      "track": 0,
+      "startFrame": 609,
+      "durationInFrames": 45,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-07-detects",
+      "file": "assets/vo-07-detects.mp3",
+      "track": 0,
+      "startFrame": 664,
+      "durationInFrames": 224,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-08-website",
+      "file": "assets/vo-08-website.mp3",
+      "track": 0,
+      "startFrame": 888,
+      "durationInFrames": 242,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-09-monitors",
+      "file": "assets/vo-09-monitors.mp3",
+      "track": 0,
+      "startFrame": 1130,
+      "durationInFrames": 290,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-10-prioritize",
+      "file": "assets/vo-10-prioritize.mp3",
+      "track": 0,
+      "startFrame": 1420,
+      "durationInFrames": 219,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-11-more",
+      "file": "assets/vo-11-more.mp3",
+      "track": 0,
+      "startFrame": 1641,
+      "durationInFrames": 202,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-12-autopilot",
+      "file": "assets/vo-12-autopilot.mp3",
+      "track": 0,
+      "startFrame": 1851,
+      "durationInFrames": 65,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-13-outro",
+      "file": "assets/vo-13-outro.mp3",
+      "track": 0,
+      "startFrame": 1926,
+      "durationInFrames": 145,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-fahh",
+      "file": "assets/sfx-fahh.mp3",
+      "track": 0,
+      "startFrame": 244,
+      "durationInFrames": 56,
+      "startFrom": 0,
+      "volume": 0.9,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 6,
+      "muted": false
+    },
+    {
+      "id": "28265358-7583-4bff-a3c9-1f708f2c2a30",
+      "file": "assets/starostin-fast-dynamic-percussion-music-263141-1.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 3076,
+      "startFrom": 0,
+      "volume": 0.17643389882930874,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false,
+      "name": "starostin-fast-dynamic-percussion-music-263141"
+    }
+  ]
+}
