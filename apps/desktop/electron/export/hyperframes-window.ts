@@ -1,6 +1,7 @@
-import { BrowserWindow, type NativeImage } from "electron";
+import type { NativeImage } from "electron";
 import { previewUrl } from "../local-server";
 import type { ProjectSession } from "../project-session";
+import { openOffscreenWindow } from "./offscreen";
 
 /**
  * A HyperFrames composition in an offscreen window, driven frame by frame.
@@ -137,22 +138,15 @@ const seekScript = (t: number) => `(async () => {
 
 export async function openCompositionWindow(
   session: ProjectSession,
-  size: { width: number; height: number },
+  size: {
+    width: number;
+    height: number;
+    /** See `openOffscreenWindow`: below 1 the page is laid out at full size but painted smaller. */
+    scale?: number;
+  },
 ): Promise<CompositionWindow> {
   const { width, height } = size;
-  // Offscreen rather than merely hidden: a hidden window stops painting, and
-  // the capture comes back blank.
-  const win = new BrowserWindow({
-    width,
-    height,
-    show: false,
-    webPreferences: {
-      offscreen: true,
-      backgroundThrottling: false,
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
+  const win = openOffscreenWindow(size);
   // The page has real `<audio>` elements, and an offscreen window is still
   // wired to the speakers. The mix comes from ffmpeg, not from here.
   win.webContents.setAudioMuted(true);

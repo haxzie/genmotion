@@ -1,10 +1,11 @@
 import path from "node:path";
 import fs from "node:fs/promises";
-import { BrowserWindow, type NativeImage } from "electron";
+import type { NativeImage } from "electron";
 import type { ProjectManifest, SceneEntry } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
 import { PAGE_SHELL, hasActiveExport } from "./service";
 import { openCompositionWindow } from "./hyperframes-window";
+import { openOffscreenWindow } from "./offscreen";
 
 /**
  * One frame of a composition, rendered offscreen.
@@ -29,7 +30,7 @@ export class CaptureBusyError extends Error {}
  */
 let queue: Promise<unknown> = Promise.resolve();
 
-function serialize<T>(fn: () => Promise<T>): Promise<T> {
+export function serialize<T>(fn: () => Promise<T>): Promise<T> {
   const next = queue.then(fn, fn);
   // Swallow here only — `next` still rejects for the caller.
   queue = next.then(
@@ -141,30 +142,78 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
 
   const compiled = [];
   for (const entry of scenes) {
-    const built = await session.bundler.bundle(entry.file);
-    if (!built.ok) throw new Error(`${entry.file} failed to build: ${built.error.message}`);
-    compiled.push({
+    const built = await bundleScene(session, entry);
+    if (!built.ok) throw new Error(built.error);
+    compiled.push(built.scene);
+  }
+
+  const host = await openRenderHost({ manifest, scenes: compiled });
+  try {
+    await host.setFrame(frame);
+    if (overlay) await host.execute(overlayScript(overlay, manifest.width, manifest.height));
+    const image = await host.capture();
+    if (image.isEmpty()) throw new Error("the capture came back blank");
+    return image;
+  } finally {
+    host.close();
+  }
+}
+
+/** A React scene bundled for the render host — what `__gmInit` mounts. */
+export interface CompiledScene {
+  id: string;
+  name: string;
+  durationInFrames: number;
+  compiledCode: string;
+}
+
+/** Bundle one scene through the session's incremental builder. */
+export async function bundleScene(
+  session: ProjectSession,
+  entry: SceneEntry,
+): Promise<{ ok: true; scene: CompiledScene } | { ok: false; error: string }> {
+  const built = await session.bundler.bundle(entry.file);
+  if (!built.ok) return { ok: false, error: `${entry.file} failed to build: ${built.error.message}` };
+  return {
+    ok: true,
+    scene: {
       id: entry.file,
       name: entry.name ?? entry.file,
       durationInFrames: entry.durationInFrames,
       compiledCode: built.code,
-    });
-  }
-
-  const { fps, width, height } = manifest;
-  // Offscreen rather than merely hidden: a hidden window stops painting, and
-  // the capture comes back blank.
-  const win = new BrowserWindow({
-    width,
-    height,
-    show: false,
-    webPreferences: {
-      offscreen: true,
-      backgroundThrottling: false,
-      nodeIntegration: false,
-      contextIsolation: true,
     },
-  });
+  };
+}
+
+/**
+ * The React render host in an offscreen window, driven frame by frame — the
+ * counterpart of `openCompositionWindow` for a React project. `frame` indexes
+ * into the concatenation of the scenes mounted.
+ */
+export interface RenderHostWindow {
+  /**
+   * Resolves once React has committed, fonts are ready, and every registered
+   * asset reports loaded — without awaiting it the capture races the first
+   * paint and comes back blank.
+   */
+  setFrame(frame: number): Promise<void>;
+  /** Whatever the page shows now, at the display's pixel ratio. */
+  capture(): Promise<NativeImage>;
+  execute(script: string): Promise<unknown>;
+  close(): void;
+}
+
+export async function openRenderHost(input: {
+    manifest: Pick<ProjectManifest, "fps" | "width" | "height">;
+    scenes: CompiledScene[];
+    /** See `openOffscreenWindow`: below 1 the page is laid out at full size but painted smaller. */
+    scale?: number;
+}): Promise<RenderHostWindow> {
+  const { fps, width, height } = input.manifest;
+  const win = openOffscreenWindow({ width, height, scale: input.scale });
+  const close = () => {
+    if (!win.isDestroyed()) win.destroy();
+  };
 
   try {
     await win.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(PAGE_SHELL)}`);
@@ -172,20 +221,19 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
     await win.webContents.executeJavaScript(hostBundle);
 
     const init = (await win.webContents.executeJavaScript(
-      `window.__gmInit(${JSON.stringify({ scenes: compiled, fps, width, height })})`,
+      `window.__gmInit(${JSON.stringify({ scenes: input.scenes, fps, width, height })})`,
     )) as { error?: string };
     if (init?.error) throw new Error(init.error);
-
-    // Resolves once React has committed, fonts are ready, and every registered
-    // asset reports loaded — without awaiting it the capture races the first
-    // paint and comes back blank.
-    await win.webContents.executeJavaScript(`window.__gm.setFrame(${frame})`);
-    if (overlay) await win.webContents.executeJavaScript(overlayScript(overlay, width, height));
-
-    const image = await win.webContents.capturePage();
-    if (image.isEmpty()) throw new Error("the capture came back blank");
-    return image;
-  } finally {
-    if (!win.isDestroyed()) win.destroy();
+  } catch (err) {
+    close();
+    throw err;
   }
+  return {
+    async setFrame(frame) {
+      await win.webContents.executeJavaScript(`window.__gm.setFrame(${frame})`);
+    },
+    capture: () => win.webContents.capturePage(),
+    execute: (script) => win.webContents.executeJavaScript(script),
+    close,
+  };
 }

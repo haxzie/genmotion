@@ -5,6 +5,7 @@ import {
   type AuthState,
   type DesktopApi,
   type DesktopProject,
+  type FilmstripData,
   type LaunchContext,
   type ScaffoldState,
   type StoredTabs,
@@ -62,6 +63,18 @@ const api: DesktopApi = {
     };
   },
   retryScaffold: (dir) => ipcRenderer.invoke(IPC.retryScaffold, dir),
+  filmstrips: (dir) => ipcRenderer.invoke(IPC.filmstrips, dir),
+  onFilmstripChanged: (listener) => {
+    const handler = (_event: unknown, dir: string, sceneId: string, strip: FilmstripData | null) =>
+      listener(dir, sceneId, strip);
+    ipcRenderer.on(IPC.filmstripChanged, handler);
+    return () => {
+      ipcRenderer.off(IPC.filmstripChanged, handler);
+    };
+  },
+  setPlaybackState: (dir, playing) => {
+    ipcRenderer.send(IPC.playbackState, dir, playing);
+  },
   revealExport: (id) => ipcRenderer.invoke(IPC.revealExport, id),
   recentProjects: (range) => ipcRenderer.invoke(IPC.recentProjects, range),
   seedSampleProjects: () => ipcRenderer.invoke(IPC.seedSampleProjects),

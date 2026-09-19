@@ -25,6 +25,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { usePlaybackStore, usePlaybackStoreApi } from "@genmotion/player";
 import { useTabActive } from "../../tabs/active-tab";
+import { api } from "../../api";
+import { TIMELINE_PX_PER_SECOND, type FilmstripData } from "../../../electron/shared";
+import { useFilmstrip } from "../hooks/use-filmstrips";
 import {
   framesToTimecode,
   sceneStartFrames,
@@ -40,8 +43,11 @@ import { Waveform } from "./waveform";
 import { useProjectAssets } from "@/hooks/use-assets";
 import { AudioLanes, AUDIO_LANE_HEIGHT } from "./audio-lanes";
 
-/** Fixed timeline scale: one second of video occupies exactly this many pixels. */
-const PX_PER_SECOND = 60;
+/**
+ * Fixed timeline scale: one second of video occupies exactly this many pixels.
+ * Shared with the main process, which lays the scene filmstrips out to it.
+ */
+const PX_PER_SECOND = TIMELINE_PX_PER_SECOND;
 /** Breathing room at both ends of the track; every time→pixel mapping adds it. */
 const TRACK_PADDING = 12;
 /** Row heights that make up the timeline's total height. */
@@ -107,6 +113,47 @@ function TrackHeaders({ audioHeight }: { audioHeight: number }) {
   );
 }
 
+/**
+ * The scene's frames, behind everything else on the card.
+ *
+ * Drawn at the strip's natural size, left-aligned, so each tile sits over the
+ * second it was sampled from — the card's `overflow-hidden` clips whatever
+ * hangs past the end. While the right edge is being dragged the strip simply
+ * gets clipped or leaves a gap; the main process rebuilds it for the new
+ * length once the change lands, and the new image fades in over the old one
+ * rather than popping — a rebuild happens after every edit the agent makes,
+ * and a flicker on each would make the timeline the busiest thing on screen.
+ */
+function Filmstrip({ strip, selected }: { strip: FilmstripData; selected: boolean }) {
+  // The URL that has finished decoding. The previous strip stays underneath
+  // until the next one is ready to show.
+  const [loaded, setLoaded] = useState<FilmstripData | null>(null);
+  const shown = loaded && loaded.url !== strip.url ? loaded : null;
+  const ready = loaded?.url === strip.url;
+  const layer = (data: FilmstripData, className: string, onLoad?: () => void) => (
+    <img
+      key={data.url}
+      src={data.url}
+      alt=""
+      draggable={false}
+      decoding="async"
+      onLoad={onLoad}
+      className={cx(
+        "pointer-events-none absolute left-0 top-0 h-full max-w-none select-none transition-opacity duration-300",
+        className,
+      )}
+      style={{ width: data.count * data.tileWidth }}
+    />
+  );
+  const tone = selected ? "opacity-45" : "opacity-35";
+  return (
+    <>
+      {shown && layer(shown, tone)}
+      {layer(strip, ready ? tone : "opacity-0", () => setLoaded(strip))}
+    </>
+  );
+}
+
 /** Voiceover amplitude strip shown at the bottom of a scene block. */
 function SceneWaveform({
   url,
@@ -142,6 +189,7 @@ function SceneWaveform({
 const MIN_SCENE_FRAMES_FACTOR = 0.2;
 
 function SceneBlock({
+  projectId,
   scene,
   fps,
   pxPerFrame,
@@ -152,6 +200,7 @@ function SceneBlock({
   onToggleMute,
   onResize,
 }: {
+  projectId: string;
   scene: SceneData;
   fps: number;
   pxPerFrame: number;
@@ -165,6 +214,7 @@ function SceneBlock({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: scene.id });
   const muted = (scene.audioVolume ?? 1) <= 0;
+  const filmstrip = useFilmstrip(projectId, scene.id);
 
   // While dragging the right edge, override the length locally so the card (and,
   // via flex reflow, every scene after it) resizes live before we commit.
@@ -233,8 +283,10 @@ function SceneBlock({
           editing && "gm-card-shimmer border-accent/60",
         )}
       >
+        {filmstrip && <Filmstrip strip={filmstrip} selected={selected} />}
+
         {/* Title (left) + duration (top-right, aligned with the title) */}
-        <div className="flex items-center justify-between gap-2 px-2 pt-1">
+        <div className="relative flex items-center justify-between gap-2 px-2 pt-1">
           <span
             className={cx(
               "flex min-w-0 items-center gap-1 text-[0.857rem] font-medium",
@@ -591,6 +643,25 @@ export function Timeline({
   const tabActive = useTabActive();
   const totalFrames = totalDurationInFrames(scenes);
 
+  // Tell the main process when this project is playing. Its background
+  // rendering — the scene filmstrips — waits for a pause, so it never fights
+  // playback for the GPU. Subscribed rather than selected: a play/pause must
+  // not re-render the whole timeline.
+  const playback = usePlaybackStoreApi();
+  useEffect(() => {
+    let playing = playback.getState().isPlaying;
+    api.setPlaybackState(projectId, playing);
+    const unsubscribe = playback.subscribe((state) => {
+      if (state.isPlaying === playing) return;
+      playing = state.isPlaying;
+      api.setPlaybackState(projectId, playing);
+    });
+    return () => {
+      unsubscribe();
+      api.setPlaybackState(projectId, false);
+    };
+  }, [playback, projectId]);
+
   const { data: assets } = useProjectAssets(projectId);
   const audioAssets = (assets ?? [])
     .filter((a) => a.kind === "audio")
@@ -798,6 +869,7 @@ export function Timeline({
                     {scenes.map((scene) => (
                       <SceneBlock
                         key={scene.id}
+                        projectId={projectId}
                         scene={scene}
                         fps={fps}
                         pxPerFrame={pxPerFrame}

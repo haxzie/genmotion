@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { ProjectSession } from "./project-session";
 import { captureThumbnail } from "./export/thumbnail";
+import { forgetFilmstrips, scheduleFilmstrips } from "./export/filmstrip";
 import { abortTurn, isTurnRunning, turnSettled } from "./agent/turns";
 import type { DesktopProject } from "./shared";
 
@@ -98,6 +99,7 @@ export async function openSession(dir: string): Promise<OpenResult> {
   entry.unsubscribe = session.onChange((project) => {
     for (const listener of listeners) listener(project);
     scheduleThumbnail(entry);
+    scheduleFilmstrips(session);
   });
   byDir.set(session.dir, entry);
   byAssetKey.set(session.assetKey, entry);
@@ -148,6 +150,7 @@ export async function closeSession(
   if (activeDir === resolved) activeDir = null;
 
   entry.unsubscribe();
+  forgetFilmstrips(resolved);
   if (entry.thumbnailTimer) {
     clearTimeout(entry.thumbnailTimer);
     entry.thumbnailTimer = null;

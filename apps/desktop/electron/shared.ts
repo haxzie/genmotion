@@ -41,6 +41,34 @@ export interface DesktopProject extends ProjectData {
   folderMissing: boolean;
 }
 
+// ── Filmstrips ─────────────────────────────────────────────────────────────
+
+/**
+ * The timeline's fixed scale: one second of video is this many pixels. Lives
+ * here rather than in the timeline component because the main process builds
+ * the scene filmstrips to it — a strip is laid out so that, at this scale, its
+ * tiles sit over the seconds they were sampled from.
+ */
+export const TIMELINE_PX_PER_SECOND = 60;
+
+/** CSS pixel height of a filmstrip tile — the scene card's interior. */
+export const FILMSTRIP_TILE_HEIGHT = 44;
+
+/**
+ * A scene's filmstrip: frames sampled evenly across it, side by side in one
+ * JPEG. The card draws it left-aligned at `count × tileWidth` CSS pixels, so a
+ * scene trimmed shorter clips the strip and one stretched longer shows a gap
+ * until the strip is rebuilt for the new length.
+ */
+export interface FilmstripData {
+  /** `gm-asset://` URL; the file name carries a content hash, so it never goes stale. */
+  url: string;
+  /** CSS pixels. The image itself is 2× for retina. */
+  tileWidth: number;
+  tileHeight: number;
+  count: number;
+}
+
 /** Which HyperFrames runtime the preview and export load, and why. */
 export interface HyperframesRuntime {
   version: string;
@@ -321,6 +349,18 @@ export interface DesktopApi {
   onScaffoldChanged(listener: (dir: string, state: ScaffoldState) => void): () => void;
   /** Run the HyperFrames install again for a project whose first attempt failed. */
   retryScaffold(dir: string): Promise<ScaffoldState>;
+  /** Every scene filmstrip the main process has for a project, keyed by scene id. */
+  filmstrips(dir: string): Promise<Record<string, FilmstripData>>;
+  /** A scene's filmstrip was rebuilt, or the scene went (`null`). */
+  onFilmstripChanged(
+    listener: (dir: string, sceneId: string, strip: FilmstripData | null) => void,
+  ): () => void;
+  /**
+   * Fire-and-forget: the preview started or stopped playing. Background
+   * rendering — filmstrips — waits for a pause, so it never competes with
+   * playback for the GPU.
+   */
+  setPlaybackState(dir: string, playing: boolean): void;
   /** Show a finished export in the file manager, by job id. */
   revealExport(id: string): Promise<void>;
   recentProjects(range?: RecentProjectRange): Promise<RecentProjectPage>;
@@ -424,6 +464,9 @@ export const IPC = {
   projectChanged: "project:changed",
   scaffoldChanged: "project:scaffold-changed",
   retryScaffold: "project:scaffold-retry",
+  filmstrips: "filmstrip:list",
+  filmstripChanged: "filmstrip:changed",
+  playbackState: "playback:state",
   authState: "auth:state",
   authStart: "auth:start",
   authOpenBrowser: "auth:open-browser",

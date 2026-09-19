@@ -4,7 +4,7 @@ import "./esbuild-binary";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { BrowserWindow, app, dialog, ipcMain, protocol, shell } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, protocol, session as electronSession, shell } from "electron";
 import { createProject, readManifest } from "@genmotion/project";
 import { GSAP_VERSION, HYPERFRAMES_AUTHORING_GUIDE, HYPERFRAMES_VERSION } from "@genmotion/hyperframes";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
@@ -22,6 +22,13 @@ import {
   type CloseResult,
 } from "./session-registry";
 import { refreshThumbnail } from "./export/thumbnail";
+import {
+  filmstripsFor,
+  onFilmstripChanged,
+  scheduleFilmstrips,
+  setPlaybackState,
+} from "./export/filmstrip";
+import { SCALED_PARTITION } from "./export/offscreen";
 import { forgetProject, listRecents, rememberProject } from "./recents";
 import { startLocalServer, type LocalServer } from "./local-server";
 import { serveAssetFile } from "./serve-file";
@@ -128,6 +135,9 @@ async function openSession(dir: string): Promise<DesktopProject> {
   // app wasn't watching it. Deliberately not awaited — a stale picture is not
   // worth delaying the editor for.
   void refreshThumbnail(session).catch(() => {});
+  // The timeline's scene strips, likewise: found on disk if nothing changed,
+  // rendered in the background if it did.
+  scheduleFilmstrips(session);
   return project;
 }
 
@@ -330,6 +340,10 @@ function registerIpc(): void {
     },
   );
   ipcMain.handle(IPC.activateProject, async (_event, dir: string | null) => activateProject(dir));
+  ipcMain.handle(IPC.filmstrips, async (_event, dir: string) => filmstripsFor(dir));
+  ipcMain.on(IPC.playbackState, (_event, dir: string, playing: boolean) => {
+    setPlaybackState(dir, playing);
+  });
   ipcMain.handle(IPC.restoreTabs, async () => restoreTabs());
   // `on`, not `handle`: the renderer sends and forgets.
   ipcMain.on(IPC.persistTabs, (_event, tabs: StoredTabs) => persistTabs(tabs));
@@ -472,7 +486,7 @@ function assetPathFromUrl(raw: string): string | null {
 }
 
 function registerAssetProtocol(): void {
-  protocol.handle("gm-asset", async (request) => {
+  const handle = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     // `gm-asset://<key>/<path>` — the key names which open project this is,
     // so a background tab's preview and audio keep resolving.
@@ -484,7 +498,12 @@ function registerAssetProtocol(): void {
       return new Response("Forbidden", { status: 403 });
     }
     return serveAssetFile(target, request);
-  });
+  };
+  protocol.handle("gm-asset", handle);
+  // Scaled captures render in their own session (see `offscreen.ts`), and a
+  // React scene's assets are `gm-asset://` URLs — so the scheme has to answer
+  // there too.
+  electronSession.fromPartition(SCALED_PARTITION).protocol.handle("gm-asset", handle);
 }
 
 /**
@@ -670,6 +689,11 @@ void app.whenReady().then(async () => {
   installMenu(() => window);
   createWindow();
 
+  // A scene strip finished rendering; the timeline card swaps it in.
+  onFilmstripChanged((dir, sceneId, strip) => {
+    if (!window || window.isDestroyed()) return;
+    window.webContents.send(IPC.filmstripChanged, dir, sceneId, strip);
+  });
   // Push every project's changes to the renderer; the payload carries its
   // `dir`, which is how the renderer knows which tab it belongs to.
   onProjectChanged((project) => {
