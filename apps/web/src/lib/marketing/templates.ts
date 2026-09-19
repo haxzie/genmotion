@@ -86,3 +86,28 @@ export function formatPublished(publishedAt: string): string {
 export function templateApiUrl(path: string): string {
   return `${API_URL}${path}`;
 }
+
+/**
+ * A template as schema.org's `VideoObject`, for the pages' JSON-LD.
+ *
+ * One builder rather than three hand-written copies: the gallery, category
+ * and detail pages all describe the same video, and Google's video rich
+ * results want the same required set everywhere — `name`, `description`,
+ * `thumbnailUrl`, `uploadDate`, and a `contentUrl` that is the actual MP4,
+ * not the poster.
+ */
+export function templateVideoObject(t: TemplateSummary, siteUrl: string) {
+  return {
+    "@type": "VideoObject",
+    name: t.title,
+    description: t.description,
+    thumbnailUrl: templateApiUrl(t.posterPath),
+    contentUrl: templateApiUrl(`${t.videoPath}?v=${t.revision}`),
+    uploadDate: t.publishedAt,
+    duration: `PT${Math.round(t.durationInFrames / t.fps)}S`,
+    width: t.width,
+    height: t.height,
+    keywords: t.tags.join(", "),
+    url: `${siteUrl}/templates/${t.id}`,
+  };
+}

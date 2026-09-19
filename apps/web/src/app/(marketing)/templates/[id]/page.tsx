@@ -10,7 +10,7 @@ import {
   formatPublished,
   getAllTemplateSummaries,
   getTemplateSummary,
-  templateApiUrl,
+  templateVideoObject,
 } from "@/lib/marketing/templates";
 import { templateFaqs } from "@/lib/marketing/template-faq";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
@@ -56,22 +56,23 @@ export default async function TemplateDetailPage({ params }: Params) {
   const summary = await getTemplateSummary(id);
   if (!summary) notFound();
 
+  // A `WebPage` that says it contains the video, rather than a bare
+  // `VideoObject`: the page is a template's page, and the video is the
+  // thing on it — which is also how Google decides a result is a video one.
   const jsonLd = [
     {
       "@context": "https://schema.org",
-      "@type": "VideoObject",
-      name: summary.title,
+      "@type": "WebPage",
+      name: summary.metaTitle,
       description: summary.description,
-      thumbnailUrl: templateApiUrl(summary.posterPath),
-      duration: `PT${Math.round(summary.durationInFrames / summary.fps)}S`,
-      uploadDate: summary.publishedAt,
-      contentUrl: templateApiUrl(summary.posterPath),
+      url: `${SITE_URL}/templates/${summary.id}`,
+      datePublished: summary.publishedAt,
       publisher: {
         "@type": "Organization",
         name: SITE_NAME,
         logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
       },
-      url: `${SITE_URL}/templates/${summary.id}`,
+      video: templateVideoObject(summary, SITE_URL),
     },
     {
       "@context": "https://schema.org",

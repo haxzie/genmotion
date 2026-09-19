@@ -5,7 +5,7 @@ import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatesBrowser } from "@/components/marketing/templates-browser";
-import { getAllTemplateSummaries, templateApiUrl } from "@/lib/marketing/templates";
+import { getAllTemplateSummaries, templateVideoObject } from "@/lib/marketing/templates";
 import { TEMPLATE_CATEGORIES, getTemplateCategory } from "@/lib/marketing/template-categories";
 import { categoryFaqs } from "@/lib/marketing/template-faq";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
@@ -62,13 +62,7 @@ export default async function TemplateCategoryPage({ params }: Params) {
       itemListElement: templates.map((t, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        item: {
-          "@type": "VideoObject",
-          name: t.title,
-          description: t.description,
-          thumbnailUrl: templateApiUrl(t.posterPath),
-          url: `${SITE_URL}/templates/${t.id}`,
-        },
+        item: templateVideoObject(t, SITE_URL),
       })),
     },
     {

@@ -62,20 +62,25 @@ all three, plus the checklist for adding a template in the first place.
    ```json
    {
      "id": "kebab-case-id-matching-the-folder-name",
-     "title": "Display Title",
+     "title": "Notion launch video",
      "description": "One sentence for the gallery card AND the page's meta description — make it read well as both.",
-     "metaTitle": "Specific SEO Title — GenMotion",
+     "metaTitle": "Notion Productivity App Launch Video Template — GenMotion",
      "category": "product | social | intro | explainer | data",
      "tags": ["Two", "To three", "from TEMPLATE_TAGS"],
      "publishedAt": "YYYY-MM-DD",
      "order": 100
    }
    ```
-   - `metaTitle` is the `<title>` the web page renders — pack a keyword the
-     plain `title` doesn't need (e.g. "Screen Recorder App Launch Video
-     Template — GenMotion" rather than just "Prequel Launch"). Always suffix
-     `— GenMotion`. Omit the field entirely to fall back to `"<title> Template
-     — GenMotion"` if nothing more specific is warranted.
+   - `title`: sentence case, and it says what the video *is* — "Notion launch
+     video", "WhatsApp chat video" — not just the brand ("Notion Launch"). It
+     is the card, the `<h1>`, the remix's project name, and the phrase the
+     page's FAQ questions are built around, so it has to read as a noun phrase
+     mid-sentence ("How do I make a Notion launch video?").
+   - `metaTitle` is the `<title>` the web page renders: the brand plus the
+     search keyword the plain `title` lacks, in Title Case, ≤ 60 characters
+     ("Prequel Screen Recorder Launch Video Template — GenMotion"). Always
+     suffix `— GenMotion`. Omit the field entirely to fall back to `"<title>
+     Template — GenMotion"` if nothing more specific is warranted.
    - `tags`: 2–3 from the closed set in `packages/templates/src/schema.ts`
      (`TEMPLATE_TAGS`: Social Media, Launch Video, Announcement, Promotional,
      Educational, Tutorial). **Every 9:16 (portrait) template must include

@@ -6,15 +6,6 @@ function article(phrase: string): "a" | "an" {
   return /^[aeiou]/i.test(phrase) ? "an" : "a";
 }
 
-/**
- * Strips the trailing " Template — GenMotion" every `metaTitle` carries
- * (hand-written or the schema's own fallback), leaving the keyword phrase the
- * template was actually written to rank for — "WhatsApp Chat Video", "AI
- * Model Launch Video" — the same phrase a real search for it would use.
- */
-function templateKeyword(summary: TemplateSummary): string {
-  return summary.metaTitle.replace(/ Template — GenMotion$/, "");
-}
 
 /**
  * Strips the trailing " templates" every category `heading` carries
@@ -26,13 +17,18 @@ function categoryKeyword(category: TemplateCategory): string {
 }
 
 /**
- * FAQ for one template's detail page, built from its own `metaTitle` and
+ * FAQ for one template's detail page, built from its own `title` and
  * dimensions — every template gets questions phrased around the exact
- * keyword it's trying to rank for, not one generic block reused site-wide.
+ * phrase it's trying to rank for, not one generic block reused site-wide.
  * `FaqSection` turns this straight into FAQPage JSON-LD.
+ *
+ * The title, not the `metaTitle`: it is already written as the phrase in
+ * sentence case ("Notion launch video"), so it drops into a question as-is.
+ * Lowercasing the meta title instead turned every brand into "notion",
+ * "github", "whatsapp".
  */
 export function templateFaqs(summary: TemplateSummary): Faq[] {
-  const kw = templateKeyword(summary).toLowerCase();
+  const kw = summary.title;
   const a = article(kw);
   return [
     {
