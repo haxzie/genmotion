@@ -7,11 +7,11 @@ import {
   Container,
   Section,
   Eyebrow,
-  GradientBlobs,
   CoolGradientBlobs,
   LinkButton,
   Card,
 } from "@/components/marketing/primitives";
+import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseStack } from "@/components/marketing/showcase-stack";
@@ -136,7 +136,7 @@ export default async function HomePage() {
       <JsonLd data={homeJsonLd} />
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <GradientBlobs />
+        <HeroShaderBackground />
         {/* Fades the hue down into the page background so the showcase card
             below can sit over it cleanly — same treatment as the dashboard. */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />

@@ -22,6 +22,7 @@
     "@genmotion/shared": "workspace:*",
     "@genmotion/templates": "workspace:*",
     "@next/third-parties": "^16.2.12",
+    "@paper-design/shaders-react": "0.0.81",
     "@tanstack/react-query": "^5.101.0",
     "@uiw/codemirror-theme-tokyo-night": "^4.25.10",
     "@uiw/codemirror-theme-tokyo-night-day": "^4.25.10",

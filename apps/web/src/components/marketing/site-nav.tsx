@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
@@ -103,9 +103,29 @@ function AuthCta({ stacked = false }: { stacked?: boolean }) {
 export function SiteNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 0);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
+  // Transparent at the very top so the hero shader runs under the bar; the
+  // chrome fades in as soon as content scrolls beneath it. The open mobile
+  // menu always gets the solid treatment so its panel isn't floating.
+  const solid = scrolled || open;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+    <header
+      className={cx(
+        "sticky top-0 z-50 border-b transition-[background-color,border-color,backdrop-filter] duration-200",
+        solid
+          ? "border-border bg-background/80 backdrop-blur-md"
+          : "border-transparent bg-transparent",
+      )}
+    >
       <nav className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-7">
           <Link href="/" className="group flex items-center gap-2" aria-label="GenMotion home">

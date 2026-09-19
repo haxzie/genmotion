@@ -323,6 +323,9 @@ importers:
       '@next/third-parties':
         specifier: ^16.2.12
         version: 16.2.12(next@16.2.9(@opentelemetry/api@1.9.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      '@paper-design/shaders-react':
+        specifier: 0.0.81
+        version: 0.0.81(@types/react@19.2.17)(react@19.2.7)
       '@tanstack/react-query':
         specifier: ^5.101.0
         version: 5.101.0(react@19.2.7)
@@ -2462,6 +2465,18 @@ packages:
   '@opentelemetry/semantic-conventions@1.41.1':
     resolution: {integrity: sha512-/UhIkaZgPutTFmQ7RnIJGgDXZmtEJ7Dvi86xNTFWcnRxVRNk/aotsqDJYeEvDP+FSMB2SdW+pQzNMcWP0rwuNA==}
     engines: {node: '>=14'}
+
+  '@paper-design/shaders-react@0.0.81':
+    resolution: {integrity: sha512-3FMkeZqj9sSvK/WkgekGu3crnOQd4R2iH8IT+jVBuQmq1m8p88VFvxh63s9bSt2exBwjBNaRfSo0FSCeNxqh3w==}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  '@paper-design/shaders@0.0.81':
+    resolution: {integrity: sha512-jeGdyjMscZ2bxmQdo8lhwUufHUf4iq3s1ayjh8PXU7Go42Rw8E3I0It1FZdc3HuWt5J82m//DRWaxsRqRfA4Gg==}
 
   '@peculiar/asn1-schema@2.9.4':
     resolution: {integrity: sha512-GjzePcT9Iw8NzeOPf73iNS9xM+TBhd/FilAfP+RQGkTMQJTVWtytN3JHJACCjf/ABNau5S7mS3g+DcuxmRgYEg==}
@@ -7973,6 +7988,15 @@ snapshots:
   '@opentelemetry/api@1.9.1': {}
 
   '@opentelemetry/semantic-conventions@1.41.1': {}
+
+  '@paper-design/shaders-react@0.0.81(@types/react@19.2.17)(react@19.2.7)':
+    dependencies:
+      '@paper-design/shaders': 0.0.81
+      react: 19.2.7
+    optionalDependencies:
+      '@types/react': 19.2.17
+
+  '@paper-design/shaders@0.0.81': {}
 
   '@peculiar/asn1-schema@2.9.4':
     dependencies:
