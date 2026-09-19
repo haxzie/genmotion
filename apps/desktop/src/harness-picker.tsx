@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cx, Spinner } from "@/components/ui";
-import { useHarness, type AgentModel, type HarnessId } from "./lib/use-harness";
+import { EFFORT_LEVELS, useHarness, type EffortLevel, type HarnessId } from "./lib/use-harness";
 
 /**
  * Claude Code's mark, from simple-icons (CC0). Inlined rather than pulling in
@@ -8,6 +8,14 @@ import { useHarness, type AgentModel, type HarnessId } from "./lib/use-harness";
  */
 const CLAUDE_PATH =
   "M21 10.5h3v3h-3v3h-1.5v3H18v-3h-1.5v3H15v-3H9v3H7.5v-3H6v3H4.5v-3H3v-3H0v-3h3v-6h18Zm-15 0h1.5v-3H6Zm10.5 0H18v-3h-1.5z";
+
+const EFFORT_LABEL: Record<EffortLevel, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "Extra high",
+  max: "Max",
+};
 
 function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
   if (id === "claude-code") {
@@ -67,7 +75,13 @@ function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
 export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { state: data, choose } = useHarness();
+  const { state: data, choose, setEffort } = useHarness();
+  // The dragged-to step, shown immediately so the thumb tracks the pointer;
+  // committed to the mutation only on release. A slider that mutated (and
+  // disabled itself) on every step crossed would freeze mid-drag for as long
+  // as that request took, turning one continuous gesture into a series of
+  // network-gated hops.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   // Close on an outside click or Escape, like the other menus in the editor.
   useEffect(() => {
@@ -203,9 +217,63 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
             );
           })}
 
-          {choose.error && (
+          {/* Only Claude Code's turns take an effort level today — see
+              electron/agent/claude-code.ts. */}
+          {(() => {
+            if (data.active !== "claude-code") return null;
+            const shownIndex = dragIndex ?? EFFORT_LEVELS.indexOf(data.activeEffort);
+            const pct = (shownIndex / (EFFORT_LEVELS.length - 1)) * 100;
+            const commit = () => {
+              const level = EFFORT_LEVELS[shownIndex];
+              if (!level || level === data.activeEffort) {
+                setDragIndex(null);
+                return;
+              }
+              // Held until the mutation settles, not cleared up front: the
+              // query cache (and so `data.activeEffort`) still reads the old
+              // value for the length of that round trip, and a second
+              // interaction landing inside it would otherwise act on stale
+              // state and lose a step.
+              setEffort.mutate(level, { onSettled: () => setDragIndex(null) });
+            };
+            return (
+              <div className="border-t border-border px-3 pb-2.5 pt-2">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-[0.72rem] uppercase tracking-wider text-text-tertiary">
+                    Effort
+                  </span>
+                  <span className="text-[0.786rem] text-text-secondary">
+                    {EFFORT_LABEL[EFFORT_LEVELS[shownIndex] ?? data.activeEffort]}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={EFFORT_LEVELS.length - 1}
+                  step={1}
+                  value={shownIndex}
+                  onChange={(event) => setDragIndex(Number(event.target.value))}
+                  onPointerUp={commit}
+                  onKeyUp={commit}
+                  style={{
+                    background: `linear-gradient(to right, var(--color-text-tertiary) ${pct}%, var(--color-border-strong) ${pct}%)`,
+                  }}
+                  className={cx(
+                    "h-1.5 w-full cursor-pointer appearance-none rounded-full",
+                    "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent",
+                    "[&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none",
+                    "[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_3px_rgba(0,0,0,0.5)]",
+                  )}
+                />
+              </div>
+            );
+          })()}
+
+          {(choose.error || setEffort.error) && (
             <p className="border-t border-border px-3 py-2 text-[0.786rem] text-warning">
-              {choose.error instanceof Error ? choose.error.message : "Couldn't switch"}
+              {(choose.error ?? setEffort.error) instanceof Error
+                ? (choose.error ?? setEffort.error)!.message
+                : "Couldn't switch"}
             </p>
           )}
         </div>

@@ -16,7 +16,7 @@ import {
 import { isReadable, listReadRoots } from "./read-roots";
 import { getLaunchDir } from "../cli";
 import { pluginDir } from "../hyperframes/vendor";
-import { activeModel } from "./registry";
+import { activeEffort, activeModel } from "./registry";
 import { mcpManager } from "../mcp/manager";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
 
@@ -156,6 +156,7 @@ async function turnOptions(
   // Null when the user has not chosen one, which leaves the CLI on whatever it
   // considers default — the same thing they would get in a terminal.
   const model = await activeModel("claude-code").catch(() => null);
+  const effort = await activeEffort("claude-code").catch(() => "medium" as const);
   // The user's MCP servers, as of the last probe. Never fatal: a server that
   // cannot be reached is left out and its row in the marketplace says why.
   const external = await mcpManager.harnessConfigs().catch(() => ({ claude: {} }));
@@ -166,14 +167,16 @@ async function turnOptions(
     ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
     env: agentEnv(),
     ...(model ? { model } : {}),
-    // Medium, not the CLI's default of high. Thinking is kept in the
-    // history and re-read on every tool call, and a session here never
-    // compacts (the 1M model is nowhere near its ceiling), so across 71
-    // real sessions retained thinking was ~46% of context growth — the
-    // single largest item on the bill. Video authoring is many small edits
-    // with a validate and a frame capture after each, not deep reasoning;
-    // medium keeps adaptive thinking for the steps that need it.
-    effort: "medium" as const,
+    // Defaults to medium, not the CLI's default of high, and is user-tunable
+    // from the model picker's slider. Thinking is kept in the history and
+    // re-read on every tool call, and a session here never compacts (the 1M
+    // model is nowhere near its ceiling), so across 71 real sessions retained
+    // thinking was ~46% of context growth — the single largest item on the
+    // bill. Video authoring is many small edits with a validate and a frame
+    // capture after each, not deep reasoning; medium keeps adaptive thinking
+    // for the steps that need it, and a user chasing a harder edit can turn
+    // it up.
+    effort,
     systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine),
     // Folders the user has shared. The CLI refuses a path outside its working
     // roots before `canUseTool` is ever consulted, so a grant has to be

@@ -5,6 +5,14 @@ import { readSettings, update, type Settings } from "../settings-store";
 
 export type HarnessId = "claude-code" | "codex";
 
+/** Mirrors the Claude Agent SDK's named reasoning-effort levels. */
+export type EffortLevel = "low" | "medium" | "high" | "xhigh" | "max";
+
+export const EFFORT_LEVELS: EffortLevel[] = ["low", "medium", "high", "xhigh", "max"];
+
+/** Only Claude Code's turns take an effort level today — see `claude-code.ts`. */
+export const DEFAULT_EFFORT: EffortLevel = "medium";
+
 export interface HarnessOption extends AgentAvailability {
   /** False while a harness is detected but this build can't drive it yet. */
   supported: boolean;
@@ -16,6 +24,8 @@ export interface HarnessState {
   active: HarnessId;
   /** The model driving the chat, or null to let the harness pick its default. */
   activeModel: string | null;
+  /** The reasoning effort the active harness's turns run at. */
+  activeEffort: EffortLevel;
   options: HarnessOption[];
   /** Every model the picker can offer, across harnesses. */
   models: AgentModel[];
@@ -27,6 +37,13 @@ function storedHarness(settings: Settings): HarnessId | null {
   return settings.harness === "claude-code" || settings.harness === "codex"
     ? settings.harness
     : null;
+}
+
+function storedEffort(settings: Settings, harness: HarnessId): EffortLevel {
+  const stored = settings.effort?.[harness];
+  return (EFFORT_LEVELS as string[]).includes(stored ?? "")
+    ? (stored as EffortLevel)
+    : DEFAULT_EFFORT;
 }
 
 /**
@@ -62,7 +79,7 @@ export async function harnessState(): Promise<HarnessState> {
   const activeModel =
     chosen && models.some((m) => m.harness === active && m.id === chosen) ? chosen : null;
 
-  return { active, activeModel, options, models };
+  return { active, activeModel, activeEffort: storedEffort(settings, active), options, models };
 }
 
 /**
@@ -90,9 +107,32 @@ export async function setHarness(id: HarnessId, model?: string | null): Promise<
   return { ...state, active: id, activeModel: model ?? state.activeModel };
 }
 
+/**
+ * Set the reasoning effort the given harness's turns run at.
+ *
+ * Kept separate from `setHarness`: the slider moves independently of the
+ * model row, and folding it into that call would mean every model switch had
+ * to carry the current effort along or risk resetting it.
+ */
+export async function setEffort(id: HarnessId, effort: EffortLevel): Promise<HarnessState> {
+  if (!EFFORT_LEVELS.includes(effort)) throw new Error(`Unknown effort level ${effort}`);
+  const state = await harnessState();
+  await update((settings) => ({
+    ...settings,
+    effort: { ...settings.effort, [id]: effort },
+  }));
+  return state.active === id ? { ...state, activeEffort: effort } : state;
+}
+
 /** The model the next turn should run on, or null for the harness's default. */
 export async function activeModel(harness: HarnessId): Promise<string | null> {
   const state = await harnessState();
   if (state.active !== harness) return null;
   return state.activeModel;
+}
+
+/** The reasoning effort the next turn should run at. */
+export async function activeEffort(harness: HarnessId): Promise<EffortLevel> {
+  const state = await harnessState();
+  return state.active === harness ? state.activeEffort : DEFAULT_EFFORT;
 }

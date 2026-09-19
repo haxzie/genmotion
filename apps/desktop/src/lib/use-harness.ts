@@ -11,6 +11,11 @@ import { api } from "@/lib/api";
 
 export type HarnessId = "claude-code" | "codex";
 
+/** Mirrors the Claude Agent SDK's named reasoning-effort levels. */
+export type EffortLevel = "low" | "medium" | "high" | "xhigh" | "max";
+
+export const EFFORT_LEVELS: EffortLevel[] = ["low", "medium", "high", "xhigh", "max"];
+
 export interface HarnessOption {
   id: HarnessId;
   label: string;
@@ -31,6 +36,7 @@ export interface AgentModel {
 export interface HarnessState {
   active: HarnessId;
   activeModel: string | null;
+  activeEffort: EffortLevel;
   options: HarnessOption[];
   models: AgentModel[];
 }
@@ -52,5 +58,13 @@ export function useHarness() {
     onSuccess: (next) => queryClient.setQueryData(harnessKey, next),
   });
 
-  return { state: data, choose };
+  const setEffort = useMutation({
+    mutationFn: (effort: EffortLevel) =>
+      api<HarnessState>("/api/agents", {
+        json: { id: data?.active, model: data?.activeModel, effort },
+      }),
+    onSuccess: (next) => queryClient.setQueryData(harnessKey, next),
+  });
+
+  return { state: data, choose, setEffort };
 }
