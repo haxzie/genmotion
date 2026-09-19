@@ -3,7 +3,7 @@ import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatesBrowser } from "@/components/marketing/templates-browser";
-import { getAllTemplateSummaries, getTemplatesPage, templateApiUrl } from "@/lib/marketing/templates";
+import { getAllTemplateSummaries, templateApiUrl } from "@/lib/marketing/templates";
 import { TEMPLATE_CATEGORIES } from "@/lib/marketing/template-categories";
 import { pageMetadata, TEMPLATES_OG_IMAGE } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
@@ -34,20 +34,16 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function TemplatesIndexPage() {
-  const [firstPage, allSummaries] = await Promise.all([
-    getTemplatesPage(),
-    getAllTemplateSummaries(),
-  ]);
-  const initialTemplates = firstPage?.templates ?? [];
-  const initialCursor = firstPage?.nextCursor ?? null;
+  // The whole catalog, not the API's first page: it is already fetched in
+  // full for the JSON-LD below, and at this size a "Load more" only hid the
+  // tail of it — the category pages have always shown everything they have.
+  const allSummaries = await getAllTemplateSummaries();
   // Same "only link what isn't empty" rule as the category route's own
   // generateStaticParams — these are real, crawlable links, not the client-
   // side filter pills below, which is why they're worth having at all.
   const categories = TEMPLATE_CATEGORIES.filter((c) =>
     allSummaries.some((t) => t.tags.includes(c.tag)),
   );
-  // Independent of `initialTemplates`/pagination on purpose: the pill row
-  // reflects the whole catalog, not just whatever page happened to load.
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -85,8 +81,8 @@ export default async function TemplatesIndexPage() {
 
           <div className="mt-14">
             <TemplatesBrowser
-              initialTemplates={initialTemplates}
-              initialCursor={initialCursor}
+              initialTemplates={allSummaries}
+              initialCursor={null}
               categories={categories}
             />
           </div>
