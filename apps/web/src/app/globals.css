@@ -91,6 +91,29 @@ body {
   background: transparent;
 }
 
+/* Logo marquee (homepage marketplace). The track holds the list twice, so a
+   slide of exactly half its width lands on an identical frame and loops
+   without a seam. Duration and direction come from utilities on the track. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 60s linear infinite;
+}
+.marquee-track-reverse {
+  animation-direction: reverse;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
 /* Single full rotation, e.g. logo on hover */
 @keyframes spin-once {
   to {

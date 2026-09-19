@@ -18,6 +18,7 @@ import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { AgentBadges, ClaudeMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
+import { IntegrationsSection } from "@/components/marketing/integrations-section";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug, getAllShowcaseVideos } from "@/lib/marketing/content";
@@ -216,6 +217,10 @@ export default async function HomePage() {
           />
         </Container>
       </section>
+
+      {/* The marketplace, straight under the app: what it plugs into, and
+          whose models it runs. */}
+      <IntegrationsSection />
 
       {/* Templates teaser — the catalog's top few, by its own curated order. */}
       {templates.length > 0 && (
