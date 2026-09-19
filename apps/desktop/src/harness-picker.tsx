@@ -9,6 +9,9 @@ import { EFFORT_LEVELS, useHarness, type EffortLevel, type HarnessId } from "./l
 const CLAUDE_PATH =
   "M21 10.5h3v3h-3v3h-1.5v3H18v-3h-1.5v3H15v-3H9v3H7.5v-3H6v3H4.5v-3H3v-3H0v-3h3v-6h18Zm-15 0h1.5v-3H6Zm10.5 0H18v-3h-1.5z";
 
+/** The slider thumb's diameter, in px — the native input's thumb is sized to match. */
+const THUMB = 20;
+
 const EFFORT_LABEL: Record<EffortLevel, string> = {
   low: "Low",
   medium: "Medium",
@@ -249,25 +252,56 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
                     {EFFORT_LABEL[EFFORT_LEVELS[shownIndex] ?? data.activeEffort]}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={EFFORT_LEVELS.length - 1}
-                  step={1}
-                  value={shownIndex}
-                  onChange={(event) => setDragIndex(Number(event.target.value))}
-                  onPointerUp={commit}
-                  onKeyUp={commit}
-                  style={{
-                    background: `linear-gradient(to right, var(--color-text-tertiary) ${pct}%, var(--color-border-strong) ${pct}%)`,
-                  }}
-                  className={cx(
-                    "h-1.5 w-full cursor-pointer appearance-none rounded-full",
-                    "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent",
-                    "[&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none",
-                    "[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_3px_rgba(0,0,0,0.5)]",
-                  )}
-                />
+                {/* A pill track with the fill, the step dots and the thumb
+                    drawn as layers, and the real range input invisible on
+                    top for the pointer and the keyboard. The thumb's centre
+                    is the same function of the value the native one uses —
+                    T/2 + value·(W − T) — so what's drawn is where the click
+                    lands. */}
+                <div className="relative h-6 w-full rounded-full bg-white/10">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-accent"
+                    style={{ width: `calc(${pct}% + ${(0.5 - pct / 100) * THUMB}px + ${THUMB / 2}px)` }}
+                  />
+                  {EFFORT_LEVELS.map((level, i) => {
+                    const at = (i / (EFFORT_LEVELS.length - 1)) * 100;
+                    return (
+                      <span
+                        key={level}
+                        className={cx(
+                          "absolute top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full",
+                          i <= shownIndex ? "bg-white/45" : "bg-white/25",
+                        )}
+                        style={{ left: `calc(${at}% + ${(0.5 - at / 100) * THUMB}px)` }}
+                      />
+                    );
+                  })}
+                  <span
+                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.5)]"
+                    style={{
+                      width: THUMB,
+                      height: THUMB,
+                      left: `calc(${pct}% + ${(0.5 - pct / 100) * THUMB}px)`,
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min={0}
+                    max={EFFORT_LEVELS.length - 1}
+                    step={1}
+                    value={shownIndex}
+                    onChange={(event) => setDragIndex(Number(event.target.value))}
+                    onPointerUp={commit}
+                    onKeyUp={commit}
+                    aria-label="Effort"
+                    className={cx(
+                      "absolute inset-0 m-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0",
+                      "[&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent",
+                      // w-5 is THUMB.
+                      "[&::-webkit-slider-thumb]:h-full [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none",
+                    )}
+                  />
+                </div>
               </div>
             );
           })()}
