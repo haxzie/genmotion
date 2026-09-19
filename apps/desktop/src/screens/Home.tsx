@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { HeroComposer } from "@/components/composer";
@@ -9,6 +9,7 @@ import { EnginePicker } from "../engine-picker";
 import { FolderAccess, useShareFolder } from "../folder-access";
 import { api, type RecentProject } from "../api";
 import { hasUpdate, useUpdate } from "../lib/use-update";
+import { useRecentProjectsStore } from "./recent-projects-store";
 import type { UpdateState } from "../../electron/shared";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
@@ -193,6 +194,9 @@ export function Home({
 }) {
   const [projects, setProjects] = useState<RecentProject[] | null>(null);
   const [total, setTotal] = useState(0);
+  // Projects adopted into a tab this session, ahead of the fetch below — see
+  // `recent-projects-store.ts` for why the fetched list alone isn't enough.
+  const pending = useRecentProjectsStore((s) => s.pending);
   const [cursor, setCursor] = useState(0);
   const [loading, setLoading] = useState(false);
   // How many have been *asked* for, which is what the next offset follows from.
@@ -245,11 +249,39 @@ export function Home({
     setTotal((count) => Math.max(0, count - 1));
     cursorRef.current = Math.max(0, cursorRef.current - 1);
     setCursor(cursorRef.current);
+    useRecentProjectsStore.getState().clear(dir);
   }, []);
 
   useEffect(() => {
     void loadMore();
   }, [loadMore]);
+
+  // Once the fetched list itself carries a pending project — its real
+  // thumbnail included — there is nothing left for the pending copy to add.
+  useEffect(() => {
+    if (!projects) return;
+    for (const p of pending) {
+      if (projects.some((q) => q.dir === p.dir)) useRecentProjectsStore.getState().clear(p.dir);
+    }
+  }, [projects, pending]);
+
+  // Pending entries lead the grid; anything the fetch already has for the same
+  // project is preferred (a real thumbnail beats none), just pulled forward to
+  // sit with the rest of what's pending.
+  const merged = useMemo(() => {
+    if (projects === null) return null;
+    if (pending.length === 0) return projects;
+    const byDir = new Map(projects.map((p) => [p.dir, p]));
+    const fronted = pending.map((p) => byDir.get(p.dir) ?? p);
+    const frontedDirs = new Set(fronted.map((p) => p.dir));
+    return [...fronted, ...projects.filter((p) => !frontedDirs.has(p.dir))];
+  }, [projects, pending]);
+  // Projects created this session but not yet folded into a fetched page —
+  // the header count and "left" total need to include them too.
+  const newCount = useMemo(
+    () => pending.filter((p) => !projects?.some((q) => q.dir === p.dir)).length,
+    [pending, projects],
+  );
 
   /**
    * A new account's first start screen fills itself with the sample projects.
@@ -304,8 +336,8 @@ export function Home({
     return () => observer.disconnect();
   }, [hasMore, loadMore]);
 
-  const cards = projects?.slice(0, GRID_COUNT) ?? [];
-  const rows = projects?.slice(GRID_COUNT) ?? [];
+  const cards = merged?.slice(0, GRID_COUNT) ?? [];
+  const rows = merged?.slice(GRID_COUNT) ?? [];
 
   return (
     <div className="h-full overflow-y-auto">
@@ -383,8 +415,8 @@ export function Home({
         <div className="rounded-2xl border border-border bg-background p-5 shadow-[0_-8px_40px_rgba(10,10,20,0.35)] sm:p-6">
           <div className="mb-5 flex items-center gap-2">
             <h2 className="text-xl font-medium">Projects</h2>
-            {total > 0 && (
-              <span className="text-[0.857rem] text-text-tertiary">{total}</span>
+            {total + newCount > 0 && (
+              <span className="text-[0.857rem] text-text-tertiary">{total + newCount}</span>
             )}
           </div>
 
@@ -399,7 +431,7 @@ export function Home({
                 </div>
               ))}
             </div>
-          ) : projects.length > 0 ? (
+          ) : merged && merged.length > 0 ? (
             <>
               <motion.div className={GRID} variants={listVariants} initial="hidden" animate="show">
                 {cards.map((project) => (

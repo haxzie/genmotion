@@ -64,32 +64,6 @@ const DEFAULT_FORMAT: ExportFormat = "mp4";
 // Quality is no longer user-adjustable — always export near-lossless.
 const EXPORT_QUALITY = 95;
 
-function DownloadIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
-function triggerDownload(url: string) {
-  const dl = url + (url.includes("?") ? "&" : "?") + "download=1";
-  const a = document.createElement("a");
-  a.href = dl;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
 /**
  * What a HyperFrames project tells the button instead of `project.scenes`.
  *
@@ -169,24 +143,6 @@ export function ExportButton({
 
   const done = job?.status === "done";
   const failed = job?.status === "failed";
-
-  // Brief "Downloaded ✓" confirmation after a download fires, then revert.
-  const [justDownloaded, setJustDownloaded] = useState(false);
-  const downloadedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function download(url: string) {
-    triggerDownload(url);
-    track("export_downloaded", { format });
-    setJustDownloaded(true);
-    if (downloadedTimer.current) clearTimeout(downloadedTimer.current);
-    downloadedTimer.current = setTimeout(() => setJustDownloaded(false), 3000);
-  }
-  useEffect(
-    () => () => {
-      if (downloadedTimer.current) clearTimeout(downloadedTimer.current);
-    },
-    [],
-  );
-
 
   const startExport = useMutation({
     mutationFn: (fmt: ExportFormat) =>
@@ -414,25 +370,7 @@ export function ExportButton({
                 : "Cancel"}
           </Button>
 
-          {done && job?.outputUrl && !needsExport ? (
-            <button
-              type="button"
-              onClick={() => download(job.outputUrl!)}
-              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-green font-medium text-white outline-none transition-colors duration-150 hover:bg-green/90 focus-visible:ring-2 focus-visible:ring-green/40"
-            >
-              {justDownloaded ? (
-                <>
-                  <CheckIcon className="size-4" />
-                  Downloaded
-                </>
-              ) : (
-                <>
-                  <DownloadIcon className="size-4" />
-                  Download{downloadExt ? ` ${downloadExt}` : ""}
-                </>
-              )}
-            </button>
-          ) : active ? (
+          {active ? (
             <div className="relative h-10 flex-1 overflow-hidden rounded-lg bg-surface-raised" aria-live="polite">
               <div
                 className="absolute inset-y-0 left-0 bg-accent transition-all duration-500 ease-out"
@@ -450,7 +388,7 @@ export function ExportButton({
               className="h-10 flex-1"
               onClick={runExport}
             >
-              {failed ? "Try again" : needsExport ? "Re-export" : "Export"}
+              {failed ? "Try again" : done ? "Re-export" : "Export"}
             </Button>
           )}
         </div>

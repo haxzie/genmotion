@@ -11,6 +11,7 @@ import { LoginScreen } from "./screens/LoginScreen";
 import { TabStrip } from "./tabs/tab-strip";
 import { TabHost } from "./tabs/tab-host";
 import { HOME_TAB, useTabsStore } from "./tabs/tabs-store";
+import { useRecentProjectsStore } from "./screens/recent-projects-store";
 import { useAuth } from "./lib/use-auth";
 import { DevPanel } from "./dev/dev-panel";
 
@@ -77,6 +78,10 @@ function Shell() {
     (project: DesktopProject) => {
       useTabsStore.getState().upsert(project);
       client.setQueryData(projectQueryKey(project.dir), project);
+      // Home's own list is fetched once and never refetched on its own — put
+      // this in front of it now, or a project created (or remixed) from
+      // inside a tab would not show up there until the app restarted.
+      useRecentProjectsStore.getState().add(project);
       activate(project.dir);
     },
     [client, activate],
