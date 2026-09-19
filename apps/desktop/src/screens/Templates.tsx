@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { Button, Spinner, cx } from "@/components/ui";
 import type { TemplateCatalog, TemplateSummary, TemplateTag } from "@genmotion/templates/types";
 import { api as desktop } from "../api";
+import { useTabActive } from "../tabs/active-tab";
 import type { DesktopProject } from "../../electron/shared";
 
 // Multi-column, not `grid`: a real grid lays items into rows, so a 9:16
@@ -298,6 +299,15 @@ function TemplatePlayer({ summary }: { summary: TemplateSummary }) {
     el.currentTime = 0;
     void el.play().catch(() => {});
   }, [summary.id]);
+
+  // The Home tab is hidden, not unmounted, when a project tab comes to the
+  // front — and `display: none` doesn't stop a `<video>`. Left alone, this
+  // one keeps playing its audio from behind an inert pane, with its
+  // transport out of reach.
+  const tabActive = useTabActive();
+  useEffect(() => {
+    if (!tabActive) videoRef.current?.pause();
+  }, [tabActive]);
 
   if (failed) {
     return (

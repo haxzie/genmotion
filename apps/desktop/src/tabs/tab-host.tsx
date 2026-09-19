@@ -101,7 +101,9 @@ export function TabHost({
 
   return (
     <div className="relative min-h-0 flex-1">
-      <TabPane active={activeId === HOME_TAB}>{home}</TabPane>
+      <TabPane active={activeId === HOME_TAB}>
+        <TabActiveProvider active={activeId === HOME_TAB}>{home}</TabActiveProvider>
+      </TabPane>
       {tabs.map((tab) => (
         <ProjectPane
           key={tab.dir}
