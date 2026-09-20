@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const term = getTermBySlug(slug);
   if (!term) return { title: "Glossary — GenMotion" };
   return pageMetadata({
-    title: `${term.term} — GenMotion Glossary`,
+    title: `What is ${term.term}? — GenMotion Glossary`,
     description: term.description,
     path: `/glossary/${term.slug}`,
     type: "article",
