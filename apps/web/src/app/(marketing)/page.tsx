@@ -40,7 +40,7 @@ const homeJsonLd = {
 };
 
 export const metadata: Metadata = pageMetadata({
-  title: "Create viral AI videos using Claude Code — GenMotion",
+  title: "GenMotion - AI video editor for agents",
   description:
     "Generate a product launch video with AI. Describe it in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
   path: "/",
@@ -165,8 +165,8 @@ export default async function HomePage() {
           </Link>
           {/* Balanced wrapping instead of a hardcoded <br />: the line is long
               enough that a fixed break lands badly at one of the two sizes. */}
-          <h1 className="max-w-3xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
-            Create <span className="chromatic-word">viral</span> AI videos using{" "}
+          <h1 className="max-w-4xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
+            Create product launch videos using{" "}
             {/* Kept on one line as a unit: the mark belongs to the name, and a
                 wrap between them would leave it orphaned at a line end. */}
             <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
