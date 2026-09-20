@@ -16,7 +16,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
-import { AgentBadges, ClaudeMark } from "@/components/marketing/agent-badges";
+import { AgentBadges, ClaudeMark, CodexMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
 import { FEATURES } from "@/lib/marketing/features";
@@ -40,7 +40,7 @@ const homeJsonLd = {
 };
 
 export const metadata: Metadata = pageMetadata({
-  title: "AI Product Launch Video Generator — GenMotion",
+  title: "Create viral AI videos using Claude Code — GenMotion",
   description:
     "Generate a product launch video with AI. Describe it in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
   path: "/",
@@ -166,11 +166,20 @@ export default async function HomePage() {
           {/* Balanced wrapping instead of a hardcoded <br />: the line is long
               enough that a fixed break lands badly at one of the two sizes. */}
           <h1 className="max-w-3xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
-            Create <span className="chromatic-word">viral</span> launch videos using{" "}
+            Create <span className="chromatic-word">viral</span> AI videos using{" "}
             {/* Kept on one line as a unit: the mark belongs to the name, and a
                 wrap between them would leave it orphaned at a line end. */}
             <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
-              <ClaudeMark className="size-[0.8em] shrink-0" />
+              {/* Stacked like the badge row below: Claude in front, Codex
+                  peeking out behind it — both models this runs on. */}
+              <span className="inline-flex items-center -space-x-2 sm:-space-x-2.5">
+                <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-[#D97757]/15 ring-2 ring-background">
+                  <ClaudeMark className="size-[0.8em]" />
+                </span>
+                <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-surface-raised ring-2 ring-background">
+                  <CodexMark className="size-[0.8em]" gradientId="codex-hero" />
+                </span>
+              </span>
               Claude Code
             </span>
           </h1>

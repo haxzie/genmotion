@@ -17,7 +17,7 @@ export const OG_IMAGE = {
   url: "/og.png",
   width: 1200,
   height: 630,
-  alt: "GenMotion — create product launch videos using AI",
+  alt: "GenMotion — create viral AI videos using Claude Code",
 } as const;
 
 /**
