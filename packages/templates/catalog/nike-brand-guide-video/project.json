@@ -1,0 +1,48 @@
+{
+  "name": "Nike Brand Guide Video",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-mark.tsx",
+      "durationInFrames": 74,
+      "name": "Mark & lockup"
+    },
+    {
+      "file": "scenes/02-palette.tsx",
+      "durationInFrames": 84,
+      "name": "Palette"
+    },
+    {
+      "file": "scenes/03-specimen.tsx",
+      "durationInFrames": 155,
+      "name": "Type specimen"
+    },
+    {
+      "file": "scenes/04-collage.tsx",
+      "durationInFrames": 90,
+      "name": "Application collage"
+    },
+    {
+      "file": "scenes/05-outro.tsx",
+      "durationInFrames": 133,
+      "name": "Tagline & lockup"
+    }
+  ],
+  "audio": [
+    {
+      "id": "reference-bed",
+      "file": "assets/reference-bed.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 536,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false
+    }
+  ]
+}
