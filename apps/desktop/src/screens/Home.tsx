@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HeroComposer } from "@/components/composer";
 import { api as loopback } from "@/lib/api";
 import { cx } from "@/components/ui";
+import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { HarnessPicker } from "../harness-picker";
 import { EnginePicker } from "../engine-picker";
 import { FolderAccess, useShareFolder } from "../folder-access";
@@ -346,27 +347,23 @@ export function Home({
           off with no way to scroll. Only the blob layer needs clipping, so
           that is where it lives now. */}
       <section className="relative flex min-h-[68vh] flex-col items-center justify-center px-6 pt-6">
-        {/* Lightweight animated hue blobs — large circles half-hidden below the
-            section, heavily blurred, drifting slowly. */}
+        {/* Same aurora grain-gradient shader as the marketing homepage's hero,
+            reused straight from the web app's source (see vite.config.ts's
+            `@/` alias) — swapped in for the old blurred-circle blobs.
+            Opacity-only entrance: the old blob layer also scaled in on
+            `scaleY`, which was fine for heavily blurred CSS circles but
+            visibly warped this shader's crisp canvas texture as it
+            un-squished — the "sharp edge" being pushed up. */}
         <motion.div
           className="pointer-events-none absolute inset-0 overflow-hidden"
-          style={{ transformOrigin: "bottom" }}
-          initial={{ opacity: 0, scaleY: 0.6 }}
-          animate={{ opacity: 1, scaleY: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 1.6, ease: "easeOut" }}
         >
-          <div
-            className="absolute bottom-0 left-[6%] size-[44vw] max-w-[640px] rounded-full blur-[120px] animate-[blob-a_16s_ease-in-out_infinite]"
-            style={{ background: "#C6F91E", opacity: 0.4 }}
-          />
-          <div
-            className="absolute bottom-0 right-[6%] size-[46vw] max-w-[680px] rounded-full blur-[130px] animate-[blob-b_20s_ease-in-out_infinite]"
-            style={{ background: "#16F5BD", opacity: 0.38 }}
-          />
-          <div
-            className="absolute bottom-0 left-[40%] size-[30vw] max-w-[440px] rounded-full blur-[120px] animate-[blob-c_18s_ease-in-out_infinite]"
-            style={{ background: "#FFD60A", opacity: 0.28 }}
-          />
+          {/* colorBack matches HomeShell's panel (`bg-surface`, #0f0f12) rather
+              than the marketing default (`--color-background`, #08080a) —
+              this section sits inside that panel, not on the page background. */}
+          <HeroShaderBackground scale={2.4} speed={1.6} colorBack="#0f0f12" />
         </motion.div>
         {/* Fades the hue down into the background toward the projects card. */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface" />
