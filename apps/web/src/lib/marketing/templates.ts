@@ -72,6 +72,32 @@ export async function getTemplateSummary(id: string): Promise<TemplateSummary | 
   }
 }
 
+/**
+ * Other templates worth showing under this one — ranked by how many tags
+ * they share with it (ties broken by publish date, newest first), padded
+ * out with the catalog's most recent templates if too few share a tag. The
+ * catalog is small enough that "related" degrading to "recent" reads as a
+ * reasonable fallback rather than a mistake.
+ */
+export function getRelatedTemplates(
+  template: TemplateSummary,
+  catalog: TemplateSummary[],
+  limit = 4,
+): TemplateSummary[] {
+  return catalog
+    .filter((t) => t.id !== template.id)
+    .map((t) => ({
+      template: t,
+      sharedTags: t.tags.filter((tag) => template.tags.includes(tag)).length,
+    }))
+    .sort((a, b) => {
+      if (b.sharedTags !== a.sharedTags) return b.sharedTags - a.sharedTags;
+      return a.template.publishedAt < b.template.publishedAt ? 1 : -1;
+    })
+    .slice(0, limit)
+    .map(({ template: t }) => t);
+}
+
 /** "Sep 18, 2026" from a `YYYY-MM-DD` — pinned to UTC and en-US so server and client agree. */
 export function formatPublished(publishedAt: string): string {
   return new Date(`${publishedAt}T00:00:00Z`).toLocaleDateString("en-US", {

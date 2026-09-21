@@ -31,9 +31,13 @@ const GAP_PX = 20;
  *  compare columns by by without measuring anything in the real DOM. */
 const TEXT_BLOCK_PX = 168;
 
-function estimateHeight(template: TemplateSummary, columnWidth: number): number {
+function estimateHeight(
+  template: TemplateSummary,
+  columnWidth: number,
+  showDetails: boolean,
+): number {
   const posterHeight = columnWidth * (template.height / template.width);
-  return posterHeight + TEXT_BLOCK_PX;
+  return posterHeight + (showDetails ? TEXT_BLOCK_PX : 0);
 }
 
 /**
@@ -44,7 +48,16 @@ function estimateHeight(template: TemplateSummary, columnWidth: number): number 
  * instead, so a column only ever gets ahead of the others by one card's
  * worth of "no shorter option existed yet".
  */
-export function TemplateMasonry({ templates }: { templates: TemplateSummary[] }) {
+export function TemplateMasonry({
+  templates,
+  showDetails = true,
+}: {
+  templates: TemplateSummary[];
+  /** Passed straight to each `TemplateCard`; also drops the text block's
+   *  height out of the masonry layout estimate so columns balance by poster
+   *  height alone. */
+  showDetails?: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const columnCount = useColumnCount();
@@ -71,7 +84,7 @@ export function TemplateMasonry({ templates }: { templates: TemplateSummary[] })
         if (heights[i]! < heights[shortest]!) shortest = i;
       }
       columns[shortest]!.push(template);
-      heights[shortest] += estimateHeight(template, columnWidth) + GAP_PX;
+      heights[shortest] += estimateHeight(template, columnWidth, showDetails) + GAP_PX;
     }
   } else {
     // Before the container has been measured once, round-robin rather than
@@ -84,7 +97,7 @@ export function TemplateMasonry({ templates }: { templates: TemplateSummary[] })
       {columns.map((column, i) => (
         <div key={i} className="flex min-w-0 flex-1 flex-col gap-5">
           {column.map((template) => (
-            <TemplateCard key={template.id} template={template} />
+            <TemplateCard key={template.id} template={template} showDetails={showDetails} />
           ))}
         </div>
       ))}

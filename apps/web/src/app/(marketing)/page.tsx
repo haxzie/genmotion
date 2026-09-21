@@ -7,22 +7,20 @@ import {
   Container,
   Section,
   Eyebrow,
-  CoolGradientBlobs,
   LinkButton,
   Card,
 } from "@/components/marketing/primitives";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
-import { ShowcaseStack } from "@/components/marketing/showcase-stack";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { AgentBadges, ClaudeMark, CodexMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
 import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
-import { getPostBySlug, getAllShowcaseVideos } from "@/lib/marketing/content";
-import { getTemplatesPage } from "@/lib/marketing/templates";
+import { getPostBySlug } from "@/lib/marketing/content";
+import { getAllTemplateSummaries } from "@/lib/marketing/templates";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { pageMetadata } from "@/lib/marketing/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/marketing/site";
@@ -119,18 +117,9 @@ export default async function HomePage() {
   // unreachable or nothing is published — the button still works, it just
   // says less.
   const release = await getLatestRelease();
-  // Home shows only videos flagged `featured` in their frontmatter — the
-  // latest 3, which is what the card stack below fans out
-  // (getAllShowcaseVideos is already sorted newest-first).
-  const showcaseVideos = getAllShowcaseVideos()
-    .filter((v) => v.featured)
-    .slice(0, 3);
-  // The catalog's own `order` is the curation — the first page of it is
-  // already "the top 6" by construction, not something picked here. Two full
-  // rows at the section's 3-column width — a single row of 3 read as sparse
-  // against the section's width once the catalog grew past a handful.
-  const templatesPage = await getTemplatesPage({ limit: 6 });
-  const templates = templatesPage?.templates ?? [];
+  // The whole catalog, in the order the catalog itself curates — the teaser
+  // is the gallery now, not a trimmed preview of it.
+  const templates = await getAllTemplateSummaries();
 
   return (
     <>
@@ -231,10 +220,13 @@ export default async function HomePage() {
           whose models it runs. */}
       <IntegrationsSection />
 
-      {/* Templates teaser — the catalog's top few, by its own curated order. */}
+      {/* Templates gallery — the whole catalog, by its own curated order. A
+          wider container than the rest of the page: still the same three
+          columns, just each one bigger, so the videos themselves read larger
+          rather than the grid growing another column. */}
       {templates.length > 0 && (
         <section className="relative z-10 mt-24 sm:mt-32">
-          <Container>
+          <Container className="max-w-7xl">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <Eyebrow className="mb-4">Templates</Eyebrow>
@@ -257,56 +249,11 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-10">
-              <TemplateMasonry templates={templates} />
+              <TemplateMasonry templates={templates} showDetails={false} />
             </div>
             <div className="mt-10 flex justify-center">
               <LinkButton href="/templates" variant="secondary" size="lg">
                 Browse all templates
-              </LinkButton>
-            </div>
-          </Container>
-        </section>
-      )}
-
-      {/* Showcase gallery. */}
-      {showcaseVideos.length > 0 && (
-        // overflow-x-clip, not hidden: the fanned side cards reach past the
-        // gutter on narrow viewports, and clipping here keeps that from
-        // giving the document a horizontal scrollbar.
-        <section className="relative z-10 mt-24 overflow-x-clip sm:mt-32">
-          <Container>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <Eyebrow className="mb-4">Showcase</Eyebrow>
-                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Made with GenMotion
-                </h2>
-                <p className="mt-4 text-text-secondary">
-                  Real motion videos — teasers, explainers, data stories, and
-                  more — each one generated from a description.
-                </p>
-              </div>
-              <Link
-                href="/showcase"
-                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
-              >
-                View all
-                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </Link>
-            </div>
-            {/* The glow sits in the stack's own box, first in DOM order, so
-                the cards (which carry z-indexes) paint over it. */}
-            <div className="relative mt-10">
-              <div className="pointer-events-none absolute -inset-x-40 -inset-y-48">
-                <CoolGradientBlobs />
-              </div>
-              <ShowcaseStack videos={showcaseVideos} />
-            </div>
-            <div className="mt-10 flex justify-center">
-              <LinkButton href="/showcase" variant="secondary" size="lg">
-                View more videos
               </LinkButton>
             </div>
           </Container>

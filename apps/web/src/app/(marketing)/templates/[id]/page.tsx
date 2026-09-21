@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Container, Section } from "@/components/marketing/primitives";
+import { Container, Eyebrow, Section } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { TemplatePlayer } from "@/components/marketing/template-player";
 import { TemplateRemixButton } from "@/components/marketing/template-remix-button";
+import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import {
   formatPublished,
   getAllTemplateSummaries,
+  getRelatedTemplates,
   getTemplateSummary,
   templateVideoObject,
 } from "@/lib/marketing/templates";
@@ -55,6 +57,7 @@ export default async function TemplateDetailPage({ params }: Params) {
   const { id } = await params;
   const summary = await getTemplateSummary(id);
   if (!summary) notFound();
+  const related = getRelatedTemplates(summary, await getAllTemplateSummaries());
 
   // A `WebPage` that says it contains the video, rather than a bare
   // `VideoObject`: the page is a template's page, and the video is the
@@ -140,6 +143,19 @@ export default async function TemplateDetailPage({ params }: Params) {
           </div>
         </Container>
       </Section>
+      {related.length > 0 && (
+        <Section className="border-t border-border">
+          <Container>
+            <Eyebrow className="mb-4">More templates</Eyebrow>
+            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              Related templates
+            </h2>
+            <div className="mt-10">
+              <TemplateMasonry templates={related} showDetails={false} />
+            </div>
+          </Container>
+        </Section>
+      )}
       <FaqSection items={templateFaqs(summary)} />
     </>
   );
