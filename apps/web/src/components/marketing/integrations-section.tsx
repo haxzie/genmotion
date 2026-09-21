@@ -1,22 +1,10 @@
 import type { LiHTMLAttributes } from "react";
 import { Container, Eyebrow } from "@/components/marketing/primitives";
-import { ModelIllustration } from "@/components/marketing/model-illustrations";
-import {
-  INTEGRATIONS,
-  MODEL_CATEGORIES,
-  getIntegration,
-  type Integration,
-} from "@/lib/marketing/integrations";
+import { INTEGRATIONS, type Integration } from "@/lib/marketing/integrations";
 
 /**
- * The marketplace, right under the hero: every integration as a logo pill,
- * then the generative providers regrouped by what they make.
- *
- * Two ideas in one section on purpose. The pills answer "does it work with
- * what I use?" at a glance — names and marks, no reading. The four cards
- * under them answer the follow-up: the models are yours to bring, and here is
- * which vendor makes which kind of thing. A visitor who already pays for
- * ElevenLabs or Runway should find their logo twice.
+ * The marketplace, right under the hero: every integration as a logo pill —
+ * "does it work with what I use?" at a glance, names and marks, no reading.
  */
 
 /** A marketplace entry as a bordered pill: the vendor's own mark and its name. */
@@ -131,68 +119,6 @@ export function IntegrationsSection() {
           reverse
         />
       </div>
-
-      <Container>
-        {/* Bring your own models */}
-        <div className="mt-20 sm:mt-24">
-          <div className="mx-auto max-w-2xl text-center">
-            <Eyebrow className="mb-4">Generative media</Eyebrow>
-            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              Bring your own generative models
-            </h2>
-            <p className="mt-4 text-text-secondary">
-              Pick the provider for each job. The agent calls it with your key,
-              and the image, clip or track lands on the timeline like any other
-              asset — nothing is resold or marked up.
-            </p>
-          </div>
-          {/* Two wide cards per row rather than four narrow ones: each card
-              carries a list of vendors with their marks, and those need the
-              room to be recognised, not squinted at. */}
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
-            {/* Not `Card`: its padding is fixed and each header has to reach
-                the edges, so these are the same surface with none. */}
-            {MODEL_CATEGORIES.map((category) => (
-              <div
-                key={category.id}
-                className="overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-150 hover:border-border-strong"
-              >
-                {/* The illustration is the card's header, edge to edge: the
-                    stage is cropped to the box rather than letterboxed, and
-                    its own glow fades into the card, so there is no seam. */}
-                <ModelIllustration
-                  id={category.id}
-                  color={category.color}
-                  className="block h-32 w-full sm:h-36"
-                />
-                <div className="p-7 pt-4 sm:p-8 sm:pt-5">
-                  <h3 className="text-xl font-medium">{category.name}</h3>
-                  <p className="mt-1 font-mono text-[0.857rem] text-text-tertiary">
-                    {category.models}
-                  </p>
-                  <p className="mt-4 text-[1.05rem] text-text-secondary">
-                    {category.tagline}
-                  </p>
-                  <ul className="mt-6 grid grid-cols-2 gap-3">
-                    {category.providers.map((id) => {
-                      const integration = getIntegration(id);
-                      return (
-                        <li
-                          key={id}
-                          className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/40 p-2.5 text-[0.95rem] text-text-primary"
-                        >
-                          <Mark integration={integration} className="size-9" />
-                          {integration.name}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Container>
     </section>
   );
 }

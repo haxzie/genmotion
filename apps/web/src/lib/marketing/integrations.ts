@@ -2,11 +2,10 @@
  * The marketplace, as the homepage shows it.
  *
  * A curated mirror of `apps/api/src/mcp-catalog`, not a fetch of it: the
- * homepage is static, the copy here is marketing rather than the catalog's
- * tool descriptions, and the "bring your own models" grouping below is an
- * editorial cut the catalog does not carry. When an entry is added to the
- * catalog, add it here too. Icons come from the same two sources the desktop
- * marketplace uses, so the marks match what people see in the app.
+ * homepage is static and the copy here is marketing rather than the
+ * catalog's tool descriptions. When an entry is added to the catalog, add it
+ * here too. Icons come from the same two sources the desktop marketplace
+ * uses, so the marks match what people see in the app.
  */
 
 /** Brand mark from Simple Icons, in the brand's own colour. */
@@ -49,60 +48,3 @@ export const INTEGRATIONS: Integration[] = [
   { id: "mux", name: "Mux", iconUrl: favicon("mux.com"), category: "Publishing" },
 ];
 
-export type ModelCategory = {
-  id: "image" | "audio" | "sfx" | "video";
-  name: string;
-  /** Tile tint — purple, green, orange and accent blue from globals.css. */
-  color: string;
-  tagline: string;
-  /** Model names worth saying out loud; the ones the providers' own pages lead with. */
-  models: string;
-  /** Integration ids, in the order to show them. */
-  providers: string[];
-};
-
-/**
- * Generative media, by what it produces. Every provider is a marketplace
- * entry the agent calls on the user's own key or credits — nothing here is
- * resold, so the grouping is by output rather than by vendor.
- */
-export const MODEL_CATEGORIES: ModelCategory[] = [
-  {
-    id: "image",
-    name: "Image",
-    color: "#a78bfa",
-    tagline: "Backgrounds, product shots, illustrations — generated to the scene's brief.",
-    models: "Flux · Mystic · Gen-4 Image · open models on the Hub",
-    providers: ["fal", "freepik", "runway", "replicate", "huggingface"],
-  },
-  {
-    id: "audio",
-    name: "Audio",
-    color: "#06c167",
-    tagline: "Voiceovers in a voice you pick, and music to sit under the cut.",
-    models: "ElevenLabs voices · Eleven Music · MusicGen",
-    providers: ["elevenlabs", "fal", "replicate", "huggingface"],
-  },
-  {
-    id: "sfx",
-    name: "SFX",
-    color: "#fb923c",
-    tagline: "A whoosh for the reveal, a click for the button — described, not searched for.",
-    models: "ElevenLabs Sound Effects · audio models on fal and Replicate",
-    providers: ["elevenlabs", "fal", "replicate"],
-  },
-  {
-    id: "video",
-    name: "Video",
-    color: "#3b6ef6",
-    tagline: "Generated clips as b-roll, dropped straight onto the timeline.",
-    models: "Gen-4.5 · Veo · Kling",
-    providers: ["runway", "fal", "replicate"],
-  },
-];
-
-export function getIntegration(id: string): Integration {
-  const found = INTEGRATIONS.find((i) => i.id === id);
-  if (!found) throw new Error(`No marketplace integration "${id}"`);
-  return found;
-}
