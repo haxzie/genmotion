@@ -64,11 +64,14 @@ copy.** `about/page.tsx` and the blog posts speak as GenMotion in first person
 second/third person almost entirely. Keep that split — a "we" dropped into a
 feature FAQ reads like it wandered in from a different document.
 
-**Em dashes are a normal part of this voice, not a violation.** They run
-20-30 per file across the existing marketing copy. Use one to join a value
-prop's two clauses in a tagline, or to set off an aside, the way the existing
-copy already does. The failure mode to avoid is stacking two or three in one
-sentence until it reads like a comment block, not banning the mark outright.
+**No em dashes. Anywhere a visitor can read.** Use a comma, a colon,
+brackets, or two sentences. En dashes in numeric ranges (`$18–$24`) are fine.
+This is a standing instruction and it is the first thing that gets noticed.
+The existing copy in `features.ts`, `use-cases.ts` and `page.tsx` is full of
+them (dozens per file) because it was written before this rule was applied
+here, not because the em dash is the house voice; treat those as debt to pay
+down when you touch a section, and never add a new one. `aria-label`,
+`description` frontmatter and FAQ answers count as strings a visitor reads.
 
 **Spelling: default to American, matching the majority of the code and copy**
 ("color", `toLocaleDateString("en-US")`), even though several existing blog
@@ -164,6 +167,11 @@ failure mode if crossed:
 ## Before it ships
 
 ```bash
+# Em dashes in anything user-facing. Comment lines are filtered out; anything
+# left in a file you touched is a bug.
+grep -rn "—" apps/web/src --include="*.tsx" --include="*.ts" \
+  | grep -vE ":[0-9]+: *(\*|//|/\*)"
+
 # The boundary GenMotion cannot cross: backend/API/library framing.
 grep -rniE "render.*from your (backend|server)|npm install genmotion|video api" apps/web/src
 

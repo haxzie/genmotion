@@ -5,14 +5,25 @@ description: Write a comparison or alternatives post for the GenMotion blog: "X 
 
 # Comparison posts
 
-Long-form blog posts that compare GenMotion against adjacent tools:
-`content/blog/remotion-alternatives.md` and
-`content/blog/hyperframes-alternatives.md` are the two that exist today and
-are the reference for shape and voice. There's no separate `/alternatives`
-route in this codebase (unlike some products) — these live only in `/blog`,
-registered by file presence, not a separate index file. This is a different
-genre from `[[site-copy]]`: that's a stranger deciding in five seconds whether
-to try the product; this is a developer who already knows the category and is
+Long-form blog posts that compare tools against each other. There are two
+sub-genres living side by side in `/blog`, and they differ on one important
+point (whether to link out — see Links below):
+
+- **Alternatives posts**, where GenMotion is a direct competitor in the
+  comparison: `content/blog/remotion-alternatives.md`,
+  `content/blog/hyperframes-alternatives.md`.
+- **Best-models roundups**, where GenMotion isn't a competitor to anything
+  being compared, just a studio that can call some of these models from its
+  Marketplace: `content/blog/best-ai-image-generation-models.md`,
+  `best-ai-video-generation-models.md`, `best-ai-voice-generation-models.md`,
+  `best-ai-music-generation-models.md`, `best-ai-sound-effect-generators.md`,
+  and the pillar page tying them together, `ai-video-generation-guide.md`.
+
+There's no separate `/alternatives` route in this codebase (unlike some
+products) — every one of these lives only in `/blog`, registered by file
+presence, not a separate index file. This is a different genre from
+`[[site-copy]]`: that's a stranger deciding in five seconds whether to try the
+product; this is a developer or creator who already knows the category and is
 choosing between named tools, so more technical detail and more hedged,
 specific claims are correct here, not a defect.
 
@@ -72,7 +83,14 @@ Prices checked on <date>, if any are quoted here too.
 ## 2. <competitor>
 **What it is:** what it does, genuinely.
 **Choose it if:** the real use case it's actually best for.
-**Trade-off:** the honest limitation, stated once, plainly.
+
+**Pros**
+- 4-6 bullets, concrete and checkable, not adjectives
+
+**Cons**
+- 2-4 bullets, real limitations, not padding
+
+**Trade-off:** one line, the honest limitation, stated plainly.
 
 ... (repeat per tool)
 
@@ -80,6 +98,16 @@ Prices checked on <date>, if any are quoted here too.
 ## The honest summary
 ## Where to go next
 ```
+
+**Every entry gets a Pros/Cons pair.** `hyperframes-alternatives.md`
+established this (GenMotion's own entry there has six Pros and four Cons,
+between the prose and the closing Trade-off line); `remotion-alternatives.md`,
+written earlier, only has prose and a Trade-off line. Pros/Cons is the current
+convention for every post in this genre, alternatives and best-models
+roundups alike — write to it. Pros are concrete and checkable ("4K at up to
+120fps on every plan," not "great quality"); Cons restate real limitations
+already implied by the surrounding prose as scannable bullets, not new
+admissions invented for the section.
 
 **Every post answers a definitional or "why look for this" question early**,
 in its own `##` section, in two short paragraphs plain enough that the first
@@ -104,8 +132,15 @@ long and technical (pricing tables, licensing math, a "why determinism
 matters" section) and that's correct for the audience; don't flatten a
 genuinely technical explanation into a slogan to match landing-page brevity.
 
-**Em dashes are used normally**, same as the rest of the site's marketing
-voice — not banned, just not stacked three to a sentence.
+**No em dashes. Anywhere.** Use a comma, a colon, brackets, or two sentences.
+En dashes in numeric ranges (`$18–$24`) are fine. This is a standing
+instruction and it is the first thing that gets noticed. It applies to the
+frontmatter `description` and every FAQ answer as much as to the body, since
+all of it is read by a visitor. The two older posts
+(`remotion-alternatives.md`, `hyperframes-alternatives.md`) predate this rule
+and are full of them; that's debt, not precedent. Don't add a new one, and
+when you rewrite a sentence, don't swap the em dash for a hyphen or an en
+dash either, which reads as the same tic in a thinner font.
 
 ## Positioning GenMotion
 
@@ -156,20 +191,67 @@ a $100 per month minimum spend"), not summarized as "moderately priced."
 
 ## Links
 
-**No outbound links to any tool discussed**, including GenMotion's own site.
-Both existing posts name every competitor and quote their pricing without a
-single markdown link (`grep -oE '\]\(https?://[^)]+\)' content/blog/*.md`
-returns nothing on either). Keep that: cite facts in prose, don't link out.
+The two sub-genres have opposite outbound-link policies, because the reason
+for withholding a link doesn't apply the same way to both:
+
+**Alternatives posts (GenMotion is a competitor in the comparison): no
+outbound links to any tool discussed, including GenMotion's own site.**
+`remotion-alternatives.md` and `hyperframes-alternatives.md` name every
+competitor and quote their pricing without a single markdown link (`grep -oE
+'\]\(https?://[^)]+\)' content/blog/remotion-alternatives.md
+content/blog/hyperframes-alternatives.md` returns nothing on either, aside
+from `![]()` logo image sources). The reason is competitive: these posts are
+partly arguing GenMotion is worth choosing instead, and sending a reader to a
+competitor's site at the moment they're evaluating alternatives works against
+that. Keep this policy for any future alternatives post.
+
+**Best-models roundups (GenMotion isn't competing with anything on the
+page): link out to each provider's official site.** `remotion-alternatives.md`
+and `hyperframes-alternatives.md` predate this and don't do it, but
+`best-ai-image-generation-models.md`, `best-ai-video-generation-models.md`,
+`best-ai-voice-generation-models.md`, `best-ai-music-generation-models.md`
+and `best-ai-sound-effect-generators.md` do: the provider's name in its `##`
+heading (or its first mention in the "What it is" line) links to that
+provider's official homepage or pricing page. There's no competitive reason
+to withhold the link here — none of these vendors compete with GenMotion, the
+post is reference content about the wider market, and a reader deciding
+between five image models benefits from a live link to check current pricing
+themselves. Link the provider's own official page specifically, never a
+reseller, review site or directory listing standing in for it. Where a
+surprising or load-bearing fact has a specific public source (a shutdown
+announcement, a pricing-change post), link that source inline too rather than
+only asserting it in prose.
+
+**Cross-link every post in a topic cluster to every other post in it, in
+both genres.** The pillar page (`ai-video-generation-guide.md`) links to all
+five best-models roundups; each roundup links back to the pillar under
+"Where to go next"; and each roundup should also link sideways to the other
+roundups in the cluster, either inline where the category genuinely comes up
+("pair this with a [voiceover](/blog/best-ai-voice-generation-models)...") or
+in a short "Related guides" list near the end. These are internal links
+(`/blog/<slug>`), not outbound ones, so they're unaffected by which policy
+above applies — always include them.
 
 ## Before it ships
 
 ```bash
-grep -oE '\]\(https?://[^)]+\)' apps/web/content/blog/<slug>.md   # must be empty
-grep -c "^## FAQ" apps/web/content/blog/<slug>.md                 # must be 0, FAQ is frontmatter-only
+grep -c "—" apps/web/content/blog/<slug>.md          # must be 0, frontmatter included
+grep -oE '\]\(https?://[^)]+\)' apps/web/content/blog/<slug>.md
+grep -c "^## FAQ" apps/web/content/blog/<slug>.md   # must be 0, FAQ is frontmatter-only
 pnpm --filter @genmotion/web typecheck
 ```
 
+Read the first grep's output against which sub-genre you wrote: on an
+alternatives post it must be empty (aside from `![]()` logo sources); on a
+best-models roundup, every URL it prints should resolve to a provider's own
+official page (or a genuine source for a specific cited fact) and every
+provider covered should have exactly one. Check each link actually 200s
+(`curl -sI <url> | head -1`) before shipping — a reference post with a dead
+link to the thing it's citing is worse than not linking at all.
+
 Then load `/blog/<slug>` locally and read it. Check the FAQ block renders
 from frontmatter (not duplicated in the body), that the TL;DR or
-comparison-at-a-glance table is legible, and that GenMotion's own trade-off
-line is still there and still true.
+comparison-at-a-glance table is legible, that every Pros/Cons pair is present,
+and that GenMotion's own trade-off line (alternatives posts) or the honest
+Marketplace-tie-in section (best-models roundups) is still there and still
+true.
