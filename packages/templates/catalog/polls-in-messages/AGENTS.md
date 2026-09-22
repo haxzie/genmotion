@@ -2,7 +2,7 @@
 
 A feature ad for a group-chat poll: the thread can't decide, someone drops a poll, a finger taps to vote, and the answer lands. Camera pushes straight through the phone screen between scenes.
 
-Started from the **Polls in Messages** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Polls in Messages social ad video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

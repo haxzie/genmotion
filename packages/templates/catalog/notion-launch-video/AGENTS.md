@@ -2,7 +2,7 @@
 
 A product launch built on a macOS dock in liquid glass: the desktop and the apps around the mark hard-cut through twelve workflows on a metronome beat, a cursor clicks through, and the app opens onto its promise.
 
-Started from the **Notion Launch** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Notion launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

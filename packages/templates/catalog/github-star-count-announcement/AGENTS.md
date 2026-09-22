@@ -2,7 +2,7 @@
 
 A milestone announcement for an open-source repo: the star-history chart climbs, then the total count lands with a satisfying tally-up — built for celebrating a growth number on social.
 
-Started from the **GitHub Star Count Announcement** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **GitHub star count announcement video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

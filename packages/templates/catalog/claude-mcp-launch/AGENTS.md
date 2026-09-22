@@ -2,7 +2,7 @@
 
 A product launch for an MCP integration: ask Claude a question, watch it call out to a real data source, connect a shelf of tools and agents, then land on the product mark.
 
-Started from the **Claude MCP Launch** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Claude MCP launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

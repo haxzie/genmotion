@@ -2,7 +2,7 @@
 
 A pixel-tile grid rolls a diagonal staircase of icons and settles into a wordmark lockup — swap the mark for your own.
 
-Started from the **GenMotion — Brand Grid** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **GenMotion brand grid logo sting** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

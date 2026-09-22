@@ -2,7 +2,7 @@
 
 A funding-round announcement: idea to shipped app, a swelling grid of builder cards, scale metrics, the headline number, investor logos, and a close on the brand mark.
 
-Started from the **Lovable Funding Announcement** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Lovable funding announcement video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

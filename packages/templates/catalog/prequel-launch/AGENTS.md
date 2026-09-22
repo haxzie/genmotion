@@ -2,7 +2,7 @@
 
 A product launch for a screen-recording and editing app: click record from the dock, capture your screen with a face-cam overlay, apply a preset look, then publish straight to video — closing on the brand mark.
 
-Started from the **Prequel Launch** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Prequel launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

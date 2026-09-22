@@ -2,7 +2,7 @@
 
 A fast-cut, Apple-style kinetic typography launch video for an AI model: computer use, long-horizon tasks, real builds, and hard math — landing on the model name.
 
-Started from the **Don't Blink — GPT-6 Astra** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **GPT-6 Astra AI model launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

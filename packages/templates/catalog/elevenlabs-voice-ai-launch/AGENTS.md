@@ -2,7 +2,7 @@
 
 A voice-AI product launch on paper and orange: phones ring across a desk, a smartphone and a video call with nobody to pick up, an orb swells in, an AI receptionist takes the call in a live chat, and the agents line up before the brand mark lands.
 
-Started from the **ElevenLabs Voice AI Launch** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **ElevenLabs voice AI launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

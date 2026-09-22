@@ -2,7 +2,7 @@
 
 A vertical WhatsApp-style chat ad: a friend messages in a panic about a launch video, gets pointed to a link preview, and the thread ends with "never opening After Effects again." Timed bubbles, typing dots, and message sounds throughout.
 
-Started from the **WhatsApp Chat Video** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **WhatsApp chat video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

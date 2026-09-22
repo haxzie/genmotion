@@ -2,7 +2,7 @@
 
 A product launch: a ring of real-world tiles spins into a headline, generative art morphs from a card into full-bleed, a model roster locks into an omni layout, and it closes on the Gemini mark.
 
-Started from the **Google Generative AI** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **Google generative AI launch video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout

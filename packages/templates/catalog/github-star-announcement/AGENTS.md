@@ -2,7 +2,7 @@
 
 Celebrate an open-source milestone: the star count tallies up to the big number while a stream of contributor avatars floats past — a quick, shareable clip for the repo's social feed.
 
-Started from the **GitHub Star Announcement** template. A GenMotion video project. Scenes are React components rendered frame by frame
+Started from the **GitHub star milestone announcement video** template. A GenMotion video project. Scenes are React components rendered frame by frame
 and encoded to MP4 — every frame must be a pure function of its frame index.
 
 ## Layout
