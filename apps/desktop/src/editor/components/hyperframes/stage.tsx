@@ -66,6 +66,9 @@ interface Page {
   ready: boolean;
 }
 
+/** How long to wait for a reloaded page to confirm it is playing before showing it anyway. */
+const PENDING_PLAY_TIMEOUT_MS = 800;
+
 /** Purple, the same as the React inspector's. */
 const HILITE = "#a855f7";
 const BUBBLE_W = 300;
@@ -168,11 +171,38 @@ export function HyperframesStage({
   const hoveredRef = useRef<PickedElement | null>(null);
   /** The last frame the runtime told us about, so its echo isn't sent back as a seek. */
   const echoed = useRef<number | null>(null);
+  /**
+   * The pending page's revision, once it has been told to play and is
+   * waiting for its own word that it actually is — see `swapIn` below.
+   */
+  const pendingAwaitingPlay = useRef<number | null>(null);
+  const pendingSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const post = (target: HTMLIFrameElement | undefined, message: Record<string, unknown>) => {
     target?.contentWindow?.postMessage({ source: "hf-parent", type: "control", ...message }, "*");
   };
   const send = (message: Record<string, unknown>) => post(liveFrame(), message);
+
+  /**
+   * Put the pending page on screen and let the old one go.
+   *
+   * Called once the pending page is actually caught up — not the moment it
+   * is told to be — so a swap never trades the old page's freeze for a new
+   * one while a video or audio element is still seeking into place.
+   */
+  function swapIn(from: number) {
+    if (pendingSwapTimer.current) {
+      clearTimeout(pendingSwapTimer.current);
+      pendingSwapTimer.current = null;
+    }
+    pendingAwaitingPlay.current = null;
+    echoed.current = null;
+    hoveredRef.current = null;
+    setPending(null);
+    setLive({ revision: from, ready: true });
+  }
+  const swapInRef = useRef(swapIn);
+  swapInRef.current = swapIn;
 
   // A compile landed. The first is the page; every later one loads behind it.
   useEffect(() => {
@@ -227,14 +257,31 @@ export function HyperframesStage({
           return;
         }
         if (isPending && !pendingRef.current?.ready) {
-          // The next page is up: put it where the old one is, then swap.
+          // The next page is up: put it where the old one is.
+          const state = store.getState();
           handshakeRef.current(frames.current.get(from));
-          store.getState().setTotalFrames(total);
-          echoed.current = null;
-          hoveredRef.current = null;
-          setPending(null);
-          setLive({ revision: from, ready: true });
+          state.setTotalFrames(total);
+          if (state.isPlaying) {
+            // Its seek can take a beat to decode — swap it in once it says
+            // it is actually rolling, not the moment it is told to. A
+            // runtime that never confirms still gets shown, after a wait.
+            pendingAwaitingPlay.current = from;
+            if (pendingSwapTimer.current) clearTimeout(pendingSwapTimer.current);
+            pendingSwapTimer.current = setTimeout(() => swapInRef.current(from), PENDING_PLAY_TIMEOUT_MS);
+            return;
+          }
+          swapInRef.current(from);
         }
+        return;
+      }
+      if (
+        data.type === "state" &&
+        "frame" in data &&
+        isPending &&
+        pendingAwaitingPlay.current === from &&
+        data.isPlaying
+      ) {
+        swapInRef.current(from);
         return;
       }
       // Everything else is only heard from the page on screen.
@@ -290,6 +337,24 @@ export function HyperframesStage({
     if (!ready) return;
     send(isPlaying ? { action: "play" } : { action: "pause" });
   }, [isPlaying, ready]);
+
+  // Paused before a pending page confirmed it was playing: there is nothing
+  // left to wait for, so stop it and show it as-is rather than sitting on
+  // the old page until the fallback timer runs out.
+  useEffect(() => {
+    if (isPlaying) return;
+    const from = pendingAwaitingPlay.current;
+    if (from === null) return;
+    post(frames.current.get(from), { action: "pause" });
+    swapInRef.current(from);
+  }, [isPlaying]);
+
+  // Never leave a fallback swap timer running past the component's life.
+  useEffect(() => {
+    return () => {
+      if (pendingSwapTimer.current) clearTimeout(pendingSwapTimer.current);
+    };
+  }, []);
 
   // Picking is always on, as it is in the React preview: hover outlines,
   // click asks.
