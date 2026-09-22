@@ -9,19 +9,15 @@ import { useEditorStore, type PreviewTool } from "@/stores/editor-store";
 import { useTabActive } from "../../tabs/active-tab";
 import { flyToExports } from "../../tabs/fly-to-exports";
 
-/* Solar "Cursor" (bold duotone). CC BY 4.0, 480 Design. */
+/* Solar "Cursor Square" (bold duotone). CC BY 4.0, 480 Design. */
 function CursorIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-[18px]" fill="currentColor">
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="m11.433 16.464l1.203-1.202l2.626-2.626l1.202-1.203c1.232-1.23 1.847-1.846 1.702-2.508s-.963-.963-2.596-1.565l-5.45-2.007C6.861 4.152 5.232 3.55 4.392 4.39s-.24 2.47.962 5.73l2.006 5.45c.602 1.633.903 2.45 1.565 2.596s1.277-.47 2.508-1.702"
-      />
-      <path
         opacity=".5"
-        d="m12.636 15.262l3.938 3.938c.408.408.612.612.84.706c.302.126.643.126.946 0c.228-.094.432-.298.84-.706c.407-.408.611-.612.706-.84a1.24 1.24 0 0 0 0-.946c-.095-.228-.299-.432-.706-.84l-3.939-3.938z"
+        d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12"
       />
+      <path d="M12.293 8.293a1 1 0 0 1 1.086-.217l6 2.5a1 1 0 0 1-.048 1.865l-2.418.806l1.794 1.793a1 1 0 0 1-1.414 1.414l-1.793-1.793l-.806 2.418a1 1 0 0 1-1.865.048l-2.5-6a1 1 0 0 1 .217-1.086z" />
     </svg>
   );
 }
@@ -90,11 +86,32 @@ const TOOLS: {
   },
 ];
 
-const button = "flex size-8 items-center justify-center rounded-lg transition-colors";
-const idle = "text-text-secondary hover:bg-surface-hover hover:text-text-primary";
+export const toolButton = "flex size-8 items-center justify-center rounded-lg transition-colors";
+export const toolIdle = "text-text-secondary hover:bg-surface-hover hover:text-text-primary";
 
 /** How long the pointer rests on a button before its tooltip shows. */
 const TIP_DELAY_MS = 350;
+
+/**
+ * Which way a tooltip grows from its button. A dock at the edge of the editor
+ * has a tooltip wider than itself, and centring it there puts half of it
+ * outside the preview column — where it is clipped (the left dock, against
+ * the chat) or off the window entirely (the right dock). So each dock grows
+ * its tooltips towards the middle instead.
+ */
+export type TipAlign = "center" | "start" | "end";
+
+const TIP_POSITION: Record<TipAlign, string> = {
+  center: "left-1/2 -translate-x-1/2",
+  start: "left-0",
+  end: "right-0",
+};
+// Half of a dock button (size-8), so the arrow keeps pointing at it.
+const TIP_ARROW: Record<TipAlign, string> = {
+  center: "left-1/2 -translate-x-1/2",
+  start: "left-4 -translate-x-1/2",
+  end: "right-4 translate-x-1/2",
+};
 
 /**
  * A tooltip over a dock button: what it does, a line on how, and its key.
@@ -103,7 +120,17 @@ const TIP_DELAY_MS = 350;
  * own component rather than a `title` because a native tooltip can't carry
  * the key as a keycap or match the app, and appears on its own slow clock.
  */
-function Tip({ label, hint, shortcut }: { label: string; hint: string; shortcut?: string }) {
+export function Tip({
+  label,
+  hint,
+  shortcut,
+  align = "center",
+}: {
+  label: string;
+  hint: string;
+  shortcut?: string;
+  align?: TipAlign;
+}) {
   return (
     <motion.div
       role="tooltip"
@@ -111,7 +138,10 @@ function Tip({ label, hint, shortcut }: { label: string; hint: string; shortcut?
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 4, scale: 0.97 }}
       transition={{ duration: 0.14, ease: [0.25, 1, 0.5, 1] }}
-      className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2.5 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-border bg-surface-raised px-2.5 py-2 text-left shadow-[0_8px_28px_rgba(0,0,0,0.4)]"
+      className={cx(
+        "pointer-events-none absolute bottom-full z-50 mb-2.5 w-max max-w-[220px] rounded-lg border border-border bg-surface-raised px-2.5 py-2 text-left shadow-[0_8px_28px_rgba(0,0,0,0.4)]",
+        TIP_POSITION[align],
+      )}
     >
       <div className="flex items-center gap-2">
         <span className="text-[0.857rem] font-medium text-text-primary">{label}</span>
@@ -125,7 +155,10 @@ function Tip({ label, hint, shortcut }: { label: string; hint: string; shortcut?
       {/* The little arrow, pointing at the button. */}
       <span
         aria-hidden
-        className="absolute left-1/2 top-full size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-border bg-surface-raised"
+        className={cx(
+          "absolute top-full size-2 -translate-y-1/2 rotate-45 border-b border-r border-border bg-surface-raised",
+          TIP_ARROW[align],
+        )}
       />
     </motion.div>
   );
@@ -135,7 +168,7 @@ function Tip({ label, hint, shortcut }: { label: string; hint: string; shortcut?
  * Hover and keyboard focus each open the tooltip; the pointer waits the
  * delay so sweeping across the dock doesn't flash three of them.
  */
-function useTip() {
+export function useTip() {
   const [open, setOpen] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clear = () => {
@@ -254,13 +287,13 @@ export function PreviewTools({ projectId, className }: { projectId: string; clas
               onClick={() => setTool(id)}
               aria-label={label}
               aria-pressed={tool === id}
-              className={cx(button, tool === id ? "bg-accent text-white" : idle)}
+              className={cx(toolButton, tool === id ? "bg-accent text-white" : toolIdle)}
               {...tip.props(id)}
             >
               <Icon />
             </button>
             <AnimatePresence>
-              {tip.open === id && <Tip label={label} hint={hint} shortcut={key} />}
+              {tip.open === id && <Tip label={label} hint={hint} shortcut={key} align="end" />}
             </AnimatePresence>
           </div>
         ))}
@@ -272,7 +305,7 @@ export function PreviewTools({ projectId, className }: { projectId: string; clas
             onClick={() => void screenshot()}
             disabled={shooting}
             aria-label="Screenshot this frame"
-            className={cx(button, idle, "disabled:opacity-60")}
+            className={cx(toolButton, toolIdle, "disabled:opacity-60")}
             {...tip.props("screenshot")}
           >
             {shooting ? (
@@ -283,7 +316,11 @@ export function PreviewTools({ projectId, className }: { projectId: string; clas
           </button>
           <AnimatePresence>
             {tip.open === "screenshot" && (
-              <Tip label="Screenshot" hint="Save this frame as a PNG, filed with your exports" />
+              <Tip
+                label="Screenshot"
+                hint="Save this frame as a PNG, filed with your exports"
+                align="end"
+              />
             )}
           </AnimatePresence>
         </div>

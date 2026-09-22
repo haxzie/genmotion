@@ -20,6 +20,8 @@ window.__gmInit = (payload) => {
       id: scene.id,
       name: scene.name,
       durationInFrames: scene.durationInFrames,
+      startFrom: scene.startFrom,
+      sourceDurationInFrames: scene.sourceDurationInFrames,
       component: result.component,
     });
   }

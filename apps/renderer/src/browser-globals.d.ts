@@ -5,6 +5,8 @@ interface Window {
       id: string;
       name: string;
       durationInFrames: number;
+      startFrom?: number;
+      sourceDurationInFrames?: number;
       compiledCode: string;
     }>;
     fps: number;

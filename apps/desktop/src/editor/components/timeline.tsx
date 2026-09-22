@@ -586,6 +586,138 @@ function HoverIndicator({
   );
 }
 
+/** What the slice tool is pointing at: the clip, its box, and where the cut would land. */
+interface SliceTarget {
+  kind: "scene" | "clip";
+  id: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** Frames from the clip's start to the cut. */
+  atFrame: number;
+  /** Pixel offset of the cut within the box. */
+  cutX: number;
+}
+
+/**
+ * The slice tool's surface: a sheet over the scene track and audio lanes
+ * that reads the pointer, shows what a click would cut, and makes the cut.
+ *
+ * A sheet rather than handlers on each block, because a block's pointer is
+ * already spoken for — sortable drag on a scene, move and trim on a clip —
+ * and slicing should replace all of that while the tool is active, not
+ * compete with it. Everything under the sheet keeps rendering; only the
+ * pointer changes hands.
+ *
+ * The marking is in the scrub red, the colour the timeline already uses for
+ * "where the pointer is": a frame around the clip, a line at the cut, and a
+ * tint over the part that becomes the new clip.
+ */
+function SliceOverlay({
+  scenes,
+  audioClips,
+  pxPerFrame,
+  laneCount,
+  onSplitScene,
+  onSplitClip,
+}: {
+  scenes: SceneData[];
+  audioClips: AudioClipData[];
+  pxPerFrame: number;
+  laneCount: number;
+  onSplitScene: (sceneId: string, atFrame: number) => void;
+  onSplitClip: (clipId: string, atFrame: number) => void;
+}) {
+  const [target, setTarget] = useState<SliceTarget | null>(null);
+  const sceneStarts = sceneStartFrames(scenes);
+
+  function locate(e: { currentTarget: HTMLDivElement; clientX: number; clientY: number }): SliceTarget | null {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const frame = Math.round((x - TRACK_PADDING) / pxPerFrame);
+
+    if (y < SCENE_TRACK_HEIGHT) {
+      const index = scenes.findIndex(
+        (scene, i) => frame >= sceneStarts[i]! && frame < sceneStarts[i]! + scene.durationInFrames,
+      );
+      const scene = scenes[index];
+      if (!scene) return null;
+      const atFrame = frame - sceneStarts[index]!;
+      if (atFrame < 1 || atFrame >= scene.durationInFrames) return null;
+      return {
+        kind: "scene",
+        id: scene.id,
+        left: TRACK_PADDING + sceneStarts[index]! * pxPerFrame,
+        top: SCENE_TRACK_PAD_TOP,
+        width: scene.durationInFrames * pxPerFrame,
+        height: SCENE_TRACK_HEIGHT - SCENE_TRACK_PAD_TOP - SCENE_TRACK_PAD_BOTTOM,
+        atFrame,
+        cutX: atFrame * pxPerFrame,
+      };
+    }
+
+    const lane = Math.floor((y - SCENE_TRACK_HEIGHT) / AUDIO_LANE_HEIGHT);
+    if (lane < 0 || lane >= laneCount) return null;
+    const clip = audioClips.find(
+      (c) => c.track === lane && frame >= c.startFrame && frame < c.startFrame + c.durationInFrames,
+    );
+    if (!clip) return null;
+    const atFrame = frame - clip.startFrame;
+    if (atFrame < 1 || atFrame >= clip.durationInFrames) return null;
+    return {
+      kind: "clip",
+      id: clip.id,
+      left: TRACK_PADDING + clip.startFrame * pxPerFrame,
+      top: SCENE_TRACK_HEIGHT + lane * AUDIO_LANE_HEIGHT + 2,
+      width: clip.durationInFrames * pxPerFrame,
+      height: AUDIO_LANE_HEIGHT - 4,
+      atFrame,
+      cutX: atFrame * pxPerFrame,
+    };
+  }
+
+  return (
+    <div
+      className="absolute inset-x-0 bottom-0 z-[5] cursor-crosshair"
+      style={{ top: RULER_HEIGHT }}
+      onPointerMove={(e) => setTarget(locate(e))}
+      onPointerLeave={() => setTarget(null)}
+      onClick={(e) => {
+        const hit = locate(e);
+        if (!hit) return;
+        setTarget(null);
+        if (hit.kind === "scene") onSplitScene(hit.id, hit.atFrame);
+        else onSplitClip(hit.id, hit.atFrame);
+      }}
+    >
+      {target && (
+        <div
+          className="pointer-events-none absolute overflow-hidden rounded-md border border-scrub"
+          style={{
+            left: target.left,
+            top: target.top,
+            width: target.width,
+            height: target.height,
+          }}
+        >
+          {/* The half that becomes a new clip. */}
+          <div
+            className="absolute inset-y-0 right-0 bg-scrub/20"
+            style={{ left: target.cutX }}
+          />
+          {/* The cut itself. */}
+          <div
+            className="absolute inset-y-0 w-0.5 -translate-x-px bg-scrub"
+            style={{ left: target.cutX }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Timeline({
   projectId,
   scenes,
@@ -599,6 +731,8 @@ export function Timeline({
   onAddClip,
   onUpdateClip,
   onDeleteClip,
+  onSplitScene,
+  onSplitClip,
 }: {
   projectId: string;
   scenes: SceneData[];
@@ -631,7 +765,10 @@ export function Timeline({
     track?: number;
   }) => void;
   onDeleteClip: (clipId: string) => void;
+  onSplitScene: (sceneId: string, atFrame: number) => void;
+  onSplitClip: (clipId: string, atFrame: number) => void;
 }) {
+  const timelineTool = useEditorStore((s) => s.timelineTool);
   const selectedSceneIds = useEditorStore((s) => s.selectedSceneIds);
   const selectScene = useEditorStore((s) => s.selectScene);
   const clearAllSelection = useEditorStore((s) => s.clearAllSelection);
@@ -903,6 +1040,18 @@ export function Timeline({
             onUpdate={onUpdateClip}
             onAdd={onAddClip}
           />
+
+          {/* Slicing takes the pointer over from the blocks while its tool is up. */}
+          {timelineTool === "slice" && totalFrames > 0 && (
+            <SliceOverlay
+              scenes={scenes}
+              audioClips={audioClips}
+              pxPerFrame={pxPerFrame}
+              laneCount={laneCount}
+              onSplitScene={onSplitScene}
+              onSplitClip={onSplitClip}
+            />
+          )}
 
           {/* Ghost playhead under the pointer. Above the tracks, below the real
               playhead — where they coincide, the one that owns the time wins. */}

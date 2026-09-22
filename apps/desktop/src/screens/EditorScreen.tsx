@@ -102,6 +102,8 @@ export function EditorScreen({
     addAudioClip,
     updateAudioClip,
     deleteAudioClip,
+    splitScene,
+    splitAudioClip,
   } = useProjectMutations(projectId);
 
   const editorStore = useEditorStoreApi();
@@ -155,6 +157,12 @@ export function EditorScreen({
         onAddClip={(input) => addAudioClip.mutate(input)}
         onUpdateClip={(input) => updateAudioClip.mutate(input)}
         onDeleteClip={(clipId) => deleteAudioClip.mutate(clipId)}
+        onSplitScene={(sceneId, atFrame) => {
+          if (!editorStore.getState().aiBusy) splitScene.mutate({ sceneId, atFrame });
+        }}
+        onSplitClip={(clipId, atFrame) => {
+          if (!editorStore.getState().aiBusy) splitAudioClip.mutate({ clipId, atFrame });
+        }}
         requestFix={requestFix}
         aiBusy={aiBusy}
       />
@@ -179,6 +187,8 @@ function EditorBody({
   onAddClip,
   onUpdateClip,
   onDeleteClip,
+  onSplitScene,
+  onSplitClip,
   requestFix,
   aiBusy,
 }: {
@@ -197,6 +207,8 @@ function EditorBody({
   onAddClip: (input: Parameters<ReturnType<typeof useProjectMutations>["addAudioClip"]["mutate"]>[0]) => void;
   onUpdateClip: (input: Parameters<ReturnType<typeof useProjectMutations>["updateAudioClip"]["mutate"]>[0]) => void;
   onDeleteClip: (clipId: string) => void;
+  onSplitScene: (sceneId: string, atFrame: number) => void;
+  onSplitClip: (clipId: string, atFrame: number) => void;
   requestFix: (request: { sceneId: string; message: string }) => void;
   aiBusy: boolean;
 }) {
@@ -398,7 +410,7 @@ function EditorBody({
                         )}
                       </div>
                     </div>
-                    <PreviewTransport projectId={project.dir} fps={project.fps} />
+                    <PreviewTransport projectId={project.dir} fps={project.fps} timelineTools={false} />
                   </div>
                   {/* The same timeline as a React project: sub-compositions are
                       the scenes, `<audio>` elements the clips. Edits are not
@@ -417,6 +429,8 @@ function EditorBody({
                     onAddClip={noop}
                     onUpdateClip={noop}
                     onDeleteClip={noop}
+                    onSplitScene={noop}
+                    onSplitClip={noop}
                   />
                 </>
               ) : (
@@ -464,6 +478,8 @@ function EditorBody({
                     onAddClip={onAddClip}
                     onUpdateClip={onUpdateClip}
                     onDeleteClip={onDeleteClip}
+                    onSplitScene={onSplitScene}
+                    onSplitClip={onSplitClip}
                   />
                 </>
               )}

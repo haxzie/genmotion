@@ -405,6 +405,8 @@ async function prepareReact(session: ProjectSession, manifest: ProjectManifest):
         "react",
         scene.compiledCode,
         scene.durationInFrames,
+        scene.startFrom ?? 0,
+        scene.sourceDurationInFrames ?? scene.durationInFrames,
         fps,
         width,
         height,

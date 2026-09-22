@@ -12,6 +12,7 @@ import { framesToTimecode, type AudioClipData } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { PreviewInspector } from "./preview-inspector";
 import { PreviewTools } from "./preview-tools";
+import { TimelineTools } from "./timeline-tools";
 import { useTabActive } from "../../tabs/active-tab";
 
 function PlayIcon({ playing }: { playing: boolean }) {
@@ -95,7 +96,16 @@ function TransportButton({
  * HyperFrames one — both run on the same playback store, so one set of
  * controls serves either.
  */
-export function PreviewTransport({ projectId, fps }: { projectId: string; fps: number }) {
+export function PreviewTransport({
+  projectId,
+  fps,
+  timelineTools = true,
+}: {
+  projectId: string;
+  fps: number;
+  /** Off for a timeline whose edits aren't written back (HyperFrames), where a cut would do nothing. */
+  timelineTools?: boolean;
+}) {
   // The readout describes the picture, so it follows a timeline hover along
   // with it — a timecode that disagreed with the frame on screen would be
   // worse than one that moves. The playhead itself stays put.
@@ -134,10 +144,15 @@ export function PreviewTransport({ projectId, fps }: { projectId: string; fps: n
 
   return (
     <div className="relative flex shrink-0 items-center justify-between bg-surface px-4 pt-1 pb-4">
-      <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
-        {framesToTimecode(frame, fps)}{" "}
-        <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
-      </span>
+      <div className="flex items-center gap-3">
+        {/* The timeline's tools sit by the readout, on the opposite side from
+            the preview's: each dock next to the thing it acts on. */}
+        {timelineTools && <TimelineTools />}
+        <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
+          {framesToTimecode(frame, fps)}{" "}
+          <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
+        </span>
+      </div>
       <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
         <TransportButton title="Jump to start" onClick={() => seek(0)} disabled={empty}>
           <SkipStartIcon />

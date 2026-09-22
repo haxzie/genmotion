@@ -386,6 +386,10 @@ async function run(
       id: entry.file,
       name: entry.name ?? entry.file,
       durationInFrames: entry.durationInFrames,
+      ...(entry.startFrom !== undefined ? { startFrom: entry.startFrom } : {}),
+      ...(entry.sourceDurationInFrames !== undefined
+        ? { sourceDurationInFrames: entry.sourceDurationInFrames }
+        : {}),
       compiledCode: built.code,
     });
   }
@@ -698,6 +702,7 @@ async function muxAudio(
       durationInFrames: scene.durationInFrames,
       audioUrl: scene.audio ? path.resolve(session.dir, scene.audio) : null,
       audioVolume: scene.audioVolume ?? 1,
+      ...(scene.startFrom !== undefined ? { startFrom: scene.startFrom } : {}),
     })),
     manifest.audio.map((clip) => ({
       url: path.resolve(session.dir, clip.file),

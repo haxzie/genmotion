@@ -164,6 +164,8 @@ export interface CompiledScene {
   id: string;
   name: string;
   durationInFrames: number;
+  startFrom?: number;
+  sourceDurationInFrames?: number;
   compiledCode: string;
 }
 
@@ -180,6 +182,10 @@ export async function bundleScene(
       id: entry.file,
       name: entry.name ?? entry.file,
       durationInFrames: entry.durationInFrames,
+      ...(entry.startFrom !== undefined ? { startFrom: entry.startFrom } : {}),
+      ...(entry.sourceDurationInFrames !== undefined
+        ? { sourceDurationInFrames: entry.sourceDurationInFrames }
+        : {}),
       compiledCode: built.code,
     },
   };

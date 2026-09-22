@@ -267,6 +267,10 @@ export async function loadProject(
       order: index,
       audioUrl: entry.audio ? assetUrl(entry.audio) : null,
       audioVolume: entry.audioVolume ?? 1,
+      ...(entry.startFrom !== undefined ? { startFrom: entry.startFrom } : {}),
+      ...(entry.sourceDurationInFrames !== undefined
+        ? { sourceDurationInFrames: entry.sourceDurationInFrames }
+        : {}),
     });
   }
 

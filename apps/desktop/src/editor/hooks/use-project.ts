@@ -66,6 +66,15 @@ export function useProjectMutations(projectId: string) {
     onSuccess: invalidate,
   });
 
+  const splitScene = useMutation({
+    mutationFn: ({ sceneId, atFrame }: { sceneId: string; atFrame: number }) =>
+      api<{ file: string }>(`/api/projects/${projectId}/scenes/${sceneId}/split`, {
+        method: "POST",
+        json: { atFrame },
+      }),
+    onSettled: invalidate,
+  });
+
   const updateScene = useMutation({
     mutationFn: ({
       sceneId,
@@ -168,6 +177,15 @@ export function useProjectMutations(projectId: string) {
     onSettled: invalidate,
   });
 
+  const splitAudioClip = useMutation({
+    mutationFn: ({ clipId, atFrame }: { clipId: string; atFrame: number }) =>
+      api<{ id: string }>(`/api/projects/${projectId}/audio-clips/${clipId}/split`, {
+        method: "POST",
+        json: { atFrame },
+      }),
+    onSettled: invalidate,
+  });
+
   const deleteAudioClip = useMutation({
     mutationFn: (clipId: string) =>
       api(`/api/projects/${projectId}/audio-clips/${clipId}`, {
@@ -198,9 +216,11 @@ export function useProjectMutations(projectId: string) {
     renameProject,
     reorderScenes,
     deleteScene,
+    splitScene,
     updateScene,
     addAudioClip,
     updateAudioClip,
+    splitAudioClip,
     deleteAudioClip,
     invalidate,
   };

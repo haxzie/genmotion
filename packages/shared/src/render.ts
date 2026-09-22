@@ -132,6 +132,8 @@ export function buildRenderAudioSources(
     durationInFrames: number;
     audioUrl?: string | null;
     audioVolume?: number | null;
+    /** Set on a split scene's entries: the voiceover is windowed like the picture. */
+    startFrom?: number;
   }[],
   clips: {
     url: string;
@@ -147,7 +149,9 @@ export function buildRenderAudioSources(
 ): RenderAudioSource[] {
   const sources: RenderAudioSource[] = [];
 
-  // Scene voiceover: whole source, delayed to the scene's start.
+  // Scene voiceover: whole source, delayed to the scene's start. A split
+  // scene's entries each take their own window of it instead, or the first
+  // half's voiceover would run on under the second half's.
   let startFrame = 0;
   for (const scene of scenes) {
     if (scene.audioUrl) {
@@ -155,6 +159,9 @@ export function buildRenderAudioSources(
         url: scene.audioUrl,
         delayMs: (startFrame / fps) * 1000,
         volume: scene.audioVolume ?? 1,
+        ...(scene.startFrom !== undefined
+          ? { startFromSec: scene.startFrom / fps, durationSec: scene.durationInFrames / fps }
+          : {}),
       });
     }
     startFrame += scene.durationInFrames;

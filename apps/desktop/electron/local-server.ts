@@ -796,6 +796,41 @@ export async function startLocalServer(
         return { ok: true };
       }
 
+      // Cut a scene in two at a frame of the entry. The file is copied so
+      // the second half has an id of its own (a scene's id is its file), and
+      // both entries keep the whole's timing: the code inside sees the
+      // original length, the second starts where the cut was.
+      if (target?.endsWith("/split") && method === "POST") {
+        const file = target.slice(0, -"/split".length);
+        const body = await readJson<{ atFrame?: number }>(req);
+        const at = Math.round(body.atFrame ?? NaN);
+        const manifest = await readManifest(session.dir);
+        const scene = manifest.scenes.find((s) => s.file === file);
+        if (!scene) throw new Error(`Unknown scene ${file}`);
+        if (!Number.isFinite(at) || at < 1 || at >= scene.durationInFrames) {
+          throw new Error("The cut has to fall inside the scene");
+        }
+        const copy = await uniqueSiblingPath(session.dir, file);
+        await fs.copyFile(path.join(session.dir, file), path.join(session.dir, copy));
+        await mutate(session, (m) => {
+          const index = m.scenes.findIndex((s) => s.file === file);
+          const first = m.scenes[index];
+          if (!first) throw new Error(`Unknown scene ${file}`);
+          const startFrom = first.startFrom ?? 0;
+          const source = first.sourceDurationInFrames ?? startFrom + first.durationInFrames;
+          m.scenes.splice(index + 1, 0, {
+            ...first,
+            file: copy,
+            startFrom: startFrom + at,
+            durationInFrames: first.durationInFrames - at,
+            sourceDurationInFrames: source,
+          });
+          first.durationInFrames = at;
+          first.sourceDurationInFrames = source;
+        });
+        return { file: copy };
+      }
+
       if (target && method === "DELETE") {
         await mutate(session, (manifest) => {
           manifest.scenes = manifest.scenes.filter((s) => s.file !== target);
@@ -855,6 +890,36 @@ export async function startLocalServer(
           if (body.name) clip.name = body.name;
         });
         return { ok: true };
+      }
+
+      // Cut a clip in two at a frame of the clip. Same source, same lane and
+      // level; the second half seeks further into the file.
+      if (target?.endsWith("/split") && method === "POST") {
+        const clipId = target.slice(0, -"/split".length);
+        const body = await readJson<{ atFrame?: number }>(req);
+        const at = Math.round(body.atFrame ?? NaN);
+        const id = randomUUID();
+        await mutate(session, (manifest) => {
+          const index = manifest.audio.findIndex((c) => c.id === clipId);
+          const first = manifest.audio[index];
+          if (!first) throw new Error(`Unknown audio clip ${clipId}`);
+          if (!Number.isFinite(at) || at < 1 || at >= first.durationInFrames) {
+            throw new Error("The cut has to fall inside the clip");
+          }
+          // A fade belongs to the edge it sits on: the fade-in stays with the
+          // first half, the fade-out goes with the second.
+          manifest.audio.splice(index + 1, 0, {
+            ...first,
+            id,
+            startFrame: first.startFrame + at,
+            durationInFrames: first.durationInFrames - at,
+            startFrom: Math.round((first.startFrom + at / manifest.fps) * 1000) / 1000,
+            fadeInFrames: 0,
+          });
+          first.durationInFrames = at;
+          first.fadeOutFrames = 0;
+        });
+        return { id };
       }
 
       if (target && method === "DELETE") {
@@ -1390,6 +1455,21 @@ async function uniqueAssetPath(projectDir: string, filename: string): Promise<st
 }
 
 /** Move a project file into `.genmotion/trash/` instead of unlinking it. */
+/** `scenes/01-intro.tsx` → `scenes/01-intro-2.tsx`, or -3, -4… until one is free. */
+async function uniqueSiblingPath(projectDir: string, relative: string): Promise<string> {
+  const ext = path.extname(relative);
+  const stem = relative.slice(0, -ext.length);
+  for (let n = 2; n < 500; n++) {
+    const candidate = `${stem}-${n}${ext}`;
+    const taken = await fs
+      .access(path.join(projectDir, candidate))
+      .then(() => true)
+      .catch(() => false);
+    if (!taken) return candidate;
+  }
+  throw new Error(`Couldn't find a free name next to ${relative}`);
+}
+
 async function trashFile(projectDir: string, relative: string): Promise<void> {
   const source = path.join(projectDir, relative);
   const exists = await fs

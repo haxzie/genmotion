@@ -557,7 +557,7 @@ export class ProjectSession {
           fps: manifest.fps,
           width: manifest.width,
           height: manifest.height,
-          durationInFrames: entry.durationInFrames,
+          durationInFrames: entry.sourceDurationInFrames ?? entry.durationInFrames,
         },
       });
       // Validation already built it; this call returns the cached rebuild.
@@ -571,6 +571,10 @@ export class ProjectSession {
         order: scenes.length,
         audioUrl: entry.audio ? this.assetUrl(entry.audio) : null,
         audioVolume: entry.audioVolume ?? 1,
+        ...(entry.startFrom !== undefined ? { startFrom: entry.startFrom } : {}),
+        ...(entry.sourceDurationInFrames !== undefined
+          ? { sourceDurationInFrames: entry.sourceDurationInFrames }
+          : {}),
       });
       bundles[entry.file] = {
         code: built?.ok ? built.code : null,

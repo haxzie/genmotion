@@ -31,6 +31,18 @@ export const sceneEntrySchema = z.object({
   /** Scene-level voiceover, played from the scene's first frame. */
   audio: projectRelativePath.optional(),
   audioVolume: z.number().min(0).max(2).optional(),
+  /**
+   * Where in the scene's own timeline this entry begins, in frames. A split
+   * scene is the same file twice: the second entry starts where the cut was.
+   * Absent means 0.
+   */
+  startFrom: z.number().int().min(0).optional(),
+  /**
+   * The length the scene's code was written against — what `useVideoConfig`
+   * reports as `durationInFrames`. Set by a split so both halves keep the
+   * timing of the whole; absent means `durationInFrames`.
+   */
+  sourceDurationInFrames: z.number().int().positive().max(MAX_DURATION_IN_FRAMES).optional(),
 });
 
 export const audioEntrySchema = z.object({

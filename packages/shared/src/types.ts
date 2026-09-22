@@ -14,6 +14,10 @@ export interface SceneData {
   /** Scene-level voiceover/music track, played from the scene's first frame. */
   audioUrl?: string | null;
   audioVolume?: number;
+  /** Frames into the scene's own timeline where this entry begins (a split's second half). */
+  startFrom?: number;
+  /** The length the scene's code was written against; what it sees as `durationInFrames`. */
+  sourceDurationInFrames?: number;
 }
 
 /**

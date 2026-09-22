@@ -48,11 +48,16 @@ export interface MarkupContext {
 
 /** What the pointer does on the preview. */
 export type PreviewTool = "select" | "draw";
+/** What the pointer does on the timeline. */
+export type TimelineTool = "select" | "slice";
 
 interface EditorState {
   /** Select: pick elements to comment on. Draw: mark the frame up freehand. */
   previewTool: PreviewTool;
   setPreviewTool(tool: PreviewTool): void;
+  /** Select: pick, move and trim clips. Slice: click a clip to cut it in two. */
+  timelineTool: TimelineTool;
+  setTimelineTool(tool: TimelineTool): void;
   selectedSceneIds: string[];
   /** Assets the user picked as chat context (mirrors scene selection). */
   selectedAssetIds: string[];
@@ -116,6 +121,10 @@ export function createEditorStore(): StoreApi<EditorState> {
   previewTool: "select",
   setPreviewTool(previewTool) {
     set({ previewTool });
+  },
+  timelineTool: "select",
+  setTimelineTool(timelineTool) {
+    set({ timelineTool });
   },
   selectedSceneIds: [],
   selectedAssetIds: [],

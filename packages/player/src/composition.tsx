@@ -79,11 +79,19 @@ export function Composition({
 }: CompositionProps) {
   const mapping = globalToLocal(scenes, frame);
   const scene = mapping ? scenes[mapping.sceneIndex] : null;
+  // A split scene is one file cut into entries: each plays a window of the
+  // scene's own timeline, and the code inside still sees the whole length.
+  const localFrame = mapping ? mapping.localFrame + (scene?.startFrom ?? 0) : 0;
 
   const config = useMemo(
     () =>
       scene
-        ? { fps, width, height, durationInFrames: scene.durationInFrames }
+        ? {
+            fps,
+            width,
+            height,
+            durationInFrames: scene.sourceDurationInFrames ?? scene.durationInFrames,
+          }
         : null,
     [fps, width, height, scene],
   );
@@ -113,7 +121,7 @@ export function Composition({
       <PlayingContext.Provider value={playing}>
         {scene && mapping && config && SceneComponent ? (
           <VideoConfigContext.Provider value={config}>
-            <FrameContext.Provider value={mapping.localFrame}>
+            <FrameContext.Provider value={localFrame}>
               <div
                 style={{
                   position: "absolute",
