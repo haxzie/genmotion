@@ -454,6 +454,18 @@ function MessageBubble({
   spacing?: string;
 }) {
   if (message.role === "user") {
+    // The marker a retry sends to pick an interrupted turn back up. Not the
+    // user's words, so not a bubble: a quiet line saying what happened.
+    if ((message.metadata as { continuation?: unknown } | undefined)?.continuation === true) {
+      return (
+        <p
+          data-message-id={message.id}
+          className={cx("self-center text-[0.786rem] text-text-tertiary", spacing)}
+        >
+          Continuing after an interruption
+        </p>
+      );
+    }
     const ctxPart = message.parts.find((p) => p.type === "data-context") as
       | { data?: MessageContextData }
       | undefined;
@@ -842,25 +854,38 @@ function ChatPanelInner({
   // A trailing user message with nothing running means the assistant turn never
   // landed (failed/interrupted) — offer to retry it.
   const canRetry = !busy && lastMessage?.role === "user";
+  // An errored turn that had already produced something is continued, not
+  // redone: the bubble stays and the agent picks up from where it stopped.
+  const canContinue =
+    !busy &&
+    lastMessage?.role === "assistant" &&
+    lastMessage.parts.some(
+      (p) => p.type.startsWith("tool-") || p.type === "dynamic-tool" || (p.type === "text" && p.text.trim()),
+    );
 
   /**
    * `regenerate()` drops the trailing assistant message from `messages` the
-   * moment it's called — right, for a normal retry, since the point is to
-   * replace it. But when that message is what an interrupted turn already
+   * moment it's called — right when nothing was produced, since the point is
+   * to replace it. But when that message is what an interrupted turn already
    * streamed in, dropping it is dropping real, already-produced work (tool
-   * calls included) with nothing yet on disk to fall back on: `chat.jsonl`
-   * only gets written once a turn reaches its own end, and `error` here is
-   * precisely the case where it never did. So: save it first.
+   * calls included), and re-sending the same request asks the agent to do it
+   * all again. So that case sends a continuation instead: a marker message
+   * the server turns into "carry on from here" against the resumed session.
+   * It's saved to disk first — `chat.jsonl` only gets a turn once it reaches
+   * its own end, and `error` is precisely the case where it may not have —
+   * and awaited, so it lands in the transcript ahead of the continuation.
    */
-  function handleRetry() {
-    if (lastMessage?.role === "assistant") {
-      void api(`/api/chat/${projectId}/save-partial`, { json: { message: lastMessage } }).catch(
-        () => {
-          // Best-effort — regenerating is still the right next step either way.
-        },
-      );
+  async function handleRetry() {
+    if (!canContinue) {
+      regenerate();
+      return;
     }
-    regenerate();
+    await api(`/api/chat/${projectId}/save-partial`, { json: { message: lastMessage } }).catch(
+      () => {
+        // Best-effort — continuing is still the right next step either way.
+      },
+    );
+    void sendMessage({ text: "Continue", metadata: { continuation: true } });
   }
 
   // Rotate a randomized working phrase while the loader is up (unless a concrete
@@ -1359,11 +1384,11 @@ function ChatPanelInner({
                 </p>
                 <button
                   type="button"
-                  onClick={handleRetry}
+                  onClick={() => void handleRetry()}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-danger/40 px-2.5 py-1 text-[0.786rem] font-medium text-danger transition-colors hover:bg-danger/15"
                 >
                   <RetryIcon className="size-3.5" />
-                  Retry
+                  {canContinue ? "Continue" : "Retry"}
                 </button>
               </div>
             )}
@@ -1371,7 +1396,7 @@ function ChatPanelInner({
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
-                  onClick={handleRetry}
+                  onClick={() => void handleRetry()}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-2.5 py-1 text-[0.786rem] text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
                 >
                   <RetryIcon className="size-3.5" />

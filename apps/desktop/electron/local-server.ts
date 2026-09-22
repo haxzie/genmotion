@@ -1211,15 +1211,17 @@ async function chatTurn(
     return jsonResponse(400, { error: "Expected a trailing user message" });
   }
 
-  const text = messageText(last);
-  if (!text.trim()) return jsonResponse(400, { error: "Empty message" });
+  const continuation = isContinuation(last);
+  if (!continuation && !messageText(last).trim()) {
+    return jsonResponse(400, { error: "Empty message" });
+  }
 
   const [
     { createClaudeCodeBackend },
     { createCodexBackend },
     { runTurnAsUiStream },
     { harnessState },
-    { buildRemixNote },
+    { buildRemixNote, buildContinueNote },
   ] = await Promise.all([
     import("./agent/claude-code"),
     import("./agent/codex"),
@@ -1240,6 +1242,16 @@ async function chatTurn(
 
   const backend =
     active === "codex" ? createCodexBackend(session, mcpUrl) : createClaudeCodeBackend(session);
+
+  // A continuation stands in for the turn the connection dropped: the
+  // composer keeps the half-finished assistant bubble in place and sends this
+  // instead of regenerating, so what's on screen and what the agent already
+  // did both survive. The harness resumes the same session — it has the
+  // partial work — and is told to carry on, with the request it was serving
+  // for the thread that has nothing to resume.
+  const text = continuation
+    ? buildContinueNote(messageText(lastRequest(messages)) || "(not recorded)")
+    : messageText(last);
 
   // The user's message is persisted before the turn runs, so an interrupted or
   // failed turn still leaves the transcript honest.
@@ -1320,8 +1332,22 @@ async function savePartialRoute(
   return jsonResponse(200, { saved: true });
 }
 
+function isContinuation(message: UIMessage): boolean {
+  return (message.metadata as { continuation?: unknown } | undefined)?.continuation === true;
+}
+
+/** The user message the interrupted turn was answering — the last one that isn't itself a continuation. */
+function lastRequest(messages: UIMessage[]): UIMessage | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]!;
+    if (m.role === "user" && !isContinuation(m)) return m;
+  }
+  return undefined;
+}
+
 /** Flatten a UIMessage's text parts — the harness takes a plain prompt. */
-function messageText(message: UIMessage): string {
+function messageText(message: UIMessage | undefined): string {
+  if (!message) return "";
   return (message.parts ?? [])
     .filter((part): part is { type: "text"; text: string } => part.type === "text")
     .map((part) => part.text)

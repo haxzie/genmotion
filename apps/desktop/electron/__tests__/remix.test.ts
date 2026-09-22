@@ -12,7 +12,7 @@ import {
   writeBundle,
   writeRemix,
 } from "../remix";
-import { buildRemixNote } from "../agent/prompt";
+import { buildContinueNote, buildRemixNote } from "../agent/prompt";
 
 /**
  * A remix bundle arrives over the network, so every path in it is treated as
@@ -243,5 +243,14 @@ describe("buildRemixNote", () => {
       remixedAt: "",
     });
     expect(note).toContain("**Demo Launch** template. ");
+  });
+});
+
+describe("buildContinueNote", () => {
+  it("tells the agent to carry on, not start over, and carries the request", () => {
+    const note = buildContinueNote("Make the intro punchier");
+    expect(note).toContain("cut off by a connection error");
+    expect(note).toContain("do not redo it and do not start over");
+    expect(note).toContain("Make the intro punchier");
   });
 });

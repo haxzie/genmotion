@@ -346,3 +346,24 @@ Use it after any visual change, and before telling the user a look is right. Be 
 - Explain what you did in one or two sentences. The user can see the video; don't narrate the animation back to them.
 - If the user names a real company or product, research it first (see above) rather than guessing at its identity.`;
 }
+
+/**
+ * The prompt for a turn that picks up where an interrupted one stopped.
+ *
+ * A dropped connection mid-turn leaves the agent's own session holding
+ * everything it had done so far — every tool call, every file it wrote — so
+ * the resumed session already knows the state. What it needs telling is that
+ * the last turn ended by accident, not by choice, so it carries on instead of
+ * treating the silence as "done" or the repeated request as "again". The
+ * original request rides along for the thread that has no session to resume
+ * (the first turn of a project, or one the harness never checkpointed), where
+ * it is the only context there is.
+ */
+export function buildContinueNote(request: string): string {
+  return `<continue>
+The previous turn was cut off by a connection error before it finished. Pick up exactly where it stopped: the work already done is on disk and in this conversation, so do not redo it and do not start over. Check the project files if you are unsure what was completed, finish the rest, and reply as if the interruption had not happened.
+
+The request being worked on:
+${request}
+</continue>`;
+}
