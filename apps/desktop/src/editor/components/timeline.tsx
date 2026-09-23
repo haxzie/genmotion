@@ -718,6 +718,32 @@ function SliceOverlay({
   );
 }
 
+/**
+ * Coalesce a fast-firing pointermove down to one call per animation frame.
+ * Each hover or drag tick re-seeks the preview, which has real video/audio to
+ * settle — pointermove outruns that easily, especially zoomed out where a few
+ * pixels of movement cross many frames, so only the position by the time a
+ * frame is due to be painted still matters.
+ */
+function useRafCoalesced(fn: (clientX: number) => void) {
+  const raf = useRef(0);
+  const pending = useRef<number | null>(null);
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  const schedule = useCallback((clientX: number) => {
+    pending.current = clientX;
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const x = pending.current;
+      pending.current = null;
+      if (x !== null) fnRef.current(x);
+    });
+  }, []);
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  return schedule;
+}
+
 export function Timeline({
   projectId,
   scenes,
@@ -915,6 +941,9 @@ export function Timeline({
   // fires pointerleave, and a stale hover frame would pin the preview to it.
   useEffect(() => () => setHoverFrame(null), [setHoverFrame]);
 
+  const scheduleScrub = useRafCoalesced(scrub);
+  const scheduleHover = useRafCoalesced((clientX) => setHoverFrame(frameAt(clientX)));
+
   return (
     <div
       className="flex shrink-0 flex-row border-t border-border bg-surface"
@@ -931,7 +960,7 @@ export function Timeline({
           ref={contentRef}
           className="relative isolate flex h-full min-w-full flex-col"
           style={{ width: trackWidth || undefined }}
-          onPointerMove={(e) => setHoverFrame(frameAt(e.clientX))}
+          onPointerMove={(e) => scheduleHover(e.clientX)}
           onPointerLeave={() => setHoverFrame(null)}
         >
           {/* Selected-scene highlight: one persistent purple band spanning the
@@ -966,7 +995,7 @@ export function Timeline({
               scrub(e.clientX);
             }}
             onPointerMove={(e) => {
-              if (e.buttons === 1) scrub(e.clientX);
+              if (e.buttons === 1) scheduleScrub(e.clientX);
             }}
           >
             <Ruler totalSeconds={totalFrames / fps} fps={fps} />
