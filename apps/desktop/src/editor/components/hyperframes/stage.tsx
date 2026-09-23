@@ -191,6 +191,13 @@ export function HyperframesStage({
    * one while a video or audio element is still seeking into place.
    */
   function swapIn(from: number) {
+    // A newer revision can supersede this one while its timer or its "now
+    // playing" confirmation is still in flight — the callback that reaches
+    // here is then talking about a page whose iframe is already gone.
+    // Swapping it in anyway would tear down the page actually on screen and
+    // put up a blank one loading from scratch: a worse freeze than the one
+    // this function exists to avoid.
+    if (pendingRef.current?.revision !== from) return;
     if (pendingSwapTimer.current) {
       clearTimeout(pendingSwapTimer.current);
       pendingSwapTimer.current = null;
@@ -212,6 +219,15 @@ export function HyperframesStage({
       return;
     }
     if (current.revision === revision) return;
+    // This revision replaces whatever was still loading — an agent turn can
+    // land several in a row. Its iframe unmounts, so a fallback timer or a
+    // "now playing" flag still waiting on that one must go with it, or a
+    // late timer fires `swapIn` for a page that is no longer there.
+    if (pendingSwapTimer.current) {
+      clearTimeout(pendingSwapTimer.current);
+      pendingSwapTimer.current = null;
+    }
+    pendingAwaitingPlay.current = null;
     setPending({ revision, ready: false });
   }, [revision]);
 
@@ -257,10 +273,16 @@ export function HyperframesStage({
           return;
         }
         if (isPending && !pendingRef.current?.ready) {
-          // The next page is up: put it where the old one is.
+          // The next page is up: put it where the old one is. Marked ready
+          // right away, same as the live branch above — the runtime re-announces
+          // this while it is still settling, and re-handshaking on each one
+          // would re-seek and re-send play into a page mid-seek, which is
+          // exactly the kind of interruption that keeps it from ever
+          // confirming it is playing before the fallback timer gives up on it.
           const state = store.getState();
           handshakeRef.current(frames.current.get(from));
           state.setTotalFrames(total);
+          setPending({ revision: from, ready: true });
           if (state.isPlaying) {
             // Its seek can take a beat to decode — swap it in once it says
             // it is actually rolling, not the moment it is told to. A
@@ -466,12 +488,41 @@ export function HyperframesStage({
   }
 
   // Position: a scrub, a hover, a jump — anything the store shows that the
-  // runtime did not report itself.
+  // runtime did not report itself. This includes a click on the timeline
+  // while playing: `frame` tracks the store's `frame` during playback (see
+  // `selectDisplayFrame`), and the runtime's own advance is echoed back into
+  // it too — `echoed.current` is what tells those two apart, not `isPlaying`,
+  // so a genuine jump during playback still reaches the runtime instead of
+  // being swallowed by it.
+  //
+  // Coalesced to one seek per animation frame. A hover or a drag across a
+  // zoomed-out timeline crosses many frames per pointermove, and each one
+  // lands here as its own store update — pointermove fires far faster than
+  // the runtime can settle a seek (it has real video/audio to decode), so
+  // sending every intermediate frame queues seeks faster than they drain and
+  // the preview lags behind wherever the pointer actually is. Only the
+  // latest frame by the time a frame is due to be painted is still relevant.
+  const pendingSeekFrame = useRef<number | null>(null);
+  const seekRaf = useRef(0);
   useEffect(() => {
-    if (!ready || isPlaying) return;
+    if (!ready) return;
     if (echoed.current === frame) return;
-    send({ action: "seek", timeSeconds: frame / fps, seekMode: "commit" });
-  }, [frame, fps, isPlaying, ready]);
+    pendingSeekFrame.current = frame;
+    if (seekRaf.current) return;
+    seekRaf.current = requestAnimationFrame(() => {
+      seekRaf.current = 0;
+      const target = pendingSeekFrame.current;
+      pendingSeekFrame.current = null;
+      if (target === null) return;
+      send({ action: "seek", timeSeconds: target / fps, seekMode: "commit" });
+    });
+  }, [frame, fps, ready]);
+
+  useEffect(() => {
+    return () => {
+      if (seekRaf.current) cancelAnimationFrame(seekRaf.current);
+    };
+  }, []);
 
   // A hidden tab must not keep playing sound.
   useEffect(() => {
@@ -514,6 +565,21 @@ export function HyperframesStage({
           borderRadius: scale ? 12 / scale : 0,
           overflow: "hidden",
           visibility: scale === 0 ? "hidden" : "visible",
+        }}
+        onPointerLeave={() => {
+          // The runtime's pick-mode outline only moves on mousemove inside
+          // the iframe's own document — a cross-origin, separately rendered
+          // realm that never gets a synthetic trailing mousemove (or its own
+          // mouseleave) when the pointer exits fast. Left unhandled, the
+          // outline is stranded on whatever was last under the cursor. The
+          // host document, unlike the iframe's, reliably sees the pointer
+          // leave this box, so a disable/enable round-trip is the cheapest
+          // way to make the runtime drop it — `disablePickMode` clears the
+          // highlighted node before `enablePickMode` re-arms hovering.
+          if (!ready) return;
+          hoveredRef.current = null;
+          send({ action: "disable-pick-mode" });
+          send({ action: "enable-pick-mode" });
         }}
       >
         {/* Sandboxed to scripts only: the composition is agent-authored, and

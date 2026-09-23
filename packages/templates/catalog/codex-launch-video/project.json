@@ -1,0 +1,68 @@
+{
+  "name": "Codex launch video",
+  "engine": "react",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-you-just-speak.tsx",
+      "durationInFrames": 55,
+      "name": "You just speak"
+    },
+    {
+      "file": "scenes/02-voice-pill.tsx",
+      "durationInFrames": 70,
+      "name": "Voice → Your idea"
+    },
+    {
+      "file": "scenes/03-builds-for-you.tsx",
+      "durationInFrames": 30,
+      "name": "And it builds for you"
+    },
+    {
+      "file": "scenes/04-prompt-box.tsx",
+      "durationInFrames": 85,
+      "name": "What should we work on?"
+    },
+    {
+      "file": "scenes/05-send.tsx",
+      "durationInFrames": 30,
+      "name": "Send"
+    },
+    {
+      "file": "scenes/06-dashboards.tsx",
+      "durationInFrames": 55,
+      "name": "The builds"
+    },
+    {
+      "file": "scenes/07-rings.tsx",
+      "durationInFrames": 35,
+      "name": "Rings → mark"
+    },
+    {
+      "file": "scenes/08-no-complex.tsx",
+      "durationInFrames": 145,
+      "name": "No complex syntax"
+    },
+    {
+      "file": "scenes/09-this-is-codex.tsx",
+      "durationInFrames": 136,
+      "name": "This is Codex"
+    }
+  ],
+  "audio": [
+    {
+      "id": "soundtrack",
+      "file": "assets/soundtrack.m4a",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 641,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

@@ -37,6 +37,18 @@ export interface CompositionWindow {
 const READY_TIMEOUT_MS = 30_000;
 
 /**
+ * How long one seek gets to settle before this gives up on it.
+ *
+ * `__hfWaitForSeekCompletion` resolves once every media element the runtime
+ * tracks reaches the target frame — normally milliseconds. A composition
+ * heavy enough to make that never happen (a stalled decode, a scene with
+ * enough filters/layers to starve the renderer) would otherwise hang this
+ * `await` forever with no signal, unlike every other failure here, which
+ * throws something worth telling someone.
+ */
+const SEEK_TIMEOUT_MS = 15_000;
+
+/**
  * The seek protocol, built over the runtime's player.
  *
  * The runtime does not expose `window.__hf` on its own — HyperFrames' renderer
@@ -110,10 +122,12 @@ const READY_SCRIPT = `(async () => {
   }
   if (window.__player && typeof window.__player.pause === "function") window.__player.pause();
   await (document.fonts && document.fonts.ready);
-  const media = Array.from(document.querySelectorAll("video, img"));
+  const media = Array.from(document.querySelectorAll("video, audio, img"));
   while (Date.now() < deadline) {
     const pending = media.filter((el) => {
-      if (el.tagName === "VIDEO") return el.readyState < 2 && !el.error && !!(el.src || el.querySelector("source"));
+      if (el.tagName === "VIDEO" || el.tagName === "AUDIO") {
+        return el.readyState < 2 && !el.error && !!(el.src || el.querySelector("source"));
+      }
       const src = el.getAttribute("src") || "";
       if (!src || src.startsWith("data:")) return false;
       return !(el.complete);
@@ -180,10 +194,26 @@ export async function openCompositionWindow(
       width,
       height,
       async seek(timeSeconds) {
-        lastLevels = (await win.webContents.executeJavaScript(seekScript(timeSeconds))) as Record<
-          string,
-          number
-        >;
+        let timer: ReturnType<typeof setTimeout>;
+        const timeout = new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `seek to ${timeSeconds.toFixed(2)}s never settled within ${SEEK_TIMEOUT_MS / 1000}s — the composition's media or filters may be too heavy for this frame to render`,
+                ),
+              ),
+            SEEK_TIMEOUT_MS,
+          );
+        });
+        try {
+          lastLevels = (await Promise.race([
+            win.webContents.executeJavaScript(seekScript(timeSeconds)),
+            timeout,
+          ])) as Record<string, number>;
+        } finally {
+          clearTimeout(timer!);
+        }
       },
       capture: () => win.webContents.capturePage(),
       audioLevels: async () => lastLevels,
