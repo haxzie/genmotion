@@ -32,7 +32,7 @@ const PAGE_SHELL = `<!DOCTYPE html>
   html, body { background: #000; overflow: hidden; }
 </style></head><body><div id="root"></div></body></html>`;
 
-async function capture(browser, host, id) {
+async function capture(browser, id) {
   const record = await getTemplate(id);
   if (!record) throw new Error(`No such template: ${id}`);
 
@@ -53,6 +53,9 @@ async function capture(browser, host, id) {
   if (!built.ok) throw new Error(`${id}/${entry.file}: ${built.error.message}`);
 
   const { fps, width, height } = record.manifest;
+  // The three engine has its own host bundle (a WebGL canvas rather than the
+  // react player), behind the identical `__gmInit`/`__gm` bridge.
+  const host = await hostBundle(record.manifest.engine);
   // The composition is laid out at its real size and scaled down by CSS, so
   // text metrics and camera transforms are the ones the video will use — a
   // small viewport would reflow the layout into something else entirely.
@@ -109,10 +112,9 @@ async function capture(browser, host, id) {
 
 const wanted = process.argv.slice(2);
 const ids = wanted.length ? wanted : await listTemplateIds();
-const host = await hostBundle();
 const browser = await chromium.launch();
 try {
-  for (const id of ids) await capture(browser, host, id);
+  for (const id of ids) await capture(browser, id);
 } finally {
   await browser.close();
 }

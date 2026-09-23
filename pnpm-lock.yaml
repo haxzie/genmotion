@@ -726,6 +726,9 @@ importers:
       '@genmotion/storage':
         specifier: workspace:*
         version: link:../storage
+      '@genmotion/three-engine':
+        specifier: workspace:*
+        version: link:../three-engine
       '@types/node':
         specifier: ^22
         version: 22.19.20
@@ -750,6 +753,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
       tsx:
         specifier: ^4.20.0
         version: 4.22.4

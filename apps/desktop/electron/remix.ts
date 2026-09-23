@@ -185,7 +185,16 @@ export async function writeBundle(
   // tsconfig, the dotfiles and AGENTS.md from the *current* scaffold — which
   // is why the template's own package.json is never copied. Its pinned
   // versions froze when it was authored; these are the ones that are right.
-  await createProject({ dir, name, fps, width, height, empty: true });
+  //
+  // The engine has to come along, though: a three-engine bundle's scenes
+  // import `three`, and the manifest written at the bottom of this function
+  // says so, so a react scaffold would leave a folder whose package.json and
+  // tsconfig contradict its own scenes. Anything else scaffolds as react,
+  // which is what `createProject` defaults to — HyperFrames is deliberately
+  // not reachable here, since its scaffold needs host-pinned versions a
+  // bundle doesn't carry, and nothing in the catalog is one.
+  const engine = bundle.manifest.engine === "three" ? "three" : undefined;
+  await createProject({ dir, name, fps, width, height, empty: true, engine });
 
   for (const file of bundle.files) {
     const absolute = path.resolve(dir, file.path);

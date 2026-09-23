@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createSceneBundler, loadProject } from "@genmotion/project";
-import { validateSceneFile } from "@genmotion/project/validate";
+import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import {
   MAX_REMIX_BYTES,
   TEMPLATE_INLINE_LIMIT,
@@ -107,9 +107,13 @@ describe.each(ids)("%s", (id) => {
 
   // The real gate: every scene bundles, exports a default, uses no clock or
   // random source, and survives three rendered frames. This is what stops a
-  // template rotting when @genmotion/motion changes underneath it.
+  // template rotting when @genmotion/motion changes underneath it. A
+  // three-engine template gets the same determinism rules and a load check,
+  // but no smoke render — a WebGLRenderer needs a GPU context Node hasn't
+  // got, so what it actually draws is only ever proved by `render-video`.
   it("bundles and smoke-renders every scene", { timeout: 60_000 }, async () => {
     const record = (await getTemplate(id))!;
+    const three = record.manifest.engine === "three";
     const bundler = createSceneBundler({
       projectDir: record.dir,
       inlineAssetLimit: TEMPLATE_INLINE_LIMIT,
@@ -117,16 +121,18 @@ describe.each(ids)("%s", (id) => {
     });
     try {
       for (const scene of record.manifest.scenes) {
-        const result = await validateSceneFile({
-          bundler,
-          sceneFile: scene.file,
-          config: {
-            fps: record.manifest.fps,
-            width: record.manifest.width,
-            height: record.manifest.height,
-            durationInFrames: scene.durationInFrames,
-          },
-        });
+        const result = three
+          ? await validateThreeSceneFile({ bundler, sceneFile: scene.file })
+          : await validateSceneFile({
+              bundler,
+              sceneFile: scene.file,
+              config: {
+                fps: record.manifest.fps,
+                width: record.manifest.width,
+                height: record.manifest.height,
+                durationInFrames: scene.durationInFrames,
+              },
+            });
         expect(result.error, `${scene.file}: ${result.error}`).toBeNull();
       }
     } finally {

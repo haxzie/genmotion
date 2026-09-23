@@ -165,10 +165,14 @@ function recordVideoUrl(dir, url) {
   fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`, "utf8");
 }
 
-async function renderOne(browser, host, id) {
+async function renderOne(browser, id) {
   const record = await getTemplate(id);
   if (!record) throw new Error(`No such template: ${id}`);
   const { fps, width, height } = record.manifest;
+  // Which render host drives the frames: the react player, or the three
+  // engine's WebGL canvas. Same `__gmInit`/`__gm` bridge either way, so
+  // everything below this line is engine-agnostic.
+  const host = await hostBundle(record.manifest.engine);
 
   const scenes = await compileTemplate(record);
   for (const scene of scenes) {
@@ -292,13 +296,12 @@ async function renderOne(browser, host, id) {
 async function main() {
   const wanted = process.argv.slice(2);
   const ids = wanted.length ? wanted : await listTemplateIds();
-  const host = await hostBundle();
   const browser = await chromium.launch();
   const failed = [];
   try {
     for (const id of ids) {
       try {
-        await renderOne(browser, host, id);
+        await renderOne(browser, id);
       } catch (err) {
         console.error(`\n${id}: FAILED — ${err instanceof Error ? err.message : err}`);
         failed.push(id);
