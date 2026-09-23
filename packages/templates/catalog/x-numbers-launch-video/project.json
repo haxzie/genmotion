@@ -1,0 +1,48 @@
+{
+  "name": "X Numbers launch video",
+  "engine": "three",
+  "fps": 60,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "durationInFrames": 270,
+      "name": "Intro"
+    },
+    {
+      "file": "scenes/02-number.ts",
+      "durationInFrames": 240,
+      "name": "Number"
+    },
+    {
+      "file": "scenes/03-menu.ts",
+      "durationInFrames": 414,
+      "name": "Menu & sheet"
+    },
+    {
+      "file": "scenes/04-dark.ts",
+      "durationInFrames": 702,
+      "name": "Enter number"
+    },
+    {
+      "file": "scenes/05-outro.ts",
+      "durationInFrames": 249,
+      "name": "Outro"
+    }
+  ],
+  "audio": [
+    {
+      "id": "soundtrack",
+      "file": "assets/soundtrack.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1875,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
