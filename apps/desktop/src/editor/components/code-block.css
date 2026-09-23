@@ -1,0 +1,102 @@
+/*
+ * Tokyo Night for Twinkleplop.
+ *
+ * Colours are carried over from the CodeMirror theme this replaced, so the
+ * code blocks look the same as before. Token types CodeMirror never styled
+ * (HTML tags, CSS selectors, diff markers) use the upstream Tokyo Night
+ * values rather than falling through to the body colour.
+ *
+ * Only tokens that differ from the base colour need a rule — anything
+ * unmapped inherits `.twinkleplop`, which is what a plain identifier reads as.
+ */
+
+/*
+ * The line break between lines is the literal newline in the markup, which
+ * `pre` already honours — so `.l` must stay inline. Giving it `display: block`
+ * breaks the line a second time and double-spaces the whole block.
+ */
+.twinkleplop {
+  margin: 0;
+  padding: 8px 10px;
+  background: transparent;
+  color: #c0caf5;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+/* Line numbers are inline spans, so this is the gutter. */
+.twinkleplop .ln {
+  display: inline-block;
+  width: 2.5em;
+  margin-right: 1em;
+  color: #b6b6c2;
+  text-align: right;
+  user-select: none;
+}
+
+.twinkleplop .comment {
+  color: #444b6a;
+}
+
+.twinkleplop .keyword,
+.twinkleplop .operator,
+.twinkleplop .constant,
+.twinkleplop .builtin,
+.twinkleplop .variant {
+  color: #bb9af7;
+}
+
+.twinkleplop .string,
+.twinkleplop .template,
+.twinkleplop .inserted,
+.twinkleplop .inserted_marker {
+  color: #9ece6a;
+}
+
+.twinkleplop .number,
+.twinkleplop .unit,
+.twinkleplop .namespace,
+.twinkleplop .css_variable,
+.twinkleplop .changed,
+.twinkleplop .changed_marker {
+  color: #ff9e64;
+}
+
+.twinkleplop .function,
+.twinkleplop .property,
+.twinkleplop .attribute,
+.twinkleplop .attr_name,
+.twinkleplop .decorator,
+.twinkleplop .label {
+  color: #7aa2f7;
+}
+
+.twinkleplop .type {
+  color: #0db9d7;
+}
+
+.twinkleplop .regex,
+.twinkleplop .escape,
+.twinkleplop .string_escape,
+.twinkleplop .entity {
+  color: #b4f9f8;
+}
+
+.twinkleplop .tag_name,
+.twinkleplop .selector,
+.twinkleplop .deleted,
+.twinkleplop .deleted_marker {
+  color: #f7768e;
+}
+
+.twinkleplop .selector_class,
+.twinkleplop .selector_id,
+.twinkleplop .selector_pseudo {
+  color: #bb9af7;
+}
+
+.twinkleplop .doctype {
+  color: #444b6a;
+}

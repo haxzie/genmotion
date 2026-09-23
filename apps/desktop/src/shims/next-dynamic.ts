@@ -1,8 +1,9 @@
 import { lazy, type ComponentType } from "react";
 
 /**
- * `next/dynamic` in the editor is only ever used to keep CodeMirror off the
- * server. There is no server here, so it collapses to `React.lazy`.
+ * `next/dynamic` in the editor is only ever used to keep the syntax
+ * highlighter off the server. There is no server here, so it collapses to
+ * `React.lazy`.
  */
 export default function dynamic<P extends object>(
   loader: () => Promise<{ default: ComponentType<P> } | ComponentType<P>>,
