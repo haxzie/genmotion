@@ -11,6 +11,7 @@ import {
   type McpServerPatch,
 } from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
+import { ENTRY_FILE, splitAudioClip as splitHyperframesAudioClip } from "@genmotion/hyperframes";
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
 import { mimeForAsset, serveAssetFile } from "./serve-file";
@@ -898,6 +899,27 @@ export async function startLocalServer(
         const clipId = target.slice(0, -"/split".length);
         const body = await readJson<{ atFrame?: number }>(req);
         const at = Math.round(body.atFrame ?? NaN);
+
+        // HyperFrames has no manifest-level audio array — the timing lives on
+        // the `<audio>` element itself, in index.html — so the cut is a text
+        // edit to that file rather than a `mutate()` of project.json.
+        if (session.engine === "hyperframes") {
+          if (!Number.isFinite(at) || at < 1) throw new Error("The cut has to fall inside the clip");
+          const manifest = await readManifest(session.dir);
+          const state = session.hyperframes.state();
+          const clip = state.timeline.audio.find((c) => c.id === clipId);
+          if (!clip) throw new Error(`Unknown audio clip ${clipId}`);
+          const entryPath = path.join(session.dir, ENTRY_FILE);
+          const html = await fs.readFile(entryPath, "utf8");
+          const { html: updated, newId } = splitHyperframesAudioClip(html, clipId, at / manifest.fps, {
+            start: clip.start,
+            duration: clip.duration ?? Math.max(0, state.durationSeconds - clip.start),
+            mediaStart: clip.mediaStart,
+          });
+          await fs.writeFile(entryPath, updated, "utf8");
+          return { id: newId };
+        }
+
         const id = randomUUID();
         await mutate(session, (manifest) => {
           const index = manifest.audio.findIndex((c) => c.id === clipId);

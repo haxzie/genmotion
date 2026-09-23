@@ -410,12 +410,17 @@ function EditorBody({
                         )}
                       </div>
                     </div>
-                    <PreviewTransport projectId={project.dir} fps={project.fps} timelineTools={false} />
+                    <PreviewTransport projectId={project.dir} fps={project.fps} />
                   </div>
                   {/* The same timeline as a React project: sub-compositions are
-                      the scenes, `<audio>` elements the clips. Edits are not
-                      written back into the HTML yet, so the handlers are
-                      inert — the composition stays the source of truth. */}
+                      the scenes, `<audio>` elements the clips. Slicing an
+                      audio clip writes back into index.html (`data-media-start`
+                      on the new half), the same "cut into source ranges"
+                      pattern video/audio clips already use. Everything else
+                      here — reorder, delete, resize, mute, scene slicing — has
+                      no write-back yet: a sub-composition mount has no
+                      equivalent of `data-media-start` to resume from, so those
+                      stay inert and the composition stays the source of truth. */}
                   <Timeline
                     projectId={project.dir}
                     scenes={project.scenes}
@@ -430,7 +435,7 @@ function EditorBody({
                     onUpdateClip={noop}
                     onDeleteClip={noop}
                     onSplitScene={noop}
-                    onSplitClip={noop}
+                    onSplitClip={onSplitClip}
                   />
                 </>
               ) : (
