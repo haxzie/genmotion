@@ -37,6 +37,7 @@ export function GET() {
     `- [Home](${BASE}/): what GenMotion is and how it works`,
     `- [Pricing](${BASE}/pricing): plans and what each includes`,
     `- [About](${BASE}/about): mission and how we build`,
+    `- [UGC Ads](${BASE}/ugc-ads): make vertical, feed-native UGC ads with Claude Code`,
   ]);
 
   section(

@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/tools",
     "/showcase",
     "/templates",
+    "/ugc-ads",
   ].map((path) => ({ url: `${BASE}${path}`, changeFrequency: "weekly" as const }));
 
   const featureRoutes = FEATURES.map((f) => ({

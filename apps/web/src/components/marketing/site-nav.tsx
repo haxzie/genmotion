@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
 import { DownloadButton } from "@/components/marketing/download-button";
-import { ColorIcon } from "@/components/marketing/icons";
+import { ColorIcon, type IconKey } from "@/components/marketing/icons";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 
 const LINKS = [
@@ -20,11 +20,50 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * What the Use Cases menu lists: every `use-cases.ts` entry, plus the UGC-ads
+ * landing page. That one is a standalone route rather than a `use-cases.ts`
+ * entry (it has its own hero, templates gallery and feature grid, not the
+ * `/use-cases/[slug]` shape), so it carries its own href, label and tagline
+ * here instead of coming out of the map. The footer lists it the same way.
+ */
+const USE_CASE_LINKS: {
+  key: string;
+  href: string;
+  navLabel: string;
+  tagline: string;
+  icon: IconKey;
+  color: string;
+}[] = [
+  ...USE_CASES.map((u) => ({
+    key: u.slug,
+    href: `/use-cases/${u.slug}`,
+    navLabel: u.navLabel,
+    tagline: u.tagline,
+    icon: u.icon,
+    color: u.color,
+  })),
+  {
+    key: "ugc-ads",
+    href: "/ugc-ads",
+    navLabel: "UGC Ads",
+    tagline: "Vertical, feed-native ads scripted by an agent.",
+    icon: "sparkles",
+    color: "#F43F5E",
+  },
+];
+
+/** True on /use-cases and on any standalone route the Use Cases menu lists. */
+function isUseCasesActive(pathname: string) {
+  return USE_CASE_LINKS.some((u) => isActive(pathname, u.href)) ||
+    isActive(pathname, "/use-cases");
+}
+
 /** Desktop "Use Cases" dropdown — the label links to the index, the panel lists
  *  each use case (opens on hover). */
 function UseCasesMenu({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
-  const active = isActive(pathname, "/use-cases");
+  const active = isUseCasesActive(pathname);
   return (
     <div
       className="relative"
@@ -46,10 +85,10 @@ function UseCasesMenu({ pathname }: { pathname: string }) {
       {open && (
         <div className="absolute left-0 top-full pt-2">
           <div className="grid w-[24rem] gap-0.5 rounded-xl border border-border bg-surface p-2 shadow-xl">
-            {USE_CASES.map((u) => (
+            {USE_CASE_LINKS.map((u) => (
               <Link
-                key={u.slug}
-                href={`/use-cases/${u.slug}`}
+                key={u.key}
+                href={u.href}
                 className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface-raised"
               >
                 <ColorIcon
@@ -182,7 +221,7 @@ export function SiteNav() {
               onClick={() => setOpen(false)}
               className={cx(
                 "rounded-md px-3 py-2 text-[0.95rem] transition-colors duration-150",
-                isActive(pathname, "/use-cases")
+                isUseCasesActive(pathname)
                   ? "bg-surface-raised text-text-primary"
                   : "text-text-secondary hover:bg-surface-raised hover:text-green",
               )}
@@ -190,10 +229,10 @@ export function SiteNav() {
               Use Cases
             </Link>
             <div className="mb-1 ml-2 flex flex-col gap-0.5 border-l border-border pl-2">
-              {USE_CASES.map((u) => (
+              {USE_CASE_LINKS.map((u) => (
                 <Link
-                  key={u.slug}
-                  href={`/use-cases/${u.slug}`}
+                  key={u.key}
+                  href={u.href}
                   onClick={() => setOpen(false)}
                   className="rounded-md px-3 py-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:bg-surface-raised hover:text-green"
                 >

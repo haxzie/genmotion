@@ -14,7 +14,12 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   },
   {
     heading: "Use Cases",
-    links: USE_CASES.map((u) => ({ label: u.navLabel, href: `/use-cases/${u.slug}` })),
+    links: [
+      ...USE_CASES.map((u) => ({ label: u.navLabel, href: `/use-cases/${u.slug}` })),
+      // Its own landing page rather than a `use-cases.ts` entry, so it is
+      // listed here by hand instead of coming out of the map above.
+      { label: "UGC Ads", href: "/ugc-ads" },
+    ],
   },
   {
     heading: "Resources",
