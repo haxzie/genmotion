@@ -9,6 +9,15 @@ import { capturePixelRatio } from "./pixel-ratio";
 export interface ThreeCompiledScene extends SceneDuration {
   name: string;
   build: ThreeSceneBuilder;
+  /**
+   * Scene-level voiceover, played from the scene's first frame. The render
+   * host itself ignores these — ignored here, not in the render loop — they
+   * exist so the editor's preview layer can play the same audio a `SceneData`
+   * carries without a second, parallel scene type.
+   */
+  audioUrl?: string | null;
+  audioVolume?: number;
+  startFrom?: number;
 }
 
 export interface ThreeRenderHostOptions {

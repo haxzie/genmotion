@@ -475,6 +475,7 @@ function EditorBody({
                     fps={project.fps}
                     width={project.width}
                     height={project.height}
+                    audioClips={project.audioClips}
                     initializing={threeInitializing && project.scenes.length > 0}
                   />
                   <Timeline

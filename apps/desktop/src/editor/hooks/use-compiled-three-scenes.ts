@@ -62,6 +62,9 @@ export function useCompiledThreeScenes(
         name: scene.name,
         durationInFrames: scene.durationInFrames,
         build,
+        audioUrl: scene.audioUrl,
+        audioVolume: scene.audioVolume,
+        startFrom: scene.startFrom,
       });
     }
 

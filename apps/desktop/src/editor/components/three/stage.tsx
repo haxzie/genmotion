@@ -3,8 +3,47 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { mountThreeRenderHost, type ThreeCompiledScene } from "@genmotion/three-engine";
 import { usePlaybackStore, usePlaybackStoreApi, selectDisplayFrame } from "@genmotion/player";
+import {
+  Audio,
+  FrameContext,
+  VideoConfigContext,
+  RenderModeContext,
+  PlayingContext,
+} from "@genmotion/motion";
+import { globalToLocal, type AudioClipData } from "@genmotion/shared";
 import { Spinner } from "@/components/ui";
 import { PreviewTransport } from "../preview";
+
+/**
+ * One project audio clip, mounted only while the playhead is inside its
+ * [startFrame, startFrame+duration) range — the same component and the same
+ * rule `@genmotion/player`'s `Composition` uses for a react-engine project,
+ * since the audio side of a preview has nothing to do with how the picture
+ * is drawn.
+ */
+function ProjectAudioClipLayer({
+  clip,
+  frame,
+  fps,
+  width,
+  height,
+}: {
+  clip: AudioClipData;
+  frame: number;
+  fps: number;
+  width: number;
+  height: number;
+}) {
+  const active = frame >= clip.startFrame && frame < clip.startFrame + clip.durationInFrames;
+  if (!active) return null;
+  return (
+    <VideoConfigContext.Provider value={{ fps, width, height, durationInFrames: clip.durationInFrames }}>
+      <FrameContext.Provider value={frame - clip.startFrame}>
+        <Audio src={clip.url} volume={clip.volume} startFrom={clip.startFrom} />
+      </FrameContext.Provider>
+    </VideoConfigContext.Provider>
+  );
+}
 
 /**
  * The live canvas for a Three.js-engine project. Structurally the same idea
@@ -17,17 +56,26 @@ import { PreviewTransport } from "../preview";
  * Reusing the export path's exact host (not a separate preview-only one)
  * means what is scrubbed here and what `capture_frames`/export produce are
  * provably the same code, not merely similar.
+ *
+ * Audio is a second, independent layer — plain `<audio>` elements driven by
+ * the same frame, not something the Three.js scene graph knows about. A
+ * scene's own voiceover and the project's music/SFX clips play here exactly
+ * the way the react engine's `Composition` plays them, since the export
+ * mixes both from `project.json` with ffmpeg either way; only the picture is
+ * engine-specific.
  */
 function ThreeCanvas({
   scenes,
   fps,
   width,
   height,
+  audioClips,
 }: {
   scenes: ThreeCompiledScene[];
   fps: number;
   width: number;
   height: number;
+  audioClips?: AudioClipData[];
 }) {
   const store = usePlaybackStoreApi();
   const frame = usePlaybackStore(selectDisplayFrame);
@@ -107,6 +155,12 @@ function ThreeCanvas({
     void handleRef.current?.setFrame(frame);
   }, [frame]);
 
+  // Which scene owns the current frame, for its own voiceover — the same
+  // mapping the render host uses internally to pick a scene to draw.
+  const mapping = globalToLocal(scenes, frame);
+  const activeScene = mapping ? scenes[mapping.sceneIndex] : null;
+  const sceneLocalFrame = mapping ? mapping.localFrame + (activeScene?.startFrom ?? 0) : 0;
+
   return (
     <div
       ref={containerRef}
@@ -135,6 +189,40 @@ function ThreeCanvas({
           visibility: scale === 0 ? "hidden" : "visible",
         }}
       />
+      <RenderModeContext.Provider value="preview">
+        <PlayingContext.Provider value={isPlaying}>
+          <div style={{ display: "none" }}>
+            {activeScene?.audioUrl && (
+              <VideoConfigContext.Provider
+                value={{
+                  fps,
+                  width,
+                  height,
+                  durationInFrames: activeScene.durationInFrames,
+                }}
+              >
+                <FrameContext.Provider value={sceneLocalFrame}>
+                  <Audio
+                    key={`audio-${activeScene.id}`}
+                    src={activeScene.audioUrl}
+                    volume={activeScene.audioVolume ?? 1}
+                  />
+                </FrameContext.Provider>
+              </VideoConfigContext.Provider>
+            )}
+            {audioClips?.map((clip) => (
+              <ProjectAudioClipLayer
+                key={clip.id}
+                clip={clip}
+                frame={frame}
+                fps={fps}
+                width={width}
+                height={height}
+              />
+            ))}
+          </div>
+        </PlayingContext.Provider>
+      </RenderModeContext.Provider>
     </div>
   );
 }
@@ -145,6 +233,7 @@ export function ThreeStage({
   fps,
   width,
   height,
+  audioClips,
   initializing,
 }: {
   projectId: string;
@@ -152,6 +241,7 @@ export function ThreeStage({
   fps: number;
   width: number;
   height: number;
+  audioClips?: AudioClipData[];
   initializing: boolean;
 }) {
   return (
@@ -175,7 +265,7 @@ export function ThreeStage({
               </div>
             </div>
           ) : (
-            <ThreeCanvas scenes={scenes} fps={fps} width={width} height={height} />
+            <ThreeCanvas scenes={scenes} fps={fps} width={width} height={height} audioClips={audioClips} />
           )}
         </div>
       </div>

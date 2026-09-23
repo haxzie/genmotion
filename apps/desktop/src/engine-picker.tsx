@@ -48,15 +48,7 @@ function EngineIcon({ id, className }: { id: EngineRow; className?: string }) {
   if (id === "hyperframes") {
     return <img src="/hyperframes-mark.png" alt="" aria-hidden className={className} />;
   }
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className={className} fill="none" stroke="currentColor" strokeWidth="1.1">
-      <path
-        d="M8 1.2 14 4.6v6.8L8 14.8 2 11.4V4.6z"
-        strokeLinejoin="round"
-      />
-      <path d="M8 1.2v6.6M8 7.8 14 4.6M8 7.8 2 4.6M8 7.8v7" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
+  return <img src="/threejs-mark.svg" alt="" aria-hidden className={className} />;
 }
 
 /**
