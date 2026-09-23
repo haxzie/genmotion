@@ -1,6 +1,8 @@
 import { useCallback, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useProject, useProjectMutations } from "@/hooks/use-project";
 import { useCompiledScenes } from "@/hooks/use-compiled-scenes";
+import { useCompiledThreeScenes } from "@/hooks/use-compiled-three-scenes";
+import { ThreeStage } from "@/components/editor/three/stage";
 import { Topbar } from "@/components/editor/topbar";
 import { ExportButton } from "@/components/editor/export-button";
 import { ChatPanel } from "@/components/editor/chat-panel";
@@ -213,7 +215,13 @@ function EditorBody({
   aiBusy: boolean;
 }) {
   const { compiled, errors, initializing } = useCompiledScenes(project.scenes);
-  const firstError = project.scenes.find((s) => s.id in errors);
+  const {
+    compiled: compiledThree,
+    errors: threeErrors,
+    initializing: threeInitializing,
+  } = useCompiledThreeScenes(project.scenes);
+  const isThree = project.engine === "three";
+  const firstError = project.scenes.find((s) => s.id in (isThree ? threeErrors : errors));
 
   // The HyperFrames half. Null for a React project, and every branch below
   // reads as "the composition" rather than "the scenes" when it is set.
@@ -431,6 +439,54 @@ function EditorBody({
                     onDeleteClip={noop}
                     onSplitScene={noop}
                     onSplitClip={noop}
+                  />
+                </>
+              ) : isThree ? (
+                <>
+                  {firstError && (
+                    <div className="flex items-center justify-between gap-3 border-b border-danger/30 bg-danger/10 px-4 py-1.5 text-[0.857rem]">
+                      <span className="truncate text-danger">
+                        “{firstError.name}” has an error:{" "}
+                        {formatCompileError(threeErrors[firstError.id]!)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={aiBusy}
+                        onClick={() =>
+                          requestFix({
+                            sceneId: firstError.id,
+                            message: `The scene "${firstError.name}" fails to compile with this error:\n\n${formatCompileError(threeErrors[firstError.id]!)}\n\nPlease fix it.`,
+                          })
+                        }
+                      >
+                        Fix with AI
+                      </Button>
+                    </div>
+                  )}
+                  <ThreeStage
+                    projectId={project.dir}
+                    scenes={compiledThree}
+                    fps={project.fps}
+                    width={project.width}
+                    height={project.height}
+                    initializing={threeInitializing && project.scenes.length > 0}
+                  />
+                  <Timeline
+                    projectId={project.dir}
+                    scenes={project.scenes}
+                    fps={project.fps}
+                    sceneErrors={threeErrors}
+                    audioClips={project.audioClips ?? []}
+                    onReorder={onReorder}
+                    onDeleteScenes={onDeleteScenes}
+                    onToggleMute={onToggleMute}
+                    onResizeScene={onResizeScene}
+                    onAddClip={onAddClip}
+                    onUpdateClip={onUpdateClip}
+                    onDeleteClip={onDeleteClip}
+                    onSplitScene={onSplitScene}
+                    onSplitClip={onSplitClip}
                   />
                 </>
               ) : (

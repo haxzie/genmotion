@@ -4,3 +4,4 @@ export * from "./scaffold";
 export * from "./project";
 export * from "./bundle";
 export * from "./scaffold-hyperframes";
+export * from "./scaffold-three";

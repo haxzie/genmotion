@@ -402,7 +402,7 @@ async function prepareReact(session: ProjectSession, manifest: ProjectManifest):
       sceneId: scene.id,
       key: filmstripKey([
         FORMAT_VERSION,
-        "react",
+        session.engine,
         scene.compiledCode,
         scene.durationInFrames,
         scene.startFrom ?? 0,
@@ -425,7 +425,12 @@ async function prepareReact(session: ProjectSession, manifest: ProjectManifest):
   return {
     jobs,
     open: async () => {
-      const host = await openRenderHost({ manifest, scenes, scale: RENDER_SCALE });
+      const host = await openRenderHost({
+        manifest,
+        scenes,
+        scale: RENDER_SCALE,
+        engine: session.engine === "three" ? "three" : undefined,
+      });
       return {
         seek: (frame) => host.setFrame(frame),
         capture: () => host.capture(),

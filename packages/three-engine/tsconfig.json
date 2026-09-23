@@ -1,0 +1,4 @@
+{
+  "extends": "@genmotion/config/tsconfig/dom-library.json",
+  "include": ["src"]
+}

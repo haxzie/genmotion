@@ -10,6 +10,7 @@ import {
 } from "@genmotion/motion";
 import { formatCompileError } from "@genmotion/compiler";
 import { evaluateScene } from "@genmotion/compiler/evaluate";
+import { evaluateThreeScene } from "@genmotion/compiler/evaluate-three";
 import type { SceneBundler } from "./bundle";
 
 export interface SceneValidationConfig {
@@ -48,6 +49,13 @@ const DEPENDENCY_CLOCKS =
   /\b(requestAnimationFrame|performance\.now|Date\.now|Math\.random|setInterval)/;
 
 const HOT_LINKED_LOGO = /https?:\/\/(cdn\.simpleicons\.org|thesvg\.org)\/[^"'`\s)]*/;
+
+/**
+ * Three-engine scenes must never start their own clock — the host renders one
+ * frame per `setFrame` call, synchronously; anything here reads wall-clock
+ * time and drifts the export out of sync with the preview.
+ */
+const THREE_ANIMATION_LOOP = /\b(new\s+THREE\.Clock|setAnimationLoop)\b/;
 
 /** `node_modules/foo/dist/x.js` → `foo`; scoped packages keep their scope. */
 function dependencyNames(inputs: string[]): string[] {
@@ -205,6 +213,103 @@ export async function validateSceneFile(input: {
       };
     }
   }
+
+  return { error: null, warnings, inputs: built.inputs };
+}
+
+/**
+ * Validate a three-engine scene as far as Node can: bundle it, apply the same
+ * determinism rules (plus the `THREE.Clock`/`setAnimationLoop` ban), and
+ * evaluate it through the require-shim to confirm it loads and default-exports
+ * a builder function.
+ *
+ * Unlike `validateSceneFile`, this cannot smoke-render — a `THREE.WebGLRenderer`
+ * needs a real GPU context that plain Node doesn't have. Rendering correctness
+ * is only checked by driving the real offscreen Electron render host (the
+ * `capture_frames` agent tool, or an export).
+ */
+export async function validateThreeSceneFile(input: {
+  bundler: SceneBundler;
+  sceneFile: string;
+}): Promise<SceneValidation> {
+  const { bundler, sceneFile } = input;
+  const projectDir = bundler.projectDir;
+  const warnings: string[] = [];
+
+  const built = await bundler.bundle(sceneFile);
+  if (!built.ok) {
+    return {
+      error: `Compile error in ${sceneFile}: ${formatCompileError(built.error)}`,
+      warnings,
+      inputs: [],
+    };
+  }
+
+  const entry = path.resolve(projectDir, sceneFile);
+  const source = await fs.readFile(entry, "utf8").catch(() => null);
+  if (source === null) {
+    return { error: `Scene file not found: ${sceneFile}`, warnings, inputs: built.inputs };
+  }
+  if (!/export\s+default/.test(source)) {
+    return {
+      error: `${sceneFile} must have a default export: \`export default function buildScene(ctx) { ... }\``,
+      warnings,
+      inputs: built.inputs,
+    };
+  }
+
+  for (const file of built.localInputs) {
+    const text =
+      file === entry ? source : await fs.readFile(file, "utf8").catch(() => "");
+    const where = path.relative(projectDir, file);
+
+    const loop = text.match(THREE_ANIMATION_LOOP);
+    if (loop) {
+      return {
+        error: `${where} uses "${loop[1]}", which reads wall-clock time. The host renders one frame per call — drive everything from the \`time\`/\`frame\`/\`progress\` argument your update callback receives instead.`,
+        warnings,
+        inputs: built.inputs,
+      };
+    }
+
+    const banned = text.match(NON_DETERMINISTIC);
+    if (banned) {
+      return {
+        error: `${where} uses "${banned[1]}", which breaks deterministic rendering — the export would not match the preview. Drive everything from the frame argument your scene's update callback receives.`,
+        warnings,
+        inputs: built.inputs,
+      };
+    }
+
+    const hotLinked = text.match(HOT_LINKED_LOGO);
+    if (hotLinked) {
+      return {
+        error: `${where} hot-links a logo CDN ("${hotLinked[0]}"). That URL is never verified, so if the brand isn't in the set it 404s and the video ships with a broken texture. Save it into the project's assets/ folder first and load it through a THREE.TextureLoader(ctx.manager).`,
+        warnings,
+        inputs: built.inputs,
+      };
+    }
+  }
+
+  const deps = dependencyNames(built.inputs);
+  if (deps.length > 0 && DEPENDENCY_CLOCKS.test(built.code)) {
+    warnings.push(
+      `${sceneFile} bundles ${deps.join(", ")}, and the result reads a clock or random source. If that code runs during render the export will drift from the preview — check the scene looks identical on two renders, or drive the animation from the frame instead.`,
+    );
+  }
+
+  const evaluated = evaluateThreeScene(built.code);
+  if (!evaluated.ok) {
+    return {
+      error: `${sceneFile} failed to load: ${evaluated.error.message}`,
+      warnings,
+      inputs: built.inputs,
+    };
+  }
+
+  warnings.push(
+    `${sceneFile} compiles and loads, but this check cannot render WebGL output in Node — call capture_frames to confirm it actually draws what you expect.`,
+  );
 
   return { error: null, warnings, inputs: built.inputs };
 }

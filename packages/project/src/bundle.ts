@@ -22,6 +22,7 @@ export const HOST_EXTERNALS: string[] = [
   "react-dom/*",
   "react/*",
   "gsap/*",
+  "@genmotion/three-engine",
 ];
 
 const INLINE_ASSET_LIMIT = 96 * 1024;

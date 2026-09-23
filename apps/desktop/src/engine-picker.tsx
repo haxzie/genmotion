@@ -18,7 +18,7 @@ interface Preferences {
  * it. The mapping lives here alone; everything below the picker speaks the
  * manifest's names.
  */
-type EngineRow = "genmotion" | "hyperframes";
+type EngineRow = "genmotion" | "hyperframes" | "three";
 
 const ENGINES: { id: EngineRow; engine: ProjectEngine; label: string; detail: string }[] = [
   {
@@ -33,13 +33,30 @@ const ENGINES: { id: EngineRow; engine: ProjectEngine; label: string; detail: st
     label: "HyperFrames",
     detail: "HTML compositions with GSAP, authored with the HyperFrames skills",
   },
+  {
+    id: "three",
+    engine: "three",
+    label: "Three.js",
+    detail: "Three.js scenes, driven frame by frame — no React, no GSAP",
+  },
 ];
 
 function EngineIcon({ id, className }: { id: EngineRow; className?: string }) {
   if (id === "genmotion") {
     return <img src="/logo.svg" alt="" aria-hidden className={className} />;
   }
-  return <img src="/hyperframes-mark.png" alt="" aria-hidden className={className} />;
+  if (id === "hyperframes") {
+    return <img src="/hyperframes-mark.png" alt="" aria-hidden className={className} />;
+  }
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className={className} fill="none" stroke="currentColor" strokeWidth="1.1">
+      <path
+        d="M8 1.2 14 4.6v6.8L8 14.8 2 11.4V4.6z"
+        strokeLinejoin="round"
+      />
+      <path d="M8 1.2v6.6M8 7.8 14 4.6M8 7.8 2 4.6M8 7.8v7" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 /**

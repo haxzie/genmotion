@@ -145,6 +145,9 @@ importers:
       '@genmotion/templates':
         specifier: workspace:*
         version: link:../../packages/templates
+      '@genmotion/three-engine':
+        specifier: workspace:*
+        version: link:../../packages/three-engine
       '@paper-design/shaders-react':
         specifier: 0.0.81
         version: 0.0.81(@types/react@19.2.17)(react@19.2.7)
@@ -478,6 +481,9 @@ importers:
       '@genmotion/shared':
         specifier: workspace:*
         version: link:../shared
+      '@genmotion/three-engine':
+        specifier: workspace:*
+        version: link:../three-engine
       esbuild:
         specifier: 0.28.0
         version: 0.28.0
@@ -487,6 +493,9 @@ importers:
       lucide-react:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
     devDependencies:
       '@genmotion/config':
         specifier: workspace:*
@@ -494,6 +503,9 @@ importers:
       '@types/react':
         specifier: ^19
         version: 19.2.17
+      '@types/three':
+        specifier: ^0.185.4
+        version: 0.185.4
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -639,6 +651,9 @@ importers:
       '@genmotion/config':
         specifier: workspace:*
         version: link:../config
+      '@genmotion/three-engine':
+        specifier: workspace:*
+        version: link:../three-engine
       '@types/node':
         specifier: ^22
         version: 22.19.20
@@ -648,12 +663,18 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.17)
+      '@types/three':
+        specifier: ^0.185.4
+        version: 0.185.4
       react:
         specifier: ^19.2.7
         version: 19.2.7
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -756,6 +777,28 @@ importers:
       vitest:
         specifier: ^3.2.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+
+  packages/three-engine:
+    dependencies:
+      '@genmotion/shared':
+        specifier: workspace:*
+        version: link:../shared
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
+    devDependencies:
+      '@genmotion/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/three':
+        specifier: ^0.185.4
+        version: 0.185.4
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
 
 packages:
 

@@ -2,9 +2,15 @@
 
 import * as esbuild from "esbuild-wasm";
 import type { ComponentType } from "react";
-import { SCENE_TRANSFORM_OPTIONS, toCompileError } from "./transform-options";
+import type { ThreeSceneBuilder } from "@genmotion/three-engine";
+import {
+  SCENE_TRANSFORM_OPTIONS,
+  THREE_SCENE_TRANSFORM_OPTIONS,
+  toCompileError,
+} from "./transform-options";
 import { evaluateScene, hashSource } from "./evaluate";
-import type { CompileSceneResult, CompileToJsResult } from "./types";
+import { evaluateThreeScene } from "./evaluate-three";
+import type { CompileSceneResult, CompileThreeSceneResult, CompileToJsResult } from "./types";
 
 let initPromise: Promise<void> | null = null;
 
@@ -51,6 +57,39 @@ export async function compileScene(
   const evaluated = evaluateScene(compiled.code);
   if (evaluated.ok) {
     componentCache.set(hash, evaluated.component);
+  }
+  return evaluated;
+}
+
+export async function compileThreeSceneToJs(
+  source: string,
+): Promise<CompileToJsResult> {
+  await ensureCompilerReady();
+  try {
+    const result = await esbuild.transform(source, THREE_SCENE_TRANSFORM_OPTIONS);
+    return { ok: true, code: result.code };
+  } catch (err) {
+    return { ok: false, error: toCompileError(err) };
+  }
+}
+
+// Compiled builders cached by source hash so unchanged scenes never recompile.
+const threeBuilderCache = new Map<string, ThreeSceneBuilder>();
+
+/** Compile plain-TS three-engine scene source into a ready-to-run scene builder (cached). */
+export async function compileThreeScene(
+  source: string,
+): Promise<CompileThreeSceneResult> {
+  const hash = hashSource(source);
+  const cached = threeBuilderCache.get(hash);
+  if (cached) return { ok: true, build: cached };
+
+  const compiled = await compileThreeSceneToJs(source);
+  if (!compiled.ok) return compiled;
+
+  const evaluated = evaluateThreeScene(compiled.code);
+  if (evaluated.ok) {
+    threeBuilderCache.set(hash, evaluated.build);
   }
   return evaluated;
 }

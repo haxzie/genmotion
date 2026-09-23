@@ -2,8 +2,8 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import type { NativeImage } from "electron";
 import { z } from "zod";
-import { readManifest } from "@genmotion/project";
-import { validateSceneFile } from "@genmotion/project/validate";
+import { readManifest, type ProjectEngine } from "@genmotion/project";
+import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
 import { desktopAuth } from "../auth";
@@ -109,7 +109,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "validate_scene",
     description:
-      "Compile, load, and smoke-render a scene the way the editor does. Returns the exact error when it fails. Run this on every scene you write or change.",
+      "Compile and load a scene the way the editor does — for the React engine this also smoke-renders it; for the Three.js engine it cannot (no GPU context in this check), so follow up with `capture_frames` to see the actual pixels. Returns the exact error when it fails. Run this on every scene you write or change.",
     shape: { file: z.string().describe('Project-relative path, e.g. "scenes/01-intro.tsx"') },
     readOnly: true,
     async run(session, args) {
@@ -125,16 +125,20 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         const manifest = await readManifest(session.dir);
         const entry = manifest.scenes.find((s) => s.file === rel);
         if (entry) durationInFrames = entry.durationInFrames;
-        const result = await validateSceneFile({
-          bundler: session.bundler,
-          sceneFile: rel,
-          config: {
-            fps: manifest.fps,
-            width: manifest.width,
-            height: manifest.height,
-            durationInFrames,
-          },
-        });
+
+        const result =
+          session.engine === "three"
+            ? await validateThreeSceneFile({ bundler: session.bundler, sceneFile: rel })
+            : await validateSceneFile({
+                bundler: session.bundler,
+                sceneFile: rel,
+                config: {
+                  fps: manifest.fps,
+                  width: manifest.width,
+                  height: manifest.height,
+                  durationInFrames,
+                },
+              });
         if (result.error) return failure(`INVALID\n\n${result.error}`);
         const notes = result.warnings.length
           ? `\n\nWarnings:\n${result.warnings.map((w) => `- ${w}`).join("\n")}`
@@ -142,7 +146,8 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         const listed = entry
           ? ""
           : `\n\nNote: ${rel} is not listed in project.json, so it is not in the video yet.`;
-        return text(`VALID — compiles, loads, and renders.${notes}${listed}`);
+        const verb = session.engine === "three" ? "compiles and loads" : "compiles, loads, and renders";
+        return text(`VALID — ${verb}.${notes}${listed}`);
       } catch (err) {
         return failure(`INVALID\n\n${err instanceof Error ? err.message : String(err)}`);
       }
@@ -406,7 +411,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       const { url, filename } = args as unknown as { url: string; filename?: string };
       try {
         const saved = await downloadAsset(session.dir, url, filename);
-        return text(`Saved to ${saved}\n\n${usageFor(saved)}`);
+        return text(`Saved to ${saved}\n\n${usageFor(saved, session.engine)}`);
       } catch (err) {
         return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -779,7 +784,7 @@ async function generateMedia(
 
   const ext = ASSET_TYPES[res.mime] ?? opts.fallbackExt;
   const saved = await saveAssetBytes(session.dir, res.bytes, opts.filename, ext);
-  return text(`Saved to ${saved}\n\n${usageFor(saved)}`);
+  return text(`Saved to ${saved}\n\n${usageFor(saved, session.engine)}`);
 }
 
 /**
@@ -942,8 +947,11 @@ export const DISALLOWED_TOOLS_HYPERFRAMES = DISALLOWED_TOOLS.filter((name) => na
  * What to do with a file once it's saved — which differs by kind, and getting
  * it wrong is expensive: audio dropped into a scene as `<Audio>` plays in the
  * preview but is silent in the export, because only manifest audio is muxed.
+ *
+ * `engine` changes the wording for visual assets only — audio always goes on
+ * the timeline (project.json's `audio` array), regardless of engine.
  */
-function usageFor(rel: string): string {
+function usageFor(rel: string, engine: ProjectEngine = "react"): string {
   const ext = path.extname(rel).toLowerCase();
   if ([".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac"].includes(ext)) {
     return [
@@ -966,6 +974,22 @@ function usageFor(rel: string): string {
       "Do NOT import it into a scene and render `<Audio>`: that plays in the",
       "preview but is dropped from the exported video, which only mixes audio",
       "listed in project.json.",
+    ].join("\n");
+  }
+  if (engine === "three") {
+    if ([".mp4", ".webm", ".mov"].includes(ext)) {
+      return [
+        `Import it: import clip from "../${rel}";`,
+        "then load it through a video element the export's frame barrier can wait",
+        "on — `THREE.VideoTexture` backed by a `<video>` you seek yourself, never",
+        "a bare `fetch()`.",
+      ].join("\n");
+    }
+    return [
+      `Import it: import textureUrl from "../${rel}";`,
+      "then load it through a loader wired to ctx.manager — e.g.",
+      "`new THREE.TextureLoader(ctx.manager).load(textureUrl)` — never a bare",
+      "`new Image()` or `fetch()`, which the export's frame barrier can't wait on.",
     ].join("\n");
   }
   if ([".mp4", ".webm", ".mov"].includes(ext)) {

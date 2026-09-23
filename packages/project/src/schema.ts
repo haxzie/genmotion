@@ -89,10 +89,12 @@ export const audioEntrySchema = z.object({
  * `react` is the original: `scenes/*.tsx` bundled by esbuild and driven frame
  * by frame by `@genmotion/motion`. `hyperframes` is an HTML composition —
  * `index.html` plus `scenes/*.html` — compiled and seeked by HyperFrames.
+ * `three` is Three.js-native: `scenes/*.ts`, each default-exporting a scene
+ * builder driven directly by the frame clock — no React, no JSX, no GSAP.
  * Absent means `react`, so every manifest written before the field existed
  * keeps meaning what it meant.
  */
-export const projectEngineSchema = z.enum(["react", "hyperframes"]);
+export const projectEngineSchema = z.enum(["react", "hyperframes", "three"]);
 export type ProjectEngine = z.infer<typeof projectEngineSchema>;
 
 export const projectManifestSchema = z.object({

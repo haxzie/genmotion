@@ -394,7 +394,8 @@ async function run(
     });
   }
 
-  const hostBundle = await fs.readFile(path.join(__dirname, "render-host.js"), "utf8");
+  const hostBundleFile = manifest.engine === "three" ? "render-host-three.js" : "render-host.js";
+  const hostBundle = await fs.readFile(path.join(__dirname, hostBundleFile), "utf8");
 
   update(id, { status: "rendering" });
 
@@ -520,7 +521,13 @@ async function run(
       finishedAt,
     }).catch(() => {});
   } finally {
-    if (!win.isDestroyed()) win.destroy();
+    // A WebGL context is a scarce resource — hand it back explicitly before
+    // the window (and its GPU context) is destroyed. Safe no-op for the
+    // React host, which has no `dispose`.
+    if (!win.isDestroyed()) {
+      await win.webContents.executeJavaScript("window.__gm?.dispose?.()").catch(() => {});
+      win.destroy();
+    }
   }
 }
 

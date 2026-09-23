@@ -147,7 +147,11 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
     compiled.push(built.scene);
   }
 
-  const host = await openRenderHost({ manifest, scenes: compiled });
+  const host = await openRenderHost({
+    manifest,
+    scenes: compiled,
+    engine: session.engine === "three" ? "three" : undefined,
+  });
   try {
     await host.setFrame(frame);
     if (overlay) await host.execute(overlayScript(overlay, manifest.width, manifest.height));
@@ -214,6 +218,8 @@ export async function openRenderHost(input: {
     scenes: CompiledScene[];
     /** See `openOffscreenWindow`: below 1 the page is laid out at full size but painted smaller. */
     scale?: number;
+    /** Which engine's bundle to inject. Defaults to the React engine's. */
+    engine?: "react" | "three";
 }): Promise<RenderHostWindow> {
   const { fps, width, height } = input.manifest;
   const win = openOffscreenWindow({ width, height, scale: input.scale });
@@ -223,7 +229,8 @@ export async function openRenderHost(input: {
 
   try {
     await win.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(PAGE_SHELL)}`);
-    const hostBundle = await fs.readFile(path.join(__dirname, "render-host.js"), "utf8");
+    const hostBundleFile = input.engine === "three" ? "render-host-three.js" : "render-host.js";
+    const hostBundle = await fs.readFile(path.join(__dirname, hostBundleFile), "utf8");
     await win.webContents.executeJavaScript(hostBundle);
 
     const init = (await win.webContents.executeJavaScript(
@@ -240,6 +247,12 @@ export async function openRenderHost(input: {
     },
     capture: () => win.webContents.capturePage(),
     execute: (script) => win.webContents.executeJavaScript(script),
-    close,
+    close: () => {
+      // A WebGL context is a scarce resource; hand it back explicitly before
+      // the window (and its GPU context) is destroyed. Safe no-op on the
+      // React host, which has no `dispose`.
+      void win.webContents.executeJavaScript("window.__gm?.dispose?.()").catch(() => {});
+      close();
+    },
   };
 }

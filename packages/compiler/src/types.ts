@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { CompileError } from "@genmotion/shared";
+import type { ThreeSceneBuilder } from "@genmotion/three-engine";
 
 export type CompileToJsResult =
   | { ok: true; code: string }
@@ -7,6 +8,10 @@ export type CompileToJsResult =
 
 export type CompileSceneResult =
   | { ok: true; component: ComponentType }
+  | { ok: false; error: CompileError };
+
+export type CompileThreeSceneResult =
+  | { ok: true; build: ThreeSceneBuilder }
   | { ok: false; error: CompileError };
 
 /** Render a compile error the way it will be shown to the LLM for self-correction. */

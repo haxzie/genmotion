@@ -1,0 +1,23 @@
+{
+  "name": "@genmotion/three-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@genmotion/shared": "workspace:*",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@genmotion/config": "workspace:*",
+    "@types/three": "^0.185.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

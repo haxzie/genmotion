@@ -1,5 +1,9 @@
 import { transform } from "esbuild";
-import { SCENE_TRANSFORM_OPTIONS, toCompileError } from "./transform-options";
+import {
+  SCENE_TRANSFORM_OPTIONS,
+  THREE_SCENE_TRANSFORM_OPTIONS,
+  toCompileError,
+} from "./transform-options";
 import type { CompileToJsResult } from "./types";
 
 /**
@@ -12,6 +16,18 @@ export async function compileSceneToJs(
 ): Promise<CompileToJsResult> {
   try {
     const result = await transform(source, SCENE_TRANSFORM_OPTIONS);
+    return { ok: true, code: result.code };
+  } catch (err) {
+    return { ok: false, error: toCompileError(err) };
+  }
+}
+
+/** Same idea, for plain-TS three-engine scene source. */
+export async function compileThreeSceneToJs(
+  source: string,
+): Promise<CompileToJsResult> {
+  try {
+    const result = await transform(source, THREE_SCENE_TRANSFORM_OPTIONS);
     return { ok: true, code: result.code };
   } catch (err) {
     return { ok: false, error: toCompileError(err) };

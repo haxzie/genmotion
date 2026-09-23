@@ -268,6 +268,13 @@ function registerIpc(): void {
       track("project_created", { width, height, engine });
       return openSession(dir);
     }
+    if (engine === "three") {
+      // No CDN-pinned runtime to reconcile after creation, unlike HyperFrames
+      // below — the folder is previewable and exportable as written.
+      await createProject({ dir, name, width, height, fps: defaults.fps, engine: "three" });
+      track("project_created", { width, height, engine });
+      return openSession(dir);
+    }
     // A HyperFrames composition. The folder is written against the release
     // this app carries and is previewable at once; the upgrade to the newest
     // release runs behind the open, reported to the editor's scaffolding

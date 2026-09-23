@@ -9,6 +9,13 @@ export const SCENE_TRANSFORM_OPTIONS = {
   jsxImportSource: "react",
 } as const;
 
+/** Same idea, for the three-engine: plain `.ts`, never JSX. */
+export const THREE_SCENE_TRANSFORM_OPTIONS = {
+  loader: "ts",
+  format: "cjs",
+  target: "es2022",
+} as const;
+
 interface EsbuildMessage {
   text: string;
   location?: {

@@ -36,6 +36,15 @@ import {
   renderTsconfig,
   type ScaffoldVersions,
 } from "./scaffold";
+import {
+  DEFAULT_THREE_VERSIONS,
+  renderThreeAgentsMd,
+  renderThreeGitignore,
+  renderThreePackageJson,
+  renderThreeStarterScene,
+  renderThreeTsconfig,
+  type ThreeScaffoldVersions,
+} from "./scaffold-three";
 
 export class ProjectError extends Error {}
 
@@ -92,7 +101,7 @@ export interface CreateProjectInput {
   versions?: ScaffoldVersions;
   /** Skip the starter scene (used when importing an existing project). */
   empty?: boolean;
-  /** Which runtime the folder is written for. Defaults to `react` — the callers that want HyperFrames say so. */
+  /** Which runtime the folder is written for. Defaults to `react` — the callers that want HyperFrames or Three.js say so. */
   engine?: ProjectEngine;
   /** Required when `engine` is `hyperframes`: what the host knows that this package does not. */
   hyperframes?: {
@@ -103,6 +112,8 @@ export interface CreateProjectInput {
     /** The GenMotion-in-HyperFrames guide, for AGENTS.md. */
     guide: string;
   };
+  /** Used only when `engine` is `three`. Defaults to `DEFAULT_THREE_VERSIONS`. */
+  threeVersions?: ThreeScaffoldVersions;
 }
 
 /**
@@ -122,6 +133,7 @@ export async function createProject(
   }
 
   if (input.engine === "hyperframes") return createHyperframesProject(dir, name, input);
+  if (input.engine === "three") return createThreeProject(dir, name, input);
 
   for (const sub of [SCENES_DIR, COMPONENTS_DIR, ASSETS_DIR, CACHE_DIR]) {
     await fs.mkdir(path.join(dir, sub), { recursive: true });
@@ -224,6 +236,55 @@ async function createHyperframesProject(
       renderHyperframesAgentsMd({ projectName: name, guide: hf.guide }),
       "utf8",
     ),
+  ]);
+
+  return manifest;
+}
+
+/**
+ * The Three.js flavour of the scaffold: a real npm/TypeScript project like the
+ * default react scaffold, but with `scenes/*.ts` (no JSX) and no
+ * react/gsap/lucide dependencies. `scenes/01-intro.ts` is the first scene —
+ * same two-level shape (manifest + scene files) as a react project, so the
+ * editor's scene chips and timeline need no second version.
+ */
+async function createThreeProject(
+  dir: string,
+  name: string,
+  input: CreateProjectInput,
+): Promise<ProjectManifest> {
+  const versions = input.threeVersions ?? DEFAULT_THREE_VERSIONS;
+  const fps = input.fps ?? 30;
+
+  for (const sub of [SCENES_DIR, COMPONENTS_DIR, ASSETS_DIR, CACHE_DIR]) {
+    await fs.mkdir(path.join(dir, sub), { recursive: true });
+  }
+
+  const starter = `${SCENES_DIR}/01-intro.ts`;
+  const manifest = projectManifestSchema.parse({
+    name,
+    engine: "three",
+    fps,
+    width: input.width ?? 1920,
+    height: input.height ?? 1080,
+    scenes: input.empty ? [] : [{ file: starter, durationInFrames: fps * 5 }],
+    audio: [],
+  });
+
+  await Promise.all([
+    writeManifest(dir, manifest),
+    fs.writeFile(path.join(dir, "package.json"), renderThreePackageJson(name, versions), "utf8"),
+    fs.writeFile(path.join(dir, "tsconfig.json"), renderThreeTsconfig(), "utf8"),
+    fs.writeFile(path.join(dir, ".npmrc"), renderNpmrc(), "utf8"),
+    fs.writeFile(path.join(dir, ".gitignore"), renderThreeGitignore(), "utf8"),
+    fs.writeFile(
+      path.join(dir, "AGENTS.md"),
+      renderThreeAgentsMd({ projectName: name, authoringGuide: input.authoringGuide }),
+      "utf8",
+    ),
+    input.empty
+      ? Promise.resolve()
+      : fs.writeFile(path.join(dir, starter), renderThreeStarterScene(), "utf8"),
   ]);
 
   return manifest;

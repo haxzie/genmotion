@@ -1,15 +1,15 @@
 /**
- * Browser entry for the offscreen render window. Bundled into a single IIFE at
- * build time and injected into a blank page by the export service — the same
- * arrangement `apps/renderer` uses for cloud renders, so preview, hosted
- * export, and desktop export all drive the identical composition code.
+ * Browser entry for the offscreen render window — the Three.js engine's
+ * counterpart of `render-host-entry.tsx`. Bundled into its own IIFE at build
+ * time (`render-host-three.js`) and injected into the same blank page shell
+ * the react engine uses, through the same bridge:
  *
- * The main process calls:
  *   window.__gmInit({ scenes, fps, width, height })  → mounts, returns {} or {error}
  *   window.__gm.setFrame(n)                          → the frame barrier
+ *   window.__gm.dispose()                            → frees the GPU context
  */
-import { mountRenderHost } from "@genmotion/player";
-import { evaluateScene } from "@genmotion/compiler/evaluate";
+import { mountThreeRenderHost } from "@genmotion/three-engine";
+import { evaluateThreeScene } from "@genmotion/compiler/evaluate-three";
 
 declare global {
   interface Window {
@@ -19,20 +19,23 @@ declare global {
       width: number;
       height: number;
     }) => { error?: string };
-    __gm?: { setFrame: (frame: number) => Promise<void> | void; dispose?: () => void };
+    __gm?: {
+      setFrame: (frame: number) => Promise<void> | void;
+      dispose?: () => void;
+    };
   }
 }
 
 window.__gmInit = (payload) => {
   const compiled = [];
   for (const scene of payload.scenes) {
-    const result = evaluateScene(scene.compiledCode);
+    const result = evaluateThreeScene(scene.compiledCode);
     if (!result.ok) return { error: `Scene "${scene.name}": ${result.error.message}` };
     compiled.push({
       id: scene.id,
       name: scene.name,
       durationInFrames: scene.durationInFrames,
-      component: result.component,
+      build: result.build,
     });
   }
 
@@ -43,12 +46,13 @@ window.__gmInit = (payload) => {
   container.style.position = "relative";
   container.style.overflow = "hidden";
 
-  window.__gm = mountRenderHost({
+  const handle = mountThreeRenderHost({
     container,
     scenes: compiled,
     fps: payload.fps,
     width: payload.width,
     height: payload.height,
   });
+  window.__gm = { setFrame: handle.setFrame, dispose: handle.dispose };
   return {};
 };

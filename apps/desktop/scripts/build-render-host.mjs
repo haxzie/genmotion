@@ -24,4 +24,22 @@ export async function buildRenderHost() {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await buildRenderHost();
+/** Same idea, for the Three.js engine's render host — no JSX, so no `jsx` option. */
+export async function buildThreeRenderHost() {
+  await esbuild.build({
+    absWorkingDir: root,
+    entryPoints: ["electron/export/render-host-entry-three.ts"],
+    outfile: "dist/main/render-host-three.js",
+    bundle: true,
+    format: "iife",
+    platform: "browser",
+    target: "chrome130",
+    define: { "process.env.NODE_ENV": '"production"' },
+    logLevel: "warning",
+  });
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  await buildRenderHost();
+  await buildThreeRenderHost();
+}

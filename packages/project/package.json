@@ -25,11 +25,14 @@
   },
   "devDependencies": {
     "@genmotion/config": "workspace:*",
+    "@genmotion/three-engine": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "three": "^0.185.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.0"
   }

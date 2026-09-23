@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
     "./node": "./src/node.ts",
-    "./evaluate": "./src/evaluate.ts"
+    "./evaluate": "./src/evaluate.ts",
+    "./evaluate-three": "./src/evaluate-three.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -15,9 +16,11 @@
   "dependencies": {
     "@genmotion/motion": "workspace:*",
     "@genmotion/shared": "workspace:*",
+    "@genmotion/three-engine": "workspace:*",
     "esbuild": "0.28.0",
     "esbuild-wasm": "0.28.0",
-    "lucide-react": "^1.17.0"
+    "lucide-react": "^1.17.0",
+    "three": "^0.185.1"
   },
   "peerDependencies": {
     "react": "^19"
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@genmotion/config": "workspace:*",
     "@types/react": "^19",
+    "@types/three": "^0.185.4",
     "react": "^19.2.7",
     "typescript": "^5.9.3"
   }

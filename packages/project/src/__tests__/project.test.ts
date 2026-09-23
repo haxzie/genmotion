@@ -5,6 +5,8 @@ import fs from "node:fs/promises";
 import { createProject, loadProject, readManifest, writeManifest } from "../project";
 import { projectManifestSchema, sceneNameFromFile } from "../schema";
 import { SCENES_DIR } from "../paths";
+import { createSceneBundler } from "../bundle";
+import { validateThreeSceneFile } from "../validate";
 
 let dir: string;
 
@@ -101,6 +103,52 @@ describe("createProject", () => {
 
     expect(await fs.readFile(path.join(dir, "AGENTS.md"), "utf8")).toContain("Read the skills.");
     expect(await fs.readFile(path.join(dir, ".gitignore"), "utf8")).toContain(".agents/");
+  });
+
+  it("scaffolds a Three.js project whose starter scene compiles and loads", async () => {
+    const manifest = await createProject({
+      dir,
+      name: "Cube Reveal",
+      engine: "three",
+      width: 1080,
+      height: 1080,
+    });
+
+    expect(manifest.engine).toBe("three");
+    expect(manifest.scenes).toEqual([{ file: "scenes/01-intro.ts", durationInFrames: 150 }]);
+
+    const files = await fs.readdir(dir);
+    expect(files).toEqual(
+      expect.arrayContaining([
+        "project.json",
+        "package.json",
+        "tsconfig.json",
+        "AGENTS.md",
+        ".npmrc",
+        ".gitignore",
+        "assets",
+        SCENES_DIR,
+      ]),
+    );
+
+    const pkg = JSON.parse(await fs.readFile(path.join(dir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@genmotion/three-engine"]).toBeTruthy();
+    expect(pkg.dependencies.three).toBeTruthy();
+    expect(pkg.dependencies.react).toBeUndefined();
+    expect(pkg.dependencies.gsap).toBeUndefined();
+
+    const tsconfig = JSON.parse(await fs.readFile(path.join(dir, "tsconfig.json"), "utf8"));
+    expect(tsconfig.compilerOptions.jsx).toBeUndefined();
+
+    // The scaffold's own promise: what it writes actually compiles and loads
+    // through the same pipeline the app drives scenes with.
+    const bundler = createSceneBundler({ projectDir: dir });
+    try {
+      const validation = await validateThreeSceneFile({ bundler, sceneFile: "scenes/01-intro.ts" });
+      expect(validation.error).toBeNull();
+    } finally {
+      await bundler.dispose();
+    }
   });
 
   it("reads a manifest with no engine as react", async () => {

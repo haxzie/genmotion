@@ -42,6 +42,7 @@ export default defineConfig({
       { find: /^@\/hooks\/use-assets$/, replacement: `${editor}/hooks/use-assets.ts` },
       { find: /^@\/hooks\/use-project$/, replacement: `${editor}/hooks/use-project.ts` },
       { find: /^@\/hooks\/use-waveform$/, replacement: `${editor}/hooks/use-waveform.ts` },
+      { find: /^@\/hooks\/use-compiled-three-scenes$/, replacement: `${editor}/hooks/use-compiled-three-scenes.ts` },
       { find: /^@\/stores\/editor-store$/, replacement: `${editor}/stores/editor-store.ts` },
       // Everything still shared — ui primitives, the API client, auth options —
       // is the web app's own source, compiled straight into this renderer.

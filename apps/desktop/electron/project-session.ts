@@ -12,7 +12,7 @@ import {
 } from "@genmotion/project";
 // Its own subpath: validation renders scenes with react-dom/server, which the
 // package's other consumers (the API) have no reason to install.
-import { validateSceneFile } from "@genmotion/project/validate";
+import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { HyperframesEngine } from "./hyperframes/engine";
 import type { DesktopProject, SceneBundle } from "./shared";
 
@@ -550,16 +550,19 @@ export class ProjectSession {
         continue;
       }
 
-      const validation = await validateSceneFile({
-        bundler: this.bundler,
-        sceneFile: entry.file,
-        config: {
-          fps: manifest.fps,
-          width: manifest.width,
-          height: manifest.height,
-          durationInFrames: entry.sourceDurationInFrames ?? entry.durationInFrames,
-        },
-      });
+      const validation =
+        manifest.engine === "three"
+          ? await validateThreeSceneFile({ bundler: this.bundler, sceneFile: entry.file })
+          : await validateSceneFile({
+              bundler: this.bundler,
+              sceneFile: entry.file,
+              config: {
+                fps: manifest.fps,
+                width: manifest.width,
+                height: manifest.height,
+                durationInFrames: entry.sourceDurationInFrames ?? entry.durationInFrames,
+              },
+            });
       // Validation already built it; this call returns the cached rebuild.
       const built = validation.error ? null : await this.bundler.bundle(entry.file);
 
@@ -600,7 +603,7 @@ export class ProjectSession {
     return {
       id: this.dir,
       dir: this.dir,
-      engine: "react",
+      engine: manifest.engine,
       hyperframes: null,
       name: manifest.name,
       fps: manifest.fps,
