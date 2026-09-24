@@ -205,6 +205,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      react-grab:
+        specifier: ^0.1.47
+        version: 0.1.47(react@19.2.7)
       sharp:
         specifier: ^0.35.3
         version: 0.35.3(@types/node@22.19.20)

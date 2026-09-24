@@ -15,6 +15,7 @@ import { HOME_TAB, useTabsStore } from "./tabs/tabs-store";
 import { useRecentProjectsStore } from "./screens/recent-projects-store";
 import { useAuth } from "./lib/use-auth";
 import { DevPanel } from "./dev/dev-panel";
+import { ReactGrab } from "./dev/react-grab";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 0 } },
@@ -32,6 +33,9 @@ export function App() {
             accident. Mounted here rather than inside Shell so it is there on
             the login screen too. */}
         {import.meta.env.DEV && <DevPanel />}
+        {/* Hover anything, ⌘C, paste into a coding agent. Dropped from the
+            packaged renderer by the same literal gate. */}
+        {import.meta.env.DEV && <ReactGrab />}
         </FeedbackProvider>
       </UpgradeProvider>
     </QueryClientProvider>
