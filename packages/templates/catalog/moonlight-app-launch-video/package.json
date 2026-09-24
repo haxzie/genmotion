@@ -1,0 +1,16 @@
+{
+  "name": "moonlight-side-job-assistant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genmotion/three-engine": "^0.1.0",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.4",
+    "typescript": "^5.9.3"
+  }
+}

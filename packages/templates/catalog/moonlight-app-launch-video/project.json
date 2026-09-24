@@ -1,0 +1,272 @@
+{
+  "name": "Moonlight app launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1080,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-inbox.ts",
+      "durationInFrames": 120,
+      "name": "Inbox"
+    },
+    {
+      "file": "scenes/02-meet.ts",
+      "durationInFrames": 70,
+      "name": "Meet Moonlight"
+    },
+    {
+      "file": "scenes/03-double-life.ts",
+      "durationInFrames": 65,
+      "name": "Double life"
+    },
+    {
+      "file": "scenes/04-clients.ts",
+      "durationInFrames": 117,
+      "name": "Clients"
+    },
+    {
+      "file": "scenes/05-boss-chat.ts",
+      "durationInFrames": 108,
+      "name": "Say no to the boss"
+    },
+    {
+      "file": "scenes/06-calendar.ts",
+      "durationInFrames": 96,
+      "name": "Calendar"
+    },
+    {
+      "file": "scenes/07-apps.ts",
+      "durationInFrames": 168,
+      "name": "Gig apps"
+    },
+    {
+      "file": "scenes/08-after-hours.ts",
+      "durationInFrames": 87,
+      "name": "After hours"
+    },
+    {
+      "file": "scenes/09-end-card.ts",
+      "durationInFrames": 129,
+      "name": "End card"
+    }
+  ],
+  "audio": [
+    {
+      "id": "vo-01",
+      "file": "assets/vo-01-fit.mp3",
+      "track": 0,
+      "startFrame": 5,
+      "durationInFrames": 109,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-02",
+      "file": "assets/vo-02-fit.mp3",
+      "track": 0,
+      "startFrame": 123,
+      "durationInFrames": 119,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-03",
+      "file": "assets/vo-03-fit.mp3",
+      "track": 0,
+      "startFrame": 255,
+      "durationInFrames": 95,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-04",
+      "file": "assets/vo-04-fit.mp3",
+      "track": 0,
+      "startFrame": 378,
+      "durationInFrames": 63,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-05",
+      "file": "assets/vo-05-fit.mp3",
+      "track": 0,
+      "startFrame": 480,
+      "durationInFrames": 136,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-06",
+      "file": "assets/vo-06-fit.mp3",
+      "track": 0,
+      "startFrame": 618,
+      "durationInFrames": 122,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-07",
+      "file": "assets/vo-07-fit.mp3",
+      "track": 0,
+      "startFrame": 747,
+      "durationInFrames": 104,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-08",
+      "file": "assets/vo-08-fit.mp3",
+      "track": 0,
+      "startFrame": 855,
+      "durationInFrames": 94,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "music-a",
+      "file": "assets/music-bed.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 900,
+      "startFrom": 0,
+      "volume": 0.25,
+      "fadeInFrames": 15,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "music-b",
+      "file": "assets/music-bed.mp3",
+      "track": 1,
+      "startFrame": 900,
+      "durationInFrames": 60,
+      "startFrom": 0,
+      "volume": 0.25,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 45,
+      "muted": false
+    },
+    {
+      "id": "whoosh-0",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 2,
+      "startFrame": 116,
+      "durationInFrames": 21,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-1",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 2,
+      "startFrame": 186,
+      "durationInFrames": 21,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-2",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 2,
+      "startFrame": 305,
+      "durationInFrames": 21,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-3",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 2,
+      "startFrame": 476,
+      "durationInFrames": 21,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-4",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 2,
+      "startFrame": 572,
+      "durationInFrames": 21,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "click-0",
+      "file": "assets/sfx-click.mp3",
+      "track": 3,
+      "startFrame": 457,
+      "durationInFrames": 15,
+      "startFrom": 0,
+      "volume": 0.8,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "click-1",
+      "file": "assets/sfx-click.mp3",
+      "track": 3,
+      "startFrame": 491,
+      "durationInFrames": 15,
+      "startFrom": 0,
+      "volume": 0.8,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "click-2",
+      "file": "assets/sfx-click.mp3",
+      "track": 3,
+      "startFrame": 805,
+      "durationInFrames": 15,
+      "startFrom": 0,
+      "volume": 0.8,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
