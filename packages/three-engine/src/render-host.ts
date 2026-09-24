@@ -4,6 +4,7 @@ import type { ThreeSceneBuilder, ThreeSceneUpdate } from "./context";
 import { disposeRenderer, disposeSceneGraph } from "./dispose";
 import { createLoadingTracker } from "./readiness";
 import { capturePixelRatio } from "./pixel-ratio";
+import { describeSceneObjects, type ThreeObjectBox } from "./pick";
 
 /** A scene whose code has already been compiled and evaluated to a builder. */
 export interface ThreeCompiledScene extends SceneDuration {
@@ -36,6 +37,13 @@ export interface ThreeRenderHandle {
   /** Last runtime error thrown by a scene's builder or update callback, if any. */
   getLastError(): string | null;
   /**
+   * The active scene's objects as composition-pixel boxes, for the editor's
+   * preview tools. Valid for the frame last drawn by `setFrame`; call it again
+   * after each one. Empty for a scene that draws everything onto a single
+   * full-frame surface, since there is nothing in it to point at.
+   */
+  describeActiveScene(): ThreeObjectBox[];
+  /**
    * Free the renderer's GPU context. No react-host equivalent — there, the
    * whole `BrowserWindow` is simply destroyed. Called explicitly here since a
    * browser only keeps a handful of WebGL contexts alive, and this host may
@@ -43,6 +51,7 @@ export interface ThreeRenderHandle {
    */
   dispose(): void;
 }
+
 
 /**
  * Mounts one `WebGLRenderer`/canvas for the whole composition's lifetime, and
@@ -140,6 +149,10 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
+    },
+    describeActiveScene() {
+      if (!activeScene) return [];
+      return describeSceneObjects(activeScene, activeCamera, width, height);
     },
     getTotalFrames: () => totalFrames,
     getLastError: () => lastError,

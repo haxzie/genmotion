@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { mountThreeRenderHost, type ThreeCompiledScene } from "@genmotion/three-engine";
+import {
+  mountThreeRenderHost,
+  type ThreeCompiledScene,
+  type ThreeObjectBox,
+} from "@genmotion/three-engine";
 import { usePlaybackStore, usePlaybackStoreApi, selectDisplayFrame } from "@genmotion/player";
 import {
   Audio,
@@ -13,6 +17,7 @@ import {
 import { globalToLocal, type AudioClipData } from "@genmotion/shared";
 import { Spinner } from "@/components/ui";
 import { PreviewTransport } from "../preview";
+import { PreviewInspector } from "../preview-inspector";
 
 /**
  * One project audio clip, mounted only while the playhead is inside its
@@ -42,6 +47,44 @@ function ProjectAudioClipLayer({
         <Audio src={clip.url} volume={clip.volume} startFrom={clip.startFrom} />
       </FrameContext.Provider>
     </VideoConfigContext.Provider>
+  );
+}
+
+/**
+ * The scene graph, as elements.
+ *
+ * The preview's selection tools all read the DOM under the pointer — hover
+ * highlight, marquee, the comment bubble, the Draw tool's "what did I
+ * scribble on". A Three.js scene offers them one canvas and nothing else, so
+ * they had nothing to find and the whole toolbar sat inert on a Three.js
+ * project. Laying one empty, invisible element over each object's projected
+ * box gives those tools exactly what they already know how to read, and the
+ * rules they apply — snap to the nearest id'd element, never select something
+ * that fills the frame, keep only the deepest hit inside a marquee — turn out
+ * to mean the right thing for a scene graph too.
+ *
+ * Boxes are composition pixels and this layer is inside the same scaled box
+ * as the canvas, so they line up at any zoom. `transparent`, never drawn: the
+ * highlight the inspector paints is the only thing the user sees.
+ */
+function SceneOverlay({ objects }: { objects: ThreeObjectBox[] }) {
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      {objects.map((object) => (
+        <div
+          key={`${object.id}:${object.left}:${object.top}`}
+          id={object.id}
+          data-three-type={object.type}
+          style={{
+            position: "absolute",
+            left: object.left,
+            top: object.top,
+            width: object.width,
+            height: object.height,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -151,9 +194,27 @@ function ThreeCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenes, fps, width, height]);
 
+  // What the scene is made of, as boxes over the canvas — see `SceneOverlay`.
+  // Read after the frame is drawn, since the boxes describe that frame, and
+  // only while paused: during playback they would be stale the moment they
+  // were measured, and the inspector drops its selection on play anyway.
+  const [objects, setObjects] = useState<ThreeObjectBox[]>([]);
   useEffect(() => {
-    void handleRef.current?.setFrame(frame);
-  }, [frame]);
+    const host = handleRef.current;
+    if (!host) return;
+    let live = true;
+    if (isPlaying) {
+      setObjects([]);
+      void host.setFrame(frame);
+      return;
+    }
+    void host.setFrame(frame).then(() => {
+      if (live && handleRef.current === host) setObjects(host.describeActiveScene());
+    });
+    return () => {
+      live = false;
+    };
+  }, [frame, isPlaying]);
 
   // Which scene owns the current frame, for its own voiceover — the same
   // mapping the render host uses internally to pick a scene to draw.
@@ -175,7 +236,6 @@ function ThreeCanvas({
       }}
     >
       <div
-        ref={canvasHostRef}
         style={{
           position: "relative",
           width,
@@ -183,12 +243,23 @@ function ThreeCanvas({
           transform: `scale(${scale})`,
           transformOrigin: "center",
           flexShrink: 0,
-          background: "#000",
-          borderRadius: scale ? 12 / scale : 0,
-          overflow: "hidden",
           visibility: scale === 0 ? "hidden" : "visible",
         }}
-      />
+      >
+        {/* The renderer appends its canvas here, so React owns no children of
+            this element — the overlay is a sibling rather than a child. */}
+        <div
+          ref={canvasHostRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "#000",
+            borderRadius: scale ? 12 / scale : 0,
+            overflow: "hidden",
+          }}
+        />
+        <SceneOverlay objects={objects} />
+      </div>
       <RenderModeContext.Provider value="preview">
         <PlayingContext.Provider value={isPlaying}>
           <div style={{ display: "none" }}>
@@ -265,7 +336,9 @@ export function ThreeStage({
               </div>
             </div>
           ) : (
-            <ThreeCanvas scenes={scenes} fps={fps} width={width} height={height} audioClips={audioClips} />
+            <PreviewInspector projectId={projectId} scenes={scenes} fps={fps} width={width} height={height}>
+              <ThreeCanvas scenes={scenes} fps={fps} width={width} height={height} audioClips={audioClips} />
+            </PreviewInspector>
           )}
         </div>
       </div>

@@ -13,6 +13,8 @@ export type { EasingFunction } from "./interpolate";
 export { Easing, interpolate } from "./interpolate";
 export { capturePixelRatio } from "./pixel-ratio";
 export type { ThreeCompiledScene, ThreeRenderHostOptions, ThreeRenderHandle } from "./render-host";
+export type { ThreeObjectBox } from "./pick";
+export { describeSceneObjects } from "./pick";
 export { mountThreeRenderHost } from "./render-host";
 
 // Scenes and the host import Three.js through this re-export rather than

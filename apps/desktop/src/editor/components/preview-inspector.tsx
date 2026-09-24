@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePlaybackStore, usePlaybackStoreApi, type CompiledScene } from "@genmotion/player";
+import { usePlaybackStore, usePlaybackStoreApi } from "@genmotion/player";
 import { framesToTimecode, globalToLocal } from "@genmotion/shared";
 import { useEditorStore, useEditorStoreApi, type ElementContext } from "@/stores/editor-store";
 import { PreviewMarkup } from "./preview-markup";
@@ -108,7 +108,10 @@ export function PreviewInspector({
   children,
 }: {
   projectId: string;
-  scenes: CompiledScene[];
+  /** Only what the context needs — which scene the playhead is in, and its
+   *  name. Deliberately narrower than either engine's compiled-scene type, so
+   *  a React composition and a Three.js one can both be inspected. */
+  scenes: { id: string; name: string; durationInFrames: number }[];
   fps: number;
   /** Composition dimensions — the frame test measures against these, not the
    * on-screen container, so it survives a camera zoom. */
