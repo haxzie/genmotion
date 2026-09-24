@@ -146,6 +146,11 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
       if (activeScene) renderer.render(activeScene, activeCamera);
 
       await tracker.waitForIdle();
+      // An asset that settled during that wait repaints its layer's canvas
+      // after the draw above, so the framebuffer still holds the frame without
+      // it. Draw once more before the barrier: a single-frame capture (a
+      // poster) would otherwise show every image-backed layer empty.
+      if (activeScene) renderer.render(activeScene, activeCamera);
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
