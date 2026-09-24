@@ -105,6 +105,38 @@ export interface HyperframesState {
   scaffold: ScaffoldState | null;
 }
 
+// ── The project folder, as the Code view browses it ────────────────────────
+
+/**
+ * One entry in the file explorer. A directory carries its children, so the
+ * whole tree arrives in a single request — a project folder is small, and a
+ * lazy per-folder fetch would only add latency to expanding a node.
+ */
+export interface ProjectFileNode {
+  /** Project-relative, POSIX separators. Also the node's id. */
+  path: string;
+  name: string;
+  kind: "file" | "directory";
+  /** Bytes. Files only. */
+  sizeBytes?: number;
+  /** Directories only, sorted folders-first then by name. */
+  children?: ProjectFileNode[];
+}
+
+/**
+ * One file, opened as a tab. `code` is null when there is nothing to show —
+ * a picture, an audio track, or a file past the viewer's size limit — and
+ * `reason` says which, so the tab can explain itself.
+ */
+export interface ProjectFileContent {
+  path: string;
+  code: string | null;
+  /** Which highlighter the viewer should use. */
+  language: "tsx" | "html";
+  sizeBytes: number;
+  reason?: "binary" | "too-large";
+}
+
 /**
  * One export, as the Exports panel lists it.
  *

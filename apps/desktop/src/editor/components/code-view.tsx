@@ -1,79 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { cx } from "@/components/ui";
-import { SceneIcon } from "./scene-icon";
-import CodeBlock, { type CodeLanguage } from "./code-block";
+import { FileExplorer } from "./file-explorer";
+import { FileDocument } from "./file-document";
 
-/** One file the view can show — a React scene or a HyperFrames composition file. */
-export interface CodeFile {
-  id: string;
-  name: string;
-  code: string;
-}
-
-export function CodeView({
-  files: scenes,
-  heading = "Scenes",
-  language = "tsx",
-}: {
-  files: CodeFile[];
-  heading?: string;
-  language?: CodeLanguage;
-}) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = scenes.find((s) => s.id === selectedId) ?? scenes[0] ?? null;
+/**
+ * The Code tab: the project folder on the left, the file you picked on the
+ * right.
+ *
+ * The tree is the whole folder rather than the manifest's scene list. By the
+ * time a video is finished most of it lives in shared components, helpers and
+ * config, and a view that could only show the scenes was hiding the parts the
+ * agent had spent the most time in.
+ */
+export function CodeView({ projectId }: { projectId: string }) {
+  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <div className="flex min-h-0 flex-1">
-      {/* Left: scene list */}
-      <div className="flex w-64 shrink-0 flex-col border-r border-border">
-        <div className="flex h-10 shrink-0 items-center border-b border-border px-3">
-          <span className="text-[0.857rem] font-medium">{heading}</span>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-          {scenes.length === 0 ? (
-            <p className="px-2 py-8 text-center text-[0.786rem] text-text-tertiary">
-              Nothing here yet.
-            </p>
-          ) : (
-            scenes.map((scene) => {
-              const active = selected?.id === scene.id;
-              return (
-                <button
-                  key={scene.id}
-                  type="button"
-                  onClick={() => setSelectedId(scene.id)}
-                  className={cx(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[0.857rem] transition-colors",
-                    active
-                      ? "bg-surface-raised text-text-primary"
-                      : "text-text-secondary hover:bg-surface-raised/60 hover:text-text-primary",
-                  )}
-                >
-                  <SceneIcon className="size-4 shrink-0" />
-                  <span className="truncate">{scene.name}</span>
-                </button>
-              );
-            })
-          )}
-        </div>
+      <div className="flex w-72 shrink-0 flex-col border-r border-border">
+        <FileExplorer projectId={projectId} activePath={selected} onOpen={setSelected} />
       </div>
 
-      {/* Right: code */}
       <div className="flex min-w-0 flex-1 flex-col">
         {selected ? (
-          <>
-            <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
-              <SceneIcon className="size-4 shrink-0 text-text-tertiary" />
-              <span className="truncate text-[0.857rem] text-text-secondary">
-                {selected.name}
-              </span>
-            </div>
-            <div className="min-h-0 flex-1">
-              <CodeBlock code={selected.code} fill language={language} />
-            </div>
-          </>
+          <FileDocument key={selected} projectId={projectId} path={selected} />
         ) : (
           <div className="flex flex-1 items-center justify-center text-text-tertiary">
             Select a file to view its code

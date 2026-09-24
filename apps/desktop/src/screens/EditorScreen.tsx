@@ -351,15 +351,10 @@ function EditorBody({
               {tab === "assets" ? (
                 <AssetsView projectId={project.dir} />
               ) : tab === "code" ? (
-                <CodeView
-                  files={
-                    hf
-                      ? hf.files.map((f) => ({ id: f.path, name: f.path, code: f.code }))
-                      : project.scenes.map((s) => ({ id: s.id, name: s.name, code: s.code }))
-                  }
-                  heading={hf ? "Composition" : "Scenes"}
-                  language={hf ? "html" : "tsx"}
-                />
+                // The folder itself, whichever engine wrote it: a HyperFrames
+                // composition's `index.html` and a React project's scenes are
+                // both just files in the tree now.
+                <CodeView projectId={project.dir} />
               ) : hf && (hf.scaffold?.step === "resolving" || hf.scaffold?.step === "installing") ? (
                 // The install behind a brand-new project. The preview would
                 // only reload under the user as packages land, so it waits.

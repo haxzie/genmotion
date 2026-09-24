@@ -12,6 +12,7 @@ import {
 } from "@genmotion/shared";
 import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
 import { ENTRY_FILE, splitAudioClip as splitHyperframesAudioClip } from "@genmotion/hyperframes";
+import type { ProjectFileContent, ProjectFileNode } from "./shared";
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
 import { mimeForAsset, serveAssetFile } from "./serve-file";
@@ -130,6 +131,92 @@ function assetKind(file: string): AssetData["kind"] {
   if (AUDIO_EXT.has(ext)) return "audio";
   if (VIDEO_EXT.has(ext)) return "video";
   return IMAGE_EXT.has(ext) ? "image" : "export";
+}
+
+/**
+ * What the file explorer never shows: the app's own state, version control,
+ * installed packages, and build output. Everything else in the folder is the
+ * project — the agent writes components and helpers alongside the scenes, and
+ * a tree that hid them would be lying about what the video is made of.
+ */
+const HIDDEN_ENTRIES = new Set([".git", ".genmotion", "node_modules", "dist", ".DS_Store"]);
+
+/** A runaway folder shouldn't wedge the renderer; stop walking past this many. */
+const MAX_TREE_ENTRIES = 4000;
+
+/** Past this the viewer would choke, so the tab says "too large" instead. */
+const MAX_TEXT_BYTES = 1024 * 1024;
+
+/** Files whose text is highlighted as markup rather than as TS/JSX. */
+const MARKUP_EXT = new Set([".html", ".htm", ".svg", ".xml", ".css"]);
+
+/**
+ * Resolve a project-relative path, refusing anything that climbs out of the
+ * folder or reaches into `.genmotion/`. Same guard the preview route applies:
+ * agent-authored code runs in this renderer, so "a path from the client" is
+ * never trusted to stay inside.
+ */
+function resolveInProject(dir: string, relative: string): string | null {
+  const file = path.resolve(dir, relative);
+  const inside = path.relative(dir, file);
+  if (!inside || inside.startsWith("..") || path.isAbsolute(inside)) return null;
+  if (inside.split(path.sep).some((part) => HIDDEN_ENTRIES.has(part))) return null;
+  return file;
+}
+
+/** The project folder as a tree: folders first, then files, each A–Z. Exported for its test. */
+export async function readProjectTree(dir: string): Promise<ProjectFileNode[]> {
+  const budget = { left: MAX_TREE_ENTRIES };
+
+  async function walk(absolute: string, prefix: string): Promise<ProjectFileNode[]> {
+    const entries = await fs.readdir(absolute, { withFileTypes: true }).catch(() => []);
+    const nodes: ProjectFileNode[] = [];
+    for (const entry of entries) {
+      if (budget.left <= 0) break;
+      if (HIDDEN_ENTRIES.has(entry.name)) continue;
+      budget.left -= 1;
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        nodes.push({
+          path: relative,
+          name: entry.name,
+          kind: "directory",
+          children: await walk(path.join(absolute, entry.name), relative),
+        });
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const stat = await fs.stat(path.join(absolute, entry.name)).catch(() => null);
+      nodes.push({ path: relative, name: entry.name, kind: "file", sizeBytes: stat?.size ?? 0 });
+    }
+    nodes.sort((a, b) =>
+      a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "directory" ? -1 : 1,
+    );
+    return nodes;
+  }
+
+  return walk(dir, "");
+}
+
+/**
+ * One file's text for the viewer.
+ *
+ * "Is this text?" is answered by looking rather than by extension: the folder
+ * holds fonts, pictures and audio the agent saved, and a NUL byte in the head
+ * of the file is the cheap, honest test. A picture opened from the explorer
+ * still gets a tab — it just draws the preview instead of the source.
+ */
+export async function readProjectFile(dir: string, relative: string): Promise<ProjectFileContent> {
+  const file = resolveInProject(dir, relative);
+  if (!file) throw new Error("Not in this project");
+  const stat = await fs.stat(file);
+  if (!stat.isFile()) throw new Error("Not a file");
+  const language = MARKUP_EXT.has(path.extname(relative).toLowerCase()) ? "html" : "tsx";
+  const base = { path: relative, language, sizeBytes: stat.size } as const;
+  if (stat.size > MAX_TEXT_BYTES) return { ...base, code: null, reason: "too-large" };
+  const bytes = await fs.readFile(file);
+  if (bytes.subarray(0, 8192).includes(0)) return { ...base, code: null, reason: "binary" };
+  return { ...base, code: bytes.toString("utf8") };
 }
 
 /**
@@ -730,6 +817,16 @@ export async function startLocalServer(
       const served = await serveAssetFile(thumbnailPath(session.dir), new Request("http://localhost/"));
       served.headers.set("cache-control", "no-store");
       return served;
+    }
+
+    // The Code panel's explorer: the whole folder as a tree, and the text of
+    // one file in it. Not just the manifest's scenes — a project is mostly
+    // shared components, helpers and config by the time the agent is done,
+    // and none of that used to be reachable from the editor.
+    if (section === "files" && method === "GET") return readProjectTree(session.dir);
+    if (section === "file" && method === "GET") {
+      if (!target) return undefined;
+      return readProjectFile(session.dir, target);
     }
 
     // The preview's Screenshot button: the frame under the playhead as a PNG,

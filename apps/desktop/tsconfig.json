@@ -18,6 +18,7 @@
       "@/components/composer": ["./src/editor/components/composer.tsx"],
       "@/hooks/use-assets": ["./src/editor/hooks/use-assets.ts"],
       "@/hooks/use-project": ["./src/editor/hooks/use-project.ts"],
+      "@/hooks/use-project-files": ["./src/editor/hooks/use-project-files.ts"],
       "@/hooks/use-waveform": ["./src/editor/hooks/use-waveform.ts"],
       "@/hooks/use-compiled-three-scenes": ["./src/editor/hooks/use-compiled-three-scenes.ts"],
       "@/stores/editor-store": ["./src/editor/stores/editor-store.ts"],

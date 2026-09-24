@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { projectQueryKey } from "@/hooks/use-project";
+import { projectFilesKey } from "@/hooks/use-project-files";
 import { UpgradeProvider } from "@/components/upgrade-modal";
 import { FeedbackProvider } from "./components/feedback-modal";
 import { registerNavigate } from "./shims/next-link";
@@ -153,7 +154,14 @@ function Shell() {
       // Only this project's queries: a blanket `clear()` would empty every
       // other tab's cache — and refetching a chat's history remounts a
       // streaming panel with fresh messages, losing the live turn.
-      for (const key of [projectQueryKey(dir), ["chat", dir], ["assets", dir], ["export-latest", dir]]) {
+      for (const key of [
+        projectQueryKey(dir),
+        ["chat", dir],
+        ["assets", dir],
+        ["export-latest", dir],
+        projectFilesKey(dir),
+        ["project-file", dir],
+      ]) {
         client.removeQueries({ queryKey: key });
       }
     },
@@ -189,6 +197,11 @@ function Shell() {
         }
         useTabsStore.getState().rename(next.dir, next.name);
         client.setQueryData(projectQueryKey(next.dir), next);
+        // The payload says the folder changed but not how, so the file
+        // explorer and any open file refetch: that is what makes a source
+        // file the agent is writing update under its tab as it works.
+        void client.invalidateQueries({ queryKey: projectFilesKey(next.dir) });
+        void client.invalidateQueries({ queryKey: ["project-file", next.dir] });
       }),
     [client, forget],
   );
