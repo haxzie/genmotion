@@ -6,7 +6,14 @@ import type { ProjectSession } from "../project-session";
 import type { FilmstripData } from "../shared";
 import { hasActiveExport, onExportChange } from "./service";
 import { openCompositionWindow } from "./hyperframes-window";
-import { bundleScene, openRenderHost, serialize, type CompiledScene } from "./capture";
+import {
+  bundleScene,
+  captureWaiting,
+  openRenderHost,
+  releaseWarmHost,
+  serialize,
+  type CompiledScene,
+} from "./capture";
 import {
   FILMSTRIP_SCALE,
   compositeStrip,
@@ -157,6 +164,24 @@ function kickAll(): void {
   for (const entry of entries.values()) kick(entry);
 }
 
+/**
+ * Come back after the usual settle rather than the moment the queue frees.
+ *
+ * Standing aside for one capture only to restart into the next is how a run
+ * that yields ends up thrashing — and the restart would close the window that
+ * capture just warmed. The agent looks at a frame two or three times in a
+ * row, so wait out the burst the same way a burst of file writes is waited
+ * out.
+ */
+function defer(entry: Entry): void {
+  entry.wanted = true;
+  if (entry.timer) clearTimeout(entry.timer);
+  entry.timer = setTimeout(() => {
+    entry.timer = null;
+    kick(entry);
+  }, SETTLE_MS);
+}
+
 /** Start a run if one is wanted and nothing stands in the way. */
 function kick(entry: Entry): void {
   if (!entry.wanted || entry.timer || entry.running || entry.session.disposed) return;
@@ -267,12 +292,22 @@ async function run(entry: Entry): Promise<void> {
       entry.wanted = true;
       return;
     }
+    // A page of its own is about to open, and only one may be up at a time.
+    releaseWarmHost();
     const page = await prepared.open();
     try {
       for (const job of dirty) {
         const tiles: Buffer[] = [];
         for (const at of job.at) {
           assertFresh();
+          // The agent asked to see a frame while this was drawing tiles.
+          // Strips are background work and this can be hundreds of captures
+          // long; give the machine back between tiles rather than make the
+          // model wait out the whole strip, and come back for the rest.
+          if (captureWaiting()) {
+            defer(entry);
+            return;
+          }
           await page.seek(at);
           const image = await page.capture();
           if (image.isEmpty()) throw new Error(`blank capture in ${job.sceneId}`);

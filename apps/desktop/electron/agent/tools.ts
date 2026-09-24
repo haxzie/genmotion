@@ -249,18 +249,21 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       if (!resolved.ok) return failure(`FAILED — ${resolved.error}`);
       const { frame, scene: owner, localFrame, totalFrames } = resolved.target;
 
-      // Naming a scene mounts only that scene. A project mid-edit usually has
-      // something else broken, and a scene you haven't touched failing to
-      // build is no reason to refuse you a look at the one you just fixed.
-      // Asking by timecode is different: the timeline is the question, so the
-      // whole thing has to compile for the answer to mean anything.
-      const single = scene !== undefined;
+      // Only the scene the frame lands in is mounted, however it was asked
+      // for. `resolveFrameTarget` has already done the timeline arithmetic,
+      // and a scene draws from its own local frame alone — so mounting the
+      // rest would bundle and evaluate the whole video to photograph one
+      // scene of it, which on the Three.js engine is most of what a capture
+      // costs. It also means a scene you haven't touched failing to build no
+      // longer refuses you a look at the one you just fixed; proving the
+      // whole timeline compiles is `validate_scene`'s job, not a
+      // screenshot's.
       let image;
       try {
         image = await captureFrame(session, {
           manifest,
-          scenes: single ? [owner] : manifest.scenes,
-          frame: single ? localFrame : frame,
+          scenes: [owner],
+          frame: localFrame,
         });
       } catch (err) {
         return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);

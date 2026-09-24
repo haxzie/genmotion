@@ -166,6 +166,10 @@ export async function closeSession(
   await disposeWarmClaudeCodeFor(resolved);
   const { cancelExportsForProject } = await import("./export/service");
   cancelExportsForProject(resolved);
+  // The kept capture window holds this project's composition; nobody will ask
+  // it for another frame now that the tab is gone.
+  const { releaseWarmHost } = await import("./export/capture");
+  releaseWarmHost(resolved);
   const { cancelScaffoldInstall } = await import("./hyperframes/scaffold");
   cancelScaffoldInstall(resolved);
   return { closed: true };

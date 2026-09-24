@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import type { NativeImage } from "electron";
 import type { ProjectManifest, SceneEntry } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
-import { PAGE_SHELL, hasActiveExport } from "./service";
+import { PAGE_SHELL, hasActiveExport, onExportChange } from "./service";
 import { openCompositionWindow } from "./hyperframes-window";
 import { openOffscreenWindow } from "./offscreen";
 
@@ -30,14 +30,118 @@ export class CaptureBusyError extends Error {}
  */
 let queue: Promise<unknown> = Promise.resolve();
 
-export function serialize<T>(fn: () => Promise<T>): Promise<T> {
-  const next = queue.then(fn, fn);
+/**
+ * Captures waiting for the queue.
+ *
+ * A filmstrip rebuild holds the queue for as long as it has tiles to draw,
+ * and the agent's capture lands in the middle of one often — it runs a second
+ * after the scene write that started the rebuild. FIFO would make the model
+ * wait out the whole strip; `filmstrip.ts` reads this between tiles and
+ * stands down instead, so the wait is one tile, not one strip.
+ */
+let waitingCaptures = 0;
+
+export function captureWaiting(): boolean {
+  return waitingCaptures > 0;
+}
+
+export function serialize<T>(fn: () => Promise<T>, options: { isCapture?: boolean } = {}): Promise<T> {
+  if (options.isCapture) waitingCaptures++;
+  const run = () =>
+    Promise.resolve().then(() => {
+      if (options.isCapture) waitingCaptures--;
+      return fn();
+    });
+  const next = queue.then(run, run);
   // Swallow here only — `next` still rejects for the caller.
   queue = next.then(
     () => undefined,
     () => undefined,
   );
   return next;
+}
+
+/**
+ * The offscreen window the last capture used, kept open for a while.
+ *
+ * Opening one is most of what a capture costs — a window, a two-megabyte
+ * render-host bundle, a WebGL context, and then the scene's own `build()`,
+ * which on the Three.js engine can mean geometry, shaders and textures. A
+ * frame drawn in a window that is already up costs a `setFrame` and a
+ * `capturePage`: tens of milliseconds against a few hundred. The agent looks
+ * at the video several times in a row — that is the whole authoring loop —
+ * so the second look onwards should not pay the setup again.
+ *
+ * Correctness comes from the key: it carries the compiled code of every
+ * mounted scene, so any edit (the only thing that can change what a frame
+ * looks like) misses and rebuilds. Bundling is incremental and costs a few
+ * milliseconds, so the check is cheap enough to make every time.
+ *
+ * At most one window is ever open. Anything else that needs the machine — a
+ * filmstrip rebuild, a HyperFrames capture, an export — closes it first,
+ * which is the invariant `serialize` exists to protect.
+ */
+interface WarmHost {
+  key: string;
+  dir: string;
+  host: RenderHostWindow;
+  idle: NodeJS.Timeout;
+}
+
+let warm: WarmHost | null = null;
+
+/** How long an unused window is kept. Long enough to span a write-and-look. */
+const WARM_IDLE_MS = 60_000;
+
+function warmKey(dir: string, input: OpenHostInput): string {
+  return JSON.stringify([
+    dir,
+    input.engine ?? "react",
+    input.scale ?? 1,
+    input.manifest.fps,
+    input.manifest.width,
+    input.manifest.height,
+    input.scenes.map((s) => [s.id, s.durationInFrames, s.startFrom ?? 0, s.compiledCode]),
+  ]);
+}
+
+/**
+ * Close the kept window, if there is one.
+ *
+ * Call before opening any other offscreen window, and whenever what it holds
+ * has stopped being worth keeping — an export needs the machine, a closed
+ * project's window is a composition nobody will ask about again.
+ */
+export function releaseWarmHost(dir?: string): void {
+  if (!warm) return;
+  if (dir !== undefined && warm.dir !== dir) return;
+  clearTimeout(warm.idle);
+  warm.host.close();
+  warm = null;
+}
+
+/**
+ * Hand the window back when an export starts.
+ *
+ * An export drives its own window and wants the whole machine; ours is idle
+ * by definition, so it should not hold a second composition (and a second GPU
+ * context) open beside it.
+ *
+ * Subscribed on first capture rather than at module scope. This file, the
+ * export service, the loopback server and the filmstrip form an import cycle,
+ * so whichever is reached first is evaluated against half-built neighbours —
+ * a listener registered while `service.ts` is still initialising throws on a
+ * `listeners` set that does not exist yet. By the time a frame is captured
+ * every module is up.
+ */
+let watchingExports = false;
+
+function watchExports(): void {
+  if (watchingExports) return;
+  watchingExports = true;
+  onExportChange(() => {
+    if (hasActiveExport()) releaseWarmHost();
+  });
 }
 
 export interface CaptureInput {
@@ -87,7 +191,7 @@ function overlayScript(overlay: string, width: number, height: number): string {
  * build, a capture that came back blank.
  */
 export function captureFrame(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
-  return serialize(() => render(session, input));
+  return serialize(() => render(session, input), { isCapture: true });
 }
 
 /**
@@ -107,6 +211,8 @@ export function captureCompositionFrame(
     if (hasActiveExport()) {
       throw new CaptureBusyError("an export is running — try again once it finishes");
     }
+    // A composition page of its own is about to open; one window at a time.
+    releaseWarmHost();
     const compiled = session.hyperframes.current;
     if (!compiled) {
       throw new Error(session.hyperframes.compileError ?? "the composition does not compile");
@@ -130,6 +236,7 @@ export function captureCompositionFrame(
 
 async function render(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
   const { manifest, scenes, frame, overlay } = input;
+  watchExports();
 
   // An export already owns an offscreen window and the encoder; adding a
   // second composition-sized window mid-render would slow down the thing the
@@ -147,19 +254,44 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
     compiled.push(built.scene);
   }
 
-  const host = await openRenderHost({
+  const open: OpenHostInput = {
     manifest,
     scenes: compiled,
     engine: session.engine === "three" ? "three" : undefined,
-  });
+  };
+  const key = warmKey(session.dir, open);
+  // Anything the kept window can't answer — another project, another scene,
+  // an edit since it was drawn — and it goes, so only one is ever open.
+  if (warm && warm.key !== key) releaseWarmHost();
+
+  // A marked-up frame burns the SVG into the page, so that window can't be
+  // handed on: the next capture would still be wearing the mark.
+  const reusable = overlay === undefined;
+  // Taken over rather than borrowed: this call owns the window until it
+  // decides whether to hand it back, so nothing can close it mid-capture.
+  let host = warm?.host ?? null;
+  if (warm) {
+    clearTimeout(warm.idle);
+    warm = null;
+  }
+  host ??= await openRenderHost(open);
+
   try {
     await host.setFrame(frame);
     if (overlay) await host.execute(overlayScript(overlay, manifest.width, manifest.height));
     const image = await host.capture();
     if (image.isEmpty()) throw new Error("the capture came back blank");
+    if (reusable) {
+      warm = { key, dir: session.dir, host, idle: setTimeout(() => releaseWarmHost(), WARM_IDLE_MS) };
+    } else {
+      host.close();
+    }
     return image;
-  } finally {
+  } catch (err) {
+    // A window that failed mid-capture has nothing to recommend it to the
+    // next caller.
     host.close();
+    throw err;
   }
 }
 
@@ -213,14 +345,16 @@ export interface RenderHostWindow {
   close(): void;
 }
 
-export async function openRenderHost(input: {
-    manifest: Pick<ProjectManifest, "fps" | "width" | "height">;
-    scenes: CompiledScene[];
-    /** See `openOffscreenWindow`: below 1 the page is laid out at full size but painted smaller. */
-    scale?: number;
-    /** Which engine's bundle to inject. Defaults to the React engine's. */
-    engine?: "react" | "three";
-}): Promise<RenderHostWindow> {
+export interface OpenHostInput {
+  manifest: Pick<ProjectManifest, "fps" | "width" | "height">;
+  scenes: CompiledScene[];
+  /** See `openOffscreenWindow`: below 1 the page is laid out at full size but painted smaller. */
+  scale?: number;
+  /** Which engine's bundle to inject. Defaults to the React engine's. */
+  engine?: "react" | "three";
+}
+
+export async function openRenderHost(input: OpenHostInput): Promise<RenderHostWindow> {
   const { fps, width, height } = input.manifest;
   const win = openOffscreenWindow({ width, height, scale: input.scale });
   const close = () => {
