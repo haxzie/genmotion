@@ -1,0 +1,33 @@
+{
+  "name": "@genmotion/skills",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./search": "./src/search.ts",
+    "./catalog": "./generated/index.json",
+    "./embeddings": "./generated/embeddings.json",
+    "./node": "./src/catalog.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build-index": "tsx scripts/build-index.mjs",
+    "build-embeddings": "tsx --env-file=../../.env scripts/build-embeddings.mjs"
+  },
+  "dependencies": {
+    "@genmotion/shared": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai": "^3.0.69",
+    "@genmotion/config": "workspace:*",
+    "@types/node": "^22",
+    "ai": "^6.0.199",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

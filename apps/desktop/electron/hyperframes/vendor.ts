@@ -20,17 +20,42 @@ function vendored(name: string): string | null {
   return null;
 }
 
-/** The skill pack, as a Claude Code plugin folder (`.claude-plugin/plugin.json` + `skills/`). */
-export function pluginDir(): string {
-  const shipped = vendored("hyperframes-plugin");
+/** A vendored folder, or the workspace package it was copied from. */
+function packOrPackage(vendorName: string, pkg: string, sub: string): string {
+  const shipped = vendored(vendorName);
   if (shipped) return shipped;
   const require = createRequire(__filename);
-  return path.join(path.dirname(require.resolve("@genmotion/hyperframes/package.json")), "plugin");
+  return path.join(path.dirname(require.resolve(`${pkg}/package.json`)), sub);
 }
 
-/** `skills/` inside the plugin — what Codex is pointed at, one symlink per skill. */
+/** The HyperFrames pack, as a Claude Code plugin folder. Vendored from upstream. */
+export function pluginDir(): string {
+  return packOrPackage("hyperframes-plugin", "@genmotion/hyperframes", "plugin");
+}
+
+/**
+ * GenMotion's own pack, as a second plugin folder.
+ *
+ * Separate from the one above because that one is wiped and re-copied whenever
+ * `@genmotion/hyperframes` syncs a new upstream tag; anything we wrote there
+ * would not survive a version bump.
+ */
+export function genmotionPluginDir(): string {
+  return packOrPackage("genmotion-plugin", "@genmotion/skills", "plugin");
+}
+
+/** The generated skill catalog and embeddings, beside the pack. */
+export function skillMetaDir(): string {
+  return packOrPackage("genmotion-skills-meta", "@genmotion/skills", "generated");
+}
+
+/** `skills/` inside a plugin — what Codex is pointed at, one symlink per skill. */
 export function skillsDir(): string {
   return path.join(pluginDir(), "skills");
+}
+
+export function genmotionSkillsDir(): string {
+  return path.join(genmotionPluginDir(), "skills");
 }
 
 let gsap: Promise<string> | null = null;

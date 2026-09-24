@@ -1,0 +1,102 @@
+{
+  "id": "ugc-problem-solution",
+  "title": "UGC problem and solution",
+  "description": "The PAS demo: open on the failure state with the product absent, agitate for no more than five seconds, turn, then demonstrate honestly and land on relief. The most reliable starting point for ecommerce and SaaS, and the format to default to when the brief does not name one. Covers the failure-state opening, how long agitation may run, the turn, the demonstration that has to be truthful, and the relief shot. Load with ugc-ad-foundations.",
+  "summary": "The PAS demo. Open on the failure state, agitate briefly, turn, demonstrate honestly, land on relief.",
+  "kind": "style",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "pas",
+    "problem-solution",
+    "demo",
+    "default"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 10,
+    "maxSeconds": 45
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-scripting"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "The failure and relief beats are a matched pair of stills."
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Bring the user's own footage in before trimming it."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The turn lands on a line, said flatly."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "The audio drop at the turn is half of what sells it."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "The failure and relief frames have to read as the same place."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Prompt the pair together so geometry matches."
+    },
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Tired, not performative, through the agitation."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx"
+    }
+  ],
+  "triggers": [
+    "ad that shows the problem then my product",
+    "before and after style ad for my app",
+    "make an ad about the pain point we solve",
+    "standard tiktok ad for my product",
+    "I don't know what format, just make me an ad",
+    "PAS script video"
+  ],
+  "templates": [
+    "gojiberry-launch-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🔁"
+}

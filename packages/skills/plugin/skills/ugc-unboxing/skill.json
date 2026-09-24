@@ -1,0 +1,91 @@
+{
+  "id": "ugc-unboxing",
+  "title": "UGC unboxing",
+  "description": "The first-impression ad: a box opened on camera, hands in frame, the product revealed in stages. Covers the reveal choreography beat by beat, why the hands carry the shot and the face is optional, scale and packaging as the actual subject, the ASMR-adjacent sound design that holds retention, and what to do when there is no physical product (a software unboxing is the onboarding, and the script has to say so). Load with ugc-ad-foundations.",
+  "summary": "Hands, a box, a staged reveal. Scale and packaging as the subject, with sound doing most of the work.",
+  "kind": "style",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "unboxing",
+    "reveal",
+    "asmr",
+    "first-impression"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 8,
+    "maxSeconds": 40
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The user's product photography is always better than a generated box."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "Fill the reveal stages the user has no photo for."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "Tape, cardboard, tissue and the set-down are the retention device."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Every stage of the reveal is checked as a frame."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Available light, a real surface, hands in frame."
+    },
+    {
+      "purpose": "video",
+      "model": "Veo 3.1",
+      "via": "mcp:fal",
+      "note": "Short handheld clips of the reveal, if a connector is there."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx",
+      "note": "Tape peel, cardboard flex, paper rustle, a soft set-down."
+    }
+  ],
+  "triggers": [
+    "unboxing video for my product",
+    "first impressions ad",
+    "show the packaging arriving",
+    "asmr unboxing tiktok",
+    "make an onboarding video that feels like an unboxing"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📦"
+}

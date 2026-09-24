@@ -34,6 +34,7 @@
     "@genmotion/player": "workspace:*",
     "@genmotion/project": "workspace:*",
     "@genmotion/shared": "workspace:*",
+    "@genmotion/skills": "workspace:*",
     "@genmotion/templates": "workspace:*",
     "@genmotion/three-engine": "workspace:*",
     "@paper-design/shaders-react": "0.0.81",

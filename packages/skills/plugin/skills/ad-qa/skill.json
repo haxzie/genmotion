@@ -1,0 +1,66 @@
+{
+  "id": "ad-qa",
+  "title": "Ad QA",
+  "description": "The pre-ship review gate for a short-form ad: six tests run with capture_frames (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished.",
+  "summary": "The six-test gate before an ad ships: first frame, mute, safe zones, captions, ad codes and claims.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "qa",
+    "review",
+    "checklist",
+    "claims",
+    "safe-zones"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5",
+    "1:1",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 6,
+    "maxSeconds": 60
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Every one of the six tests is a frame you actually look at."
+    },
+    {
+      "kind": "tool",
+      "id": "validate_composition",
+      "why": "Run it first; a failing composition captures nothing useful."
+    },
+    {
+      "kind": "tool",
+      "id": "project_overview",
+      "why": "The scene boundaries the captures are taken at."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "check my ad before I post it",
+    "is this ad ready to ship",
+    "review this video for problems",
+    "will this work on tiktok",
+    "did I get the safe zones right",
+    "check the claims in this script"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✅"
+}

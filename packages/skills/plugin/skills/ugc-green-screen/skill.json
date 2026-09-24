@@ -1,0 +1,90 @@
+{
+  "id": "ugc-green-screen",
+  "title": "UGC green screen",
+  "description": "The commentary ad: a presenter cut out over a full-bleed source (a screenshot, an article, a tweet, a competitor's pricing page, a search result) reacting to it line by line. Covers the cutout layout and how much frame it may take, what makes a source worth reacting to, the annotation beat that turns a reaction into an argument, and how to build the whole thing with no real cutout at all, either a generated presenter with a background-removal treatment or presenter-free with a cursor and drawn marks carrying it. Load with ugc-ad-foundations.",
+  "summary": "Presenter cut out over a screenshot, article or competitor page, reacting to it line by line with drawn marks.",
+  "kind": "style",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "green-screen",
+    "commentary",
+    "reaction",
+    "annotation"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 10,
+    "maxSeconds": 45
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "ai-presenter"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Bring the screenshot or page the presenter is reacting to into assets/."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "Stand in for a source the user cannot supply, and for the presenter still."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The commentary is the whole ad; it has to sound unproduced."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Legibility of the source behind the cutout is a frame check."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "lipsync",
+      "model": "Sync 2 Pro",
+      "via": "mcp:fal",
+      "note": "Drives a generated portrait. Shoot chest-up so the cutout crops cleanly."
+    },
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover"
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "For the presenter still and any stand-in source."
+    }
+  ],
+  "triggers": [
+    "react to this screenshot in an ad",
+    "green screen video over an article",
+    "make a video roasting a competitor's pricing page",
+    "commentary ad over a tweet",
+    "duet style reaction to this page"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🟩"
+}

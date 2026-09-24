@@ -1,0 +1,63 @@
+{
+  "id": "app-store-preview",
+  "title": "App Store preview",
+  "description": "Three 15-second App Store and Play Store preview videos: the store specs and the no-audio-dependency rule (they autoplay muted and Apple rejects previews that need sound), device frame rules per store, the three-video structure covering what it is, the best feature, and the payoff, and what each store rejects. Load it when the ask is specifically a store listing preview, not a general product video.",
+  "summary": "Three 15-second store preview cuts: what it is, the best feature, the payoff. Muted by default, real UI only.",
+  "kind": "workflow",
+  "category": "Launch",
+  "tags": [
+    "app-store",
+    "play-store",
+    "preview",
+    "mobile",
+    "store-listing"
+  ],
+  "aspects": [
+    "9:16",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 15,
+    "maxSeconds": 30
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The real, current-build screen recordings the whole preview depends on."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trimming and cropping the recording into the store's exact aspect."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "A muted-review pass on each of the three cuts."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "make an App Store preview video",
+    "I need a Play Store listing video",
+    "app store preview for our app",
+    "mobile app trailer for the store listing",
+    "15 second video for our app page"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📱"
+}

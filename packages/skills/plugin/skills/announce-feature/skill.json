@@ -1,0 +1,84 @@
+{
+  "id": "announce-feature",
+  "title": "Announce feature",
+  "description": "The 20 to 45 second changelog video after Linear, Notion and Slack: what changed, why it matters, show it, where to get it. Covers quick-highlights-over-feature-lists, the UI-in-motion patterns that carry the demonstration, why the CTA points at the feature itself rather than a marketing page, and the recuts for an in-app banner, a changelog embed and a social clip. Load it for a single feature or a small feature set, not a whole-product launch.",
+  "summary": "The 20 to 45 second changelog video: what changed, why it matters, show it, where to get it.",
+  "kind": "workflow",
+  "category": "Announcement",
+  "tags": [
+    "announcement",
+    "feature",
+    "changelog",
+    "product-marketing"
+  ],
+  "aspects": [
+    "16:9",
+    "1:1",
+    "9:16"
+  ],
+  "duration": {
+    "minSeconds": 20,
+    "maxSeconds": 45
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The real feature footage the whole video is built around."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The what-changed and why-it-matters lines, said plainly."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "A click on the interaction that matters."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Legibility of the new control is a frame check."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Plain and present-tense, like a real changelog entry."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx"
+    }
+  ],
+  "triggers": [
+    "make an announcement video for this feature",
+    "changelog video for our new release",
+    "short video explaining what we shipped",
+    "feature reveal video",
+    "in-app video for this update",
+    "announce this feature on social"
+  ],
+  "templates": [
+    "x-numbers-launch-video",
+    "polls-in-messages"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📣"
+}

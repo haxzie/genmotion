@@ -1,0 +1,79 @@
+{
+  "id": "ugc-hooks",
+  "title": "UGC hooks",
+  "description": "The hook library: the first three seconds of a UGC ad, where most of the outcome is decided. Carries the visual plus verbal plus rhythm triple, eight hook families with the audience temperature each one fits, how to realise a hook as frame zero in a composition, and a reference library of sixty-plus hook lines with their paired visuals. Load it whenever you are choosing or rewriting an opening. Not a format: pick one of the ugc-* style skills for that.",
+  "summary": "The first three seconds. Eight hook families, the visual plus verbal plus rhythm triple, and sixty-plus usable lines.",
+  "kind": "reference",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "hooks",
+    "retention",
+    "first-frame",
+    "copywriting"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 2,
+    "maxSeconds": 5
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Frame zero is judged by looking at it, not by reading the markup."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "Most hook plates are a staged still nobody has a photo of."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Available light, mid-gesture, imperfect framing."
+    },
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Flat delivery. A performed hook reads as an ad."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx",
+      "note": "One transient on frame 1."
+    }
+  ],
+  "triggers": [
+    "my ad starts too slow",
+    "write me a hook for this ad",
+    "how do I stop the scroll",
+    "give me three different openings to test",
+    "the first three seconds are weak",
+    "best hooks for tiktok ads"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🪝"
+}

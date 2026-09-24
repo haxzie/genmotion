@@ -1,0 +1,103 @@
+{
+  "id": "ai-presenter",
+  "title": "AI presenter",
+  "description": "Getting a person on screen when there is no footage: a generated presenter driven by lipsync, or the user's own clip. Covers the two routes and when each one wins, framing and crop for a vertical canvas, matching a voice to a face, the uncanny-valley failure modes and the edit patterns that dodge them, and the line between a synthetic presenter and a fabricated customer. Load it alongside a face-led ugc-* format, never instead of one.",
+  "summary": "Getting a person on screen with no footage: a generated portrait driven by lipsync, or the user's own clip.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "presenter",
+    "avatar",
+    "lipsync",
+    "fal",
+    "faceless-fallback"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5",
+    "1:1"
+  ],
+  "duration": {
+    "minSeconds": 3,
+    "maxSeconds": 60
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "mcp",
+      "id": "fal",
+      "why": "Drives a generated portrait with a lipsync model. The only synthetic route."
+    },
+    {
+      "kind": "mcp",
+      "id": "elevenlabs",
+      "why": "Voice cloning and voice design, beyond the built-in generator."
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "tool",
+      "id": "pick_voice",
+      "why": "One voice per project, chosen before any line is generated."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The narration the presenter is lipsynced to."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "The portrait that gets driven by the lipsync model."
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The user's own clip, which beats every synthetic route."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "lipsync",
+      "model": "Sync 2 Pro",
+      "via": "mcp:fal",
+      "note": "Drives a generated still. Best under six seconds; cut before it runs longer."
+    },
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Direct it flat. Over-performance is the usual failure."
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Generate wider than 9:16 so you can reframe between cuts."
+    }
+  ],
+  "triggers": [
+    "add a person talking to camera",
+    "I need a presenter for this ad",
+    "make an avatar say my script",
+    "UGC video with a creator in it",
+    "can you generate someone to read this",
+    "talking head for my tiktok ad"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🧑‍💼"
+}

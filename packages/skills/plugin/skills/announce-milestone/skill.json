@@ -1,0 +1,72 @@
+{
+  "id": "announce-milestone",
+  "title": "Announce milestone",
+  "description": "Funding rounds, ARR, star counts, user counts, acquisitions: the number-hit choreography (a 1.2 to 1.6 second count-up, then hold, label after value), what actually earns a milestone video, the gratitude beat, and investor or customer logo walls. Load it when the ask is a number going up, with no feature to demonstrate. Not this skill when there is a product to show: use launch-playbook or announce-feature instead.",
+  "summary": "Funding, ARR, star counts, users. The count-up choreography, the gratitude beat, and what actually earns a video.",
+  "kind": "workflow",
+  "category": "Announcement",
+  "tags": [
+    "milestone",
+    "funding",
+    "metrics",
+    "count-up",
+    "announcement"
+  ],
+  "aspects": [
+    "16:9",
+    "1:1",
+    "9:16"
+  ],
+  "duration": {
+    "minSeconds": 15,
+    "maxSeconds": 30
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The what-it-means and gratitude lines, when the cut is narrated."
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Real contributor, customer or investor logos."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "The count-up hold and digit stability are judged by looking."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Warm, not triumphant. The number does the work."
+    }
+  ],
+  "triggers": [
+    "we just hit a funding milestone, make a video",
+    "celebrate our star count",
+    "announce our user count",
+    "make a video about our ARR",
+    "funding round announcement video",
+    "we got acquired, need a video"
+  ],
+  "templates": [
+    "lovable-funding-announcement",
+    "github-star-announcement",
+    "github-star-count-announcement"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📈"
+}

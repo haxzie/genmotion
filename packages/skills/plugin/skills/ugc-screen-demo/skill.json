@@ -1,0 +1,106 @@
+{
+  "id": "ugc-screen-demo",
+  "title": "UGC screen demo",
+  "description": "The faceless screen-recording ad: an app or website doing one satisfying thing, narrated over the top. The highest-converting UGC format for software, because for software the interface is the ad. Covers the one-satisfying-thing rule, device frame versus full-bleed, cursor choreography, punch-ins on the moment of value, how to get real footage when there is none, on-screen text reading speed, and the result-before-steps ordering. Load with ugc-ad-foundations.",
+  "summary": "Faceless app demo with voiceover. One satisfying action, result first, a cursor that acts, punch-ins on the payoff.",
+  "kind": "style",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "screen-demo",
+    "saas",
+    "faceless",
+    "product-demo",
+    "screen-recording"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5",
+    "1:1"
+  ],
+  "duration": {
+    "minSeconds": 8,
+    "maxSeconds": 45
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trim, crop and reframe a desktop recording into the vertical canvas before it hits the timeline."
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Bring the user's own screen recording into assets/."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "The flat, unproduced narration this format runs on."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "A click per interaction and a confirmation tone on completion."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Every readability and click-feedback check is a frame capture."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Pick a conversational voice, not a narrator."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx",
+      "note": "UI click, soft whoosh, confirmation tone."
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Only for placeholder content inside a rebuilt UI."
+    }
+  ],
+  "triggers": [
+    "make an ad from a screen recording of my app",
+    "vertical demo video for my SaaS",
+    "show my product actually working in 15 seconds",
+    "faceless tiktok ad for a web app",
+    "turn this screencast into a tiktok",
+    "app demo with a voiceover, no face"
+  ],
+  "templates": [
+    "prequel-launch",
+    "notion-launch-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🖥️"
+}

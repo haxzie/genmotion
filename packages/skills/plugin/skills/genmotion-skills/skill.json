@@ -1,0 +1,42 @@
+{
+  "id": "genmotion-skills",
+  "title": "The GenMotion pack",
+  "description": "GenMotion's creative pack: what to make, for the kinds of video people actually ask for, from viral UGC ads to product launches, feature announcements, milestones and brand stings. Read this when a request names an ad, a launch, an announcement or a social clip, or when search_skills returns something and you want to know how the pack fits together. It is creative direction, the same for every engine: your project's own authoring rules still own how a scene actually gets built.",
+  "summary": "The map of GenMotion's creative skills, and the order to use them in.",
+  "kind": "reference",
+  "category": "Craft",
+  "tags": [
+    "router",
+    "index",
+    "creative-direction"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 5,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [],
+  "models": [],
+  "triggers": [
+    "what skills do you have",
+    "which format should this video be",
+    "help me pick a style for this ad",
+    "what can you make"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🗺️"
+}

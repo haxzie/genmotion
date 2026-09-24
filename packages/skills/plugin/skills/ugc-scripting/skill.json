@@ -1,0 +1,80 @@
+{
+  "id": "ugc-scripting",
+  "title": "UGC scripting",
+  "description": "Writing the body and the CTA of a short-form ad: six script frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the shape and the audience each one fits, the word-count math that makes a script fit its runtime, CTA construction that reads as a recommendation rather than a pitch, and how to structure the narration as labeled, timed lines. Load it when you are writing the middle of an ad. The opening belongs to ugc-hooks.",
+  "summary": "Six script frameworks, the word-count math that makes a script fit, and CTAs that sound like a recommendation.",
+  "kind": "reference",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "scripting",
+    "copywriting",
+    "pas",
+    "aida",
+    "cta"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 6,
+    "maxSeconds": 60
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-hooks"
+    },
+    {
+      "kind": "tool",
+      "id": "pick_voice",
+      "why": "One voice per project, chosen before the first line is generated."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "Turns the written script into the narration track."
+    },
+    {
+      "kind": "tool",
+      "id": "project_overview",
+      "why": "Check the script's beats against where the picture actually cuts."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Conversational, not narrator. Flat through the problem."
+    }
+  ],
+  "triggers": [
+    "write the script for this ad",
+    "my script is too long for 30 seconds",
+    "what CTA should I use",
+    "turn this into a PAS script",
+    "how many words fit in a 15 second video",
+    "rewrite this so it sounds less like an ad"
+  ],
+  "templates": [
+    "gojiberry-launch-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✍️"
+}

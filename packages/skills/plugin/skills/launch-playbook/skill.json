@@ -1,0 +1,84 @@
+{
+  "id": "launch-playbook",
+  "title": "Launch playbook",
+  "description": "The creative layer above your project's own launch build pipeline: five story shapes for a launch (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, 30 / 60 / 90 second beat sheets for each, the muted-playback and first-five-seconds rules, where social proof goes, and cut variants for Product Hunt, X, YouTube and LinkedIn. Load it when the ask is a product, feature or company launch video. It owns the story, not the pipeline: hand off to your project's own build pipeline for capture, asset staging and the build steps.",
+  "summary": "Five launch story shapes, beat sheets for 30/60/90s, the first-five-seconds rule, and cuts per destination.",
+  "kind": "workflow",
+  "category": "Launch",
+  "tags": [
+    "launch",
+    "product-launch",
+    "story-shape",
+    "product-marketing"
+  ],
+  "aspects": [
+    "16:9",
+    "1:1",
+    "4:5",
+    "9:16"
+  ],
+  "duration": {
+    "minSeconds": 30,
+    "maxSeconds": 90
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-scripting"
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "Narration for problem-first, demo-first and metric-first shapes."
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Real product screenshots and brand assets, never invented."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "The muted-playback and first-five-seconds checks are frame captures."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover"
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Only for a manifesto shape's invented visuals, never a product shot."
+    }
+  ],
+  "triggers": [
+    "make a launch video for our product",
+    "we're launching next week, need a video",
+    "promo video for our SaaS launch",
+    "product hunt launch video",
+    "make a video announcing our company",
+    "video for our funding and product launch"
+  ],
+  "templates": [
+    "notion-launch-video",
+    "codex-launch-video",
+    "gojiberry-launch-video",
+    "google-generative-ai",
+    "dont-blink-gpt-6-astra",
+    "claude-mcp-launch"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🚀"
+}

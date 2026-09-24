@@ -1,0 +1,73 @@
+{
+  "id": "ugc-craft",
+  "title": "UGC craft",
+  "description": "The edit language of a short-form ad: jump-cut cadence and the breath trim, the b-roll cut-in rule, caption styles per platform and how to build them word by word, zoom punches on emphasis, the sound-design beats that hold retention, music choice and why trend audio does not survive an export, and the never-three-seconds-without-a-change rule. Load it when you are cutting and dressing an ad rather than planning one.",
+  "summary": "The edit language: cut cadence, the breath trim, captions, punch-ins, sound beats, and the three-second rule.",
+  "kind": "reference",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "editing",
+    "captions",
+    "sound-design",
+    "pacing"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 6,
+    "maxSeconds": 60
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "Every cut, click and caption card wants a sound."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Shot length and caption legibility are judged by looking."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx",
+      "note": "Whoosh, click, tick, confirmation tone."
+    },
+    {
+      "purpose": "music",
+      "model": "Lyria",
+      "via": "mcp:replicate",
+      "note": "A bed, not a soundtrack. Cut to its transients."
+    }
+  ],
+  "triggers": [
+    "this ad feels slow",
+    "add captions to my ad",
+    "how fast should I be cutting",
+    "the edit looks flat",
+    "what sound effects does this need",
+    "make it feel less AI generated"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✂️"
+}

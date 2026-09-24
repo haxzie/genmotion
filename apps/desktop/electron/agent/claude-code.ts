@@ -8,14 +8,14 @@ import { waitForAnswer } from "./questions";
 import {
   ALLOWED_TOOLS,
   DISALLOWED_TOOLS,
-  DISALLOWED_TOOLS_HYPERFRAMES,
   READ_ONLY_TOOLS,
   createGenmotionTools,
   isInsideProject,
 } from "./tools";
 import { isReadable, listReadRoots } from "./read-roots";
 import { getLaunchDir } from "../cli";
-import { pluginDir } from "../hyperframes/vendor";
+import { genmotionPluginDir, pluginDir } from "../hyperframes/vendor";
+import { userSkillIds, userSkillPlugin } from "../skills/plugin";
 import { activeEffort, activeModel } from "./registry";
 import { mcpManager } from "../mcp/manager";
 import type { AgentBackend, AgentEvent, TurnInput } from "./types";
@@ -160,6 +160,10 @@ async function turnOptions(
   // The user's MCP servers, as of the last probe. Never fatal: a server that
   // cannot be reached is left out and its row in the marketplace says why.
   const external = await mcpManager.harnessConfigs().catch(() => ({ claude: {} }));
+  // Rebuilt every turn, so a skill imported or switched off between messages
+  // takes effect on the next one. Null when the user has no skills of their own.
+  const userPlugin = await userSkillPlugin(projectDir).catch(() => null);
+  const theirs = userPlugin ? await userSkillIds(projectDir).catch(() => []) : [];
   return {
     cwd: projectDir,
     // Use the CLI the user signed in with, not the SDK's bundled copy —
@@ -177,25 +181,36 @@ async function turnOptions(
     // for the steps that need it, and a user chasing a harder edit can turn
     // it up.
     effort,
-    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine),
+    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine, theirs),
     // Folders the user has shared. The CLI refuses a path outside its working
     // roots before `canUseTool` is ever consulted, so a grant has to be
     // declared here too — this opens the door, and the callback below is what
     // decides that only reads walk through it.
     ...(readRoots.length ? { additionalDirectories: readRoots } : {}),
     allowedTools: ALLOWED_TOOLS,
-    disallowedTools: session.engine === "hyperframes" ? DISALLOWED_TOOLS_HYPERFRAMES : DISALLOWED_TOOLS,
+    disallowedTools: DISALLOWED_TOOLS,
     // "default", not "acceptEdits": an auto-approving mode would decide
     // before canUseTool runs, and that callback is the containment check.
     permissionMode: "default" as const,
     // Don't inherit the user's own CLAUDE.md, skills, or hooks — this
     // agent authors videos, and their coding setup would only confuse it.
     settingSources: [] as [],
-    // The HyperFrames skill pack, as a plugin this app ships. A plugin is how
-    // skills reach a session that loads no settings at all — and it means
-    // the pack the agent reads is the one this build was tested with, not
-    // whatever the user has under ~/.claude/skills.
-    ...(session.engine === "hyperframes" ? { plugins: [{ type: "local" as const, path: pluginDir() }] } : {}),
+    // The skill packs, as plugins this app ships. A plugin is how skills reach
+    // a session that loads no settings at all — and it means the packs the
+    // agent reads are the ones this build was tested with, not whatever the
+    // user has under ~/.claude/skills.
+    //
+    // Three sources. The HyperFrames pack is the composition contract, so it
+    // is only handed to a HyperFrames project. GenMotion's own pack is
+    // creative direction — what a good ad is — which a React project wants
+    // just as much. The third is the user's own skills, wrapped in a
+    // generated plugin folder because Claude Code takes a plugin, not a
+    // directory of skills; it is null when they have none.
+    plugins: [
+      ...(session.engine === "hyperframes" ? [{ type: "local" as const, path: pluginDir() }] : []),
+      { type: "local" as const, path: genmotionPluginDir() },
+      ...(userPlugin ? [{ type: "local" as const, path: userPlugin }] : []),
+    ],
     // Ours first, so a user's server named the same cannot shadow it — the
     // store reserves the name, this is the belt to that suspender.
     mcpServers: { ...external.claude, genmotion: createGenmotionTools(sdk, session) },

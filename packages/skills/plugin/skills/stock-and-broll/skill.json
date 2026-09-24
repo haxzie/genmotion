@@ -1,0 +1,104 @@
+{
+  "id": "stock-and-broll",
+  "title": "Stock and b-roll",
+  "description": "Sourcing footage and stills that read as real rather than stock: what makes stock look like stock and the treatments that fix it, the sourcing order from the user's own material through connectors to generated, and how to prompt a video or image model for UGC-grade material (handheld, available light, imperfect framing, a real room). Load it when an ad needs cut-aways, a product shot or a staged still nobody has photographed.",
+  "summary": "Cut-aways that read as real: the sourcing order, the four treatments that fix stock, and how to prompt for UGC-grade footage.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "b-roll",
+    "stock",
+    "footage",
+    "prompting",
+    "grading"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5",
+    "1:1",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 4
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "mcp",
+      "id": "freepik",
+      "why": "Stock stills and short clips for environments and textures."
+    },
+    {
+      "kind": "mcp",
+      "id": "fal",
+      "why": "Video generation for the staged shots stock never has."
+    },
+    {
+      "kind": "mcp",
+      "id": "replicate",
+      "why": "A second route to video and music generation."
+    },
+    {
+      "kind": "skill",
+      "id": "media-use"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The user's own material, and real brand imagery, into assets/."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "Staged stills nobody has photographed."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Whether a shot reads as real is a judgement made by looking."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "video",
+      "model": "Veo 3.1",
+      "via": "mcp:fal",
+      "note": "Prompt against its cinematic instinct: handheld, available light, imperfect framing."
+    },
+    {
+      "purpose": "video",
+      "model": "Kling v3",
+      "via": "mcp:replicate",
+      "note": "Alternate route when fal is not connected."
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Phone photo, available light, a cluttered real room."
+    }
+  ],
+  "triggers": [
+    "find me some b-roll for this ad",
+    "this footage looks like stock",
+    "generate a shot of someone struggling with this",
+    "what should I cut away to",
+    "make the generated footage look more real",
+    "I need a product shot"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎞️"
+}

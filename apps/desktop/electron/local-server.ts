@@ -1401,6 +1401,13 @@ export async function startLocalServer(
     });
     await mcpManager.start();
   })();
+
+  // The first-party skill pack: check the API once at launch for a newer
+  // build than the one this app shipped with, and pick it up without
+  // restarting. Never gates startup on it — a network hiccup here should be
+  // invisible, not a delay.
+  void import("./skills/refresh").then((m) => m.refreshSkillsFromApi()).catch(() => {});
+
   return {
     url: `${origin}${prefix}`,
     origin,

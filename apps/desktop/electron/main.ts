@@ -118,12 +118,12 @@ async function openSession(dir: string): Promise<DesktopProject> {
   // rather than fired off, so the subprocess warmed a line below starts with
   // them already in place.
   await applySessionRoots(session.dir);
-  // The skill pack, for Codex. Re-linked on every open so an app update
+  // The skill packs, for Codex. Re-linked on every open so an app update
   // reaches projects made before it. Best-effort: a project without the
-  // links still works, the agent just has less to read.
-  if (session.engine === "hyperframes") {
-    await linkSkillsIntoProject(session.dir).catch(() => {});
-  }
+  // links still works, the agent just has less to read. No engine gate here
+  // — `resolveSkills` decides which packs apply, and GenMotion's creative
+  // skills apply to a React project too.
+  await linkSkillsIntoProject(session.dir, session.engine).catch(() => {});
   // Opening a project is the strongest signal that a turn is coming. Load the
   // agent SDK and resolve the CLI now, so the first message does not pay for
   // them — not awaited, because none of it gates the editor appearing. Only the

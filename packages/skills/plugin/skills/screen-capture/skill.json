@@ -1,0 +1,85 @@
+{
+  "id": "screen-capture",
+  "title": "Screen capture",
+  "description": "Getting real app footage into a composition: what a usable capture looks like, the ffmpeg recipes for trimming, cropping, reframing to vertical, speeding up and extracting frames, how to build a device frame in HTML, and how to rebuild a UI from scratch when there is no recording at all. Load it alongside ugc-screen-demo, announce-feature or demo-walkthrough whenever the video has to show software actually working.",
+  "summary": "Real app footage into a composition: what to record, the ffmpeg recipes, device frames, and rebuilding a UI in HTML.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "screen-recording",
+    "ffmpeg",
+    "device-frame",
+    "product-demo",
+    "ui"
+  ],
+  "aspects": [
+    "9:16",
+    "4:5",
+    "1:1",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 3,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trim, crop, reframe to vertical, speed up dead air, pull a still."
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-core"
+    },
+    {
+      "kind": "skill",
+      "id": "hyperframes-keyframes"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "Copies the user's recording into assets/ so nothing is hot-linked."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_image",
+      "why": "Placeholder content inside a rebuilt UI."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "Legibility of interface text is judged by looking at a frame."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate_image",
+      "note": "Avatars and thumbnails inside a rebuilt UI only."
+    }
+  ],
+  "triggers": [
+    "turn my screen recording into a video",
+    "crop this desktop capture to vertical",
+    "how do I record a good demo",
+    "build a phone frame around this video",
+    "I don't have a recording, can you fake the UI",
+    "speed up the boring part of this capture"
+  ],
+  "templates": [
+    "prequel-launch",
+    "notion-launch-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎬"
+}

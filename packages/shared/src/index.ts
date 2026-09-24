@@ -8,3 +8,4 @@ export * from "./plans";
 export * from "./plugins";
 export * from "./desktop";
 export * from "./mcp";
+export * from "./skills";

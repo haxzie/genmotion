@@ -553,6 +553,80 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       });
     },
   },
+  {
+    name: "search_skills",
+    description:
+      "Find the GenMotion skill that owns this request. A skill is a recipe for a kind of video — a viral UGC ad format, a product launch, a feature announcement, a milestone — written by GenMotion's motion designers, with the shot list, the beat sheet and the failure modes already worked out. Call this FIRST on any new video request, before you plan or write anything, with what the user said in their own words rather than a keyword. It returns the best matches with the handle to read each one, and says which of their required integrations this machine actually has connected.",
+    shape: {
+      query: z
+        .string()
+        .min(2)
+        .max(400)
+        .describe("The user's request, in their own words. Not a keyword."),
+      kind: z
+        .enum(["style", "workflow", "technique", "reference"])
+        .optional()
+        .describe("Narrow to one kind. Usually leave this out."),
+      limit: z.number().int().min(1).max(10).optional().describe("How many to return. Default 5."),
+    },
+    readOnly: true,
+    async run(session, args) {
+      const { query, kind, limit } = args as unknown as { query: string; kind?: string; limit?: number };
+      const { findSkills } = await import("../skills/search");
+      const hits = await findSkills({ query, kind, limit, projectDir: session.dir, engine: session.engine });
+      if (hits.length === 0) return text("No skills matched. Use your own judgment for this one.");
+
+      const blocks = hits.map((hit, i) => {
+        const s = hit.entry;
+        const meta = `${s.kind} · ${s.category} · ${s.aspects.join(" ")} · ${s.duration.minSeconds}-${s.duration.maxSeconds}s`;
+        const needs = hit.requirements
+          .filter((r) => r.kind !== "skill")
+          .map((r) => `${r.label} ${r.installed ? "connected" : "NOT connected"}`)
+          .join(" · ");
+        const alongside = hit.requirements
+          .filter((r) => r.kind === "skill")
+          .map((r) => r.id)
+          .join(", ");
+        return [
+          `${i + 1}. ${s.id} — ${s.title}   [${meta}]`,
+          `   ${s.summary}`,
+          `   Read it:  Skill("genmotion-skills:${s.id}")${hit.path ? `   or read ${hit.path}/SKILL.md` : ""}`,
+          alongside ? `   Load with: ${alongside}` : "",
+          needs ? `   Needs: ${needs}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n");
+      });
+
+      return text(
+        `${blocks.join("\n\n")}\n\nRead the top match before you plan. If a requirement says NOT connected and the skill genuinely needs it, call recommend_integration once with that server id, say what you will do without it, and carry on.`,
+      );
+    },
+  },
+
+  {
+    name: "recommend_integration",
+    description:
+      "Show the user a card in the chat offering to connect an MCP server this video needs, with a one-click Connect button. Call it at most once per turn, and only when search_skills reported a requirement as not connected and the skill genuinely cannot do its job without it. This does not pause the turn and does not make the tools available now: say in your reply what you will do without the integration, and keep building.",
+    shape: {
+      serverId: z
+        .string()
+        .min(1)
+        .describe('The marketplace catalog id, e.g. "fal" or "elevenlabs". Not a display name.'),
+      reason: z
+        .string()
+        .min(1)
+        .max(200)
+        .describe("One sentence, in the user's terms, on what it would let you do here."),
+      skillId: z.string().optional().describe("The skill that asked for it, if there is one."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { serverId } = args as unknown as { serverId: string };
+      const { recommendIntegration } = await import("../skills/recommend");
+      return recommendIntegration(serverId);
+    },
+  },
 ];
 
 /**
@@ -926,22 +1000,17 @@ export const DISALLOWED_TOOLS = [
   // Git plumbing. A project folder isn't required to be a repo at all.
   "EnterWorktree",
   "ExitWorktree",
-  // Tools with no meaning here: notebooks, the user's own skills (the same
-  // reason `settingSources` is empty — their coding setup would only confuse a
-  // video agent), and code-review reporting surfaces.
+  // Tools with no meaning here: notebooks, and code-review reporting
+  // surfaces. `Skill` is deliberately NOT on this list — with `settingSources`
+  // empty, the only skills a session can ever see are the plugins this app
+  // hands it (see `plugins` in `claude-code.ts`), never the user's own coding
+  // setup, so allowing the tool allows exactly those: the HyperFrames pack on
+  // a HyperFrames project, GenMotion's own creative pack on every project,
+  // and whatever the user imported.
   "NotebookEdit",
-  "Skill",
   "DesignSync",
   "ReportFindings",
 ];
-
-/**
- * The same list for a HyperFrames project, where `Skill` is the point: the
- * HyperFrames pack arrives as a plugin this app ships (see `pluginDir()` in
- * `claude-code.ts`), and with `settingSources` empty it is the only pack
- * the session can see — so allowing the tool allows exactly those skills.
- */
-export const DISALLOWED_TOOLS_HYPERFRAMES = DISALLOWED_TOOLS.filter((name) => name !== "Skill");
 
 /**
  * What to do with a file once it's saved — which differs by kind, and getting

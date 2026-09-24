@@ -1,0 +1,71 @@
+{
+  "id": "brand-sting",
+  "title": "Brand sting",
+  "description": "The logo lockup, bumper or brand reveal: 2 to 8 seconds, no narration, no claim, just the mark arriving. Covers the three sting shapes (build, reveal, transform), why a sting is as much a sound design problem as a motion one, how long to hold the final lockup, and the transparent-background variant for use as an overlay elsewhere. Load it for a standalone bumper or when a launch video's own closing shot needs strengthening.",
+  "summary": "The logo bumper: build, reveal or transform, a held final lockup, and the sound that sells the hit.",
+  "kind": "style",
+  "category": "Brand",
+  "tags": [
+    "logo",
+    "sting",
+    "bumper",
+    "brand",
+    "intro"
+  ],
+  "aspects": [
+    "16:9",
+    "1:1",
+    "9:16"
+  ],
+  "duration": {
+    "minSeconds": 2,
+    "maxSeconds": 8
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The real logo file, never a redrawn one."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_sfx",
+      "why": "The whoosh and the hit that sell the landing."
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "The final lockup frame is checked by looking at it exactly."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "generate_sfx",
+      "note": "A rising build into one solid hit, optional short decay."
+    }
+  ],
+  "triggers": [
+    "make a logo animation for our brand",
+    "I need an intro bumper",
+    "animate our logo reveal",
+    "outro sting for our videos",
+    "transparent logo animation for overlay",
+    "brand intro for our launch video"
+  ],
+  "templates": [
+    "genmotion-brand-grid",
+    "nike-brand-guide-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✨"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "genmotion-skills",
+  "version": "0.0.0",
+  "description": "GenMotion's own creative skills: viral UGC ad formats, product launches, feature announcements. Loaded into the chat agent's session alongside the HyperFrames authoring pack.",
+  "author": { "name": "GenMotion" }
+}

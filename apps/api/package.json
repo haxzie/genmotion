@@ -21,6 +21,7 @@
     "@genmotion/ai": "workspace:^",
     "@genmotion/db": "workspace:^",
     "@genmotion/shared": "workspace:*",
+    "@genmotion/skills": "workspace:*",
     "@genmotion/storage": "workspace:^",
     "@genmotion/templates": "workspace:*",
     "@hono/node-server": "^1.14.0",

@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { app } from "electron";
 import type { StoredTabs } from "./shared";
 import type { McpServerConfig } from "./mcp/store";
+import type { SkillSettings } from "./skills/store";
 
 /**
  * `<userData>/settings.json`, with one writer.
@@ -25,6 +26,8 @@ export interface Settings {
   openTabs?: StoredTabs;
   /** MCP servers the chat agent may use. Secrets live elsewhere — see `mcp/store.ts`. */
   mcpServers?: McpServerConfig[];
+  /** Which skills are switched off, and which the user installed. See `skills/store.ts`. */
+  skills?: SkillSettings;
 }
 
 function settingsFile(): string {

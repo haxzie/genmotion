@@ -17,6 +17,7 @@ import { releaseRoutes } from "./routes/releases";
 import { templateRoutes } from "./routes/templates";
 import { sampleRoutes } from "./routes/samples";
 import { mcpCatalogRoutes } from "./routes/mcp-catalog";
+import { skillsRoutes } from "./routes/skills";
 import { feedbackRoutes } from "./routes/feedback";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
@@ -79,6 +80,7 @@ app.route("/api/templates", templateRoutes);
 app.route("/api/samples", sampleRoutes);
 // MCP marketplace. Public for the same reasons as the templates.
 app.route("/api/mcp", mcpCatalogRoutes);
+app.route("/api/skills", skillsRoutes);
 // Help & feedback from both apps, straight to a Slack channel.
 app.route("/api/feedback", feedbackRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.

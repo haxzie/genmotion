@@ -1,0 +1,71 @@
+{
+  "id": "demo-walkthrough",
+  "title": "Demo walkthrough",
+  "description": "The longer product tour, 60 to 180 seconds: chapter structure and signposting, the one-workflow-end-to-end rule over a feature tour, pacing for a viewer who chose to watch rather than one who has to be hooked, and when to break the material into a series instead of one long cut. Load it for onboarding videos, sales-enablement demos, or any tour too long for launch-playbook's 90-second ceiling.",
+  "summary": "The longer product tour, 60 to 180s: one workflow done end to end, chaptered, paced for a viewer who opted in.",
+  "kind": "workflow",
+  "category": "Launch",
+  "tags": [
+    "demo",
+    "onboarding",
+    "walkthrough",
+    "sales-enablement",
+    "long-form"
+  ],
+  "aspects": [
+    "16:9",
+    "1:1"
+  ],
+  "duration": {
+    "minSeconds": 60,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "tool",
+      "id": "save_asset",
+      "why": "The real, complete workflow footage the tour is built on."
+    },
+    {
+      "kind": "tool",
+      "id": "generate_voiceover",
+      "why": "Narration that can orient the viewer ahead of a step."
+    },
+    {
+      "kind": "tool",
+      "id": "project_overview",
+      "why": "Checking chapter share of the runtime against the plan."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "voice",
+      "model": "ElevenLabs v3",
+      "via": "generate_voiceover",
+      "note": "Measured, explanatory. This viewer already opted in."
+    }
+  ],
+  "triggers": [
+    "make an onboarding video for our product",
+    "full product demo video",
+    "sales demo video for investors",
+    "walkthrough video of our workflow",
+    "long form product tour",
+    "explain our whole product in a video"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎓"
+}

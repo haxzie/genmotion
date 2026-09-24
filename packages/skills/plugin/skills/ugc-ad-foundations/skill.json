@@ -1,0 +1,58 @@
+{
+  "id": "ugc-ad-foundations",
+  "title": "UGC ad foundations",
+  "description": "The shared ground under every UGC ad: why creator-shot beats polished, the hook / body / CTA anatomy, the three-second rule and the retention numbers behind it, the visual codes that now read as an ad within half a second, platform specs and safe zones for TikTok, Reels, Shorts and Meta feed, the phone-shot frame presets, and the 3x3x3 variant matrix. Load it alongside any ugc-* format skill. Not a format on its own: pick one of those.",
+  "summary": "Hook, body, CTA. The three-second rule, platform safe zones, the phone-shot look, and the rules every UGC format inherits.",
+  "kind": "reference",
+  "category": "UGC ads",
+  "tags": [
+    "ugc",
+    "foundations",
+    "hook",
+    "retention",
+    "platform-specs"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 6,
+    "maxSeconds": 60
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "ugc-hooks"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-scripting"
+    },
+    {
+      "kind": "tool",
+      "id": "capture_frames",
+      "why": "The five QA checks are all frame captures."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "how do I make a UGC ad",
+    "what makes a TikTok ad work",
+    "what are the safe zones for reels",
+    "how long should my social ad be",
+    "why do my ads look like ads"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📐"
+}
