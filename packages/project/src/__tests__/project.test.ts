@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs/promises";
 import { createProject, loadProject, readManifest, writeManifest } from "../project";
+import { renderStarterScene } from "../scaffold";
 import { projectManifestSchema, sceneNameFromFile } from "../schema";
 import { SCENES_DIR } from "../paths";
 import { createSceneBundler } from "../bundle";
@@ -46,6 +47,21 @@ describe("createProject", () => {
     expect(await fs.readFile(path.join(dir, ".npmrc"), "utf8")).toContain(
       "ignore-scripts=true",
     );
+  });
+
+  it("writes a starter scene that sizes itself from the frame", async () => {
+    // The starter is the first thing every project shows, at whichever
+    // aspect ratio the user picked. Fixed pixels tuned for 1920x1080 ran the
+    // card row off both edges of a 1080-wide portrait or square frame, so
+    // every size is a fraction of the frame's own width.
+    const scene = renderStarterScene();
+    expect(scene).toContain("const { fps, width } = useVideoConfig()");
+    expect(scene).toContain("const px = (ratio: number) => Math.round(width * ratio)");
+    // …and the row wraps rather than overflowing when even that is too wide.
+    expect(scene).toContain('flexWrap: "wrap"');
+    // None of the 1920-only literals that used to be laid out directly.
+    expect(scene).not.toMatch(/width: 440\b/);
+    expect(scene).not.toMatch(/fontSize: (48|30|28)\b/);
   });
 
   it("scaffolds a HyperFrames project that plays as written", async () => {

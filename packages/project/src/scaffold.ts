@@ -149,12 +149,12 @@ const CARDS = [
   },
 ];
 
-function Logo({ rotation }: { rotation: number }) {
+function Logo({ rotation, size }: { rotation: number; size: number }) {
   return (
     <svg
       id="logo"
-      width={72}
-      height={72}
+      width={size}
+      height={size}
       viewBox="0 0 512 512"
       fill="none"
       style={{ transform: \`rotate(\${rotation}deg)\` }}
@@ -182,9 +182,16 @@ function Logo({ rotation }: { rotation: number }) {
 
 export default function Scene() {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width } = useVideoConfig();
   // One full turn every 6 seconds, driven purely by the frame clock.
   const rotation = (frame / (fps * 6)) * 360;
+
+  // Every size below is a fraction of the frame's width, so this reads the
+  // same at 1080x1920 as it does at 1920x1080. The ratios are the 16:9 pixel
+  // values divided by 1920, so nothing moves at the default size.
+  const px = (ratio: number) => Math.round(width * ratio);
+  const logoTile = px(0.0625);
+  const cardPad = px(0.0167);
 
   return (
     <AbsoluteFill
@@ -192,7 +199,7 @@ export default function Scene() {
         backgroundColor: "#ffffff",
         alignItems: "center",
         justifyContent: "center",
-        gap: 20,
+        gap: px(0.0104),
         fontFamily: "Inter, sans-serif",
       }}
     >
@@ -219,19 +226,19 @@ export default function Scene() {
       <div
         id="logo-tile"
         style={{
-          width: 120,
-          height: 120,
-          borderRadius: 34,
+          width: logoTile,
+          height: logoTile,
+          borderRadius: Math.round(logoTile * 0.28),
           backgroundColor: "#0b0b10",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          marginBottom: 12,
+          marginBottom: px(0.00625),
           boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
           position: "relative",
         }}
       >
-        <Logo rotation={rotation} />
+        <Logo rotation={rotation} size={Math.round(logoTile * 0.6)} />
       </div>
 
       <h1
@@ -239,7 +246,7 @@ export default function Scene() {
         style={{
           margin: 0,
           position: "relative",
-          fontSize: 48,
+          fontSize: px(0.025),
           fontWeight: 500,
           color: "#111114",
           letterSpacing: "-0.02em",
@@ -249,7 +256,7 @@ export default function Scene() {
       </h1>
       <p
         id="hero-subtitle"
-        style={{ margin: 0, position: "relative", fontSize: 28, color: "#5c5c66" }}
+        style={{ margin: 0, position: "relative", fontSize: px(0.0146), color: "#5c5c66" }}
       >
         Ask your agent to edit the video
       </p>
@@ -260,8 +267,13 @@ export default function Scene() {
           position: "relative",
           display: "flex",
           flexDirection: "row",
-          gap: 24,
-          marginTop: 44,
+          // Wraps rather than running off both edges of a portrait or square
+          // frame, where three cards in a row have nowhere to go.
+          flexWrap: "wrap",
+          justifyContent: "center",
+          maxWidth: "92%",
+          gap: px(0.0125),
+          marginTop: px(0.0229),
         }}
       >
         {CARDS.map(({ id, Icon, title, body }) => (
@@ -269,35 +281,35 @@ export default function Scene() {
             key={id}
             id={id}
             style={{
-              width: 440,
-              padding: "32px 32px 36px",
-              borderRadius: 20,
+              width: px(0.2292),
+              padding: \`\${cardPad}px \${cardPad}px \${Math.round(cardPad * 1.1)}px\`,
+              borderRadius: px(0.0104),
               backgroundColor: "#ffffff",
               border: "1px solid #e4e4ea",
               boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
               display: "flex",
               flexDirection: "column",
-              gap: 14,
+              gap: Math.round(cardPad * 0.44),
               boxSizing: "border-box",
             }}
           >
             <div
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 18,
+                width: px(0.0375),
+                height: px(0.0375),
+                borderRadius: px(0.009),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                marginBottom: 6,
+                marginBottom: px(0.003),
               }}
             >
-              <Icon size={48} color="#16a34a" strokeWidth={1.5} />
+              <Icon size={px(0.025)} color="#16a34a" strokeWidth={1.5} />
             </div>
-            <div style={{ fontSize: 30, fontWeight: 500, color: "#111114", letterSpacing: "-0.01em" }}>
+            <div style={{ fontSize: px(0.0156), fontWeight: 500, color: "#111114", letterSpacing: "-0.01em" }}>
               {title}
             </div>
-            <div style={{ fontSize: 28, lineHeight: 1.35, color: "#5c5c66" }}>{body}</div>
+            <div style={{ fontSize: px(0.0146), lineHeight: 1.35, color: "#5c5c66" }}>{body}</div>
           </div>
         ))}
       </div>
