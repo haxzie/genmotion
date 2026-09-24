@@ -88,6 +88,35 @@ describe.skipIf(!dbReady)("events feed", () => {
     expect(await feed("signups")).toEqual([]);
   });
 
+  it("announces a remix, naming the template, and relays nothing else", async () => {
+    const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const send = (events: unknown[]) =>
+      requestJson("/api/events", { as: session, json: { events } });
+
+    const { status } = await send([
+      { name: "template_remixed", properties: { templateId: "x-numbers-launch-video", revision: "abc" } },
+      // Every other event the app reports stays in PostHog.
+      { name: "project_created", properties: { engine: "three" } },
+    ]);
+    expect(status).toBe(202);
+
+    // The relay reads the catalog off disk to name the template, so the post
+    // lands a few ticks after the 202 rather than on the next one.
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(1));
+    expect(await feed("events")).toEqual([
+      `🎬 *Ada Lovelace* (ada@example.test) remixed <${process.env.WEB_URL ?? "http://localhost:4000"}/templates/x-numbers-launch-video|X Numbers launch video>`,
+    ]);
+
+    // A template that has since left the catalog still gets a line, by id.
+    posts.mockReset();
+    expect((await send([{ name: "template_remixed", properties: { templateId: "gone" } }])).status).toBe(202);
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(1));
+    expect((await feed("events"))[0]).toContain("|gone>");
+  });
+
   it("announces subscription lifecycle events once the webhook has applied them", async () => {
     const { orgId } = await createOrg({ name: "Analytical Engines" });
 

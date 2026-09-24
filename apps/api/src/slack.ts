@@ -8,8 +8,9 @@ import type { WebhookEnvelope } from "./billing/webhook-handler";
  * Slack.
  *
  * Two channels, two webhooks: `signups` gets every new account, `events` gets
- * the money and team moves (checkout, subscription lifecycle, invites). Each
- * is inert until its URL is set, so local and test runs post nothing.
+ * the money and team moves (checkout, subscription lifecycle, invites) plus
+ * the one product moment worth watching live, a template remix. Each is inert
+ * until its URL is set, so local and test runs post nothing.
  *
  * Fire-and-forget by design: a post never blocks a request and never fails
  * one. A Slack outage must not be able to stop a signup or a webhook ack, and
@@ -214,6 +215,39 @@ export async function notifySubscriptionEvent(
   }
   postToSlack("events", parts.join(" · "));
 }
+
+/**
+ * Someone turned a template into a project of their own.
+ *
+ * Reported by the desktop app rather than observed here: the bundle fetch
+ * (`GET /api/templates/:id/files`) is public, anonymous and cached, so it
+ * cannot say who — or whether a remix actually landed on disk. The app posts
+ * `template_remixed` once the folder is written, which is the moment worth
+ * hearing about.
+ *
+ * `at` is when it happened, not when it arrived: the app buffers events while
+ * offline or signed out and flushes later, so a remix can reach Slack minutes
+ * after the fact. Saying when keeps a backfilled batch from reading as a
+ * sudden rush.
+ */
+export function notifyTemplateRemixed(opts: {
+  user: { name?: string | null; email: string };
+  templateId: string;
+  templateName?: string | null;
+  at?: Date;
+}): void {
+  const title = escapeSlack(opts.templateName?.trim() || opts.templateId);
+  const link = `<${env.WEB_URL}/templates/${encodeURIComponent(opts.templateId)}|${title}>`;
+  const late = opts.at && Date.now() - opts.at.getTime() > LATE_EVENT_MS;
+  postToSlack(
+    "events",
+    `🎬 ${person(opts.user)} remixed ${link}` +
+      (late ? ` · ${opts.at!.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""),
+  );
+}
+
+/** Old enough that the message should say when, not just that. */
+const LATE_EVENT_MS = 5 * 60_000;
 
 export function notifyInviteSent(opts: {
   inviter: { name?: string | null; email: string };

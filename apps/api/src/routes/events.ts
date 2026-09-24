@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import { getTemplate } from "@genmotion/templates";
 import { trackClientEvent } from "../analytics";
+import { notifyTemplateRemixed } from "../slack";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
 /**
@@ -50,6 +52,7 @@ eventRoutes.post("/", zValidator("json", bodySchema), (c) => {
   const { events } = c.req.valid("json");
 
   for (const event of events) {
+    if (event.name === SLACK_RELAYED_EVENT) void relayRemix(user, event);
     trackClientEvent({
       name: event.name,
       distinctId: user.id,
@@ -69,3 +72,37 @@ eventRoutes.post("/", zValidator("json", bodySchema), (c) => {
   // The app treats any 2xx as "sent" and drops its buffered copy.
   return c.json({ accepted: events.length }, 202);
 });
+
+/**
+ * The one client event that also goes to Slack.
+ *
+ * Kept to a single name on purpose: this endpoint takes whatever the app
+ * reports, and a feed that relayed everything would be an open tap into a
+ * team channel. Anything else worth hearing about gets added here explicitly.
+ */
+const SLACK_RELAYED_EVENT = "template_remixed";
+
+/**
+ * Post a remix to the ops feed. Never awaited by the handler and never allowed
+ * to throw — the same rule the rest of `slack.ts` follows, extended over the
+ * catalog read the message's name comes from.
+ */
+async function relayRemix(
+  user: { name?: string | null; email: string },
+  event: { properties?: Record<string, unknown>; timestamp?: string },
+): Promise<void> {
+  try {
+    const templateId = event.properties?.templateId;
+    if (typeof templateId !== "string" || !templateId) return;
+    const record = await getTemplate(templateId).catch(() => null);
+    const at = event.timestamp ? new Date(event.timestamp) : undefined;
+    notifyTemplateRemixed({
+      user,
+      templateId,
+      templateName: record?.meta.title,
+      ...(at && !Number.isNaN(at.getTime()) ? { at } : {}),
+    });
+  } catch (err) {
+    console.error("[events] slack relay failed:", err instanceof Error ? err.message : err);
+  }
+}
