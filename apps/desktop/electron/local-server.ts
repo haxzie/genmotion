@@ -278,6 +278,24 @@ export async function startLocalServer(
       .map(encodeURIComponent)
       .join("/")}`;
 
+  /**
+   * In development the renderer is served by Vite on its own origin while this
+   * server answers on the loopback one, so every call the editor makes is
+   * cross-origin and the browser drops it before it is ever sent. A packaged
+   * app has no such split — the renderer is served from here — so the
+   * allowance is exactly the dev server's origin, and nothing at all when
+   * `GM_DEV_SERVER_URL` is unset.
+   */
+  const devOrigin = (() => {
+    const url = process.env.GM_DEV_SERVER_URL;
+    if (!url) return null;
+    try {
+      return new URL(url).origin;
+    } catch {
+      return null;
+    }
+  })();
+
   const server = http.createServer((req, res) => {
     void handle(req, res).catch((err) => {
       if (err instanceof ProjectNotOpen) {
@@ -290,6 +308,25 @@ export async function startLocalServer(
 
   async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     const rawUrl = req.url ?? "/";
+    // The client sends its session cookie, so the allowance has to name the
+    // origin — "*" is refused for a credentialed request — and the preflight
+    // has to be answered here, before the secret-prefix check below: a
+    // preflight carries no credentials and no body, only the question.
+    if (devOrigin && req.headers.origin === devOrigin) {
+      res.setHeader("access-control-allow-origin", devOrigin);
+      res.setHeader("access-control-allow-credentials", "true");
+      res.setHeader("vary", "origin");
+      if ((req.method ?? "GET") === "OPTIONS") {
+        res.writeHead(204, {
+          "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+          "access-control-allow-headers":
+            req.headers["access-control-request-headers"] ?? "content-type",
+          "access-control-max-age": "86400",
+        });
+        res.end();
+        return;
+      }
+    }
     // Where an MCP server's OAuth sends the browser back. Outside the secret
     // prefix on purpose: this URL is registered with a third party and sits
     // in the browser's history, so it must not carry the secret. The `state`

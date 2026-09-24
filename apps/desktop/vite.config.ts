@@ -12,8 +12,35 @@ const shim = (name: string) => path.resolve(root, "src/shims", name);
 /** The editor tree, moved out of the web app when the hosted studio was retired. */
 const editor = path.resolve(root, "src/editor");
 
+/**
+ * Dev-only CSP relief.
+ *
+ * `index.html` carries the packaged app's policy, which is deliberately tight:
+ * `connect-src` is the loopback server and nothing else. A few things only
+ * exist while developing, though — the Vite dev server's own websocket, React
+ * Grab's version ping, the webfont a shared component asks Google for — and
+ * each of them would otherwise spend every session logging refusals.
+ * Rewritten in the served HTML only; the file on disk, and so the packaged
+ * app, keeps the strict policy.
+ */
+const devCsp = {
+  name: "gm-dev-csp",
+  apply: "serve" as const,
+  transformIndexHtml(html: string) {
+    return html
+      .replace(
+        "connect-src 'self' http://127.0.0.1:*",
+        "connect-src 'self' http://127.0.0.1:* http://localhost:* ws://localhost:* https://www.react-grab.com https://fonts.googleapis.com https://fonts.gstatic.com",
+      )
+      // A shared web component pulls Geist from Google Fonts; the packaged app
+      // ships its own copy, so this is dev noise rather than a missing font.
+      .replace("style-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com")
+      .replace("font-src 'self' data:", "font-src 'self' data: https://fonts.gstatic.com");
+  },
+};
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), devCsp],
   // The packaged renderer is served from the loopback origin, so root-absolute
   // paths work — including the ones the web components already use.
   base: "/",
@@ -41,6 +68,7 @@ export default defineConfig({
       { find: /^@\/components\/composer$/, replacement: `${editor}/components/composer.tsx` },
       { find: /^@\/hooks\/use-assets$/, replacement: `${editor}/hooks/use-assets.ts` },
       { find: /^@\/hooks\/use-project$/, replacement: `${editor}/hooks/use-project.ts` },
+      { find: /^@\/hooks\/use-project-files$/, replacement: `${editor}/hooks/use-project-files.ts` },
       { find: /^@\/hooks\/use-waveform$/, replacement: `${editor}/hooks/use-waveform.ts` },
       { find: /^@\/hooks\/use-compiled-three-scenes$/, replacement: `${editor}/hooks/use-compiled-three-scenes.ts` },
       { find: /^@\/stores\/editor-store$/, replacement: `${editor}/stores/editor-store.ts` },
