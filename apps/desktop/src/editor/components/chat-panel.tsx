@@ -40,6 +40,8 @@ import {
 import { PluginMenu } from "./plugin-menu";
 import { useShareFolder } from "../../folder-access";
 import { ToolRun, type RunItem, type ToolPartLike } from "./tool-card";
+import { AskQuestionPanel, questionsOf } from "./ask-question-panel";
+import { VoicePickerPanel } from "./voice-picker";
 import { Spinner, cx } from "@/components/ui";
 
 /**
@@ -492,6 +494,10 @@ function MessageBubble({
   // parts (and empty text) between tool calls; dropping them first means
   // same-tool calls split only by those still count as consecutive and club.
   const parts = message.parts.filter((p) => {
+    // Whatever the turn is parked on lives above the composer, never in the
+    // transcript — see `ComposerPanel`. A tool line here would duplicate it.
+    if (p.type === "tool-AskUserQuestion") return false;
+    if (p.type === "tool-mcp__genmotion__pick_voice") return false;
     if (p.type === "text") return Boolean(p.text.trim());
     if (p.type === "reasoning") return Boolean((p as { text?: string }).text?.trim());
     return p.type.startsWith("tool-") || p.type === "dynamic-tool";
@@ -541,6 +547,10 @@ function MessageBubble({
     }
     i = Math.max(j, i + 1);
   }
+
+  // Nothing worth a bubble — a turn whose only part was the question now
+  // rendered above the composer — so don't leave its margin behind.
+  if (elements.length === 0) return null;
 
   return (
     <div className={cx("flex w-full min-w-0 max-w-full flex-col gap-1.5 self-start", spacing)}>
@@ -823,6 +833,45 @@ function ChatPanelInner({
   >([]);
 
   const busy = status === "submitted" || status === "streaming";
+
+  /**
+   * The call the turn is parked on, if any — a question or the voice picker.
+   *
+   * `input-available` with no output is a call waiting on an answer — but only
+   * while this window's turn is actually streaming: a restored transcript can
+   * hold a part that was never answered, and there is no harness left behind it
+   * to hear one. Dismissed ids are remembered so a skipped prompt does not come
+   * back on the next render. Only one can be parked at a time, because the
+   * harness itself is blocked while it waits.
+   */
+  const [dismissedPrompts, setDismissedPrompts] = useState<string[]>([]);
+  const pendingPrompt = (() => {
+    if (!busy) return null;
+    const last = messages[messages.length - 1];
+    if (last?.role !== "assistant") return null;
+    for (let i = last.parts.length - 1; i >= 0; i--) {
+      const part = last.parts[i]!;
+      const isQuestion = part.type === "tool-AskUserQuestion";
+      const isVoice = part.type === "tool-mcp__genmotion__pick_voice";
+      if (!isQuestion && !isVoice) continue;
+      if ((part as { state?: string }).state !== "input-available") return null;
+      const id = (part as { toolCallId?: string }).toolCallId;
+      if (!id || dismissedPrompts.includes(id)) return null;
+      const input = (part as { input?: { question?: string } }).input;
+      if (isVoice) {
+        return {
+          kind: "voice" as const,
+          id,
+          question: input?.question || "Which voice should narrate this video?",
+        };
+      }
+      const questions = questionsOf(input);
+      return questions.length > 0 ? { kind: "question" as const, id, questions } : null;
+    }
+    return null;
+  })();
+  const dismissPrompt = (id: string) =>
+    setDismissedPrompts((ids) => [...ids.slice(-19), id]);
 
   // Flush the next queued message on the falling edge of `busy` (a turn just
   // finished). One per transition, so each queued message runs in its own turn.
@@ -1468,6 +1517,22 @@ function ChatPanelInner({
         <AudioClipChips clips={audioClips} />
         <ElementChips />
         <MarkupChips />
+        {pendingPrompt?.kind === "question" && (
+          <AskQuestionPanel
+            key={pendingPrompt.id}
+            toolCallId={pendingPrompt.id}
+            questions={pendingPrompt.questions}
+            onDone={() => dismissPrompt(pendingPrompt.id)}
+          />
+        )}
+        {pendingPrompt?.kind === "voice" && (
+          <VoicePickerPanel
+            key={pendingPrompt.id}
+            toolCallId={pendingPrompt.id}
+            question={pendingPrompt.question}
+            onDone={() => dismissPrompt(pendingPrompt.id)}
+          />
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1494,6 +1559,9 @@ function ChatPanelInner({
           }}
           className={cx(
             "rounded-2xl border bg-surface px-3 py-2.5 transition-colors",
+            // The question panel sits directly on top of the box; square off
+            // the seam so the two read as one surface.
+            pendingPrompt && "rounded-t-none",
             chatDragOver
               ? "border-accent bg-accent-muted/40 ring-2 ring-accent/30"
               : windowDragActive

@@ -1,13 +1,12 @@
-import { lazy, Suspense, useState, type ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import {
   registerToolPresentation,
   registerToolPresentationFallback,
   type ToolPartLike,
 } from "@/components/editor/tool-card";
-import { API_URL } from "@/lib/api";
 import { parseMcpToolName } from "@genmotion/shared";
 import { useMcpServers } from "./lib/use-mcp-servers";
-import { VoicePickerCard } from "./editor/components/voice-picker";
+import { questionsOf } from "./editor/components/ask-question-panel";
 
 const CodeBlock = lazy(() => import("@/components/editor/code-block"));
 
@@ -193,234 +192,14 @@ const ListGlyph = ({ className }: { className?: string }) => (
 );
 
 
-interface Choice {
-  label: string;
-  description?: string;
-}
-
-interface Question {
-  question: string;
-  header?: string;
-  options: Choice[];
-  multiSelect?: boolean;
-}
-
-function questionsOf(part: ToolPartLike): Question[] {
-  const raw = input(part).questions;
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((entry) => {
-    const q = (entry ?? {}) as Record<string, unknown>;
-    if (typeof q.question !== "string") return [];
-    const options = Array.isArray(q.options)
-      ? q.options.flatMap((option) => {
-          const o = (option ?? {}) as Record<string, unknown>;
-          return typeof o.label === "string"
-            ? [{ label: o.label, description: typeof o.description === "string" ? o.description : undefined }]
-            : [];
-        })
-      : [];
-    return [{
-      question: q.question,
-      header: typeof q.header === "string" ? q.header : undefined,
-      options,
-      multiSelect: q.multiSelect === true,
-    }];
-  });
-}
-
-const FREEFORM = "\u0000other";
-
-/**
- * The agent's question, answerable in place.
- *
- * The harness is parked inside `canUseTool` while this is on screen: it asked
- * permission to run `AskUserQuestion`, and the selection below is what gets
- * handed back as the tool's input. Nothing else in the turn moves until the
- * POST lands (or the ten-minute deadline passes), so the card has to be able
- * to fail visibly rather than leave the chat spinning.
- */
-function QuestionCard({ part }: { part: ToolPartLike }) {
-  const questions = questionsOf(part);
-  // An output means the tool already ran — reloaded transcript, a turn that was
-  // stopped, or an answer this window sent a moment ago.
-  const answered = (part as { output?: unknown }).output !== undefined;
-  const [picked, setPicked] = useState<Record<string, string[]>>({});
-  const [typed, setTyped] = useState<Record<string, string>>({});
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
-
-  if (questions.length === 0) return <Text value={outputText(part)} />;
-  if (answered) return <Text value={outputText(part)} />;
-
-  const answerFor = (q: Question): string => {
-    const labels = (picked[q.question] ?? []).map((label) =>
-      label === FREEFORM ? (typed[q.question] ?? "").trim() : label,
-    );
-    return labels.filter(Boolean).join(", ");
-  };
-  const complete = questions.every((q) => answerFor(q));
-
-  const toggle = (q: Question, label: string) => {
-    setFailed(null);
-    setPicked((current) => {
-      const chosen = current[q.question] ?? [];
-      if (!q.multiSelect) return { ...current, [q.question]: [label] };
-      return {
-        ...current,
-        [q.question]: chosen.includes(label)
-          ? chosen.filter((l) => l !== label)
-          : [...chosen, label],
-      };
-    });
-  };
-
-  const send = async (answers: Record<string, string>) => {
-    setSending(true);
-    setFailed(null);
-    try {
-      const res = await fetch(`${API_URL}/api/chat/answer`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ toolCallId: part.toolCallId, answers }),
-      });
-      if (res.ok) setSent(true);
-      else {
-        // 410 is the honest common case: the turn was stopped, or it timed out.
-        setFailed(
-          res.status === 410
-            ? "This question is no longer waiting for an answer."
-            : `Could not send the answer (${res.status}).`,
-        );
-      }
-    } catch (err) {
-      setFailed(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const submit = () => {
-    const answers: Record<string, string> = {};
-    for (const q of questions) answers[q.question] = answerFor(q);
-    void send(answers);
-  };
-
-  // One single-select question is the overwhelmingly common shape, and making
-  // someone click an option and then a button to confirm it is pure friction.
-  const single = questions.length === 1 && !questions[0]!.multiSelect;
-
-  return (
-    <Body>
-      <div className="divide-y divide-border">
-        {questions.map((q) => {
-          const chosen = picked[q.question] ?? [];
-          return (
-            <div key={q.question} className="px-3 py-2.5">
-              {q.header && (
-                <span className="mb-1.5 inline-block rounded bg-surface-raised px-1.5 py-0.5 text-[0.7rem] font-medium text-text-tertiary">
-                  {q.header}
-                </span>
-              )}
-              <p className="mb-2 text-[0.857rem] leading-relaxed text-text-secondary">
-                {q.question}
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {q.options.map((option) => {
-                  const on = chosen.includes(option.label);
-                  return (
-                    <button
-                      key={option.label}
-                      type="button"
-                      disabled={sending || sent}
-                      onClick={() => {
-                        if (single) {
-                          void send({ [q.question]: option.label });
-                          setPicked({ [q.question]: [option.label] });
-                          return;
-                        }
-                        toggle(q, option.label);
-                      }}
-                      className={`rounded-md border px-2.5 py-1.5 text-left transition-colors disabled:opacity-50 ${
-                        on
-                          ? "border-accent bg-accent-muted"
-                          : "border-border hover:border-text-tertiary"
-                      }`}
-                    >
-                      <span className="block text-[0.821rem] text-text-primary">{option.label}</span>
-                      {option.description && (
-                        <span className="mt-0.5 block text-[0.75rem] leading-snug text-text-tertiary">
-                          {option.description}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-
-                <input
-                  type="text"
-                  disabled={sending || sent}
-                  placeholder="Something else…"
-                  value={typed[q.question] ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFailed(null);
-                    setTyped((current) => ({ ...current, [q.question]: value }));
-                    setPicked((current) => {
-                      const kept = (current[q.question] ?? []).filter((l) => l !== FREEFORM);
-                      const next = value.trim()
-                        ? q.multiSelect
-                          ? [...kept, FREEFORM]
-                          : [FREEFORM]
-                        : kept;
-                      return { ...current, [q.question]: next };
-                    });
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
-                    e.preventDefault();
-                    if (single) {
-                      const value = (typed[q.question] ?? "").trim();
-                      if (value) void send({ [q.question]: value });
-                      return;
-                    }
-                    if (complete) submit();
-                  }}
-                  className="rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[0.821rem] text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        {!single && (
-          <div className="px-3 py-2">
-            <button
-              type="button"
-              disabled={!complete || sending || sent}
-              onClick={submit}
-              className="rounded-md bg-accent px-3 py-1.5 text-[0.821rem] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-            >
-              {sending ? "Sending…" : sent ? "Sent" : "Send answer"}
-            </button>
-          </div>
-        )}
-
-        {failed && (
-          <p className="px-3 py-2 text-[0.786rem] text-warning">{failed}</p>
-        )}
-      </div>
-    </Body>
-  );
-}
-
 registerToolPresentation({
+  // The card itself lives above the composer (`AskQuestionPanel`), and
+  // `chat-panel` keeps the call out of the transcript entirely. The entry is
+  // kept for its vocabulary — the label and icon a digest line would use.
   AskUserQuestion: {
     labels: { active: "Waiting for your answer", done: "Asked a question" },
     icon: QuestionGlyph,
-    expandWhileRunning: true,
-    subject: (part) => questionsOf(part)[0]?.header,
-    body: (part) => <QuestionCard part={part} />,
+    subject: (part) => questionsOf(part.input)[0]?.header,
   },
 
   Write: {
@@ -689,19 +468,12 @@ registerToolPresentation({
     },
   },
 
+  // Like `AskUserQuestion`, the picker itself lives above the composer
+  // (`VoicePickerPanel`) and `chat-panel` keeps the call out of the transcript.
   mcp__genmotion__pick_voice: {
     labels: { active: "Waiting for you to pick a voice", done: "Picked a voice" },
     icon: MicGlyph,
-    expandWhileRunning: true,
     subject: () => undefined,
-    body: (part) => (
-      <VoicePickerCard
-        toolCallId={part.toolCallId ?? ""}
-        question={str(part, "question") || "Which voice should narrate this video?"}
-        answered={(part as { output?: unknown }).output !== undefined}
-        output={outputText(part)}
-      />
-    ),
   },
 
   mcp__genmotion__generate_sfx: {

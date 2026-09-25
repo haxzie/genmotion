@@ -1541,10 +1541,18 @@ async function chatTurn(
  */
 async function answerQuestionRoute(req: http.IncomingMessage): Promise<Response> {
   const body = await readJson<{ toolCallId?: string; answers?: Record<string, string> }>(req);
-  if (!body.toolCallId || !body.answers) {
+  // An empty map is a real answer: the dismiss button on the question panel,
+  // which releases the parked turn and lets the tool run unanswered.
+  const answers = body.answers;
+  if (
+    !body.toolCallId ||
+    typeof answers !== "object" ||
+    answers === null ||
+    Array.isArray(answers)
+  ) {
     return jsonResponse(400, { error: "Expected a toolCallId and answers" });
   }
-  const delivered = answerQuestion(body.toolCallId, body.answers);
+  const delivered = answerQuestion(body.toolCallId, answers);
   return jsonResponse(delivered ? 200 : 410, { delivered });
 }
 

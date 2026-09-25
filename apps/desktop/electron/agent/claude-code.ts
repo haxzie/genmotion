@@ -228,9 +228,12 @@ async function turnOptions(
       if (toolName === "AskUserQuestion") {
         const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
         const answers = await waitForAnswer(toolUseID, signal);
+        // An empty map is the panel's dismiss: hand the input back untouched so
+        // the tool reports that nobody replied, which the model narrates.
+        const answered = answers && Object.keys(answers).length > 0;
         return {
           behavior: "allow" as const,
-          updatedInput: answers ? { ...input, answers } : input,
+          updatedInput: answered ? { ...input, answers } : input,
         };
       }
       // Our voice picker rides the same rails: the chat shows the voices,
