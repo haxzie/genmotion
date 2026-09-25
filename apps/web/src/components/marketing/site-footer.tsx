@@ -19,6 +19,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       // Its own landing page rather than a `use-cases.ts` entry, so it is
       // listed here by hand instead of coming out of the map above.
       { label: "UGC Ads", href: "/ugc-ads" },
+      { label: "Educational Videos", href: "/educational-videos" },
     ],
   },
   {

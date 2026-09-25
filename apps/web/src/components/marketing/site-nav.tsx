@@ -51,6 +51,14 @@ const USE_CASE_LINKS: {
     icon: "sparkles",
     color: "#F43F5E",
   },
+  {
+    key: "educational-videos",
+    href: "/educational-videos",
+    navLabel: "Educational",
+    tagline: "Narrated explainers that teach one idea at a time.",
+    icon: "type",
+    color: "#38BDF8",
+  },
 ];
 
 /** True on /use-cases and on any standalone route the Use Cases menu lists. */

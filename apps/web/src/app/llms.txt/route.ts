@@ -38,6 +38,7 @@ export function GET() {
     `- [Pricing](${BASE}/pricing): plans and what each includes`,
     `- [About](${BASE}/about): mission and how we build`,
     `- [UGC Ads](${BASE}/ugc-ads): make vertical, feed-native UGC ads with Claude Code`,
+    `- [Educational Videos](${BASE}/educational-videos): make narrated explainer and lesson videos with Claude Code`,
   ]);
 
   section(

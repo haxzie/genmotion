@@ -132,5 +132,6 @@ And if you'd rather see the output before reading any more about the process, th
 
 - **[How to make a product launch video](/blog/how-to-make-a-product-launch-video)** — the script structure and production routes.
 - **[SaaS explainer videos](/use-cases/saas-explainer)** — the format for explaining a product rather than launching it.
+- **[How to create educational videos for YouTube](/blog/how-to-create-educational-videos-for-youtube)** — the same craft applied to teaching an idea rather than selling one.
 - **[The glossary](/glossary)** — every term in this guide, defined properly.
 - **[AI scene authoring](/features/ai-scene-authoring)** — how GenMotion turns a description into an editable animated scene.

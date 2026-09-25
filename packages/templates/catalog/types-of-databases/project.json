@@ -1,0 +1,171 @@
+{
+  "name": "Types of databases",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "durationInFrames": 150,
+      "name": "Intro"
+    },
+    {
+      "file": "scenes/02-relational.ts",
+      "durationInFrames": 225,
+      "name": "Relational"
+    },
+    {
+      "file": "scenes/03-document.ts",
+      "durationInFrames": 225,
+      "name": "Document"
+    },
+    {
+      "file": "scenes/04-key-value.ts",
+      "durationInFrames": 200,
+      "name": "Key-value"
+    },
+    {
+      "file": "scenes/05-graph.ts",
+      "durationInFrames": 210,
+      "name": "Graph"
+    },
+    {
+      "file": "scenes/06-time-series.ts",
+      "durationInFrames": 210,
+      "name": "Time-series"
+    },
+    {
+      "file": "scenes/07-vector.ts",
+      "durationInFrames": 210,
+      "name": "Vector"
+    },
+    {
+      "file": "scenes/08-summary.ts",
+      "durationInFrames": 240,
+      "name": "Summary"
+    }
+  ],
+  "audio": [
+    {
+      "id": "vo-01-intro",
+      "file": "assets/vo-01-intro.mp3",
+      "track": 0,
+      "startFrame": 6,
+      "durationInFrames": 129,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-02-relational",
+      "file": "assets/vo-02-relational.mp3",
+      "track": 0,
+      "startFrame": 156,
+      "durationInFrames": 203,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-03-document",
+      "file": "assets/vo-03-document.mp3",
+      "track": 0,
+      "startFrame": 381,
+      "durationInFrames": 198,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-04-key-value",
+      "file": "assets/vo-04-key-value.mp3",
+      "track": 0,
+      "startFrame": 606,
+      "durationInFrames": 150,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-05-graph",
+      "file": "assets/vo-05-graph.mp3",
+      "track": 0,
+      "startFrame": 806,
+      "durationInFrames": 152,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-06-time-series",
+      "file": "assets/vo-06-time-series.mp3",
+      "track": 0,
+      "startFrame": 1016,
+      "durationInFrames": 173,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-07-vector",
+      "file": "assets/vo-07-vector.mp3",
+      "track": 0,
+      "startFrame": 1226,
+      "durationInFrames": 191,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "vo-08-summary",
+      "file": "assets/vo-08-summary.mp3",
+      "track": 0,
+      "startFrame": 1436,
+      "durationInFrames": 173,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "bgm-1",
+      "file": "assets/bgm-loop.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 900,
+      "startFrom": 0,
+      "volume": 0.22,
+      "fadeInFrames": 30,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "bgm-2",
+      "file": "assets/bgm-loop.mp3",
+      "track": 1,
+      "startFrame": 900,
+      "durationInFrames": 770,
+      "startFrom": 0,
+      "volume": 0.22,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 45,
+      "muted": false
+    }
+  ]
+}

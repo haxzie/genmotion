@@ -54,4 +54,6 @@ But it's a narrower question than "how do I make this video." A launch teaser th
 
 That's the gap a studio sits in, as distinct from any one generative model. GenMotion's Marketplace is built around exactly this problem: an agent inside a GenMotion project can call an image model, a voice model, or a sound-effect model on your own key or credits, without a separate subscription or a context switch to another tab, and the result lands directly on your timeline instead of in a download folder you then have to import. It doesn't cover every provider in every post above, and it's honest about that in each one, but for the providers it does cover, it's the difference between five open tabs and one prompt.
 
+If you want to see the layers assembled into one finished piece, our guide to [creating educational videos for YouTube](/blog/how-to-create-educational-videos-for-youtube) walks through a narrated explainer end to end, from the script to the upload.
+
 If you're choosing a single model for a single job, start with the category post that matches it. If you're trying to get from a blank project to a finished video without doing that five times over, [see what GenMotion costs](/pricing).

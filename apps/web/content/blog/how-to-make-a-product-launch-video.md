@@ -208,3 +208,4 @@ You can see what comes out on the [showcase](/showcase), and there's a free plan
 - **[Motion graphics without After Effects](/blog/motion-graphics-without-after-effects)** — the tooling landscape if you want to make these yourself.
 - **[Product launch videos](/use-cases/product-launch)** — what GenMotion produces for launches specifically.
 - **[Feature announcements](/use-cases/feature-announcement)** — the shorter, more frequent version of this, for everything you ship after launch day.
+- **[How to create educational videos for YouTube](/blog/how-to-create-educational-videos-for-youtube)** — the same production loop, pointed at teaching rather than selling.
