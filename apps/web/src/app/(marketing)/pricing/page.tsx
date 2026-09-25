@@ -14,13 +14,13 @@ import { cx } from "@/lib/cx";
 import {
   PLANS,
   PLUGIN_ALLOWANCE,
-  TRIAL_DAYS,
+  FREE_EXPORTS_PER_MONTH,
   planPrice,
 } from "@genmotion/shared";
 
 export const metadata: Metadata = pageMetadata({
   title: "Pricing — GenMotion",
-  description: `Try the whole studio free for ${TRIAL_DAYS} days. Then ${planPrice("pro")} a month for one person, or ${planPrice("max")} for a team of five with five times the generation allowance.`,
+  description: `Free forever, with ${FREE_EXPORTS_PER_MONTH} exports a month. ${planPrice("pro")} a month for one person, or ${planPrice("max")} for a team of five with five times the generation allowance.`,
   path: "/pricing",
 });
 
@@ -43,12 +43,13 @@ const TIERS: Tier[] = [
   {
     name: PLANS.free.name,
     price: planPrice("free"),
-    cadence: `for ${TRIAL_DAYS} days`,
-    blurb: "The whole studio for a week. No card, no queue — exports carry a small GenMotion badge.",
+    cadence: "forever",
+    blurb: `The whole studio, with ${FREE_EXPORTS_PER_MONTH} exports a month. No card, no queue, no clock, no watermark.`,
     cta: { label: "Download", href: "/download" },
     features: [
-      "Unlimited projects and exports",
-      "1080p & 4K export, with a GenMotion badge",
+      "Unlimited projects, scenes and chat",
+      `${FREE_EXPORTS_PER_MONTH} exports a month, unbranded`,
+      "1080p & 4K export",
       "Bring your own Claude Code or Codex",
       "No credit card",
     ],
@@ -57,14 +58,13 @@ const TIERS: Tier[] = [
     name: PLANS.pro.name,
     price: planPrice("pro"),
     cadence: "per month, one seat",
-    blurb: "For anyone still making videos after the first week.",
+    blurb: "For anyone making videos more than once a month.",
     cta: { label: "Download", href: "/download" },
     highlighted: true,
     features: [
-      "Everything in the trial, without the clock",
-      "One seat — just you",
-      "Unlimited projects, exports and scenes",
-      "Exports with no GenMotion badge",
+      "Everything in Free, uncapped",
+      "One seat, just you",
+      "Unlimited exports, at any resolution",
       `${PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover a month (about ${Math.round(PLUGIN_ALLOWANCE.characters / 1500)} minutes)`,
       `${PLUGIN_ALLOWANCE.sfx} sound effects and ${PLUGIN_ALLOWANCE.images} generated images a month`,
       "Renders on your machine — no queue",
@@ -105,11 +105,15 @@ const pricingJsonLd = {
 const FAQ: Faq[] = [
   {
     q: "Is there a free plan?",
-    a: `There's a free ${TRIAL_DAYS}-day trial of the whole studio: unlimited projects, exports at any resolution, your own coding agent. No card. The only difference from Pro is a small GenMotion badge on exports, and that voiceover, sound effects and image generation in chat are for paid plans. After the week, it's ${planPrice("pro")} a month to keep exporting.`,
+    a: `Yes, and it does not expire. Free gives you the whole studio: unlimited projects, unlimited scenes, unlimited chat with your own coding agent, and ${FREE_EXPORTS_PER_MONTH} finished exports a month at any resolution. No card, and no watermark: a free export is the same file a paid one would be. One thing is reserved for Pro, the voiceover, sound effect and image generation in chat, which run on providers we pay for per call. Past ${FREE_EXPORTS_PER_MONTH} exports in a month it's ${planPrice("pro")} a month for as many as you like.`,
   },
   {
     q: "How does pricing work for a team?",
     a: `Pro is ${planPrice("pro")} a month for one person. Max is ${planPrice("max")} a month for a team of up to ${PLANS.max.includedSeats}, with ${PLANS.max.allowanceMultiplier}× the generation allowance shared across it. Need more seats than that? Contact us.`,
+  },
+  {
+    q: "What counts as an export?",
+    a: `One finished video file. Previewing, scrubbing, re-rendering a scene and editing cost nothing and are never counted, because they happen on your own machine. The count is per account, resets on the first of each month, and an export you cancel still counts, so it's worth previewing before you hit export.`,
   },
   {
     q: "How does rendering work?",
@@ -142,11 +146,12 @@ export default function PricingPage() {
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow className="mb-4">Pricing</Eyebrow>
             <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              Two plans, one price each
+              Free to start, and it stays free
             </h1>
             <p className="mt-5 text-lg text-text-secondary">
-              Try everything free for {TRIAL_DAYS} days. Then {planPrice("pro")} a
-              month for one person, or {planPrice("max")} for a team of five.
+              {FREE_EXPORTS_PER_MONTH} exports a month on the free plan, with no
+              clock on it. {planPrice("pro")} a month for unlimited exports, or{" "}
+              {planPrice("max")} for a team of five.
             </p>
           </div>
         </Container>

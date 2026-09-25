@@ -187,13 +187,6 @@ export const exportJobs = pgTable("export_jobs", {
   format: text("format", { enum: ["mp4", "webm", "gif"] })
     .notNull()
     .default("mp4"),
-  /**
-   * Whether the render burns in the GenMotion badge. Resolved from the org's
-   * plan when the job is enqueued and frozen here alongside quality/format, so
-   * the row records what was actually produced and both render drivers (local
-   * worker and the render control-plane) read one source of truth.
-   */
-  watermark: boolean("watermark").notNull().default(false),
   outputAssetId: uuid("output_asset_id").references(() => assets.id),
   error: text("error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -253,4 +246,53 @@ export const pluginCalls = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("plugin_calls_org_created_idx").on(t.organizationId, t.createdAt)],
+);
+
+/**
+ * One row per export an organization has started, wherever it rendered.
+ *
+ * Exports are the Free tier's one meter, and the desktop app renders locally —
+ * so the count cannot live on the machine doing the work, or a reinstall would
+ * refill the allowance. A row is written here before a render starts, by the
+ * hosted API for a cloud export and by `POST /api/exports/claim` for a local
+ * one, and the month's COUNT is what the gate reads.
+ *
+ * Deliberately not `export_jobs`: that table is the hosted render queue, with
+ * a foreign key to a `projects` row. A desktop project is a folder on the
+ * user's disk that the server has never seen, so a local export has no row
+ * there to be counted by, and giving it one would mean syncing projects we
+ * have no other reason to hold.
+ *
+ * Rows are kept after the month they were counted in. They are the only record
+ * of how much an org actually exports, which is the number that says whether
+ * FREE_EXPORTS_PER_MONTH is set anywhere near right.
+ */
+export const exportEvents = pgTable(
+  "export_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Where it rendered: the user's machine, or our queue. */
+    source: text("source", { enum: ["desktop", "cloud"] }).notNull(),
+    /**
+     * The plan at the moment of the claim, so a later upgrade never rewrites
+     * history — a month's free exports stay countable after the org has paid.
+     */
+    plan: text("plan", { enum: ["free", "pro", "max"] }).notNull(),
+    format: text("format"),
+    /**
+     * The composition's length, for the same reason `plugin_calls` keeps
+     * `units`: a per-export cap is only defensible if we know what an export
+     * typically is. Null when the caller did not say.
+     */
+    totalFrames: integer("total_frames"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  // The gate's only query: count this org's rows since the start of the month.
+  (t) => [index("export_events_org_created_idx").on(t.organizationId, t.createdAt)],
 );

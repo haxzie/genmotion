@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
 import Link from "next/link";
 import { DownloadButton } from "@/components/marketing/download-button";
 import { InstallCommand } from "@/components/marketing/install-command";
@@ -88,7 +89,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. The first week is free with no credit card — the whole studio, unlimited exports at any resolution, with a small GenMotion badge on the video. Pro removes the badge, adds voiceover and image generation in chat, and keeps everything going after the trial.",
+    a: `Yes, and it does not expire. The free plan gives you the whole studio with no credit card: unlimited projects, unlimited chat with your own agent, and ${FREE_EXPORTS_PER_MONTH} finished exports a month at any resolution, with no watermark on any of them. Pro lifts the ${FREE_EXPORTS_PER_MONTH}-a-month limit and adds voiceover and image generation in chat.`,
   },
 ];
 

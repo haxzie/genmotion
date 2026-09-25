@@ -3,20 +3,25 @@
  * Pure and browser-safe, so the API gates, the billing page, the upgrade modal
  * and the invite gate all describe the same product from one place.
  *
- * The product is one paid plan priced per person. An organization buys Pro,
- * which carries one seat; every teammate after that is a seat add-on at the
- * same price. There are no usage meters — no project, export or message
- * quotas — because the desktop app runs the work on the user's own machine
- * with their own agent, so there is nothing metered for us to meter.
+ * Free is a tier, not a clock. It does not expire, and it caps nothing the
+ * user's own machine pays for: projects, scenes and agent conversations are
+ * unlimited on every plan, because the desktop app runs that work locally
+ * with the user's own agent and there is nothing of ours being consumed.
  *
- * Chat plugins are the one exception, and the reason `UpgradeReason` has a
- * third member. Rendering still happens on the user's machine, but voiceover
- * and image generation run against providers we hold the keys for and pay per
- * call — so they gate on a paid subscription rather than on the trial. Calls
- * are logged, not counted: there is no quota, only a record of what a Pro seat
- * actually costs.
+ * Two things do cost us something, and those are what Free is bounded by:
  *
- * Free is a seven-day trial of everything else, not a reduced tier.
+ *  - Exports. The render is local, so a finished video costs us nothing to
+ *    produce — but it is the moment of value, and a tier that hands out an
+ *    unlimited supply of them has nothing left to sell. Free gets
+ *    FREE_EXPORTS_PER_MONTH a month; paid plans get no ceiling. The video
+ *    itself is identical either way: no badge, no branding, nothing to crop
+ *    out. A free export is a finished export.
+ *  - Chat plugins. Voiceover, sound effects and image generation run against
+ *    providers we hold the keys for and pay per call, so Free does not get
+ *    them at all and paid plans get a monthly allowance. Calls are logged as
+ *    well as counted: the log is what a Pro seat actually costs us.
+ *
+ * Everything else is looked up from the plan at read time, never stored.
  */
 
 export type PlanId = "free" | "pro" | "max";
@@ -105,8 +110,46 @@ export function isQuotaBody(body: unknown): body is QuotaBody {
   return Boolean(quota && typeof quota === "object" && typeof quota.meter === "string");
 }
 
-/** How long a new organization may use the app before it has to pay. */
-export const TRIAL_DAYS = 7;
+/**
+ * Exports a Free organization may finish in a calendar month.
+ *
+ * The number is a judgement, not a cost recovery: rendering happens on the
+ * user's machine, so five costs us exactly what fifty would. It is set where
+ * one real launch fits comfortably inside it — draft, re-cut, ship — and a
+ * second one does not, because the org that makes video every week is the one
+ * the paid plan is for.
+ *
+ * Counted per organization rather than per seat: Free carries a single seat,
+ * so the two are the same number today, and making it per-org means adding
+ * seats can never multiply the free allowance.
+ */
+export const FREE_EXPORTS_PER_MONTH = 5;
+
+/**
+ * How many exports `plan` may finish this month; `null` for no ceiling.
+ *
+ * `null` rather than `Infinity` so a caller has to decide what an unlimited
+ * plan does instead of accidentally rendering "3 of Infinity" in a meter.
+ */
+export function exportAllowance(plan: PlanId): number | null {
+  return plan === "free" ? FREE_EXPORTS_PER_MONTH : null;
+}
+
+/**
+ * The export meter as the API reports it and the app draws it.
+ *
+ * `limit: null` is an unlimited plan; `used` is still counted and returned for
+ * it, because "you exported 40 videos this month" is worth showing to someone
+ * paying for the privilege even when nothing is enforced.
+ */
+export interface ExportUsage {
+  /** ISO timestamps: the calendar month, UTC. The clock `PluginUsage` keeps. */
+  period: { start: string; end: string };
+  used: number;
+  limit: number | null;
+  /** Exports left, or `null` when the plan has no ceiling. Never negative. */
+  remaining: number | null;
+}
 
 export interface PlanDefinition {
   id: PlanId;
@@ -136,16 +179,17 @@ export interface PlanDefinition {
 export const PLANS: Record<PlanId, PlanDefinition> = {
   free: {
     id: "free",
-    name: "Free trial",
+    name: "Free",
     priceUsd: 0,
     includedSeats: 1,
     canInvite: false,
     allowanceMultiplier: 0,
     purchasable: false,
     features: [
-      `${TRIAL_DAYS} days of the full studio`,
-      "Unlimited projects and exports",
+      "Unlimited projects, scenes and chat",
       "Bring your own coding agent",
+      `${FREE_EXPORTS_PER_MONTH} exports a month, unbranded`,
+      "No voiceover, sound effects or image generation",
     ],
   },
   pro: {
@@ -157,9 +201,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     allowanceMultiplier: 1,
     purchasable: true,
     features: [
-      "Everything in the trial, without the clock",
-      "Unlimited projects, exports and scenes",
-      "Exports with no GenMotion watermark",
+      "Everything in Free, uncapped",
+      "Unlimited exports, at any resolution",
       `${PLUGIN_ALLOWANCE.characters.toLocaleString("en-US")} characters of voiceover, ${PLUGIN_ALLOWANCE.sfx} sound effects and ${PLUGIN_ALLOWANCE.images} images a month`,
       "One seat",
       "Priority support",
@@ -204,12 +247,12 @@ export type SubscriptionStatus =
 /**
  * Every reason the upgrade modal can open for.
  *
- * `trial` is the expiry of the free week; `seats` is an invite that would
+ * `exports` is a Free month's allowance spent; `seats` is an invite that would
  * exceed what the subscription covers; `plugin` is a provider-backed feature
- * the trial deliberately does not include, because each call spends money we
- * would not get back from an org that never converts.
+ * Free deliberately does not include, because each call spends money we would
+ * not get back from an org that never converts.
  */
-export type UpgradeReason = "trial" | "seats" | "plugin";
+export type UpgradeReason = "exports" | "seats" | "plugin";
 
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && value in PLANS;
@@ -226,38 +269,4 @@ export function planPrice(plan: PlanId): string {
 /** What a plan costs per month — the same whatever the headcount within it. */
 export function monthlyTotalUsd(plan: PlanId): number {
   return PLANS[plan].priceUsd;
-}
-
-// ── Trial ────────────────────────────────────────────────────────────────
-
-/**
- * When the trial runs out.
- *
- * Measured from when the organization was created, which is a server fact
- * recorded once. Anchoring on anything the client controls — first launch,
- * first export — would reset with a reinstall.
- */
-export function trialEndsAt(organizationCreatedAt: Date): Date {
-  return new Date(organizationCreatedAt.getTime() + TRIAL_DAYS * 86_400_000);
-}
-
-export function isTrialActive(
-  organizationCreatedAt: Date,
-  now: Date = new Date(),
-): boolean {
-  return now < trialEndsAt(organizationCreatedAt);
-}
-
-/**
- * Whole days left, rounded up, floored at zero.
- *
- * Rounded up because a trial with four hours left should read "1 day left",
- * not "0 days left" — which sounds like it has already gone.
- */
-export function trialDaysLeft(
-  organizationCreatedAt: Date,
-  now: Date = new Date(),
-): number {
-  const ms = trialEndsAt(organizationCreatedAt).getTime() - now.getTime();
-  return Math.max(0, Math.ceil(ms / 86_400_000));
 }

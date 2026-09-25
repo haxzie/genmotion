@@ -11,11 +11,12 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PAYWALL_STATUS,
+  FREE_EXPORTS_PER_MONTH,
   PLANS,
   MAX_PRICE_USD,
   SEAT_PRICE_USD,
-  TRIAL_DAYS,
   isPaywallBody,
+  type ExportUsage,
   type PlanId,
   type TeamPolicy,
   type UpgradeReason,
@@ -27,9 +28,9 @@ import { Modal } from "@/components/modal";
 import { Spinner } from "@/components/ui";
 
 const COPY: Record<UpgradeReason, { title: string; body: string }> = {
-  trial: {
-    title: "Your free trial has ended",
-    body: `The ${TRIAL_DAYS}-day trial covered the whole studio. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting — unlimited projects, no watermark.`,
+  exports: {
+    title: "You have used this month's free exports",
+    body: `${PLANS.free.name} includes ${FREE_EXPORTS_PER_MONTH} exports a month. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month and export as many as you like.`,
   },
   seats: {
     title: `Teammates are on ${PLANS.max.name}`,
@@ -37,7 +38,7 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
   },
   plugin: {
     title: `Chat plugins are part of ${PLANS.pro.name}`,
-    body: `Voiceover, sound effects and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of the trial. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
+    body: `Voiceover, sound effects and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of ${PLANS.free.name}. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
   },
 };
 
@@ -50,19 +51,14 @@ export interface PlanPayload {
   canInvite: boolean;
 }
 
-export interface TrialPayload {
-  active: boolean;
-  daysLeft: number;
-  endsAt: string | null;
-}
-
 export interface LimitsResponse {
   plan: PlanPayload;
   seats: { used: number; max: number };
   /** The team policy, decided by the API. Absent from an API older than it. */
   team?: TeamPolicy;
-  trial: TrialPayload;
-  /** Whether the org may do paid-tier work right now: paying, or still in trial. */
+  /** This month's export meter. Absent from an API older than it. */
+  exports?: ExportUsage;
+  /** Whether the org may export right now: paying, or with free exports left. */
   entitled: boolean;
   subscription: {
     status: string;
@@ -74,7 +70,7 @@ export interface LimitsResponse {
 }
 
 interface UpgradeContextValue {
-  /** Open the upgrade modal for the trial or seat gate. */
+  /** Open the upgrade modal for the export, seat or plugin gate. */
   openUpgrade: (reason: UpgradeReason) => void;
   /**
    * Show the modal if `err` is a paywall rejection from our own API. Returns
@@ -89,7 +85,7 @@ interface UpgradeContextValue {
   plan?: PlanPayload;
   seats?: LimitsResponse["seats"];
   team?: TeamPolicy;
-  trial?: TrialPayload;
+  exports?: ExportUsage;
   subscription?: LimitsResponse["subscription"];
   /** Whether the org may invite at all — false while loading. */
   canInvite: boolean;
@@ -157,7 +153,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       plan: data?.plan,
       seats: data?.seats,
       team: data?.team,
-      trial: data?.trial,
+      exports: data?.exports,
       subscription: data?.subscription,
       canInvite: data?.plan.canInvite ?? false,
     }),

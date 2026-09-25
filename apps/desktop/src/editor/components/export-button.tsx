@@ -91,7 +91,7 @@ export function ExportButton({
   composition?: CompositionSummary;
 }) {
   const queryClient = useQueryClient();
-  const { openUpgrade, handleLimitError, plan } = useUpgrade();
+  const { openUpgrade, handleLimitError, plan, exports: exportMeter } = useUpgrade();
   const [open, setOpen] = useState(false);
   const [job, setJob] = useState<ExportJobData | null>(null);
   const [format, setFormat] = useState<ExportFormat>(() => {
@@ -187,8 +187,10 @@ export function ExportButton({
   );
 
   function runExport(event: ReactMouseEvent<HTMLButtonElement>) {
-    // No client-side pre-gate: exports are unmetered, and the trial paywall is
-    // enforced by the server, which answers 402 and opens the modal via
+    // No client-side pre-gate, even though Free exports are now metered: the
+    // count that matters is the server's, and a renderer holding a stale copy
+    // of it would refuse an export the account is actually owed. The claim is
+    // made server-side, which answers 402 and opens the modal via
     // handleLimitError below.
     exportedSig.current = currentSig;
     try {
@@ -308,22 +310,25 @@ export function ExportButton({
             </div>
           </div>
 
-          {/* The server decides this from the plan; mirrored here so a Free
-              export is never a surprise once the file is downloaded. A button,
-              not a link: this window has no /settings/billing to navigate to —
-              the upgrade modal is what knows how to get there (the browser). */}
-          {plan?.id === "free" && (
+          {/* What the export will cost the month's allowance, said before the
+              button rather than after the refusal. Only once the meter has
+              actually arrived — see the note on the sidebar card — and only on
+              a plan that has one. A button, not a link: this window has no
+              /settings/billing to navigate to, and the upgrade modal is what
+              knows how to get there (the browser). */}
+          {plan?.id === "free" && exportMeter?.remaining != null && (
             <p className="mt-3 rounded-md border border-border bg-surface-raised px-3 py-2 text-[0.786rem] text-text-secondary">
-              Free exports include a small GenMotion badge in the bottom-right
-              corner.{" "}
+              {exportMeter.remaining === 0
+                ? `No exports left this month. `
+                : `${exportMeter.remaining} of ${exportMeter.limit} exports left this month. `}
               <button
                 type="button"
-                onClick={() => openUpgrade("trial")}
+                onClick={() => openUpgrade("exports")}
                 className="cursor-pointer font-medium text-text-primary underline underline-offset-2 hover:text-accent"
               >
                 Upgrade
               </button>{" "}
-              to export without it.
+              to export as many as you like.
             </p>
           )}
 

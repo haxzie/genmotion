@@ -73,12 +73,6 @@ export interface RenderJobPayload {
   /** Sanitized base name for the output file. */
   filename: string;
   /**
-   * Burn the GenMotion badge into the bottom-right of every frame. Set for
-   * organizations on the Free plan; the flag is resolved server-side when the
-   * export is enqueued, never by the renderer.
-   */
-  watermark?: boolean;
-  /**
    * Capture each frame at this multiple of width×height, then let ffmpeg scale
    * it back down. Defaults to 1.
    *

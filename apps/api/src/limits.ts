@@ -1,69 +1,41 @@
-import {
-  isTrialActive,
-  planPrice,
-  SEAT_PRICE_USD,
-  trialDaysLeft,
-  trialEndedPaywall,
-  TRIAL_DAYS,
-  type PaywallBody,
-} from "@genmotion/shared";
-import { eq, db, schema } from "@genmotion/db";
+import { planPrice, SEAT_PRICE_USD, type PaywallBody } from "@genmotion/shared";
 import { getEntitlements } from "./entitlements";
+import { claimExport, exportUsage, type ExportClaim } from "./export-usage";
 
 /**
  * The paywall.
  *
- * There is nothing metered any more. The desktop app runs the render on the
- * user's own machine with their own agent, so there is no resource of ours
- * being consumed — counting projects, exports or messages would be counting
- * for its own sake. What remains is time: an organization gets a free week,
- * and after that it pays per person.
+ * Nothing the user's own machine does is metered: projects, scenes and agent
+ * conversations are unlimited on every plan, because the work happens locally
+ * with the user's own agent and there is no resource of ours being consumed.
+ *
+ * Free does not expire. What bounds it is the export meter — the moment of
+ * value, and the one thing worth reserving for a paid plan — and the chat
+ * plugins, which spend provider credit we actually pay for. See
+ * `export-usage.ts` for the first and `pluginPaywall()` below for the second.
  */
-
-/** When the org was created — the instant the trial clock started. */
-async function organizationCreatedAt(organizationId: string): Promise<Date | null> {
-  const [row] = await db
-    .select({ createdAt: schema.organization.createdAt })
-    .from(schema.organization)
-    .where(eq(schema.organization.id, organizationId));
-  return row?.createdAt ?? null;
-}
-
-export interface TrialState {
-  active: boolean;
-  endsAt: Date | null;
-  daysLeft: number;
-}
-
-export async function trialState(organizationId: string): Promise<TrialState> {
-  const createdAt = await organizationCreatedAt(organizationId);
-  // An org we cannot date is treated as out of trial rather than in one:
-  // failing closed costs someone a wrongly-shown upgrade prompt, while failing
-  // open gives away the product to anything that loses a row.
-  if (!createdAt) return { active: false, endsAt: null, daysLeft: 0 };
-  return {
-    active: isTrialActive(createdAt),
-    endsAt: new Date(createdAt.getTime() + TRIAL_DAYS * 86_400_000),
-    daysLeft: trialDaysLeft(createdAt),
-  };
-}
 
 /**
- * Whether the org may do paid-tier work right now.
+ * Take an export off the org's allowance, or refuse.
  *
- * Returns the 402 body when it may not, so a route can hand it straight back.
- * `null` means go ahead.
+ * The 402 body when the month is spent, so a route can hand it straight back;
+ * the claim, carrying the meter as it now stands, when it is not. Paid plans
+ * always claim successfully — the row is still written, because the count is
+ * how we learn what an export is worth.
  */
-export async function checkPaywall(
+export async function claimExportSlot(
   organizationId: string,
-): Promise<PaywallBody | null> {
+  userId: string,
+  detail: { source: "desktop" | "cloud"; format?: string; totalFrames?: number },
+): Promise<ExportClaim | PaywallBody> {
   const entitlements = await getEntitlements(organizationId);
-  if (entitlements.paid) return null;
+  return claimExport(organizationId, userId, entitlements.plan, detail);
+}
 
-  const trial = await trialState(organizationId);
-  if (trial.active) return null;
-
-  return trialEndedPaywall();
+/** This month's export meter for an org, without claiming anything. */
+export async function exportState(organizationId: string) {
+  const entitlements = await getEntitlements(organizationId);
+  return exportUsage(organizationId, entitlements.plan);
 }
 
 /**
@@ -87,10 +59,10 @@ export function seatPaywall(used: number, included: number): PaywallBody {
 /**
  * Why a chat plugin is refused.
  *
- * Deliberately not `checkPaywall`: that passes an org whose free week is still
- * running, and plugins are the one feature where an unconverted trial costs us
- * real provider credit. Everything else the trial includes is work the user's
- * own machine does. See the note in @genmotion/shared's plans.ts.
+ * Gated on `paid` alone, and deliberately not on the export meter: a Free org
+ * with exports to spare still may not spend our provider credit. Everything
+ * else Free includes is work the user's own machine does, which is why this is
+ * the only outright feature gate. See the note in @genmotion/shared's plans.ts.
  */
 export function pluginPaywall(): PaywallBody {
   return {

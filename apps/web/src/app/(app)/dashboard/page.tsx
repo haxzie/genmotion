@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { SEAT_PRICE_USD, TRIAL_DAYS, planPrice, type PlanId } from "@genmotion/shared";
+import { FREE_EXPORTS_PER_MONTH, SEAT_PRICE_USD, planPrice, type PlanId } from "@genmotion/shared";
 import { api } from "@/lib/api";
 import { DownloadButton } from "@/components/marketing/download-button";
 import { GenerationAndSeats } from "@/components/generation-and-seats";
@@ -27,7 +27,7 @@ export default function AccountHomePage() {
     staleTime: 30_000,
   });
 
-  const trial = data?.trial;
+  const exportMeter = data?.exports;
   const paid = data?.subscription.paid ?? false;
 
   return (
@@ -51,8 +51,8 @@ export default function AccountHomePage() {
       <div className="mt-4 flex items-start justify-between gap-4 rounded-xl border border-border bg-surface-raised p-6">
         <div className="min-w-0">
         <h2 className="font-medium text-text-primary">Plan</h2>
-        {/* Absent while loading rather than guessed at — a wrong trial count
-            reads worse than no trial count. */}
+        {/* Absent while loading rather than guessed at — a wrong export count
+            reads worse than no export count. */}
         {data ? (
           <p className="mt-1.5 text-[0.9rem] text-text-secondary">
             {paid ? (
@@ -60,17 +60,19 @@ export default function AccountHomePage() {
                 {data.plan.name} · {data.seats.used} of {data.seats.max}{" "}
                 {data.seats.max === 1 ? "seat" : "seats"} in use · {planPrice(data.plan.id)} a month.
               </>
-            ) : trial?.active ? (
+            ) : exportMeter?.limit != null ? (
               <>
-                You&apos;re on the {TRIAL_DAYS}-day trial —{" "}
+                You&apos;re on {data.plan.name} —{" "}
                 <span className="text-text-primary">
-                  {trial.daysLeft} {trial.daysLeft === 1 ? "day" : "days"} left
-                </span>
-                . Everything is included; no card needed until it ends.
+                  {exportMeter.remaining} of {exportMeter.limit} export
+                  {exportMeter.limit === 1 ? "" : "s"} left
+                </span>{" "}
+                this month. Unlimited exports are ${SEAT_PRICE_USD} a month.
               </>
             ) : (
               <>
-                Your trial has ended. Upgrade to keep exporting — $
+                You&apos;re on {data.plan.name} — {FREE_EXPORTS_PER_MONTH}{" "}
+                exports a month. Upgrade for unlimited exports, $
                 {SEAT_PRICE_USD} a month.
               </>
             )}
@@ -94,10 +96,10 @@ export default function AccountHomePage() {
       </div>
 
       {/* What the plan gives, and how much of it is used: the month's
-          generation and the seats. Only once the plan is known. A trial has
-          no meters — its generation allowance is zero — so instead of the
-          section silently missing, which reads as "usage didn't load", it
-          says where the meters come from. */}
+          generation and the seats. Only once the plan is known. Free has no
+          generation meters — its allowance is zero — so instead of the section
+          silently missing, which reads as "usage didn't load", it says where
+          the meters come from. */}
       {data && paid && (
         <GenerationAndSeats plan={data.plan} seats={data.seats} team={data.team} />
       )}

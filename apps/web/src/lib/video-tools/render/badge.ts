@@ -3,9 +3,13 @@
  *
  * Deliberately composited onto the export canvas rather than added to the
  * composition DOM: templates never see it, so no template can move, cover, or
- * restyle it, and it can't affect layout. The geometry mirrors
- * `apps/renderer/src/watermark.ts` so a tool video and a Free-plan product
- * export carry the badge at the same size and inset.
+ * restyle it, and it can't affect layout.
+ *
+ * The only badge left in the product. Studio exports used to carry a matching
+ * one on the Free plan and no longer do — a free export is now byte-for-byte
+ * what a paid one would be — so the geometry here answers to nothing but
+ * itself. These tools are anonymous and account-free, which is the whole
+ * reason the badge is still worth its place here.
  */
 
 /** Lockup width, in px, for a composition whose shorter edge is 1080. */
@@ -19,7 +23,6 @@ const clamp = (n: number, min: number, max: number) =>
 /**
  * Badge scale for a composition. Driven by the *shorter* edge so a 1080×1920
  * vertical video and a 1920×1080 landscape one get the same visual weight.
- * Kept in sync with `watermarkScale` in the renderer.
  */
 function badgeScale(width: number, height: number): number {
   return clamp(Math.min(width, height) / 1080, 0.5, 2);

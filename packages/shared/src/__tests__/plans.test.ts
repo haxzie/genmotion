@@ -1,20 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  FREE_EXPORTS_PER_MONTH,
   PLANS,
   PLAN_IDS,
   SEAT_PRICE_USD,
-  TRIAL_DAYS,
+  exportAllowance,
   isPlanId,
-  isTrialActive,
   monthlyTotalUsd,
   pluginAllowance,
   planPrice,
-  trialDaysLeft,
-  trialEndsAt,
 } from "../plans";
-
-const DAY = 86_400_000;
-const CREATED = new Date("2026-08-01T00:00:00.000Z");
 
 describe("plans", () => {
   it("offers exactly one paid plan", () => {
@@ -63,29 +58,25 @@ describe("plans", () => {
   });
 });
 
-describe("trial", () => {
-  it("runs for TRIAL_DAYS from when the org was created", () => {
-    expect(trialEndsAt(CREATED).toISOString()).toBe("2026-08-08T00:00:00.000Z");
-    expect(TRIAL_DAYS).toBe(7);
+describe("export allowance", () => {
+  it("caps Free and nothing else", () => {
+    expect(exportAllowance("free")).toBe(FREE_EXPORTS_PER_MONTH);
+    expect(exportAllowance("pro")).toBeNull();
+    expect(exportAllowance("max")).toBeNull();
   });
 
-  it("is active right up to the boundary and not past it", () => {
-    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 6 * DAY))).toBe(true);
-    // One millisecond before expiry is still inside the trial.
-    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 7 * DAY - 1))).toBe(true);
-    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 7 * DAY))).toBe(false);
-    expect(isTrialActive(CREATED, new Date(CREATED.getTime() + 30 * DAY))).toBe(false);
+  it("returns null rather than Infinity for an uncapped plan", () => {
+    // A meter rendering "3 of Infinity" is the bug this guards against: the
+    // caller has to branch on null, and cannot accidentally do arithmetic.
+    expect(Number.isFinite(exportAllowance("pro") as number)).toBe(false);
+    expect(exportAllowance("pro")).not.toBe(Infinity);
   });
 
-  it("rounds the days left up, so a part-day never reads as zero", () => {
-    expect(trialDaysLeft(CREATED, CREATED)).toBe(7);
-    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 6 * DAY))).toBe(1);
-    // Four hours left is still a day to a reader.
-    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 7 * DAY - 4 * 3600_000))).toBe(1);
-  });
-
-  it("floors at zero rather than counting backwards", () => {
-    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 7 * DAY))).toBe(0);
-    expect(trialDaysLeft(CREATED, new Date(CREATED.getTime() + 90 * DAY))).toBe(0);
+  it("does not expire, so Free has no clock to run out", () => {
+    // The whole point of the tier: there is no date anywhere in a plan
+    // definition, and nothing here takes a "now" to compare against.
+    expect(PLANS.free.purchasable).toBe(false);
+    expect(PLANS.free.priceUsd).toBe(0);
+    expect(PLANS.free.allowanceMultiplier).toBe(0);
   });
 });

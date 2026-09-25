@@ -10,14 +10,10 @@ import {
   type ExportStatus,
 } from "@genmotion/shared";
 import { readManifest, type ProjectManifest } from "@genmotion/project";
-// Its own subpath: the barrel also exports Composition/Player (React) and
-// the zustand store, none of which the main process needs — pulling them in
-// through the barrel added 1.5MB to main.cjs for a badge that is one string.
-import { watermarkHtml } from "@genmotion/player/watermark";
 import type { ProjectSession } from "../project-session";
 import type { DesktopExportJob } from "../shared";
 import { bundledBinary } from "../bundled-bin";
-import { checkExportEntitlement } from "./entitlement";
+import { claimExport } from "./entitlement";
 import {
   findExportRecord,
   listExportHistory,
@@ -263,13 +259,6 @@ export async function startExport(
   session: ProjectSession,
   input: { format: ExportFormat },
 ): Promise<DesktopExportJob> {
-  // Checked before anything else — including before a job exists to be queued
-  // — so a trial that has ended refuses the same way the hosted API's own
-  // `POST /api/exports` does: nothing starts, and `ExportPaywallError`
-  // propagates out for the loopback route to turn into the same 402 shape the
-  // export button's `handleLimitError` already knows how to catch.
-  const entitlement = await checkExportEntitlement();
-
   const manifest = await readManifest(session.dir);
   const totalFrames = expectedFrames(session, manifest);
   if (totalFrames === 0) {
@@ -279,6 +268,14 @@ export async function startExport(
         : "Nothing to export — the project has no scenes",
     );
   }
+
+  // One export comes off the month's allowance here: after the composition has
+  // been found to have something in it, so a project with no duration never
+  // costs a Free user one of their five, and before a job exists to be queued,
+  // so a refusal starts nothing. `ExportPaywallError` propagates out for the
+  // loopback route to turn into the same 402 shape the export button's
+  // `handleLimitError` already knows how to catch.
+  await claimExport({ format: input.format, totalFrames });
 
   const id = `exp_${Date.now().toString(36)}_${randomBytes(3).toString("hex")}`;
   const job: Job = {
@@ -301,7 +298,7 @@ export async function startExport(
 
   // Run detached: the HTTP response returns the queued job immediately and the
   // client follows progress over the event stream.
-  void pump(() => ({ session, manifest, watermark: entitlement.watermark }));
+  void pump(() => ({ session, manifest }));
 
   return publicJob(job);
 }
@@ -321,7 +318,7 @@ function expectedFrames(session: ProjectSession, manifest: ProjectManifest): num
 }
 
 /** What a queued job needs to run, held beside it until its turn comes. */
-type Prepared = { session: ProjectSession; manifest: ProjectManifest; watermark: boolean };
+type Prepared = { session: ProjectSession; manifest: ProjectManifest };
 const prepared = new Map<string, Prepared>();
 
 /**
@@ -349,7 +346,7 @@ async function pump(next?: () => Prepared): Promise<void> {
   running = id;
   try {
     update(id, { startedAt: Date.now() });
-    await run(job, input.session, input.manifest, input.watermark);
+    await run(job, input.session, input.manifest);
   } catch (err) {
     update(id, {
       status: "failed",
@@ -366,9 +363,8 @@ async function run(
   job: Job,
   session: ProjectSession,
   manifest: ProjectManifest,
-  watermark: boolean,
 ): Promise<void> {
-  if (manifest.engine === "hyperframes") return runHyperframes(job, session, manifest, watermark);
+  if (manifest.engine === "hyperframes") return runHyperframes(job, session, manifest);
 
   const { fps, width, height } = manifest;
   const totalFrames = manifest.scenes.reduce((n, s) => n + s.durationInFrames, 0);
@@ -422,20 +418,6 @@ async function run(
 
   try {
     await win.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(PAGE_SHELL)}`);
-
-    // Appended before the host mounts, so the badge is present on every
-    // captured frame — it lives outside #root, so the composition can't paint
-    // over it. Same markup and the same rule the hosted renderer uses.
-    if (watermark) {
-      await win.webContents.executeJavaScript(
-        `(() => {
-           const holder = document.createElement("div");
-           holder.innerHTML = ${JSON.stringify(watermarkHtml(width, height))};
-           const badge = holder.firstElementChild;
-           if (badge) document.body.appendChild(badge);
-         })()`,
-      );
-    }
 
     await win.webContents.executeJavaScript(hostBundle);
     const init = (await win.webContents.executeJavaScript(
@@ -545,7 +527,6 @@ async function runHyperframes(
   job: Job,
   session: ProjectSession,
   manifest: ProjectManifest,
-  watermark: boolean,
 ): Promise<void> {
   const { fps } = manifest;
   const format = job.format;
@@ -567,10 +548,6 @@ async function runHyperframes(
   try {
     const totalFrames = Math.max(1, Math.round(page.durationSeconds * fps));
     update(id, { totalFrames });
-
-    if (watermark) {
-      await injectWatermark(page, width, height);
-    }
 
     const ffmpeg = spawn(bundledBinary("ffmpeg"), [
       "-y",
@@ -667,26 +644,6 @@ async function runHyperframes(
   } finally {
     page.close();
   }
-}
-
-/**
- * The trial badge, on the composition page. Appended to `<body>` outside the
- * composition root so nothing the agent wrote can paint over it — the same
- * markup and rule the React export uses.
- */
-async function injectWatermark(
-  page: CompositionWindow,
-  width: number,
-  height: number,
-): Promise<void> {
-  await page.execute(
-    `(() => {
-       const holder = document.createElement("div");
-       holder.innerHTML = ${JSON.stringify(watermarkHtml(width, height))};
-       const badge = holder.firstElementChild;
-       if (badge) document.body.appendChild(badge);
-     })()`,
-  );
 }
 
 /** Returns true when an audio track was mixed in. */

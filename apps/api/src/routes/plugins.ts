@@ -19,9 +19,9 @@ import { checkQuota } from "../plugin-usage";
  * The desktop app runs on the user's own machine with their own coding agent,
  * so nothing else in the product costs us anything per use. These two do: we
  * hold the ElevenLabs and Gemini keys, and the caller's session is the only
- * authorisation. That is why the gate is `paid` rather than `checkPaywall` — an
- * org inside its free week is refused, because provider credit spent on an
- * account that never converts is money we do not get back.
+ * authorisation. That is why the gate is `paid` rather than the export meter —
+ * a Free org with exports still left is refused here, because provider credit
+ * spent on an account that never converts is money we do not get back.
  *
  * The response is the media itself, not JSON and not a URL. On desktop a
  * project is a folder on the user's disk, so the caller writes the bytes into

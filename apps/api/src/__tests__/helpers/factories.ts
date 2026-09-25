@@ -170,19 +170,27 @@ export async function setSubscription(
     lastEventAt?: Date | null;
   },
 ) {
+  const values = {
+    organizationId,
+    plan: opts.plan,
+    status: opts.status,
+    seats: opts.seats ?? 1,
+    currentPeriodEnd: opts.currentPeriodEnd ?? null,
+    cancelAtPeriodEnd: opts.cancelAtPeriodEnd ?? false,
+    dodoCustomerId: opts.dodoCustomerId ?? null,
+    dodoSubscriptionId: opts.dodoSubscriptionId ?? null,
+    dodoProductId: opts.dodoProductId ?? null,
+    lastEventAt: opts.lastEventAt ?? null,
+  };
+  // An upsert, as the name promises: an org has at most one subscription row,
+  // and a test that moves one through its lifecycle (active, then expired)
+  // should read as two calls rather than an insert and a hand-written update.
   const [row] = await db
     .insert(schema.organizationSubscriptions)
-    .values({
-      organizationId,
-      plan: opts.plan,
-      status: opts.status,
-      seats: opts.seats ?? 1,
-      currentPeriodEnd: opts.currentPeriodEnd ?? null,
-      cancelAtPeriodEnd: opts.cancelAtPeriodEnd ?? false,
-      dodoCustomerId: opts.dodoCustomerId ?? null,
-      dodoSubscriptionId: opts.dodoSubscriptionId ?? null,
-      dodoProductId: opts.dodoProductId ?? null,
-      lastEventAt: opts.lastEventAt ?? null,
+    .values(values)
+    .onConflictDoUpdate({
+      target: schema.organizationSubscriptions.organizationId,
+      set: values,
     })
     .returning();
   return row!;

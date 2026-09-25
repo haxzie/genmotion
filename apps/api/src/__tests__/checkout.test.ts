@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq, db, schema } from "@genmotion/db";
+import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
 
 /**
  * The SDK is stubbed at its single boundary (`../dodo`) rather than at the
@@ -444,12 +445,12 @@ describe.skipIf(!dbReady)("POST /api/billing/portal", () => {
 });
 
 describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
-  it("reports a new org as on trial and entitled", async () => {
+  it("reports a new org as Free with its whole export allowance", async () => {
     const { session } = await ownerSession();
     const { status, body } = await requestJson<{
       plan: { id: string; seats: number; canInvite: boolean };
       seats: { used: number; max: number };
-      trial: { active: boolean; daysLeft: number; endsAt: string | null };
+      exports: { used: number; limit: number | null; remaining: number | null };
       entitled: boolean;
       subscription: { manageable: boolean; paid: boolean };
     }>("/api/billing/limits", { as: session });
@@ -458,12 +459,27 @@ describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
     expect(body.plan.id).toBe("free");
     expect(body.plan.canInvite).toBe(false);
     expect(body.seats).toEqual({ used: 1, max: 1 });
-    // A brand-new org is inside its free week, so it may work without paying.
-    expect(body.trial.active).toBe(true);
-    expect(body.trial.daysLeft).toBe(7);
+    // Free does not expire, so a brand-new org may export without paying —
+    // right up until it has spent the month's allowance.
+    expect(body.exports.used).toBe(0);
+    expect(body.exports.limit).toBe(FREE_EXPORTS_PER_MONTH);
+    expect(body.exports.remaining).toBe(FREE_EXPORTS_PER_MONTH);
     expect(body.entitled).toBe(true);
     expect(body.subscription.paid).toBe(false);
     expect(body.subscription.manageable).toBe(false);
+  });
+
+  it("reports a paid org as having no export ceiling at all", async () => {
+    const { orgId, session } = await ownerSession();
+    await setSubscription(orgId, { plan: "pro", status: "active" });
+    const { body } = await requestJson<{
+      exports: { limit: number | null; remaining: number | null };
+      entitled: boolean;
+    }>("/api/billing/limits", { as: session });
+
+    expect(body.exports.limit).toBeNull();
+    expect(body.exports.remaining).toBeNull();
+    expect(body.entitled).toBe(true);
   });
 
   it("reports seat usage including pending invites", async () => {
@@ -507,5 +523,27 @@ describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
       { as: await createSession(user.id, orgId) },
     );
     expect(body.plan.id).toBe("free");
+  });
+});
+
+/**
+ * Backward compatibility with desktop builds already installed.
+ *
+ * Not a feature — a shim with a removal date. Kept as a test rather than a
+ * comment because the failure it prevents is silent here and catastrophic
+ * there: 0.0.20 reads `data?.trial.active` inside the provider that wraps its
+ * whole window, so dropping the key white-screens the app on launch.
+ */
+describe.skipIf(!dbReady)("GET /api/billing/limits — legacy desktop clients", () => {
+  it("still sends a trial block old builds can read", async () => {
+    const { session } = await ownerSession();
+    const { body } = await requestJson<{
+      trial: { active: boolean; daysLeft: number; endsAt: string | null };
+    }>("/api/billing/limits", { as: session });
+
+    expect(body.trial).toBeDefined();
+    // Their export gate refuses only on an explicit false, so `true` is what
+    // keeps an un-updated client rendering its own videos.
+    expect(body.trial.active).toBe(true);
   });
 });

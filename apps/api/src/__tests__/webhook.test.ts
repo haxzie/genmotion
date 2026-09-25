@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, db, schema } from "@genmotion/db";
+import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
 
 /**
  * `planForProduct` is the one step of processing that can be made to throw on
@@ -24,7 +25,7 @@ vi.mock("../dodo", async (importOriginal) => {
 });
 
 const { getEntitlements } = await import("../entitlements");
-const { checkPaywall } = await import("../limits");
+const { exportState } = await import("../limits");
 const { dbReady, truncateAll } = await import("./helpers/db");
 const { createOrg } = await import("./helpers/factories");
 const { postWebhook, signWebhook, subscriptionEvent } = await import("./helpers/dodo");
@@ -32,17 +33,29 @@ const { postWebhook, signWebhook, subscriptionEvent } = await import("./helpers/
 const PRO = "pdt_test_pro";
 
 /**
- * Backdate an org past its trial.
- *
- * Entitlement is only observable once the free week is over — before that
- * every org may work regardless of what the webhook wrote, which would make
- * these assertions pass for the wrong reason.
+ * Spend the org's whole free export allowance, so the only thing that can let
+ * it export again is a subscription. The stand-in for what used to be an
+ * expired trial: the state a webhook has to rescue an org out of.
  */
-async function pastTrial(orgId: string) {
-  await db
-    .update(schema.organization)
-    .set({ createdAt: new Date(Date.now() - 60 * 86_400_000) })
-    .where(eq(schema.organization.id, orgId));
+async function spendFreeExports(orgId: string) {
+  const [owner] = await db
+    .select({ userId: schema.member.userId })
+    .from(schema.member)
+    .where(eq(schema.member.organizationId, orgId));
+  await db.insert(schema.exportEvents).values(
+    Array.from({ length: FREE_EXPORTS_PER_MONTH }, () => ({
+      organizationId: orgId,
+      userId: owner!.userId,
+      source: "desktop" as const,
+      plan: "free" as const,
+    })),
+  );
+}
+
+/** Whether the org may export right now: paying, or with free exports left. */
+async function mayExport(orgId: string): Promise<boolean> {
+  if ((await getEntitlements(orgId)).paid) return true;
+  return ((await exportState(orgId)).remaining ?? 1) > 0;
 }
 const OTHER_PRODUCT = "pdt_not_ours";
 
@@ -250,14 +263,14 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
 
   it("drops to Free on expiry and paywalls again", async () => {
     const { orgId } = await createOrg();
-    await pastTrial(orgId);
+    await spendFreeExports(orgId);
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
       ),
     );
-    // Paying, so the spent trial does not matter.
-    expect(await checkPaywall(orgId)).toBeNull();
+    // Paying, so the spent free allowance does not matter.
+    expect(await mayExport(orgId)).toBe(true);
 
     await postWebhook(
       signWebhook(
@@ -271,7 +284,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
 
     expect((await subscriptionRow(orgId))!.plan).toBe("free");
     expect((await getEntitlements(orgId)).plan).toBe("free");
-    expect(await checkPaywall(orgId)).not.toBeNull();
+    expect(await mayExport(orgId)).toBe(false);
   });
 
   it("keeps entitlement while a payment is being retried", async () => {
@@ -341,7 +354,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
   });
   it("keeps entitlement through a pause until the paid period ends", async () => {
     const { orgId } = await createOrg();
-    await pastTrial(orgId);
+    await spendFreeExports(orgId);
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
@@ -359,7 +372,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
 
     expect((await subscriptionRow(orgId))!.status).toBe("paused");
     expect((await getEntitlements(orgId)).plan).toBe("pro");
-    expect(await checkPaywall(orgId)).toBeNull();
+    expect(await mayExport(orgId)).toBe(true);
   });
 });
 
@@ -553,7 +566,7 @@ describe.skipIf(!dbReady)("delivery semantics", () => {
    */
   it("ignores trailing events from a subscription the org has moved on from", async () => {
     const { orgId } = await createOrg();
-    await pastTrial(orgId);
+    await spendFreeExports(orgId);
     const t0 = new Date(Date.now() - 3000);
     await postWebhook(
       signWebhook(
@@ -591,7 +604,7 @@ describe.skipIf(!dbReady)("delivery semantics", () => {
     expect(String(body.detail)).toContain("superseded");
     const row = await subscriptionRow(orgId);
     expect(row).toMatchObject({ plan: "pro", status: "active", dodoSubscriptionId: "sub_new" });
-    expect(await checkPaywall(orgId)).toBeNull();
+    expect(await mayExport(orgId)).toBe(true);
   });
 
   it("ignores a product it can't map to a plan", async () => {
@@ -618,8 +631,8 @@ describe.skipIf(!dbReady)("checkout to entitlement", () => {
    */
   it("upgrades the org that started the checkout", async () => {
     const { orgId } = await createOrg();
-    await pastTrial(orgId);
-    expect(await checkPaywall(orgId)).not.toBeNull();
+    await spendFreeExports(orgId);
+    expect(await mayExport(orgId)).toBe(false);
 
     await postWebhook(
       signWebhook(
@@ -630,6 +643,6 @@ describe.skipIf(!dbReady)("checkout to entitlement", () => {
       ),
     );
 
-    expect(await checkPaywall(orgId)).toBeNull();
+    expect(await mayExport(orgId)).toBe(true);
   });
 });

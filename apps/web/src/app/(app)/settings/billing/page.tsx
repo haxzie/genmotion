@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PLANS,
   planPrice,
+  type ExportUsage,
   type PlanId,
 } from "@genmotion/shared";
 import { api, API_URL } from "@/lib/api";
@@ -23,12 +24,6 @@ interface Subscription {
   paid: boolean;
 }
 
-interface Trial {
-  active: boolean;
-  daysLeft: number;
-  endsAt: string | null;
-}
-
 
 interface UsageResponse {
   plan: { id: PlanId; name: string; seats: number; canInvite: boolean };
@@ -37,31 +32,36 @@ interface UsageResponse {
   /** The caller's role: billing is an owner's or admin's page. */
   role?: string;
   subscription: Subscription;
-  trial: Trial;
+  /** This month's export meter. `limit: null` on a plan with no ceiling. */
+  exports?: ExportUsage;
   entitled: boolean;
 }
 
 /**
  * Status pill — colour follows the state, not the plan. An org with no
- * subscription is on its trial (or past it), never "Active": that word belongs
- * to a subscription that is being paid for.
+ * subscription is on Free, never "Active": that word belongs to a subscription
+ * that is being paid for. Free turns amber only once the month's exports are
+ * actually gone, since Free having exports left is not a problem to flag.
  */
 function PlanStatusPill({
   subscription,
-  trial,
+  exports,
 }: {
   subscription: Subscription;
-  trial: Trial;
+  exports?: ExportUsage;
 }) {
   let label: string;
   let tone: "good" | "warn" | "muted";
   if (!subscription.paid) {
-    if (trial.active) {
-      label = `${trial.daysLeft} ${trial.daysLeft === 1 ? "day" : "days"} left`;
+    if (exports?.remaining === 0) {
+      label = "No exports left";
+      tone = "warn";
+    } else if (exports?.limit != null) {
+      label = `${exports.remaining} of ${exports.limit} exports left`;
       tone = "muted";
     } else {
-      label = "Trial ended";
-      tone = "warn";
+      label = PLANS.free.name;
+      tone = "muted";
     }
   } else if (subscription.status === "on_hold" || subscription.status === "failed") {
     label = "Payment issue";
@@ -101,13 +101,13 @@ function shortDate(iso: string): string {
 }
 
 /** The one line under the plan name that says what happens next. */
-function statusLine(s: Subscription, trial: Trial): string | null {
+function statusLine(s: Subscription, exports?: ExportUsage): string | null {
   if (!s.paid) {
-    if (trial.active && trial.endsAt) return `Trial ends ${shortDate(trial.endsAt)}`;
-    if (!trial.active) {
-      return `Your trial${trial.endsAt ? ` ended ${shortDate(trial.endsAt)}` : " has ended"}. Upgrade to keep exporting.`;
+    if (!exports || exports.limit === null) return null;
+    if (exports.remaining === 0) {
+      return `This month's ${exports.limit} free exports are used up. They reset ${shortDate(exports.period.end)}. Upgrade for unlimited exports.`;
     }
-    return null;
+    return `${exports.remaining} of ${exports.limit} exports left this month. They reset ${shortDate(exports.period.end)}.`;
   }
   if (!s.currentPeriodEnd) return null;
   const when = shortDate(s.currentPeriodEnd);
@@ -441,7 +441,7 @@ export default function BillingPage() {
                 >
                   refresh
                 </button>
-                , or contact support if it still shows the trial.
+                , or contact support if it still shows the free plan.
               </div>
             )}
 
@@ -458,7 +458,7 @@ export default function BillingPage() {
                   <span className="text-[0.857rem] text-text-tertiary">
                     Current plan
                   </span>
-                  <PlanStatusPill subscription={data.subscription} trial={data.trial} />
+                  <PlanStatusPill subscription={data.subscription} exports={data.exports} />
                 </div>
                 <div className="mt-1.5 flex items-baseline gap-2">
                   <p className="font-display text-xl font-semibold tracking-tight">
@@ -480,14 +480,14 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                {statusLine(data.subscription, data.trial) && (
+                {statusLine(data.subscription, data.exports) && (
                   <p
                     className={cx(
                       "mt-3 text-[0.857rem]",
                       !data.entitled ? "text-warning" : "text-text-tertiary",
                     )}
                   >
-                    {statusLine(data.subscription, data.trial)}
+                    {statusLine(data.subscription, data.exports)}
                   </p>
                 )}
               </div>

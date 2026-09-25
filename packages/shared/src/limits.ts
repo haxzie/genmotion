@@ -1,14 +1,15 @@
-import type { UpgradeReason } from "./plans";
+import { FREE_EXPORTS_PER_MONTH, planPrice, type UpgradeReason } from "./plans";
 
 /**
  * What blocks an action, and how the client is told.
  *
- * There are still no usage meters — no project, export or message quotas. The
- * desktop app does the work on the user's own machine with their own agent, so
- * there is nothing of ours being consumed to count. Three things gate: the
- * trial running out, an invite that would exceed the seats paid for, and a
- * chat plugin, which spends provider credit we pay for and so needs a paid
- * plan rather than merely an unexpired one.
+ * Three things gate. A Free month's exports being spent; an invite that would
+ * exceed the seats paid for; and a chat plugin, which spends provider credit
+ * we pay for and so needs a paid plan rather than merely a signed-in one.
+ *
+ * Nothing the user's own machine does is gated: projects, scenes and agent
+ * conversations are unlimited on every plan, including Free. See the note at
+ * the top of plans.ts for why the export meter is the exception.
  */
 
 /**
@@ -24,6 +25,12 @@ export interface PaywallBody {
     message: string;
     /** Present for `seats`: what they have, and what the action needed. */
     seats?: { used: number; included: number };
+    /**
+     * Present for `exports`: the spent meter and when it comes back. The
+     * reset date is what stops the refusal reading as permanent — a Free user
+     * who waits is not blocked, and the message should say so.
+     */
+    exports?: { used: number; limit: number; resetsAt: string };
   };
 }
 
@@ -34,21 +41,51 @@ export interface PaywallBody {
  */
 export const PAYWALL_STATUS = 402;
 
+/** "March 1" — how a reset date reads inside a sentence. */
+function resetDay(resetsAt: string): string {
+  return new Date(resetsAt).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /**
- * The trial-ended rejection, exactly as the hosted API answers it.
+ * The export-allowance rejection, exactly as the hosted API answers it.
  *
- * A pure constant rather than something computed per-caller: the desktop app
- * builds this same body itself (it already holds `trial`/`subscription` from
- * `/api/billing/limits`, and has no reason to round-trip the API a second time
- * just to be told what it already knows) when it refuses a local export, and
- * the two must say the same thing.
+ * Built from the meter rather than hardcoded, because the desktop app renders
+ * locally and refuses locally: it holds the same counts from
+ * `/api/billing/limits` and has no reason to round-trip the API a second time
+ * to be told what it already knows. Both sides call this so the two can never
+ * word the same refusal differently.
  */
-export function trialEndedPaywall(): PaywallBody {
+export function exportLimitPaywall(meter: {
+  used: number;
+  limit: number;
+  resetsAt: string;
+}): PaywallBody {
   return {
-    error: "Your free trial has ended.",
+    error: "This month's free exports are used up.",
     paywall: {
-      reason: "trial",
-      message: "Your 7-day trial has ended. Upgrade to Pro to keep exporting — $19 a month.",
+      reason: "exports",
+      message: `Free includes ${meter.limit} exports a month and you have used ${meter.used}. The allowance resets on ${resetDay(meter.resetsAt)}. Upgrade to Pro for unlimited exports — ${planPrice("pro")} a month.`,
+      exports: meter,
+    },
+  };
+}
+
+/**
+ * The same refusal when the caller has no live meter to quote — an offline
+ * desktop that has never successfully read `/limits`, for instance. Says the
+ * plan's rule rather than this org's count, which is the most it can honestly
+ * claim to know.
+ */
+export function exportLimitPaywallUnmetered(): PaywallBody {
+  return {
+    error: "This month's free exports are used up.",
+    paywall: {
+      reason: "exports",
+      message: `Free includes ${FREE_EXPORTS_PER_MONTH} exports a month. Upgrade to Pro for unlimited exports — ${planPrice("pro")} a month.`,
     },
   };
 }
@@ -60,7 +97,7 @@ export function isPaywallBody(body: unknown): body is PaywallBody {
   return (
     !!paywall &&
     typeof paywall === "object" &&
-    (paywall.reason === "trial" ||
+    (paywall.reason === "exports" ||
       paywall.reason === "seats" ||
       paywall.reason === "plugin")
   );

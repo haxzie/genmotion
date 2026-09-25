@@ -13,5 +13,3 @@ export {
 export { mountRenderHost, type RenderHandle, type RenderHostOptions } from "./render-host";
 export { SceneErrorBoundary, type SceneRuntimeError } from "./scene-boundary";
 export type { CompiledScene } from "./types";
-
-export { watermarkHtml, watermarkScale } from "./watermark";

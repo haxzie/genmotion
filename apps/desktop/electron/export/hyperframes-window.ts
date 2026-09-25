@@ -28,7 +28,7 @@ export interface CompositionWindow {
    * volume tween on the timeline has set it to — keyed by element id.
    */
   audioLevels(): Promise<Record<string, number>>;
-  /** Run script in the page — for the watermark, which lives outside the composition. */
+  /** Run script in the page, outside the composition. */
   execute(script: string): Promise<unknown>;
   close(): void;
 }

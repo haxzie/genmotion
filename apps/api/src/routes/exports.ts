@@ -3,15 +3,23 @@ import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, desc, eq, getTableColumns, db, schema } from "@genmotion/db";
-import { PAYWALL_STATUS } from "@genmotion/shared";
+import { isPaywallBody, PAYWALL_STATUS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
-import { getEntitlements } from "../entitlements";
-import { checkPaywall } from "../limits";
+import { claimExportSlot, exportState } from "../limits";
 import { getBoss, RENDER_QUEUE } from "../queue";
 
 export const exportRoutes = new Hono<AuthEnv>();
 
 exportRoutes.use(requireAuth);
+
+/**
+ * A local export announcing itself. Everything is optional detail except that
+ * there is one: the count is of rows, so the body only colours the record.
+ */
+const claimSchema = z.object({
+  format: z.enum(["mp4", "webm", "gif"]).optional(),
+  totalFrames: z.number().int().positive().max(1_000_000).optional(),
+});
 
 const createSchema = z.object({
   projectId: z.string().uuid(),
@@ -22,9 +30,6 @@ const createSchema = z.object({
 exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
   const organizationId = c.get("organizationId");
-
-  const blocked = await checkPaywall(organizationId);
-  if (blocked) return c.json(blocked, PAYWALL_STATUS);
 
   const { projectId, quality, format } = c.req.valid("json");
 
@@ -60,9 +65,15 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
     );
   if (active) return c.json({ error: "An export is already queued" }, 409);
 
-  // Free exports carry the GenMotion badge. Frozen onto the job alongside
-  // quality/format so the renderer never has to resolve plan policy itself.
-  const entitlements = await getEntitlements(organizationId);
+  // The allowance comes off here, after everything that could refuse the
+  // export for a reason of its own has had its say — a project with no scenes
+  // is a 400, and a 400 must not cost a Free user one of their five.
+  const claim = await claimExportSlot(organizationId, user.id, {
+    source: "cloud",
+    format,
+    totalFrames,
+  });
+  if (isPaywallBody(claim)) return c.json(claim, PAYWALL_STATUS);
 
   const [job] = await db
     .insert(schema.exportJobs)
@@ -71,7 +82,6 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
       userId: user.id,
       totalFrames,
       quality: quality ?? 95,
-      watermark: !entitlements.paid,
       ...(format && { format }),
     })
     .returning();
@@ -87,7 +97,39 @@ exportRoutes.post("/", zValidator("json", createSchema), async (c) => {
       .where(eq(schema.exportJobs.id, job!.id));
   }
 
-  return c.json({ ...job, queueJobId: queueJobId ?? null }, 201);
+  return c.json({ ...job, queueJobId: queueJobId ?? null, usage: claim.usage }, 201);
+});
+
+/**
+ * POST /claim — take one export off the month's allowance for a render that
+ * happens somewhere we will never see: the desktop app's own offscreen window.
+ *
+ * The desktop app cannot be trusted to keep this count itself. A local tally
+ * would reset with a reinstall, a new machine, or a deleted file, and the
+ * allowance is per organization rather than per install. So the app asks here
+ * first and renders only on a 200.
+ *
+ * Separate from `POST /` because that one enqueues a hosted render. This
+ * writes the meter row and nothing else; the answer is the meter as it now
+ * stands.
+ */
+exportRoutes.post("/claim", zValidator("json", claimSchema), async (c) => {
+  const user = c.get("user");
+  const organizationId = c.get("organizationId");
+  const { format, totalFrames } = c.req.valid("json");
+
+  const claim = await claimExportSlot(organizationId, user.id, {
+    source: "desktop",
+    format,
+    totalFrames,
+  });
+  if (isPaywallBody(claim)) return c.json(claim, PAYWALL_STATUS);
+  return c.json(claim, 201);
+});
+
+/** GET /usage — the month's export meter, without claiming anything. */
+exportRoutes.get("/usage", async (c) => {
+  return c.json(await exportState(c.get("organizationId")));
 });
 
 exportRoutes.get("/latest", async (c) => {
