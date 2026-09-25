@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs/promises";
 import { createSceneBundler, type SceneBundler } from "../bundle";
+import { renderThreeStarterScene } from "../scaffold-three";
 import { validateThreeSceneFile } from "../validate";
 
 let dir: string;
@@ -127,6 +128,16 @@ describe("validateThreeSceneFile", () => {
     );
     const result = await validate();
     expect(result.error).toMatch(/setAnimationLoop/);
+  });
+
+  it("passes the starter scene every new three project opens with", async () => {
+    // The welcome scene is the one piece of three-engine code we ship, and the
+    // first thing the agent reads in a fresh project. If it ever trips the
+    // determinism rules, or stops compiling against the engine's types, every
+    // new project opens on a broken preview.
+    await write("scenes/01-intro.ts", renderThreeStarterScene());
+    const result = await validate();
+    expect(result.error).toBeNull();
   });
 
   it("rejects non-deterministic code", async () => {
