@@ -36,6 +36,8 @@ export interface TemplateSummary {
   tags: TemplateTag[];
   /** `YYYY-MM-DD`. The list comes newest-first on this. */
   publishedAt: string;
+  /** Eligible for the home page's curated strip. See the sidecar's schema. */
+  featured: boolean;
   /** From project.json, so the card draws at the template's real ratio. */
   fps: number;
   width: number;

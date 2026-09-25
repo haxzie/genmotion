@@ -68,6 +68,7 @@ all three, plus the checklist for adding a template in the first place.
      "category": "product | social | intro | explainer | data",
      "tags": ["Two", "To three", "from TEMPLATE_TAGS"],
      "publishedAt": "YYYY-MM-DD",
+     "featured": false,
      "order": 100
    }
    ```
@@ -88,6 +89,12 @@ all three, plus the checklist for adding a template in the first place.
      doesn't honestly fit; an empty category is fine.
    - `publishedAt`: today, `YYYY-MM-DD`. The gallery sorts newest-first on
      this, so it is what puts a new template on the first page.
+   - `featured`: whether the marketing home page's strip may show it. Defaults
+     to false, and that is the honest default for a new template — the home
+     page is a curated selection, not the catalog. The full `/templates`
+     gallery, the desktop app and the sitemap list every template either way,
+     so leaving it off costs a template nothing but the front page. Ask before
+     flipping it on; it is an editorial call, not a mechanical step.
    - `order`: one past the current highest (`grep -rh '"order"' packages/templates/catalog/*/template.json`).
      Only breaks ties between templates published the same day.
    - `sampleAt` (optional, 0–1): fraction into the first scene where the poster
@@ -193,7 +200,7 @@ change. Then:
 2. Redo the add-a-template checklist from step 1 (or from step 2 if the
    referenced-asset list is unchanged) against the *current* state of the
    source project.
-3. `template.json`'s content (title/description/tags/category/order) usually
+3. `template.json`'s content (title/description/tags/category/featured/order) usually
    doesn't need to change just because timing or an asset did — reuse it
    as-is unless the update actually changed what the template is *about*.
 4. Re-render the video (it's now stale even though the file on disk is

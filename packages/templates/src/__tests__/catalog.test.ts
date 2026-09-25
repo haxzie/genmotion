@@ -73,6 +73,34 @@ it("restarts from the top on a cursor it doesn't recognize", async () => {
   expect(page.records.length).toBe(whole.length);
 });
 
+it("narrows to the featured templates before paginating", async () => {
+  const whole = await listTemplates();
+  const featured = whole.filter((r) => r.meta.featured);
+  expect(featured.length).toBeGreaterThan(0);
+
+  const page = await listTemplatesPage({ featured: true, limit: whole.length + 10 });
+  expect(page.records.map((r) => r.meta.id)).toEqual(featured.map((r) => r.meta.id));
+  expect(page.nextCursor).toBeNull();
+});
+
+it("pages the featured slice without leaking an unfeatured template in", async () => {
+  const featured = (await listTemplates()).filter((r) => r.meta.featured);
+  const paged: string[] = [];
+  let cursor: string | null | undefined;
+  do {
+    const page = await listTemplatesPage({ featured: true, cursor, limit: 2 });
+    paged.push(...page.records.map((r) => r.meta.id));
+    cursor = page.nextCursor;
+  } while (cursor);
+  expect(paged).toEqual(featured.map((r) => r.meta.id));
+});
+
+it("lists the whole catalog when no featured filter is asked for", async () => {
+  const whole = await listTemplates();
+  const page = await listTemplatesPage({ limit: whole.length + 10 });
+  expect(page.records.length).toBe(whole.length);
+});
+
 it("tags every portrait template Social Media", async () => {
   const templates = await listTemplates();
   for (const { meta, manifest } of templates) {

@@ -61,9 +61,13 @@ const mimeFor = (file: string) => MIME[path.extname(file).toLowerCase()] ?? "app
 templateRoutes.get("/", async (c) => {
   const limitParam = Number(c.req.query("limit"));
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : TEMPLATE_PAGE_SIZE;
+  // `?featured=true` is the home page's curated strip; anything else (absent
+  // included) is the whole catalog, which is what the gallery wants.
+  const featured = c.req.query("featured") === "true" ? true : undefined;
   const { records, nextCursor } = await listTemplatesPage({
     cursor: c.req.query("cursor"),
     limit,
+    featured,
   });
   c.header("Cache-Control", JSON_CACHE);
   return c.json({ templates: records.map(toSummary), nextCursor });

@@ -55,6 +55,18 @@ export const templateMetaSchema = z.object({
    * curated-only `order` did once the catalog outgrew one page.
    */
   publishedAt: z.iso.date(),
+  /**
+   * Whether the marketing home page's curated strip may show this one.
+   *
+   * A separate flag rather than another entry in `TEMPLATE_TAGS`: those are
+   * user-visible pills a visitor filters the gallery by, capped at three per
+   * template, and "featured" describes where we put a template rather than
+   * what it is — it would eat a pill slot and read as noise on a card. Off by
+   * default, so a template is only ever promoted to the home page by someone
+   * deciding it should be. The full gallery ignores this entirely; an
+   * unfeatured template is listed, searchable and remixable exactly as before.
+   */
+  featured: z.boolean().default(false),
   /** Breaks ties within a day; lower is earlier. Then title. */
   order: z.number().int().default(100),
   /**

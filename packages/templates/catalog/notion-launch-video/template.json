@@ -9,6 +9,7 @@
     "Promotional"
   ],
   "publishedAt": "2026-09-09",
+  "featured": true,
   "order": 16,
   "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/notion-launch-video/video.mp4"
 }

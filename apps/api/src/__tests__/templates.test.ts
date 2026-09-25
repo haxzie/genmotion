@@ -67,6 +67,33 @@ describe("GET /api/templates", () => {
     expect(paged.map((t) => t.id)).toEqual(whole.templates.map((t) => t.id));
   });
 
+  it("returns only featured templates for ?featured=true", async () => {
+    const all = (await (await get("/api/templates?limit=1000")).json()) as {
+      templates: { id: string; featured: boolean }[];
+    };
+    const res = await get("/api/templates?featured=true&limit=1000");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { templates: { id: string; featured: boolean }[] };
+
+    expect(body.templates.length).toBeGreaterThan(0);
+    expect(body.templates.every((t) => t.featured)).toBe(true);
+    expect(body.templates.map((t) => t.id)).toEqual(
+      all.templates.filter((t) => t.featured).map((t) => t.id),
+    );
+  });
+
+  it("lists everything when featured is absent or anything but true", async () => {
+    const whole = (await (await get("/api/templates?limit=1000")).json()) as {
+      templates: { id: string }[];
+    };
+    for (const qs of ["", "&featured=false", "&featured=maybe"]) {
+      const body = (await (await get(`/api/templates?limit=1000${qs}`)).json()) as {
+        templates: { id: string }[];
+      };
+      expect(body.templates.map((t) => t.id)).toEqual(whole.templates.map((t) => t.id));
+    }
+  });
+
   it("has no next page once every template is exhausted", async () => {
     const res = await get("/api/templates?limit=1000");
     const body = (await res.json()) as { nextCursor: string | null };

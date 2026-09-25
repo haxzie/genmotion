@@ -9,7 +9,8 @@
     "Promotional"
   ],
   "publishedAt": "2026-09-19",
-  "order": 19,
+  "featured": true,
   "sampleAt": 0.85,
+  "order": 19,
   "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/gojiberry-launch-video/video.mp4"
 }

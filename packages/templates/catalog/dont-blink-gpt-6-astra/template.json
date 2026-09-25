@@ -9,7 +9,8 @@
     "Promotional"
   ],
   "publishedAt": "2026-09-05",
-  "order": 14,
+  "featured": true,
   "sampleAt": 0.96,
+  "order": 14,
   "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/dont-blink-gpt-6-astra/video.mp4"
 }

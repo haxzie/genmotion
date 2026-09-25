@@ -118,9 +118,11 @@ export default async function HomePage() {
   // unreachable or nothing is published — the button still works, it just
   // says less.
   const release = await getLatestRelease();
-  // The whole catalog, in the order the catalog itself curates — the teaser
-  // is the gallery now, not a trimmed preview of it.
-  const templates = await getAllTemplateSummaries();
+  // The featured slice of the catalog, in the order the catalog itself
+  // curates. Not every template belongs on the front page — /templates stays
+  // the complete gallery, and a template earns its way here by being marked
+  // `featured` in its sidecar.
+  const templates = await getAllTemplateSummaries({ featured: true });
 
   return (
     <>
@@ -221,7 +223,8 @@ export default async function HomePage() {
           whose models it runs. */}
       <IntegrationsSection />
 
-      {/* Templates gallery — the whole catalog, by its own curated order. A
+      {/* Templates gallery — the featured templates, by the catalog's own
+          curated order. A
           wider container than the rest of the page: still the same three
           columns, just each one bigger, so the videos themselves read larger
           rather than the grid growing another column. */}

@@ -15,11 +15,12 @@ import type { TemplateCatalog, TemplateSummary } from "@genmotion/templates/type
 const REVALIDATE_SECONDS = 300;
 
 export async function getTemplatesPage(
-  { cursor, limit }: { cursor?: string; limit?: number } = {},
+  { cursor, limit, featured }: { cursor?: string; limit?: number; featured?: boolean } = {},
 ): Promise<TemplateCatalog | null> {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
   if (limit) params.set("limit", String(limit));
+  if (featured) params.set("featured", "true");
   const qs = params.toString();
   try {
     const res = await fetch(`${API_URL}/api/templates${qs ? `?${qs}` : ""}`, {
@@ -39,12 +40,18 @@ export async function getTemplatesPage(
  * wants the complete catalog rather than one page of it, regardless of how
  * the visible gallery paginates. The catalog is small enough that this costs
  * a handful of requests, all against the API's own in-memory cache.
+ *
+ * `featured: true` narrows it to the home page's curated strip. Every other
+ * caller wants the whole catalog, which is the default — a template kept off
+ * the home page is still listed, indexed and remixable.
  */
-export async function getAllTemplateSummaries(): Promise<TemplateSummary[]> {
+export async function getAllTemplateSummaries(
+  { featured }: { featured?: boolean } = {},
+): Promise<TemplateSummary[]> {
   const all: TemplateSummary[] = [];
   let cursor: string | undefined;
   for (let guard = 0; guard < 100; guard++) {
-    const page = await getTemplatesPage({ cursor, limit: 100 });
+    const page = await getTemplatesPage({ cursor, limit: 100, featured });
     if (!page) break;
     all.push(...page.templates);
     if (!page.nextCursor) break;

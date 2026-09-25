@@ -258,6 +258,7 @@ export function toSummary(record: TemplateRecord): TemplateSummary {
     category: meta.category,
     tags: meta.tags,
     publishedAt: meta.publishedAt,
+    featured: meta.featured,
     fps: manifest.fps,
     width: manifest.width,
     height: manifest.height,
@@ -307,11 +308,23 @@ export interface TemplatePage {
  * exists for the shape of pagination (a client fetching the whole thing
  * up front doesn't scale as the catalog grows), not because listing it is
  * expensive today.
+ *
+ * `featured` left undefined means the whole catalog — the gallery's own view.
+ * Pass `true` for the home page's curated strip.
  */
 export async function listTemplatesPage(
-  { cursor, limit = TEMPLATE_PAGE_SIZE }: { cursor?: string | null; limit?: number } = {},
+  {
+    cursor,
+    limit = TEMPLATE_PAGE_SIZE,
+    featured,
+  }: { cursor?: string | null; limit?: number; featured?: boolean } = {},
 ): Promise<TemplatePage> {
-  const all = await listTemplates();
+  const everything = await listTemplates();
+  // Narrow before paginating, so a cursor walks the same list the first page
+  // came from — filtering a page after slicing it would hand back short pages
+  // and a cursor that skips templates.
+  const all =
+    featured === undefined ? everything : everything.filter((r) => r.meta.featured === featured);
 
   let start = 0;
   if (cursor) {
