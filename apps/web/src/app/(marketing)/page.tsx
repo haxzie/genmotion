@@ -12,13 +12,12 @@ import {
 } from "@/components/marketing/primitives";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { FaqSection } from "@/components/marketing/faq";
-import { FeatureIcon } from "@/components/marketing/icons";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { HowItWorks } from "@/components/marketing/how-it-works";
+import { Capabilities } from "@/components/marketing/capabilities";
 import { AgentBadges, ClaudeMark, CodexMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
-import { FEATURES } from "@/lib/marketing/features";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug } from "@/lib/marketing/content";
 import { getAllTemplateSummaries } from "@/lib/marketing/templates";
@@ -72,13 +71,6 @@ const FAQS: Faq[] = [
 
 /** The launch announcement the hero badge points at. */
 const LAUNCH_POST_SLUG = "introducing-genmotion-ai-motion-video-studio";
-
-/**
- * Features hidden from the home grid only. They keep their own pages and stay
- * in /features, the sitemap, llms.txt, and the related-features rail — this
- * list just trims what the homepage leads with.
- */
-const FEATURES_HIDDEN_ON_HOME = new Set(["brand-extraction"]);
 
 export default async function HomePage() {
   // The authed-visitor redirect lives in the proxy (src/proxy.ts), not here:
@@ -251,46 +243,9 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Feature grid */}
-      <Section className="border-t border-border">
-        <Container>
-          <div className="mx-auto max-w-2xl text-center">
-            <Eyebrow className="mb-4">Everything you need</Eyebrow>
-            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              A full studio, driven by an agent
-            </h2>
-            <p className="mt-4 text-text-secondary">
-              Each capability has its own page — dive into the ones that matter to
-              you.
-            </p>
-          </div>
-          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.filter((f) => !FEATURES_HIDDEN_ON_HOME.has(f.slug)).map((feature) => (
-              <Link
-                key={feature.slug}
-                href={`/features/${feature.slug}`}
-                className="group rounded-xl border border-border bg-surface p-6 transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
-              >
-                <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-surface-raised text-text-primary">
-                  <FeatureIcon name={feature.icon} className="size-5" />
-                </div>
-                <h3 className="mt-4 text-[1.05rem] font-medium group-hover:text-text-primary">
-                  {feature.name}
-                </h3>
-                <p className="mt-1.5 text-[0.95rem] text-text-secondary">
-                  {feature.tagline}
-                </p>
-                <span className="mt-4 inline-flex items-center gap-1 text-[0.9rem] text-text-tertiary transition-colors group-hover:text-text-primary">
-                  Learn more
-                  <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h13M13 6l6 6-6 6" />
-                  </svg>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </Section>
+      {/* What the studio covers, as a bento: every cell shows the app doing
+          the thing rather than an icon standing for it. */}
+      <Capabilities />
 
       {/* FAQ */}
       <FaqSection items={FAQS} />
