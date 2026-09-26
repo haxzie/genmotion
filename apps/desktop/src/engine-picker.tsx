@@ -56,7 +56,7 @@ function EngineIcon({ id, className }: { id: EngineRow; className?: string }) {
  *
  * Sits beside the model picker on the start screen and looks like it, because
  * it is the same kind of choice: made once, remembered on this machine, and
- * applied to whatever the composer creates next. HyperFrames is the default;
+ * applied to whatever the composer creates next. Three.js is the default;
  * GenMotion is the React runtime every project used to be.
  */
 export function EnginePicker({ placement = "down" }: { placement?: "up" | "down" }) {

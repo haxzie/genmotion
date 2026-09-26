@@ -10,7 +10,12 @@ import {
   type McpServerInput,
   type McpServerPatch,
 } from "@genmotion/shared";
-import { readManifest, writeManifest, type ProjectManifest } from "@genmotion/project";
+import {
+  readManifest,
+  writeManifest,
+  type ProjectEngine,
+  type ProjectManifest,
+} from "@genmotion/project";
 import { ENTRY_FILE, splitAudioClip as splitHyperframesAudioClip } from "@genmotion/hyperframes";
 import type { ProjectFileContent, ProjectFileNode } from "./shared";
 import type { ProjectSession } from "./project-session";
@@ -699,7 +704,14 @@ export async function startLocalServer(
   ): Promise<unknown> {
     const { projectDefaults, setProjectDefaults } = await import("./preferences");
     if (method === "POST") {
-      const body = await readJson<{ width?: number; height?: number; fps?: number; engine?: "react" | "hyperframes" }>(req);
+      // `ProjectEngine`, not a hand-listed union that forgot `three` when the
+      // engine was added — `setProjectDefaults` validates it either way.
+      const body = await readJson<{
+        width?: number;
+        height?: number;
+        fps?: number;
+        engine?: ProjectEngine;
+      }>(req);
       return setProjectDefaults(body);
     }
     return projectDefaults();

@@ -16,12 +16,19 @@ export interface ProjectDefaults {
   engine: ProjectEngine;
 }
 
-/** 1080p at 30, on GenMotion's React runtime — what `createProject` falls back to when nothing is passed. */
+/**
+ * 1080p at 30, on the Three.js engine — what a machine that has never touched
+ * the picker creates.
+ *
+ * Only the default: `react` and `hyperframes` are a click away in the picker,
+ * every existing project keeps the engine its manifest names, and a machine
+ * that has already chosen keeps that choice (the stored value wins here).
+ */
 export const DEFAULT_PROJECT: ProjectDefaults = {
   width: 1920,
   height: 1080,
   fps: 30,
-  engine: "react",
+  engine: "three",
 };
 
 /** What is on disk: unvalidated, and possibly from a build that knew fewer fields. */
