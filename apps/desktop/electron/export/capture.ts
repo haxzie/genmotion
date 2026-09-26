@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import type { NativeImage } from "electron";
 import type { ProjectManifest, SceneEntry } from "@genmotion/project";
+import type { ThreeObjectBox } from "@genmotion/three-engine";
 import type { ProjectSession } from "../project-session";
 import { PAGE_SHELL, hasActiveExport, onExportChange } from "./service";
 import { openCompositionWindow } from "./hyperframes-window";
@@ -156,6 +157,21 @@ export interface CaptureInput {
    * the one they drew on. Omitted, the frame is captured as-is.
    */
   overlay?: string;
+  /**
+   * Ask the host what the drawn frame is made of — see `CapturedFrame.objects`.
+   * Three.js only; the React host has no such call and answers nothing.
+   */
+  describeObjects?: boolean;
+}
+
+/** A rendered frame, and (when asked for) what the user can point at in it. */
+export interface CapturedFrame {
+  image: NativeImage;
+  /**
+   * The active scene's objects as the preview's selection overlay sees them —
+   * empty unless `describeObjects` was set and the engine is Three.js.
+   */
+  objects: ThreeObjectBox[];
 }
 
 /**
@@ -191,6 +207,21 @@ function overlayScript(overlay: string, width: number, height: number): string {
  * build, a capture that came back blank.
  */
 export function captureFrame(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
+  return captureFrameAndObjects(session, input).then((result) => result.image);
+}
+
+/**
+ * As `captureFrame`, but also hands back what the frame is made of.
+ *
+ * Only the agent's `capture_frames` wants this: when it looks at a Three.js
+ * scene it should learn the same thing the user's pointer will — which objects
+ * the preview offers as selections — and the frame it just rendered is the
+ * only place that can be measured.
+ */
+export function captureFrameAndObjects(
+  session: ProjectSession,
+  input: CaptureInput,
+): Promise<CapturedFrame> {
   return serialize(() => render(session, input), { isCapture: true });
 }
 
@@ -234,7 +265,7 @@ export function captureCompositionFrame(
   });
 }
 
-async function render(session: ProjectSession, input: CaptureInput): Promise<NativeImage> {
+async function render(session: ProjectSession, input: CaptureInput): Promise<CapturedFrame> {
   const { manifest, scenes, frame, overlay } = input;
   watchExports();
 
@@ -278,6 +309,10 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
 
   try {
     await host.setFrame(frame);
+    // Before the overlay is burned in, so a marked-up capture describes the
+    // scene and not the marks laid over it.
+    const objects =
+      input.describeObjects && session.engine === "three" ? await host.describe() : [];
     if (overlay) await host.execute(overlayScript(overlay, manifest.width, manifest.height));
     const image = await host.capture();
     if (image.isEmpty()) throw new Error("the capture came back blank");
@@ -286,7 +321,7 @@ async function render(session: ProjectSession, input: CaptureInput): Promise<Nat
     } else {
       host.close();
     }
-    return image;
+    return { image, objects };
   } catch (err) {
     // A window that failed mid-capture has nothing to recommend it to the
     // next caller.
@@ -341,6 +376,12 @@ export interface RenderHostWindow {
   setFrame(frame: number): Promise<void>;
   /** Whatever the page shows now, at the display's pixel ratio. */
   capture(): Promise<NativeImage>;
+  /**
+   * What the drawn frame is made of, as the preview's selection overlay sees
+   * it. Empty on the React host, which has no such call — there the DOM is
+   * already the answer.
+   */
+  describe(): Promise<ThreeObjectBox[]>;
   execute(script: string): Promise<unknown>;
   close(): void;
 }
@@ -380,6 +421,10 @@ export async function openRenderHost(input: OpenHostInput): Promise<RenderHostWi
       await win.webContents.executeJavaScript(`window.__gm.setFrame(${frame})`);
     },
     capture: () => win.webContents.capturePage(),
+    describe: async () =>
+      ((await win.webContents.executeJavaScript(
+        "window.__gm?.describe ? window.__gm.describe() : []",
+      )) ?? []) as ThreeObjectBox[],
     execute: (script) => win.webContents.executeJavaScript(script),
     close: () => {
       // A WebGL context is a scarce resource; hand it back explicitly before

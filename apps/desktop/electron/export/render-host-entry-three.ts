@@ -6,7 +6,12 @@
  *
  *   window.__gmInit({ scenes, fps, width, height })  → mounts, returns {} or {error}
  *   window.__gm.setFrame(n)                          → the frame barrier
+ *   window.__gm.describe()                           → the drawn frame's objects
  *   window.__gm.dispose()                            → frees the GPU context
+ *
+ * `describe` is the same call the editor's preview makes to lay its selection
+ * overlay over the canvas, offered here so a capture can tell the agent which
+ * of the objects it just drew the user will actually be able to click.
  */
 import { mountThreeRenderHost } from "@genmotion/three-engine";
 import { evaluateThreeScene } from "@genmotion/compiler/evaluate-three";
@@ -21,6 +26,12 @@ declare global {
     }) => { error?: string };
     __gm?: {
       setFrame: (frame: number) => Promise<void> | void;
+      /**
+       * Three.js host only. Typed loosely because the React entry declares the
+       * same global and the two declarations must match; `capture.ts` is where
+       * the boxes get their real type.
+       */
+      describe?: () => unknown;
       dispose?: () => void;
     };
   }
@@ -53,6 +64,10 @@ window.__gmInit = (payload) => {
     width: payload.width,
     height: payload.height,
   });
-  window.__gm = { setFrame: handle.setFrame, dispose: handle.dispose };
+  window.__gm = {
+    setFrame: handle.setFrame,
+    describe: handle.describeActiveScene,
+    dispose: handle.dispose,
+  };
   return {};
 };

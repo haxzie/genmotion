@@ -13,6 +13,9 @@
  *   luma       — mean brightness of the centre box, sampled once per scene.
  *   boundary   — the frame right after the cut isn't stale/blank, which a
  *                single-scene probe can't catch.
+ *   selectable — what `__gm.describe()` reports for the frame just drawn: the
+ *                same list the editor's overlay lays over the canvas and the
+ *                agent's `capture_frames` reports back.
  *
  *   pnpm --dir apps/desktop exec tsx --tsconfig ../../tsconfig.tsx-runtime.json \
  *     scripts/three-engine-host-probe.mts [framesPerScene]
@@ -38,9 +41,19 @@ export default function buildScene({ scene, camera }) {
     new THREE.BoxGeometry(2, 2, 2),
     new THREE.MeshStandardMaterial({ color: "#6ee7ff", roughness: 0.35 }),
   );
+  // Named, so the preview's selection overlay can offer it; the wall behind
+  // it is scenery and opts out.
+  cube.name = "hero-cube";
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshStandardMaterial({ color: "#101018" }),
+  );
+  wall.name = "backdrop";
+  wall.position.z = -6;
+  wall.userData.pickable = false;
   const key = new THREE.DirectionalLight(0xffffff, 3);
   key.position.set(3, 4, 5);
-  scene.add(cube, key, new THREE.AmbientLight(0xffffff, 0.6));
+  scene.add(cube, wall, key, new THREE.AmbientLight(0xffffff, 0.6));
   camera.position.z = 6;
   return ({ time }) => {
     cube.rotation.y = time * 1.5;
@@ -57,6 +70,7 @@ export default function buildScene({ scene, camera }) {
     new THREE.SphereGeometry(1.6, 24, 24),
     new THREE.MeshStandardMaterial({ color: "#ff6e9e", roughness: 0.2 }),
   );
+  sphere.name = "orb";
   const key = new THREE.DirectionalLight(0xffffff, 3);
   key.position.set(-3, 2, 4);
   scene.add(sphere, key, new THREE.AmbientLight(0xffffff, 0.4));

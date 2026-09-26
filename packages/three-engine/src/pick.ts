@@ -11,7 +11,10 @@ import * as THREE from "three";
  * is looking at WebGL.
  */
 export interface ThreeObjectBox {
-  /** `object.name`, or a synthesised `Mesh-3` when the scene didn't name it. */
+  /**
+   * `object.name`, or a synthesised `Mesh-3` when the scene didn't name it,
+   * and suffixed (`card-2`) when two objects would otherwise collide.
+   */
   id: string;
   /** `Mesh`, `Group`, `Sprite`… */
   type: string;
@@ -20,6 +23,29 @@ export interface ThreeObjectBox {
   top: number;
   width: number;
   height: number;
+}
+
+/**
+ * What a scene can say about one of its own objects, through `userData`.
+ *
+ * Everything here is optional, and a scene that sets none of it still gets the
+ * default behaviour below. It exists because the two cases the geometry cannot
+ * answer are both authorial: a backdrop the user should never be able to grab,
+ * and a visual whose real extent only the shader that draws it knows.
+ */
+export interface ThreePickHints {
+  /**
+   * `false` takes this object *and everything under it* out of the preview —
+   * a backdrop, a floor grid, a light rig's helper geometry.
+   */
+  pickable?: boolean;
+  /**
+   * The box this object actually draws into, in its own local space, used in
+   * place of the measured one. This is how a vertex-shader-driven visual
+   * becomes selectable: the CPU can't know where its instances land, so the
+   * scene says.
+   */
+  pickBounds?: THREE.Box3;
 }
 
 /** Object types worth offering as a selection even when they have no name. */
@@ -65,7 +91,10 @@ function projectToFrame(
   width: number,
   height: number,
 ): { left: number; top: number; width: number; height: number } | null {
-  const bounds = new THREE.Box3().setFromObject(object);
+  const declared = hintsOf(object).pickBounds;
+  const bounds = declared
+    ? new THREE.Box3().copy(declared).applyMatrix4(object.matrixWorld)
+    : new THREE.Box3().setFromObject(object);
   if (bounds.isEmpty()) return null;
 
   const corner = new THREE.Vector3();
@@ -124,15 +153,34 @@ function projectToFrame(
  * and `Box3` expands over them.
  */
 function isMeasurable(object: THREE.Object3D): boolean {
+  // The scene declared the box itself, which is the whole point of the hint.
+  if (hintsOf(object).pickBounds) return true;
   const geometry = (object as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
   if (!geometry) return true;
   const instanced = (geometry as THREE.InstancedBufferGeometry).isInstancedBufferGeometry;
   return !instanced || (object as THREE.InstancedMesh).isInstancedMesh === true;
 }
 
+function hintsOf(object: THREE.Object3D): ThreePickHints {
+  return (object.userData ?? {}) as ThreePickHints;
+}
+
+/**
+ * Did the scene ask for this object — or anything containing it — to be left
+ * out? Checked up the chain rather than on the object alone, so
+ * `backdrop.userData.pickable = false` covers the whole backdrop and the
+ * author doesn't have to repeat themselves on every piece of it.
+ */
+function isOptedOut(object: THREE.Object3D): boolean {
+  for (let node: THREE.Object3D | null = object; node; node = node.parent) {
+    if (hintsOf(node).pickable === false) return true;
+  }
+  return false;
+}
+
 /** Is this an object a user could mean when they click? */
 function isPickable(object: THREE.Object3D): boolean {
-  if (!object.visible || !isMeasurable(object)) return false;
+  if (!object.visible || !isMeasurable(object) || isOptedOut(object)) return false;
   // A named group is a thing the scene's author thought of as one thing.
   return PICKABLE_TYPES.has(object.type) || object.name !== "";
 }
@@ -156,6 +204,7 @@ export function describeSceneObjects(
 
   const boxes: ThreeObjectBox[] = [];
   const counts = new Map<string, number>();
+  const taken = new Set<string>();
   scene.traverse((object) => {
     if (boxes.length >= MAX_DESCRIBED_OBJECTS) return;
     if (object === scene || !isPickable(object)) return;
@@ -166,10 +215,25 @@ export function describeSceneObjects(
     boxes.push({
       // Whitespace is not allowed in a DOM id, and the editor lays these out
       // as elements; the name still reads back plainly in chat.
-      id: (object.name || `${object.type}-${seen}`).replace(/\s+/g, "-"),
+      id: unique((object.name || `${object.type}-${seen}`).replace(/\s+/g, "-"), taken),
       type: object.type,
       ...box,
     });
   });
   return boxes;
+}
+
+/**
+ * The id under which this object goes into the overlay, made unique.
+ *
+ * Two objects sharing a name would otherwise become two elements sharing a DOM
+ * id, and a user clicking either would send the agent a reference that matches
+ * both. Suffixing says plainly which one was meant — and the collision itself
+ * is a sign the scene should have named them apart.
+ */
+function unique(id: string, taken: Set<string>): string {
+  let candidate = id;
+  for (let n = 2; taken.has(candidate); n++) candidate = `${id}-${n}`;
+  taken.add(candidate);
+  return candidate;
 }

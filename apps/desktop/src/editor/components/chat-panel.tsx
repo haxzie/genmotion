@@ -200,7 +200,12 @@ function buildContextNote(
   }
   if (elements.length > 0) {
     lines.push(
-      "Selected element(s) — my request is about these. Find each in its scene's code by id (else by tag + text) and change THAT element:",
+      // The id is an `id` attribute on the React and HyperFrames engines, and
+      // `object.name` on a Three.js scene, whose preview elements are projected
+      // from the scene graph rather than rendered — so the note names both
+      // rather than sending a Three.js agent looking for markup that does not
+      // exist.
+      "Selected element(s) — my request is about these. Find each in its scene's code by id (`object.name` in a Three.js scene, else by tag + text) and change THAT element:",
     );
     for (const e of elements) {
       const ref = e.elementId

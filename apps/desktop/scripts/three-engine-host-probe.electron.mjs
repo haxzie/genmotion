@@ -68,6 +68,17 @@ app.whenReady().then(async () => {
       if (f > 0 && f % FRAMES_PER_SCENE === 0 && hash === previousHash) boundaryOk = false;
       previousHash = hash;
 
+      if (f === 0 || f === FRAMES_PER_SCENE) {
+        const objects = await win.webContents.executeJavaScript(
+          "window.__gm.describe ? window.__gm.describe() : null",
+        );
+        log(
+          objects === null
+            ? "FAIL: the host offers no describe() — the preview overlay and capture_frames have nothing to read"
+            : `selectable at frame ${f}: ${objects.map((o) => `#${o.id} ${Math.round(o.width)}x${Math.round(o.height)}`).join(", ") || "(nothing)"}`,
+        );
+      }
+
       if (f === 0) {
         const s = image.getSize();
         const buffer = await win.webContents.executeJavaScript(

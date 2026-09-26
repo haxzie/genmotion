@@ -145,6 +145,65 @@ describe("describeSceneObjects", () => {
     expect(box!.width).toBeGreaterThan(300);
   });
 
+  it("keeps shader-placed geometry the scene declared a box for", () => {
+    const geometry = new THREE.InstancedBufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array([-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0]), 3),
+    );
+    geometry.instanceCount = 500;
+    const strokes = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial());
+    strokes.name = "ink";
+    strokes.userData.pickBounds = new THREE.Box3(
+      new THREE.Vector3(-1, -1, 0),
+      new THREE.Vector3(1, 1, 0),
+    );
+
+    const scene = new THREE.Scene();
+    scene.add(strokes);
+
+    const [box] = describeSceneObjects(scene, camera(), W, H);
+    expect(box?.id).toBe("ink");
+    // The declared box, not the one-quad prototype's.
+    expect(box!.width).toBeGreaterThan(300);
+  });
+
+  it("applies a declared box in the object's own space", () => {
+    const scene = new THREE.Scene();
+    const panel = mesh("panel", 2);
+    panel.userData.pickBounds = new THREE.Box3(
+      new THREE.Vector3(-0.5, -0.5, 0),
+      new THREE.Vector3(0.5, 0.5, 0),
+    );
+    scene.add(panel);
+
+    const [box] = describeSceneObjects(scene, camera(), W, H);
+    // Moved with the object rather than sitting at the origin.
+    expect(box!.left).toBeGreaterThan(W / 2);
+  });
+
+  it("leaves out an object the scene opted out, and everything under it", () => {
+    const scene = new THREE.Scene();
+    const backdrop = new THREE.Group();
+    backdrop.name = "backdrop";
+    backdrop.userData.pickable = false;
+    backdrop.add(mesh("stars"), mesh("horizon", 1.5));
+    scene.add(backdrop, mesh("subject", -1.5));
+
+    expect(describeSceneObjects(scene, camera(), W, H).map((b) => b.id)).toEqual(["subject"]);
+  });
+
+  it("suffixes a repeated name so two objects never share one id", () => {
+    const scene = new THREE.Scene();
+    scene.add(mesh("card"), mesh("card", 1.5), mesh("card", -1.5));
+
+    expect(describeSceneObjects(scene, camera(), W, H).map((b) => b.id)).toEqual([
+      "card",
+      "card-2",
+      "card-3",
+    ]);
+  });
+
   it("stops at the cap rather than describing a whole particle system", () => {
     const scene = new THREE.Scene();
     for (let i = 0; i < 400; i++) scene.add(mesh(`p${i}`));

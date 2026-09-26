@@ -19,7 +19,12 @@ declare global {
       width: number;
       height: number;
     }) => { error?: string };
-    __gm?: { setFrame: (frame: number) => Promise<void> | void; dispose?: () => void };
+    __gm?: {
+      setFrame: (frame: number) => Promise<void> | void;
+      /** Only the Three.js host has one; see `render-host-entry-three.ts`. */
+      describe?: () => unknown;
+      dispose?: () => void;
+    };
   }
 }
 

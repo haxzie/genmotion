@@ -7,7 +7,7 @@ import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/va
 import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
 import { desktopAuth } from "../auth";
-import { captureCompositionFrame, captureFrame } from "../export/capture";
+import { captureCompositionFrame, captureFrameAndObjects } from "../export/capture";
 import { resolveFrameTarget, SAMPLE_AT } from "../export/frame-target";
 import { openCompositionWindow } from "../export/hyperframes-window";
 import type { ProjectSession } from "../project-session";
@@ -258,16 +258,21 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       // longer refuses you a look at the one you just fixed; proving the
       // whole timeline compiles is `validate_scene`'s job, not a
       // screenshot's.
-      let image;
+      let captured;
       try {
-        image = await captureFrame(session, {
+        captured = await captureFrameAndObjects(session, {
           manifest,
           scenes: [owner],
           frame: localFrame,
+          // On the Three.js engine the frame is one canvas, so what the user
+          // can click is not visible in the picture the way a DOM tree's ids
+          // are in the code. Ask, and report it below.
+          describeObjects: session.engine === "three",
         });
       } catch (err) {
         return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
       }
+      const { image } = captured;
 
       // `capturePage` returns the frame at the display's pixel ratio, which is
       // twice the composition on a Retina screen. A vision model resolves
@@ -281,6 +286,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         text: [
           `${owner.file} — frame ${localFrame} of ${owner.durationInFrames} (${seconds(localFrame, fps)} into the scene, ${seconds(frame, fps)} of ${seconds(totalFrames, fps)} on the timeline) · ${manifest.width}×${manifest.height}`,
           `Saved to ${saved}`,
+          ...(session.engine === "three" ? [selectableNote(captured.objects)] : []),
         ].join("\n"),
         image: { base64: jpeg.toString("base64"), mimeType: "image/jpeg" },
       };
@@ -829,6 +835,40 @@ export async function prune(dir: string, keep = SNAPSHOT_KEEP): Promise<void> {
 /** A frame count as the seconds a person reads off the timeline. */
 function seconds(frame: number, fps: number): string {
   return `${(frame / fps).toFixed(1)}s`;
+}
+
+/** How many names to list before the rest are only counted. */
+const SELECTABLE_LISTED = 24;
+
+/**
+ * What the user can click in the frame just captured, for a Three.js scene.
+ *
+ * The preview lays an invisible element over every object it can project, and
+ * those elements are what every selection tool reads — click, marquee, the
+ * comment bubble, the Draw tool. The names are the scene's own `object.name`
+ * values, so the `#hero-logo` that comes back on the next message is a string
+ * the agent can search its code for.
+ *
+ * Reported after each look because the answer is per-frame and per-camera:
+ * something off-frame, behind the lens, or too small to hit is not offered,
+ * and none of that is visible from the source. Silence would leave a scene
+ * whose objects are all unnamed — every one of them a `Mesh-4` in the chat —
+ * looking exactly like a scene that named everything.
+ */
+function selectableNote(objects: { id: string; type: string }[]): string {
+  if (objects.length === 0) {
+    return "Selectable here: nothing. The user cannot point at any part of this frame — give the objects names (`mesh.name = \"hero-logo\"`) and check they are on screen and bigger than a few pixels.";
+  }
+  const unnamed = objects.filter((o) => new RegExp(`^${o.type}-\\d+$`).test(o.id));
+  const listed = objects
+    .slice(0, SELECTABLE_LISTED)
+    .map((o) => `#${o.id}`)
+    .join(", ");
+  const rest = objects.length > SELECTABLE_LISTED ? `, +${objects.length - SELECTABLE_LISTED} more` : "";
+  const nag = unnamed.length
+    ? ` — ${unnamed.length} of these (${unnamed.slice(0, 4).map((o) => `#${o.id}`).join(", ")}${unnamed.length > 4 ? ", …" : ""}) got a placeholder name because the scene left \`object.name\` unset. Name them for what they are on screen so a click tells you which is which.`
+    : "";
+  return `Selectable here (what the user can click in the preview): ${listed}${rest}${nag}`;
 }
 
 /**
