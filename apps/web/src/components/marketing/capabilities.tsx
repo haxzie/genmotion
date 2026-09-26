@@ -444,7 +444,7 @@ export function Capabilities({
   const play = usePlayOnView<HTMLDivElement>();
 
   return (
-    <Section className="border-t border-border">
+    <Section>
       <Container className="max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow className="mb-4">{eyebrow}</Eyebrow>
