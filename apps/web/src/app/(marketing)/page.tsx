@@ -222,10 +222,10 @@ export default async function HomePage() {
               <div className="max-w-2xl">
                 <Eyebrow className="mb-4">Templates</Eyebrow>
                 <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Templates to pick from
+                  Remix popular launch videos
                 </h2>
                 <p className="mt-4 text-text-secondary">
-                  Finished videos you can take apart — remix one and it becomes
+                  Finished videos you can take apart. Open one and it becomes
                   a project of your own.
                 </p>
               </div>
