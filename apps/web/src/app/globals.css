@@ -373,3 +373,530 @@ body {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Homepage "How it works" step graphics.
+
+   Each panel is a small, honest replica of the editor doing one thing: files
+   dropped into the composer, an element prompted in the preview, an export
+   run. They share one 7s clock so the three cards read as one system, and
+   every keyframe drives transform, opacity or clip-path only, so none of it
+   can cost layout while it loops.
+
+   Percentages below are that clock: 14% is roughly one second. Animated
+   elements carry `hiw-anim` as well as their own animation name, and the
+   section stays paused until it scrolls into view (`data-hiw-play`), so a
+   visitor catches a loop from its beginning instead of mid-drag.
+
+   Where an element's resting style and its first keyframe differ, the inline
+   style holds the resting value: that is what reduced motion is left with, so
+   each panel still has to make its point standing still. */
+.hiw-anim {
+  animation-duration: 7s;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+[data-hiw-play="true"] .hiw-anim {
+  animation-play-state: running;
+}
+
+/* --- Step 1: files dragged into the composer, then a prompt typed ---------- */
+
+/* The dragged stack, with the cursor holding it. Starts offset up and left of
+   where it lands, so the travel is one transform rather than a position. */
+@keyframes hiw-drag {
+  0% {
+    opacity: 0;
+    transform: translate(-46px, -54px) scale(0.94);
+  }
+  4% {
+    opacity: 1;
+    transform: translate(-44px, -52px) scale(1);
+  }
+  24%,
+  30% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 6px) scale(0.96);
+  }
+}
+/* The composer's real drag-over state: accent border, accent wash, accent ring. */
+@keyframes hiw-dropzone {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  24%,
+  32% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+/* The upload pills the dropped files become. */
+@keyframes hiw-attach {
+  0%,
+  32% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  38%,
+  92% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+/* Placeholder text, giving way to what is being typed over it. */
+@keyframes hiw-placeholder {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  42%,
+  94% {
+    opacity: 0;
+  }
+  98%,
+  100% {
+    opacity: 1;
+  }
+}
+/* The prompt arriving a character at a time. clip-path is composited, so this
+   is a reveal rather than a width the browser has to re-lay-out 26 times. */
+@keyframes hiw-typein {
+  0%,
+  50% {
+    clip-path: inset(0 100% 0 0);
+  }
+  78%,
+  94% {
+    clip-path: inset(0 0 0 0);
+  }
+  98%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+/* The caret, riding the same steps as the reveal. Its wrapper is the width of
+   the line, so a percentage translate tracks the text's leading edge. */
+@keyframes hiw-caret {
+  0%,
+  48% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  78%,
+  86% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+/* Send: disabled while the box is empty, live once there is something to send. */
+@keyframes hiw-send {
+  0%,
+  52% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  80%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  86% {
+    opacity: 1;
+    transform: scale(0.88);
+  }
+}
+
+/* --- Step 2: an element picked in the preview, then prompted --------------- */
+
+/* The pointer travelling to the element it selects, with a click at the end. */
+@keyframes hiw-point {
+  0% {
+    opacity: 0;
+    transform: translate(-40px, 34px) scale(1);
+  }
+  4% {
+    opacity: 1;
+    transform: translate(-38px, 32px) scale(1);
+  }
+  18%,
+  20% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.86);
+  }
+  26%,
+  86% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: translate(-40px, 34px) scale(1);
+  }
+}
+/* The selection outline the preview draws around a picked element. */
+@keyframes hiw-select {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  24%,
+  86% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+/* The element prompt, anchored to that selection. */
+@keyframes hiw-popin {
+  0%,
+  24% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  30%,
+  68% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  74%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+@keyframes hiw-typein-2 {
+  0%,
+  34% {
+    clip-path: inset(0 100% 0 0);
+  }
+  60%,
+  68% {
+    clip-path: inset(0 0 0 0);
+  }
+  74%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+@keyframes hiw-caret-2 {
+  0%,
+  32% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  34% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  60%,
+  64% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+  66%,
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+/* What the agent changed: the picked element restages and its title extends. */
+@keyframes hiw-restage {
+  0%,
+  66% {
+    transform: translate(0, 0) scale(1);
+  }
+  78%,
+  88% {
+    transform: translate(16px, -12px) scale(1.24);
+  }
+  96%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+@keyframes hiw-extend {
+  0%,
+  68% {
+    transform: scaleX(0.52);
+  }
+  80%,
+  88% {
+    transform: scaleX(1);
+  }
+  96%,
+  100% {
+    transform: scaleX(0.52);
+  }
+}
+/* The working indicator on the chat side while the scene is rewritten. */
+@keyframes hiw-working {
+  0%,
+  64% {
+    opacity: 0;
+  }
+  70%,
+  84% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Step 3: the export run, and the file it leaves behind ----------------- */
+
+@keyframes hiw-point-3 {
+  0% {
+    opacity: 0;
+    transform: translate(-34px, 40px);
+  }
+  4% {
+    opacity: 1;
+    transform: translate(-32px, 38px);
+  }
+  20%,
+  24% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  26% {
+    opacity: 1;
+    transform: translate(0, 4px);
+  }
+  32%,
+  56% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  64%,
+  100% {
+    opacity: 0;
+    transform: translate(10px, 18px);
+  }
+}
+/* The dialog itself: opened by the click on Export, closed once the render
+   finishes, so the file that flies out has the panel to itself. */
+@keyframes hiw-dialog {
+  0%,
+  22% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  28%,
+  76% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+}
+
+/* The progress bar. Origin left, so this is the render filling, not a slide. */
+@keyframes hiw-render {
+  0%,
+  26% {
+    transform: scaleX(0);
+  }
+  66%,
+  92% {
+    transform: scaleX(1);
+  }
+  97%,
+  100% {
+    transform: scaleX(0);
+  }
+}
+/* "Rendering frames…" gives way to "Encoding…" the way the real dialog does. */
+@keyframes hiw-status-a {
+  0%,
+  24% {
+    opacity: 0;
+  }
+  28%,
+  50% {
+    opacity: 1;
+  }
+  54%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hiw-status-b {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  54%,
+  64% {
+    opacity: 1;
+  }
+  68%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hiw-status-done {
+  0%,
+  64% {
+    opacity: 0;
+  }
+  70%,
+  76% {
+    opacity: 1;
+  }
+  82%,
+  100% {
+    opacity: 0;
+  }
+}
+/* The finished file, landing and then flying to the Exports tab, which is
+   what the app does with it. */
+@keyframes hiw-land {
+  0%,
+  70% {
+    opacity: 0;
+    transform: translate(0, 10px) scale(0.9);
+  }
+  78%,
+  86% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translate(52px, -74px) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiw-anim {
+    animation: none;
+  }
+}
+
+/* --- The camera ------------------------------------------------------------
+
+   Each panel is a 320x200 window onto a mock of the same size, and the camera
+   is one transform on the layer between them: origin 0 0, so holding a world
+   point (tx, ty) at the window's centre under scale s is a translate of
+   (160 - tx*s, 100 - ty*s). Every value below was derived that way, and the
+   comment on each shot says what it is framing.
+
+   The camera moves where the step is happening: it follows the files down to
+   the composer and holds the composer in the middle of the frame while the
+   prompt is typed, pushes onto the element being prompted, and rides the
+   finished file out to the Exports tab. Each loop begins and ends on the wide
+   shot, so the seam is a held frame rather than a cut.
+
+   Where a shot reveals past the mock's bottom edge there is nothing but page
+   background below the composer or the preview card, which is what the app
+   has there too. */
+@keyframes hiw-cam-1 {
+  0%,
+  6% {
+    transform: translate(0, 0) scale(1); /* wide: the whole chat panel */
+  }
+  22%,
+  24% {
+    transform: translate(-2px, -24.2px) scale(1.08); /* following the drag down */
+  }
+  36%,
+  40% {
+    transform: translate(-19.2px, -20px) scale(1.12); /* onto the composer */
+  }
+  50% {
+    transform: translate(-15.6px, -115px) scale(1.6); /* onto the line, at its start */
+  }
+  78%,
+  84% {
+    transform: translate(-170px, -115px) scale(1.6); /* travelling with the caret, ending on the send button */
+  }
+  94%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes hiw-cam-2 {
+  0%,
+  6% {
+    transform: translate(0, 0) scale(1); /* wide: the preview */
+  }
+  18%,
+  22% {
+    transform: translate(-5px, -37.5px) scale(1.1); /* leaning toward the pointer */
+  }
+  32%,
+  64% {
+    transform: translate(-24.95px, -72.8px) scale(1.35); /* element and its prompt */
+  }
+  78%,
+  86% {
+    transform: translate(-8px, -10.25px) scale(1.05); /* back out for the rewrite */
+  }
+  94%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+@keyframes hiw-cam-3 {
+  0%,
+  6% {
+    transform: translate(0, 0) scale(1); /* wide: the editor */
+  }
+  18%,
+  24% {
+    transform: translate(-139px, 0) scale(1.3); /* the Export button */
+  }
+  34%,
+  72% {
+    transform: translate(-16px, -15.5px) scale(1.1); /* the dialog, rendering */
+  }
+  82%,
+  86% {
+    transform: translate(-24px, -95.5px) scale(1.15); /* the finished file */
+  }
+  94% {
+    transform: translate(-87.25px, -9.25px) scale(1.15); /* riding it to Exports */
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}

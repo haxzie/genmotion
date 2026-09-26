@@ -9,12 +9,12 @@ import {
   Section,
   Eyebrow,
   LinkButton,
-  Card,
 } from "@/components/marketing/primitives";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { FaqSection } from "@/components/marketing/faq";
 import { FeatureIcon } from "@/components/marketing/icons";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
+import { HowItWorks } from "@/components/marketing/how-it-works";
 import { AgentBadges, ClaudeMark, CodexMark } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
@@ -46,29 +46,6 @@ export const metadata: Metadata = pageMetadata({
   ogDescription:
     "Generate a product launch video with AI — describe it, preview it frame-accurately, export a pixel-perfect MP4.",
 });
-
-const STEPS = [
-  {
-    icon: "chat" as const,
-    title: "Describe it",
-    body: "Tell the agent what you want — a product teaser, an explainer, animated stats. It writes the scenes for you.",
-  },
-  {
-    icon: "frame" as const,
-    title: "Preview it",
-    body: "Scrub frame-by-frame in the browser. What you see is exactly what will render — no surprises.",
-  },
-  {
-    icon: "timeline" as const,
-    title: "Arrange it",
-    body: "Reorder scenes and tune durations on a visual timeline until the pacing feels right.",
-  },
-  {
-    icon: "export" as const,
-    title: "Export it",
-    body: "A headless worker renders a pixel-identical MP4, ready to post anywhere.",
-  },
-];
 
 const FAQS: Faq[] = [
   {
@@ -211,7 +188,11 @@ export default async function HomePage() {
           way the showcase card used to be — this is the first thing under the
           headline now, so it takes that slot. z-10 keeps it over the blobs. */}
       <section className="relative z-10 -mt-20 sm:-mt-28">
-        <Container>
+        {/* Wider than the copy around it, matching the templates grid further
+            down: the screenshot is the one thing on the page worth reading
+            detail in, so it gets the page's full width rather than the
+            text measure. */}
+        <Container className="max-w-7xl">
           <TiltedScreenshot
             src="/editor-screenshot.webp"
             alt="The GenMotion editor: an AI chat panel on the left, a frame-accurate preview, and a timeline of scenes and audio tracks below."
@@ -222,6 +203,12 @@ export default async function HomePage() {
       {/* The marketplace, straight under the app: what it plugs into, and
           whose models it runs. */}
       <IntegrationsSection />
+
+      {/* How it works, above the templates: the three steps, each one
+          animated rather than described. It comes before the gallery because a
+          template only means something once you know what you would do with
+          it. */}
+      <HowItWorks />
 
       {/* Templates gallery — the featured templates, by the catalog's own
           curated order. A
@@ -263,36 +250,6 @@ export default async function HomePage() {
           </Container>
         </section>
       )}
-
-      {/* How it works */}
-      <Section>
-        <Container>
-          <div className="mx-auto max-w-2xl text-center">
-            <Eyebrow className="mb-4">How it works</Eyebrow>
-            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              From idea to export in four steps
-            </h2>
-          </div>
-          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((step, i) => (
-              <Card key={step.title} className="hover:border-border-strong">
-                <div className="flex items-center justify-between">
-                  <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-surface-raised text-text-primary">
-                    <FeatureIcon name={step.icon} className="size-5" />
-                  </div>
-                  <span className="font-mono text-[0.786rem] text-text-tertiary">
-                    0{i + 1}
-                  </span>
-                </div>
-                <h3 className="mt-4 text-[1.05rem] font-medium">{step.title}</h3>
-                <p className="mt-1.5 text-[0.95rem] text-text-secondary">
-                  {step.body}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </Container>
-      </Section>
 
       {/* Feature grid */}
       <Section className="border-t border-border">
