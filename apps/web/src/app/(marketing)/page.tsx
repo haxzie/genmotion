@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
 import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
-import Link from "next/link";
-import { DownloadButton } from "@/components/marketing/download-button";
-import { InstallCommand } from "@/components/marketing/install-command";
-import { getLatestRelease, formatSize } from "@/lib/marketing/latest-release";
-import {
-  Container,
-  Section,
-  Eyebrow,
-  LinkButton,
-} from "@/components/marketing/primitives";
-import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { FaqSection } from "@/components/marketing/faq";
-import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Capabilities } from "@/components/marketing/capabilities";
-import { AgentBadges, AgentMarks } from "@/components/marketing/agent-badges";
-import { TemplateMasonry } from "@/components/marketing/template-masonry";
+import { AgentMarks } from "@/components/marketing/agent-badges";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
+import {
+  EditorShot,
+  LandingHero,
+  TemplatesStrip,
+} from "@/components/marketing/landing";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug } from "@/lib/marketing/content";
 import { getAllTemplateSummaries } from "@/lib/marketing/templates";
@@ -83,10 +75,6 @@ export default async function HomePage() {
   // Resolved by slug rather than a bare href so it degrades to /blog if the
   // post is ever renamed, instead of linking to a 404.
   const launchPost = getPostBySlug(LAUNCH_POST_SLUG);
-  // Version and size under the download button. Null when GitHub is
-  // unreachable or nothing is published — the button still works, it just
-  // says less.
-  const release = await getLatestRelease();
   // The featured slice of the catalog, in the order the catalog itself
   // curates. Not every template belongs on the front page — /templates stays
   // the complete gallery, and a template earns its way here by being marked
@@ -96,94 +84,27 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={homeJsonLd} />
-      {/* Hero */}
-      <div className="relative overflow-hidden">
-        <HeroShaderBackground />
-        {/* Fades the hue down into the page background so the showcase card
-            below can sit over it cleanly — same treatment as the dashboard. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
-        {/* Extra bottom padding is the room the showcase card is pulled up into. */}
-        <Container className="relative flex flex-col items-center pb-32 pt-24 text-center sm:pb-40 sm:pt-32">
-          <Link
-            href={launchPost ? `/blog/${launchPost.slug}` : "/blog"}
-            className="group mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 py-1 pl-1.5 pr-3 text-[0.857rem] text-text-secondary transition-colors duration-150 hover:border-border-strong hover:text-text-primary"
-          >
-            <span className="rounded-full bg-green-muted px-2 py-0.5 text-[0.786rem] font-medium text-green">
-              Announcement
-            </span>
-            Launching GenMotion
-            <svg
-              className="size-3.5 shrink-0 text-text-tertiary transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-text-secondary"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h13M13 6l6 6-6 6" />
-            </svg>
-          </Link>
-          {/* Balanced wrapping instead of a hardcoded <br />: the line is long
-              enough that a fixed break lands badly at one of the two sizes. */}
-          <h1 className="max-w-4xl text-balance font-display text-4xl font-medium tracking-tight sm:text-6xl">
+      <LandingHero
+        badge={{
+          label: "Announcement",
+          text: "Launching GenMotion",
+          href: launchPost ? `/blog/${launchPost.slug}` : "/blog",
+        }}
+        title={
+          <>
             Create product launch videos using{" "}
             {/* Kept on one line as a unit: the mark belongs to the name, and a
                 wrap between them would leave it orphaned at a line end. */}
             <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
-              {/* Stacked like the badge row below: Claude in front, Codex
-                  peeking out behind it, both models this runs on. */}
               <AgentMarks gradientId="codex-hero" />
               Claude Code
             </span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-text-secondary">
-            AI-powered motion graphics editor for your product videos.
-          </p>
-          <AgentBadges className="mt-6" />
-          <div className="mt-8 flex w-full flex-col items-center">
-            {/* Above the button, deliberately quieter than it: the terminal
-                install is the faster path for the people it suits, and the
-                only one that leaves the `genmotion` command behind. */}
-            <InstallCommand className="mb-4" />
-            <DownloadButton size="lg" href={release?.downloadUrl} />
-            <p className="mt-4 text-[0.9rem] text-text-secondary">
-              {release ? (
-                <>
-                  macOS · Apple silicon · v{release.version} ·{" "}
-                  {formatSize(release.size)}
-                </>
-              ) : (
-                <>macOS · Apple silicon</>
-              )}{" "}
-              ·{" "}
-              <Link
-                href="/features"
-                className="text-text-secondary underline underline-offset-2 hover:text-green"
-              >
-                explore features
-              </Link>
-            </p>
-          </div>
-        </Container>
-      </div>
+          </>
+        }
+        lede="AI-powered motion graphics editor for your product videos."
+      />
 
-      {/* The app itself, leaning back and standing up as you scroll onto it.
-          Pulled up into the room the hero's extra bottom padding leaves, the
-          way the showcase card used to be — this is the first thing under the
-          headline now, so it takes that slot. z-10 keeps it over the blobs. */}
-      <section className="relative z-10 -mt-20 sm:-mt-28">
-        {/* Wider than the copy around it, matching the templates grid further
-            down: the screenshot is the one thing on the page worth reading
-            detail in, so it gets the page's full width rather than the
-            text measure. */}
-        <Container className="max-w-7xl">
-          <TiltedScreenshot
-            src="/editor-screenshot.webp"
-            alt="The GenMotion editor: an AI chat panel on the left, a frame-accurate preview, and a timeline of scenes and audio tracks below."
-          />
-        </Container>
-      </section>
+      <EditorShot />
 
       {/* The marketplace, straight under the app: what it plugs into, and
           whose models it runs. */}
@@ -195,46 +116,7 @@ export default async function HomePage() {
           it. */}
       <HowItWorks />
 
-      {/* Templates gallery — the featured templates, by the catalog's own
-          curated order. A
-          wider container than the rest of the page: still the same three
-          columns, just each one bigger, so the videos themselves read larger
-          rather than the grid growing another column. */}
-      {templates.length > 0 && (
-        <section className="relative z-10 mt-24 sm:mt-32">
-          <Container className="max-w-7xl">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <Eyebrow className="mb-4">Templates</Eyebrow>
-                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Remix popular launch videos
-                </h2>
-                <p className="mt-4 text-text-secondary">
-                  Finished videos you can take apart. Open one and it becomes
-                  a project of your own.
-                </p>
-              </div>
-              <Link
-                href="/templates"
-                className="inline-flex shrink-0 items-center gap-1 text-[0.95rem] text-text-secondary transition-colors hover:text-green"
-              >
-                View all
-                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </Link>
-            </div>
-            <div className="mt-10">
-              <TemplateMasonry templates={templates} showDetails={false} />
-            </div>
-            <div className="mt-10 flex justify-center">
-              <LinkButton href="/templates" variant="secondary" size="lg">
-                Browse all templates
-              </LinkButton>
-            </div>
-          </Container>
-        </section>
-      )}
+      <TemplatesStrip templates={templates} />
 
       {/* What the studio covers, as a bento: every cell shows the app doing
           the thing rather than an icon standing for it. */}

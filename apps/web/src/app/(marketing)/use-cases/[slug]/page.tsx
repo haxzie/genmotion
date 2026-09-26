@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  Container,
-  Section,
-  Eyebrow,
-  GradientBlobs,
-  LinkButton,
-} from "@/components/marketing/primitives";
-import { DownloadButton } from "@/components/marketing/download-button";
+import { Container, Section, Eyebrow } from "@/components/marketing/primitives";
 import { FaqSection } from "@/components/marketing/faq";
+import { HowItWorks } from "@/components/marketing/how-it-works";
+import { Capabilities } from "@/components/marketing/capabilities";
+import { IntegrationsSection } from "@/components/marketing/integrations-section";
+import {
+  DetailSections,
+  EditorShot,
+  LandingHero,
+  RelatedCards,
+} from "@/components/marketing/landing";
 import { ColorIcon } from "@/components/marketing/icons";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { ShowcaseGrid } from "@/components/marketing/showcase-grid";
@@ -106,104 +107,58 @@ export default async function UseCasePage({ params }: Params) {
     <>
       <JsonLd data={jsonLd} />
 
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <GradientBlobs />
-        <Container className="relative py-20 sm:py-28">
-          <Link
-            href="/use-cases"
-            className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-green"
-          >
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H6M11 6l-6 6 6 6" />
-            </svg>
-            All use cases
-          </Link>
-          <ColorIcon
-            name={useCase.icon}
-            color={useCase.color}
-            className="mt-8 flex size-12 items-center justify-center rounded-xl border"
-            iconClassName="size-6"
-          />
-          <h1 className="mt-6 max-w-3xl font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            {useCase.name}
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg text-text-secondary">
-            {useCase.description}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <DownloadButton size="lg" />
-            <LinkButton href="/showcase" variant="secondary" size="lg">
-              See the showcase
-            </LinkButton>
-          </div>
-        </Container>
-      </div>
+      {/* Same shape as the homepage, down to the spacing: a use case is the
+          product pointed at one job, not a different site. */}
+      <LandingHero
+        badge={{ label: "Use case", text: "All use cases", href: "/use-cases" }}
+        title={useCase.name}
+        lede={useCase.tagline}
+      />
 
-      {/* Showcase videos — "here's what we can do" */}
+      <EditorShot />
+
+      <IntegrationsSection />
+
+      {/* What this use case actually looks like, before any claim about it. */}
       {videos.length > 0 && (
         <Section>
-          <Container>
-            <Eyebrow className="mb-2">Made with GenMotion</Eyebrow>
-            <h2 className="max-w-2xl font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-              {useCase.tagline}
-            </h2>
-            <ShowcaseGrid videos={videos} className="mt-8" />
+          <Container className="max-w-7xl">
+            <div className="mx-auto max-w-2xl text-center">
+              <Eyebrow className="mb-4">Made with GenMotion</Eyebrow>
+              <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                {useCase.name}, made by an agent
+              </h2>
+              <p className="mt-4 text-text-secondary">{useCase.description}</p>
+            </div>
+            <ShowcaseGrid videos={videos} className="mt-12" />
           </Container>
         </Section>
       )}
 
-      {/* Detail sections */}
-      {useCase.sections.length > 0 && (
-        <Section className="border-t border-border">
-          <Container>
-            <div className="mx-auto flex max-w-3xl flex-col gap-14">
-              {useCase.sections.map((section, i) => (
-                <div key={section.heading} className="flex flex-col gap-4 sm:flex-row sm:gap-8">
-                  <div className="shrink-0">
-                    <span className="font-mono text-[0.857rem] text-text-tertiary">
-                      0{i + 1}
-                    </span>
-                  </div>
-                  <div>
-                    <h2 className="font-display text-2xl font-semibold tracking-tight">
-                      {section.heading}
-                    </h2>
-                    <p className="mt-3 text-text-secondary">{section.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Container>
-        </Section>
-      )}
+      <HowItWorks />
+
+      <DetailSections sections={useCase.sections} className="border-t border-border" />
+
+      <Capabilities gradientId={`codex-${useCase.slug}`} />
 
       <FaqSection items={useCase.faqs} />
 
-      {/* Other use cases */}
-      <Section className="border-t border-border">
-        <Container>
-          <Eyebrow className="mb-6">More use cases</Eyebrow>
-          <div className="grid gap-5 sm:grid-cols-3">
-            {others.map((u) => (
-              <Link
-                key={u.slug}
-                href={`/use-cases/${u.slug}`}
-                className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong hover:bg-surface-hover"
-              >
-                <ColorIcon
-                  name={u.icon}
-                  color={u.color}
-                  className="flex size-9 items-center justify-center rounded-lg border"
-                  iconClassName="size-4.5"
-                />
-                <div className="mt-3 font-medium">{u.name}</div>
-                <div className="mt-1 text-[0.9rem] text-text-secondary">{u.tagline}</div>
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </Section>
+      <RelatedCards
+        eyebrow="More use cases"
+        items={others.map((u) => ({
+          href: `/use-cases/${u.slug}`,
+          name: u.name,
+          tagline: u.tagline,
+          icon: (
+            <ColorIcon
+              name={u.icon}
+              color={u.color}
+              className="flex size-10 items-center justify-center rounded-lg border"
+              iconClassName="size-5"
+            />
+          ),
+        }))}
+      />
     </>
   );
 }

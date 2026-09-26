@@ -483,7 +483,13 @@ const STEPS = [
   },
 ];
 
-export function HowItWorks() {
+export function HowItWorks({
+  eyebrow = "How it works",
+  title = "From idea to video in three steps",
+}: {
+  eyebrow?: string;
+  title?: React.ReactNode;
+} = {}) {
   const play = usePlayOnView<HTMLDivElement>();
 
   return (
@@ -491,9 +497,9 @@ export function HowItWorks() {
       <Container>
         <div {...play}>
           <div className="mx-auto max-w-2xl text-center">
-            <Eyebrow className="mb-4">How it works</Eyebrow>
+            <Eyebrow className="mb-4">{eyebrow}</Eyebrow>
             <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              From idea to video in three steps
+              {title}
             </h2>
           </div>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

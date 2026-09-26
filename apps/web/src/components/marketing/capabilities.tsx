@@ -429,26 +429,69 @@ const CELLS = [
   },
 ];
 
-export function Capabilities() {
+export function Capabilities({
+  eyebrow = "Everything you need",
+  title,
+  lede = "Everything a finished video needs, in one project and one timeline.",
+  gradientId = "codex-capabilities",
+}: {
+  eyebrow?: string;
+  title?: React.ReactNode;
+  lede?: React.ReactNode;
+  /** Codex's gradient is referenced by id, so each instance needs its own. */
+  gradientId?: string;
+} = {}) {
   const play = usePlayOnView<HTMLDivElement>();
 
   return (
     <Section className="border-t border-border">
       <Container className="max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
-          <Eyebrow className="mb-4">Everything you need</Eyebrow>
+          <Eyebrow className="mb-4">{eyebrow}</Eyebrow>
           <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            A full studio controlled by{" "}
-            {/* The marks and the name stay on one line: the glyph belongs to
-                the word, and a wrap between them orphans it. */}
-            <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
-              <AgentMarks gradientId="codex-capabilities" />
-              Claude
-            </span>
+            {title ?? (
+              <>
+                A full studio controlled by{" "}
+                {/* The marks and the name stay on one line: the glyph belongs
+                    to the word, and a wrap between them orphans it. */}
+                <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
+                  <AgentMarks gradientId={gradientId} />
+                  Claude
+                </span>
+              </>
+            )}
           </h2>
-          <p className="mt-4 text-text-secondary">
-            Everything a finished video needs, in one project and one timeline.
-          </p>
+          <p className="mt-4 text-text-secondary">{lede}</p>
+        </div>
+
+        {/* The timeline itself, before the cells that break it down: scene
+            clips, voiceover and a music bed with their waveforms, sound
+            effects, and the playhead. Cropped out of the app and faded into
+            the page at both edges, so it reads as the editor carrying on
+            behind the copy rather than a screenshot dropped on the section. */}
+        <div className="relative mt-12">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/editor-timeline.webp"
+            alt="The GenMotion timeline: a row of scene clips, voiceover and music tracks with their waveforms below them, and the playhead at five seconds."
+            width={1580}
+            height={452}
+            loading="lazy"
+            decoding="async"
+            className="block w-full"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background from-0% via-background/45 via-25% to-transparent to-60%"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent"
+          />
         </div>
 
         {/* Bento: the first cell holds two columns and two rows, so the
@@ -457,7 +500,7 @@ export function Capabilities() {
             just a stack. */}
         <div
           {...play}
-          className="mt-14 grid gap-4 sm:grid-cols-2 lg:auto-rows-[260px] lg:grid-cols-3"
+          className="mt-12 grid gap-4 sm:grid-cols-2 lg:auto-rows-[260px] lg:grid-cols-3"
         >
           {CELLS.map(({ title, body, Graphic, mock, className }) => (
             <div
