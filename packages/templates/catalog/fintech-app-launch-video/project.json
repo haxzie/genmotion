@@ -1,0 +1,144 @@
+{
+  "name": "Fintech app launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-hook.ts",
+      "durationInFrames": 96,
+      "name": "Hook"
+    },
+    {
+      "file": "scenes/02-deposit.ts",
+      "durationInFrames": 132,
+      "name": "Deposit"
+    },
+    {
+      "file": "scenes/03-cashback.ts",
+      "durationInFrames": 120,
+      "name": "Cashback"
+    },
+    {
+      "file": "scenes/04-score.ts",
+      "durationInFrames": 150,
+      "name": "LightScore"
+    },
+    {
+      "file": "scenes/05-outro.ts",
+      "durationInFrames": 102,
+      "name": "Outro"
+    }
+  ],
+  "audio": [
+    {
+      "id": "music",
+      "file": "assets/music-bed.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 600,
+      "startFrom": 0,
+      "volume": 0.55,
+      "fadeInFrames": 8,
+      "fadeOutFrames": 30,
+      "muted": false
+    },
+    {
+      "id": "whoosh-flood-1",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 1,
+      "startFrame": 78,
+      "durationInFrames": 24,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "click-deposit",
+      "file": "assets/sfx-click.mp3",
+      "track": 2,
+      "startFrame": 129,
+      "durationInFrames": 14,
+      "startFrom": 0,
+      "volume": 0.9,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "coins-phone",
+      "file": "assets/sfx-coins.mp3",
+      "track": 2,
+      "startFrame": 170,
+      "durationInFrames": 44,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-hero-coin",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 1,
+      "startFrame": 200,
+      "durationInFrames": 24,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "coins-burst",
+      "file": "assets/sfx-coins.mp3",
+      "track": 2,
+      "startFrame": 232,
+      "durationInFrames": 44,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "impact-cashback",
+      "file": "assets/sfx-impact.mp3",
+      "track": 3,
+      "startFrame": 268,
+      "durationInFrames": 44,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "whoosh-flood-2",
+      "file": "assets/sfx-whoosh.mp3",
+      "track": 1,
+      "startFrame": 476,
+      "durationInFrames": 24,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "impact-logo",
+      "file": "assets/sfx-impact.mp3",
+      "track": 3,
+      "startFrame": 499,
+      "durationInFrames": 44,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
