@@ -1,8 +1,8 @@
-# NotchBrowser — hype teaser
+# Fintech app launch video
 
-A 28-second teaser for a browser that lives in the notch: a desktop buried under windows, one app that swallows the whole pile, and a closing checklist of what it clears away.
+A twenty-second launch film for a payments app, built entirely in 3D: kinetic type on white, a deposit tapped into a phone that bursts with coins, a cashback prize burst, a credit score rolling to 812, and a glossy logo lockup to close.
 
-Started from the **NotchBrowser app launch video** template. A GenMotion video project powered by the Three.js engine. Scenes are plain
+Started from the **Fintech app launch video** template. A GenMotion video project powered by the Three.js engine. Scenes are plain
 TypeScript modules — no React, no JSX, no HTML — that build a `THREE.Scene`
 once and update it frame by frame. Every frame must be a pure function of the
 frame index the host hands you.
