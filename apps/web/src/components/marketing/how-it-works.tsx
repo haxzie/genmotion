@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Container, Eyebrow, Section } from "@/components/marketing/primitives";
+import { Cursor, Mock, usePlayOnView } from "@/components/marketing/app-mock";
 
 /**
  * How it works: three steps, each one shown rather than described.
@@ -18,94 +18,16 @@ import { Container, Eyebrow, Section } from "@/components/marketing/primitives";
  * scrolls into view, so the first loop a visitor sees starts at its beginning.
  */
 
-/**
- * The window the panels are drawn in. Fixed pixel geometry inside a scaled
- * box: the mock is laid out once at 320x200 and scaled to whatever the card
- * is, so a 9px label stays proportional at every breakpoint instead of the
- * chrome growing while the type does not.
- */
+/** Every step is drawn at this size and scaled into its card. */
 const MOCK_W = 320;
 const MOCK_H = 200;
 
-function Panel({
-  camera,
-  children,
-}: {
-  /** Name of the `hiw-cam-*` keyframes that move the camera for this step. */
-  camera: string;
-  children: React.ReactNode;
-}) {
-  const box = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0);
-
-  // The mock is laid out once at MOCK_W x MOCK_H and scaled to the card, so a
-  // 8px label keeps its proportion to the chrome around it at every
-  // breakpoint instead of the boxes growing while the type stays put. A
-  // container query would express this without JS, but the scale factor is a
-  // length divided by a length, which calc() will not do.
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const measure = () => setScale(el.getBoundingClientRect().width / MOCK_W);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
+/** A step's window: the mock at its fixed size, with the step's camera over it. */
+function Panel({ camera, children }: { camera: string; children: React.ReactNode }) {
   return (
-    <div
-      ref={box}
-      aria-hidden
-      className="relative w-full overflow-hidden bg-background"
-      style={{ aspectRatio: `${MOCK_W} / ${MOCK_H}` }}
-    >
-      <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{
-          width: MOCK_W,
-          height: MOCK_H,
-          transform: `scale(${scale})`,
-          // Nothing to show until the first measurement, which lands before
-          // paint; without this the mock flashes at full size on hydration.
-          opacity: scale ? 1 : 0,
-        }}
-      >
-        {/* The camera. One transform between the window and the mock, so the
-            shot can move without anything inside the mock knowing. */}
-        <div
-          className="hiw-anim size-full origin-top-left"
-          style={{ animationName: camera }}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** The macOS-style pointer the cursor animations carry. */
-function Cursor({
-  className,
-  style,
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <svg
-      viewBox="0 0 12 18"
-      className={className}
-      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))", ...style }}
-    >
-      <path
-        d="M1 1l9.5 7.2H6.1l2.4 5.4-1.9.9-2.5-5.5L1 12.6z"
-        fill="#ffffff"
-        stroke="#08080a"
-        strokeWidth="1"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <Mock w={MOCK_W} h={MOCK_H} camera={camera} className="w-full">
+      {children}
+    </Mock>
   );
 }
 
@@ -195,7 +117,7 @@ function StartGraphic() {
       {/* Where the files come from, and the cursor carrying them. Positioned
           where they land; the keyframes bring them in from up and to the left. */}
       <div
-        className="hiw-anim absolute left-[74px] top-[74px]"
+        className="app-anim absolute left-[74px] top-[74px]"
         style={{ animationName: "hiw-drag", opacity: 0 }}
       >
         <div className="relative">
@@ -226,13 +148,13 @@ function StartGraphic() {
         <div className="relative rounded-[12px] border border-[#1f1f24] bg-surface px-2.5 py-2">
           {/* The drag-over state the form switches to when files are over it. */}
           <div
-            className="hiw-anim pointer-events-none absolute inset-0 rounded-[12px] border border-accent bg-accent-muted/40 ring-2 ring-accent/30"
+            className="app-anim pointer-events-none absolute inset-0 rounded-[12px] border border-accent bg-accent-muted/40 ring-2 ring-accent/30"
             style={{ animationName: "hiw-dropzone", opacity: 0 }}
           />
 
           {/* What the dropped files become: the upload pills, mid-upload. */}
           <div
-            className="hiw-anim mb-1.5 flex gap-1 px-0.5"
+            className="app-anim mb-1.5 flex gap-1 px-0.5"
             style={{ animationName: "hiw-attach" }}
           >
             {[
@@ -254,7 +176,7 @@ function StartGraphic() {
               it a character at a time, caret riding the same steps. */}
           <div className="relative h-[13px] px-0.5">
             <span
-              className="hiw-anim absolute inset-0 text-[10px] leading-[13px] text-text-tertiary"
+              className="app-anim absolute inset-0 text-[10px] leading-[13px] text-text-tertiary"
               style={{ animationName: "hiw-placeholder", opacity: 0 }}
             >
               Describe the video you want to make…
@@ -262,7 +184,7 @@ function StartGraphic() {
             <span className="absolute inset-y-0 left-0.5 inline-flex items-center">
               <span className="relative">
                 <span
-                  className="hiw-anim block whitespace-nowrap text-[10px] leading-[13px] text-text-primary"
+                  className="app-anim block whitespace-nowrap text-[10px] leading-[13px] text-text-primary"
                   style={{
                     animationName: "hiw-typein",
                     animationTimingFunction: `steps(${prompt.length}, end)`,
@@ -274,7 +196,7 @@ function StartGraphic() {
                 {/* Full-width wrapper, so the caret's percentage translate is a
                     percentage of the line rather than of the 1px caret. */}
                 <span
-                  className="hiw-anim absolute inset-y-0 left-0 w-full"
+                  className="app-anim absolute inset-y-0 left-0 w-full"
                   style={{
                     animationName: "hiw-caret",
                     animationTimingFunction: `steps(${prompt.length}, end)`,
@@ -296,7 +218,7 @@ function StartGraphic() {
               ⏎ to send
             </span>
             <span
-              className="hiw-anim flex size-[17px] items-center justify-center rounded-full bg-cta text-background"
+              className="app-anim flex size-[17px] items-center justify-center rounded-full bg-cta text-background"
               style={{ animationName: "hiw-send", opacity: 1 }}
             >
               <svg viewBox="0 0 24 24" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -330,7 +252,7 @@ function DirectGraphic() {
         {/* The frame being previewed. */}
         <div className="absolute inset-x-3 bottom-3 top-[30px] overflow-hidden rounded-[3px] bg-gradient-to-b from-[#141419] to-[#0c0c10]">
           <div
-            className="hiw-anim absolute left-4 top-5 h-[5px] w-[104px] origin-left rounded-full bg-text-secondary"
+            className="app-anim absolute left-4 top-5 h-[5px] w-[104px] origin-left rounded-full bg-text-secondary"
             style={{ animationName: "hiw-extend", transform: "scaleX(1)" }}
           />
           <div className="absolute left-4 top-[34px] h-[4px] w-[66px] rounded-full bg-border-strong" />
@@ -342,25 +264,25 @@ function DirectGraphic() {
                 selection tracks what it has hold of, so a ring left behind at
                 the old position would be a bug on screen. */}
             <div
-              className="hiw-anim relative size-9"
+              className="app-anim relative size-9"
               style={{ animationName: "hiw-restage" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.svg" alt="" className="size-full rounded-lg" />
               <div
-                className="hiw-anim absolute -inset-[3px] rounded-[10px] ring-1 ring-[#a855f7]"
+                className="app-anim absolute -inset-[3px] rounded-[10px] ring-1 ring-[#a855f7]"
                 style={{ animationName: "hiw-select", opacity: 1 }}
               />
             </div>
             <Cursor
-              className="hiw-anim absolute bottom-1 right-1 h-[15px] w-[10px]"
+              className="app-anim absolute bottom-1 right-1 h-[15px] w-[10px]"
               style={{ animationName: "hiw-point" }}
             />
           </div>
 
           {/* The element prompt, styled as the inspector draws it. */}
           <div
-            className="hiw-anim absolute bottom-[30px] left-[72px] w-[124px] rounded-[9px] border border-[#a855f7]/50 bg-surface/95 px-1.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.5)] backdrop-blur-md"
+            className="app-anim absolute bottom-[30px] left-[72px] w-[124px] rounded-[9px] border border-[#a855f7]/50 bg-surface/95 px-1.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.5)] backdrop-blur-md"
             style={{ animationName: "hiw-popin" }}
           >
             <span className="block truncate text-[8px]" style={{ color: "#cba3f5" }}>
@@ -369,7 +291,7 @@ function DirectGraphic() {
             <div className="mt-1 flex items-center gap-1.5">
               <span className="relative min-w-0 flex-1">
                 <span
-                  className="hiw-anim block whitespace-nowrap text-[9px] text-text-primary"
+                  className="app-anim block whitespace-nowrap text-[9px] text-text-primary"
                   style={{
                     animationName: "hiw-typein-2",
                     animationTimingFunction: `steps(${note.length}, end)`,
@@ -379,7 +301,7 @@ function DirectGraphic() {
                   {note}
                 </span>
                 <span
-                  className="hiw-anim absolute inset-y-0 left-0 w-full"
+                  className="app-anim absolute inset-y-0 left-0 w-full"
                   style={{
                     animationName: "hiw-caret-2",
                     animationTimingFunction: `steps(${note.length}, end)`,
@@ -399,7 +321,7 @@ function DirectGraphic() {
 
           {/* What the agent is doing about it, in the app's own wording. */}
           <div
-            className="hiw-anim absolute inset-x-2.5 bottom-2 flex items-center gap-1.5"
+            className="app-anim absolute inset-x-2.5 bottom-2 flex items-center gap-1.5"
             style={{ animationName: "hiw-working" }}
           >
             <span className="size-1.5 rounded-full bg-green" />
@@ -451,13 +373,13 @@ function ExportGraphic() {
         ))}
       </div>
       <div
-        className="hiw-anim absolute -inset-x-24 inset-y-0 bg-black/55"
+        className="app-anim absolute -inset-x-24 inset-y-0 bg-black/55"
         style={{ animationName: "hiw-dialog", opacity: 1 }}
       />
 
       {/* The export dialog, with the details grid the real one shows. */}
       <div
-        className="hiw-anim absolute inset-x-5 top-[36px] overflow-hidden rounded-lg border border-border bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+        className="app-anim absolute inset-x-5 top-[36px] overflow-hidden rounded-lg border border-border bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
         style={{ animationName: "hiw-dialog", opacity: 1 }}
       >
         <div className="border-b border-border px-2.5 py-1.5 text-[9px] font-semibold text-text-primary">
@@ -495,7 +417,7 @@ function ExportGraphic() {
           {/* The render itself, and the status line the dialog swaps through. */}
           <div className="mt-2 h-[3px] overflow-hidden rounded-full bg-surface-raised">
             <div
-              className="hiw-anim h-full w-full origin-left rounded-full bg-green"
+              className="app-anim h-full w-full origin-left rounded-full bg-green"
               style={{ animationName: "hiw-render", transform: "scaleX(1)" }}
             />
           </div>
@@ -507,7 +429,7 @@ function ExportGraphic() {
             ].map(([label, name, tone]) => (
               <span
                 key={label}
-                className={`hiw-anim absolute inset-0 text-[8px] ${tone}`}
+                className={`app-anim absolute inset-0 text-[8px] ${tone}`}
                 // Only the finished line rests visible; the two the dialog
                 // passes through on the way there would overlap it.
                 style={{ animationName: name, opacity: name === "hiw-status-done" ? 1 : 0 }}
@@ -522,7 +444,7 @@ function ExportGraphic() {
       {/* The finished file, landing and then flying up to the Exports tab. */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
         <div
-          className="hiw-anim flex items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1 shadow-[0_10px_28px_rgba(0,0,0,0.6)]"
+          className="app-anim flex items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 py-1 shadow-[0_10px_28px_rgba(0,0,0,0.6)]"
           style={{ animationName: "hiw-land" }}
         >
           <span className="flex size-3.5 items-center justify-center rounded-full bg-green-muted">
@@ -536,7 +458,7 @@ function ExportGraphic() {
 
       {/* The pointer that clicked Export and then the render. */}
       <Cursor
-        className="hiw-anim absolute right-[26px] top-[22px] h-[15px] w-[10px]"
+        className="app-anim absolute right-[26px] top-[22px] h-[15px] w-[10px]"
         style={{ animationName: "hiw-point-3", opacity: 0 }}
       />
     </Panel>
@@ -562,32 +484,12 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [play, setPlay] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Latch on: once the loops have started there is nothing to gain from
-    // stopping them again, and someone scrolling back up to re-read a step
-    // should not find three frozen panels.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setPlay(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.25 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const play = usePlayOnView<HTMLDivElement>();
 
   return (
     <Section>
       <Container>
-        <div ref={ref} data-hiw-play={play}>
+        <div {...play}>
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow className="mb-4">How it works</Eyebrow>
             <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">

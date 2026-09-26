@@ -384,21 +384,21 @@ body {
    can cost layout while it loops.
 
    Percentages below are that clock: 14% is roughly one second. Animated
-   elements carry `hiw-anim` as well as their own animation name, and the
-   section stays paused until it scrolls into view (`data-hiw-play`), so a
+   elements carry `app-anim` as well as their own animation name, and the
+   section stays paused until it scrolls into view (`data-anim-play`), so a
    visitor catches a loop from its beginning instead of mid-drag.
 
    Where an element's resting style and its first keyframe differ, the inline
    style holds the resting value: that is what reduced motion is left with, so
    each panel still has to make its point standing still. */
-.hiw-anim {
+.app-anim {
   animation-duration: 7s;
   animation-iteration-count: infinite;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
   animation-play-state: paused;
 }
-[data-hiw-play="true"] .hiw-anim {
+[data-anim-play="true"] .app-anim {
   animation-play-state: running;
 }
 
@@ -806,7 +806,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hiw-anim {
+  .app-anim {
     animation: none;
   }
 }
@@ -898,5 +898,330 @@ body {
   }
   100% {
     transform: translate(0, 0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Capabilities bento (homepage).
+
+   Six cells, each a small replica of the app doing the thing the cell names:
+   clips on a track under a playhead, type animating in a frame, a voice
+   picked and its take landing, sound effects hitting their beats, an image
+   resolving out of a prompt, a music bed ducking under a voiceover.
+
+   Same contract as the step graphics above: `app-anim` for the pause-until-
+   seen behaviour, transform / opacity / clip-path only, and a resting state in
+   the markup that still makes the point when the motion is switched off. The
+   clock here is 6s, a beat quicker than the steps, because each cell has one
+   idea in it rather than three. */
+.cap-anim {
+  animation-duration: 6s;
+}
+
+/* The playhead, and the frames it reveals as it crosses each clip. */
+@keyframes cap-sweep {
+  0% {
+    transform: translateX(0);
+  }
+  88%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes cap-frame-1 {
+  0%,
+  24% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cap-frame-2 {
+  0%,
+  24% {
+    opacity: 0;
+  }
+  30%,
+  50% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cap-frame-3 {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  56%,
+  88% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+/* The clip the playhead is inside gets the selection the app gives it. */
+@keyframes cap-clip-1 {
+  0%,
+  24% {
+    opacity: 1;
+  }
+  28%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cap-clip-2 {
+  0%,
+  26% {
+    opacity: 0;
+  }
+  30%,
+  50% {
+    opacity: 1;
+  }
+  54%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cap-clip-3 {
+  0%,
+  52% {
+    opacity: 0;
+  }
+  56%,
+  88% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Kinetic type: each word up from under its own line, then out together. */
+@keyframes cap-word {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(105%);
+  }
+  26%,
+  74% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: translateY(-40%);
+  }
+}
+@keyframes cap-rule {
+  0%,
+  30% {
+    transform: scaleX(0);
+  }
+  48%,
+  76% {
+    transform: scaleX(1);
+  }
+  88%,
+  100% {
+    transform: scaleX(0);
+  }
+}
+@keyframes cap-orbit {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Voices: the pick moves down the list, then the take lands on the track. */
+@keyframes cap-pick-1 {
+  0%,
+  10% {
+    opacity: 0;
+  }
+  14%,
+  34% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cap-pick-2 {
+  0%,
+  36% {
+    opacity: 0;
+  }
+  40%,
+  92% {
+    opacity: 1;
+  }
+  97%,
+  100% {
+    opacity: 0;
+  }
+}
+/* A take arriving: the clip, then its waveform drawn in left to right. */
+@keyframes cap-take {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  54%,
+  92% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes cap-draw {
+  0%,
+  52% {
+    clip-path: inset(0 100% 0 0);
+  }
+  76%,
+  92% {
+    clip-path: inset(0 0 0 0);
+  }
+  97%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+/* Bars rising as a waveform is written. */
+@keyframes cap-bar {
+  0%,
+  10% {
+    transform: scaleY(0.08);
+  }
+  30%,
+  90% {
+    transform: scaleY(1);
+  }
+  98%,
+  100% {
+    transform: scaleY(0.08);
+  }
+}
+
+/* Sound effects hitting their beats, each with the ring the hit throws off. */
+@keyframes cap-hit {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.86);
+  }
+  14%,
+  88% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.86);
+  }
+}
+@keyframes cap-ring {
+  0%,
+  6% {
+    opacity: 0.5;
+    transform: scale(0.6);
+  }
+  22%,
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* An image resolving: the prompt, the shimmer over the empty tile, the tile. */
+@keyframes cap-shimmer {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  26% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 1;
+    transform: translateX(120%);
+  }
+  66%,
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+@keyframes cap-resolve {
+  0%,
+  56% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  70%,
+  92% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+/* The music bed, and the dip it takes under the voiceover. */
+@keyframes cap-duck {
+  0%,
+  22% {
+    transform: scaleY(1);
+  }
+  36%,
+  66% {
+    transform: scaleY(0.42);
+  }
+  80%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+@keyframes cap-envelope {
+  0%,
+  22% {
+    transform: translateY(0);
+  }
+  36%,
+  66% {
+    transform: translateY(9px);
+  }
+  80%,
+  100% {
+    transform: translateY(0);
   }
 }
