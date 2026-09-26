@@ -84,6 +84,31 @@ function Disc({ children, className }: { children: React.ReactNode; className?: 
  * the point of showing them at all — they are the thing a visitor already
  * recognises and already pays for.
  */
+/**
+ * The two marks stacked, Claude in front and Codex peeking out behind it, at
+ * the size of the type they sit in: both models this runs on, as one glyph in
+ * a headline. `gradientId` must be unique per instance, since Codex's gradient
+ * is referenced by id.
+ */
+export function AgentMarks({
+  gradientId,
+  className,
+}: {
+  gradientId: string;
+  className?: string;
+}) {
+  return (
+    <span className={join("inline-flex items-center -space-x-2 sm:-space-x-2.5", className)}>
+      <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-[#D97757]/15 ring-2 ring-background">
+        <ClaudeMark className="size-[0.8em]" />
+      </span>
+      <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-surface-raised ring-2 ring-background">
+        <CodexMark className="size-[0.8em]" gradientId={gradientId} />
+      </span>
+    </span>
+  );
+}
+
 export function AgentBadges({ className }: { className?: string }) {
   return (
     <div className={join("flex items-center gap-3", className)}>

@@ -2,6 +2,7 @@
 
 import { Container, Eyebrow, Section } from "@/components/marketing/primitives";
 import { AudioClip, Mock, usePlayOnView } from "@/components/marketing/app-mock";
+import { AgentMarks } from "@/components/marketing/agent-badges";
 
 /**
  * What the studio gives you, as a bento of six cells, each one a small replica
@@ -437,7 +438,13 @@ export function Capabilities() {
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow className="mb-4">Everything you need</Eyebrow>
           <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            A full studio, driven by an agent
+            A full studio controlled by{" "}
+            {/* The marks and the name stay on one line: the glyph belongs to
+                the word, and a wrap between them orphans it. */}
+            <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
+              <AgentMarks gradientId="codex-capabilities" />
+              Claude
+            </span>
           </h2>
           <p className="mt-4 text-text-secondary">
             Everything a finished video needs, in one project and one timeline.

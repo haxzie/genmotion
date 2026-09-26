@@ -15,7 +15,7 @@ import { FaqSection } from "@/components/marketing/faq";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Capabilities } from "@/components/marketing/capabilities";
-import { AgentBadges, ClaudeMark, CodexMark } from "@/components/marketing/agent-badges";
+import { AgentBadges, AgentMarks } from "@/components/marketing/agent-badges";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
 import type { Faq } from "@/lib/marketing/faq";
@@ -132,15 +132,8 @@ export default async function HomePage() {
                 wrap between them would leave it orphaned at a line end. */}
             <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
               {/* Stacked like the badge row below: Claude in front, Codex
-                  peeking out behind it — both models this runs on. */}
-              <span className="inline-flex items-center -space-x-2 sm:-space-x-2.5">
-                <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-[#D97757]/15 ring-2 ring-background">
-                  <ClaudeMark className="size-[0.8em]" />
-                </span>
-                <span className="inline-flex size-[1.35em] shrink-0 items-center justify-center rounded-full bg-surface-raised ring-2 ring-background">
-                  <CodexMark className="size-[0.8em]" gradientId="codex-hero" />
-                </span>
-              </span>
+                  peeking out behind it, both models this runs on. */}
+              <AgentMarks gradientId="codex-hero" />
               Claude Code
             </span>
           </h1>
