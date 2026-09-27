@@ -50,6 +50,9 @@ function ProjectAudioClipLayer({
   );
 }
 
+/** One shared empty list, so "no boxes" is the same value every time. */
+const NO_OBJECTS: ThreeObjectBox[] = [];
+
 /**
  * The scene graph, as elements.
  *
@@ -72,7 +75,7 @@ function SceneOverlay({ objects }: { objects: ThreeObjectBox[] }) {
     <div style={{ position: "absolute", inset: 0 }}>
       {objects.map((object) => (
         <div
-          key={`${object.id}:${object.left}:${object.top}`}
+          key={object.id}
           id={object.id}
           data-three-type={object.type}
           style={{
@@ -124,6 +127,11 @@ function ThreeCanvas({
   const frame = usePlaybackStore(selectDisplayFrame);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
 
+  // The mounted render host. Declared before the clock below, which draws
+  // through it.
+  const canvasHostRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<ReturnType<typeof mountThreeRenderHost> | null>(null);
+
   const totalFrames = scenes.reduce((n, s) => n + s.durationInFrames, 0);
   useEffect(() => {
     store.getState().setTotalFrames(totalFrames);
@@ -131,6 +139,14 @@ function ThreeCanvas({
 
   // Anchored playback clock — the same shape as `Player`'s: jank skips
   // frames rather than letting the picture drift behind wall-clock time.
+  //
+  // It draws the frame itself, in the tick, rather than leaving that to the
+  // effect below. A frame that went out through the store and back would wait
+  // for a React render before anything reached the GPU, which puts the draw a
+  // frame late and turns every re-render in the editor into a stutter in the
+  // picture. The store is still written — the timeline playhead, the timecode
+  // and the audio layers all read it — but nothing the canvas does depends on
+  // that having happened.
   useEffect(() => {
     if (!isPlaying) return;
     let anchor = performance.now() - (store.getState().frame / fps) * 1000;
@@ -150,6 +166,7 @@ function ThreeCanvas({
         return;
       }
       if (next !== current) {
+        void handleRef.current?.setFrame(next, { live: true });
         store.setState({ frame: next });
         lastSetFrame = next;
       }
@@ -177,15 +194,13 @@ function ThreeCanvas({
   // The host itself: one renderer for as long as the scene list and the
   // composition's own dimensions stay the same — rebuilt on those, never on a
   // frame change, which is what `setFrame` (below) is for.
-  const canvasHostRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<ReturnType<typeof mountThreeRenderHost> | null>(null);
   useLayoutEffect(() => {
     const container = canvasHostRef.current;
     if (!container || scenes.length === 0) {
       handleRef.current = null;
       return;
     }
-    const host = mountThreeRenderHost({ container, scenes, fps, width, height });
+    const host = mountThreeRenderHost({ container, scenes, fps, width, height, mode: "preview" });
     handleRef.current = host;
     return () => {
       handleRef.current = null;
@@ -194,18 +209,29 @@ function ThreeCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenes, fps, width, height]);
 
+  // The drawing buffer follows the box the canvas is actually shown in. A
+  // 1920x1080 composition in a ~990px-wide stage on a retina screen was being
+  // drawn at 3840x2160 and scaled down by the compositor — four times the
+  // fragments, which for a scene with any blur or grain in it is the whole
+  // difference between playing at the display's rate and playing at half of it.
+  useEffect(() => {
+    if (scale > 0) handleRef.current?.setDisplayScale(scale);
+  }, [scale, scenes]);
+
   // What the scene is made of, as boxes over the canvas — see `SceneOverlay`.
   // Read after the frame is drawn, since the boxes describe that frame, and
   // only while paused: during playback they would be stale the moment they
   // were measured, and the inspector drops its selection on play anyway.
-  const [objects, setObjects] = useState<ThreeObjectBox[]>([]);
+  const [objects, setObjects] = useState<ThreeObjectBox[]>(NO_OBJECTS);
   useEffect(() => {
     const host = handleRef.current;
     if (!host) return;
     let live = true;
     if (isPlaying) {
-      setObjects([]);
-      void host.setFrame(frame);
+      // The playback clock above is drawing; this effect's only job while it
+      // runs is to take the boxes down. `NO_OBJECTS` rather than a fresh `[]`,
+      // which would be a new state value — and so a re-render — every frame.
+      setObjects(NO_OBJECTS);
       return;
     }
     void host.setFrame(frame).then(() => {

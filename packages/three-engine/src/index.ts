@@ -12,7 +12,12 @@ export { createMediaReadinessController, createLoadingTracker } from "./readines
 export type { EasingFunction } from "./interpolate";
 export { Easing, interpolate } from "./interpolate";
 export { capturePixelRatio } from "./pixel-ratio";
-export type { ThreeCompiledScene, ThreeRenderHostOptions, ThreeRenderHandle } from "./render-host";
+export type {
+  ThreeCompiledScene,
+  ThreeRenderHostOptions,
+  ThreeRenderHandle,
+  SetFrameOptions,
+} from "./render-host";
 export type { ThreeObjectBox, ThreePickHints } from "./pick";
 export { describeSceneObjects } from "./pick";
 export { mountThreeRenderHost } from "./render-host";
