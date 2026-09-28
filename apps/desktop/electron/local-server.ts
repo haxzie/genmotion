@@ -726,7 +726,10 @@ export async function startLocalServer(
       if (body.effort) await setEffort(id, body.effort as Parameters<typeof setEffort>[1]);
       return setHarness(id, body.model ?? null);
     }
-    return harnessState();
+    // `?refresh=1` is the picker's Retry: the user saying the model list is
+    // wrong, which outranks any cooldown of ours.
+    const refresh = new URL(req.url ?? "/", "http://localhost").searchParams.has("refresh");
+    return harnessState(refresh);
   }
 
   /**

@@ -1,9 +1,45 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { bundledBinDir } from "../bundled-bin";
 import type { AgentAvailability } from "./types";
 
 const run = promisify(execFile);
+
+/**
+ * Where a Node version manager puts the global bins it installs.
+ *
+ * A GUI app sees none of this: the shell init that puts the active version on
+ * PATH never runs. Enumerating the versions is the only way to find a CLI
+ * installed with `npm i -g` under nvm or fnm, and a CLI we can't find is a
+ * harness whose model list we can't read — which the picker then has to admit
+ * to instead of naming models.
+ *
+ * Newest last is not something we can know from the directory name alone, so
+ * all of them go on the path in reverse lexical order: `v22.x` before `v20.x`
+ * is right far more often than not, and any of them can answer "which claude".
+ */
+function versionManagerBins(home: string): string[] {
+  const roots = [
+    path.join(home, ".nvm/versions/node"),
+    path.join(home, "Library/Application Support/fnm/node-versions"),
+    path.join(home, ".local/share/fnm/node-versions"),
+  ];
+  return roots.flatMap((root) => {
+    try {
+      return readdirSync(root)
+        .sort()
+        .reverse()
+        .map((version) => path.join(root, version, "bin"));
+    } catch {
+      return [];
+    }
+  });
+}
+
+/** Scanned once: the version manager's directories don't move while we run. */
+let cachedPath: string | null = null;
 
 /**
  * GUI apps on macOS don't inherit a login shell's PATH, so a CLI installed by
@@ -17,16 +53,26 @@ const run = promisify(execFile);
  * against.
  */
 function searchPath(): string {
+  if (cachedPath) return cachedPath;
+  const home = process.env.HOME ?? "";
   const extra = [
-    `${process.env.HOME}/.local/bin`,
-    `${process.env.HOME}/.bun/bin`,
+    `${home}/.local/bin`,
+    // Claude Code's older native install location, still what a machine that
+    // installed it before the move to ~/.local/bin has.
+    `${home}/.claude/local`,
+    `${home}/.bun/bin`,
+    `${home}/.volta/bin`,
+    `${home}/.asdf/shims`,
+    `${home}/.npm-global/bin`,
+    ...versionManagerBins(home),
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",
   ];
-  return [...new Set([bundledBinDir(), ...(process.env.PATH ?? "").split(":"), ...extra])]
+  cachedPath = [...new Set([bundledBinDir(), ...(process.env.PATH ?? "").split(":"), ...extra])]
     .filter(Boolean)
     .join(":");
+  return cachedPath;
 }
 
 async function probe(command: string): Promise<{ version: string | null }> {

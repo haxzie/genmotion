@@ -78,7 +78,7 @@ function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
 export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { state: data, choose, setEffort } = useHarness();
+  const { state: data, choose, setEffort, refresh, recheck } = useHarness();
   // The dragged-to step, shown immediately so the thumb tracks the pointer;
   // committed to the mutation only on release. A slider that mutated (and
   // disabled itself) on every step crossed would freeze mid-drag for as long
@@ -116,7 +116,12 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
     <div ref={ref} className="relative min-w-0 shrink">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Opening is the moment the list matters, so take whatever the
+          // background re-ask of the harnesses has landed since last time.
+          if (!open) recheck();
+          setOpen((v) => !v);
+        }}
         title={
           activeModel
             ? `${activeModel.label} · ${active?.label ?? ""} ${active?.version ?? ""}`.trim()
@@ -214,6 +219,25 @@ export function HarnessPicker({ placement = "up" }: { placement?: "up" | "down" 
                 {locked && (
                   <p className="px-3 pb-2 pl-[2.375rem] text-[0.786rem] leading-snug text-text-tertiary">
                     {harness.unavailableReason ?? `${harness.label} is not available.`}
+                  </p>
+                )}
+                {/* Said out loud rather than papered over with invented rows:
+                    every name above is one a harness gave, so when we couldn't
+                    get them the honest thing is to admit the list may be
+                    behind and offer the re-ask. */}
+                {!locked && data.modelsUnread.includes(harness.id) && (
+                  <p className="px-3 pb-2 pl-[2.375rem] text-[0.786rem] leading-snug text-text-tertiary">
+                    {models.length === 1 && models[0]?.id === ""
+                      ? `Couldn't read ${harness.label}'s model list.`
+                      : `Couldn't reach ${harness.label}, so this list may be out of date.`}{" "}
+                    <button
+                      type="button"
+                      onClick={() => refresh.mutate()}
+                      disabled={refresh.isPending}
+                      className="text-text-secondary underline underline-offset-2 hover:text-text-primary disabled:opacity-60"
+                    >
+                      {refresh.isPending ? "Checking…" : "Retry"}
+                    </button>
                   </p>
                 )}
               </div>

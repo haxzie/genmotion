@@ -27,6 +27,11 @@ export interface HarnessOption {
 
 export interface AgentModel {
   id: string;
+  /**
+   * The harness's own name for the model — "Opus 5.5", never an alias we
+   * coined. See electron/agent/models.ts: a row that can't be named honestly
+   * is the "Default" row instead, and the harness is listed in `modelsUnread`.
+   */
   label: string;
   version: string | null;
   detail: string;
@@ -39,6 +44,8 @@ export interface HarnessState {
   activeEffort: EffortLevel;
   options: HarnessOption[];
   models: AgentModel[];
+  /** Harnesses whose model list couldn't be read, so their rows may be stale. */
+  modelsUnread: HarnessId[];
 }
 
 export const harnessKey = ["harness"] as const;
@@ -58,6 +65,14 @@ export function useHarness() {
     onSuccess: (next) => queryClient.setQueryData(harnessKey, next),
   });
 
+  // The picker's Retry. A plain refetch would be served from the main
+  // process's cache, which is the thing the user is telling us is wrong, so
+  // this asks the harnesses again.
+  const refresh = useMutation({
+    mutationFn: () => api<HarnessState>("/api/agents?refresh=1"),
+    onSuccess: (next) => queryClient.setQueryData(harnessKey, next),
+  });
+
   const setEffort = useMutation({
     mutationFn: (effort: EffortLevel) =>
       api<HarnessState>("/api/agents", {
@@ -66,5 +81,8 @@ export function useHarness() {
     onSuccess: (next) => queryClient.setQueryData(harnessKey, next),
   });
 
-  return { state: data, choose, setEffort };
+  /** Re-read the cached state — cheap, and picks up a background refresh. */
+  const recheck = () => void queryClient.invalidateQueries({ queryKey: harnessKey });
+
+  return { state: data, choose, setEffort, refresh, recheck };
 }

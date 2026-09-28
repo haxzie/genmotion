@@ -15,6 +15,14 @@ import type { HarnessId } from "./registry";
  * model they cannot select. Both CLIs know their own lineup, so both are asked:
  * Claude Code over the SDK's control channel, Codex out of the cache it
  * maintains for its own picker.
+ *
+ * The rule the rest of this file exists to keep: **every name the picker shows
+ * is a name a harness said.** Not an alias we believe still points somewhere
+ * sensible, not a generation we inferred — the harness's own words, or an
+ * honest admission that we couldn't get them. A row reading "Opus" when the
+ * CLI would have said "Opus 5.5" is the failure this is written against: it
+ * looks like an answer, so nobody reports it as a bug, and the user quietly
+ * believes their app doesn't have the new model.
  */
 
 export interface AgentModel {
@@ -29,6 +37,28 @@ export interface AgentModel {
   harness: HarnessId;
 }
 
+export interface ModelList {
+  models: AgentModel[];
+  /**
+   * Harnesses whose own list could not be read on the last attempt. Their rows,
+   * if they have any, are the last ones they gave; the picker says so.
+   */
+  unread: HarnessId[];
+}
+
+/**
+ * A capitalised name followed by a number — "Opus 5.5", "Fable 5.1", "GPT 6".
+ *
+ * Anchored, rather than hunted for anywhere in the sentence, because the
+ * unanchored version happily reads "Supports 1" out of a description and puts
+ * it in the picker as a version. Two anchors cover both shapes Claude Code
+ * uses: the description that opens with the name ("Fable 5.1 · Most capable…")
+ * and the default row's ("Use the default model (currently Opus 5.5)").
+ */
+const NAME = String.raw`[A-Z][\w.-]*(?: [A-Z][\w.-]*)* \d+(?:\.\d+)*`;
+const LEADING_NAME = new RegExp(`^${NAME}`);
+const CURRENT_NAME = new RegExp(String.raw`\bcurrently (?:the )?(${NAME})`);
+
 /**
  * The generation a row is on, when the name doesn't say.
  *
@@ -37,67 +67,113 @@ export interface AgentModel {
  * can learn which generation `Fable` — or, more to the point, `Default` —
  * currently means. Codex names its models "GPT-5.5" and needs none of this.
  *
- * Written as a read of a convention rather than a parse of a format: no digit,
- * or nothing the label doesn't already say, and the row simply goes without.
+ * Only ever the harness's own words, narrowed: the whole segment used to be
+ * taken verbatim, which put the sentence "Use the default model (currently
+ * Opus 5.5 (1M context))" in the slot meant for "Opus 5.5". What comes back is
+ * the model name inside it and nothing else — with the context window kept,
+ * since on a 1M row that is part of which model you are choosing.
  */
 function versionFrom(label: string, detail: string): string | null {
   const lead = detail.split("·")[0]?.trim() ?? "";
-  if (!lead || !/\d/.test(lead) || lead === label) return null;
-  return lead;
+  const named = LEADING_NAME.exec(lead)?.[0] ?? CURRENT_NAME.exec(lead)?.[1];
+  if (!named) return null;
+  const version = /\b1M\b/i.test(lead) && !/1M/i.test(named) ? `${named} (1M context)` : named;
+  return version === label ? null : version;
 }
 
 /**
- * What to offer when a harness cannot be asked.
+ * What to offer when a harness has never answered.
  *
  * A CLI that isn't installed, a models cache that hasn't been written yet, a
  * subprocess that times out — none of them should leave the picker empty,
  * because an empty picker reads as "this app is broken" rather than "that CLI
- * isn't here". So each harness has a floor.
+ * isn't here". So each harness has a floor of exactly one row.
  *
- * These are aliases, not model ids, which is the whole reason it is safe to
- * write them down: `opus` and `sonnet` are a stable interface the CLI
- * documents in its own `--help`, and they keep meaning "the current one" long
- * after `claude-opus-5[1m]` has been replaced. Codex has no such aliases, so
- * its floor is the single row that needs no name at all.
+ * It deliberately names no model. The floor used to carry `opus`/`sonnet`/
+ * `haiku` on the reasoning that aliases keep meaning "the current one" — true
+ * of what runs, but not of what the row *says*, and the row is the whole point
+ * of a picker. Those three sat there reading "Opus", "Sonnet", "Haiku" with no
+ * version under them and no sign anything had gone wrong, which is how a user
+ * ends up reporting that the app is missing a model they in fact had.
  *
  * The empty id means "pass no model and let the CLI use its default", which is
- * exactly what a user gets in a terminal.
+ * exactly what a user gets in a terminal — the one row we can offer without
+ * claiming to know a name.
  */
-const FALLBACK: Record<HarnessId, AgentModel[]> = {
-  "claude-code": [
-    { id: "", label: "Default", version: null, detail: "Whatever Claude Code runs by default", harness: "claude-code" },
-    { id: "opus", label: "Opus", version: null, detail: "The most capable model", harness: "claude-code" },
-    { id: "sonnet", label: "Sonnet", version: null, detail: "Efficient for routine tasks", harness: "claude-code" },
-    { id: "haiku", label: "Haiku", version: null, detail: "Fastest for quick answers", harness: "claude-code" },
-  ],
-  codex: [
-    { id: "", label: "Default", version: null, detail: "Whatever Codex runs by default", harness: "codex" },
-  ],
+const FLOOR: Record<HarnessId, AgentModel> = {
+  "claude-code": {
+    id: "",
+    label: "Default",
+    version: null,
+    detail: "Whatever Claude Code runs by default",
+    harness: "claude-code",
+  },
+  codex: {
+    id: "",
+    label: "Default",
+    version: null,
+    detail: "Whatever Codex runs by default",
+    harness: "codex",
+  },
 };
 
 /**
- * Long enough that the picker never waits on a subprocess, short enough that a
- * model released this morning is offered this afternoon. A stale list is also
- * refreshed in the background on every read, so this is the worst case rather
- * than the usual one.
+ * How long a harness's answer is trusted before it is re-asked.
+ *
+ * Three hours, not the half-day this used to be: the cost of being early is a
+ * ~1.5s subprocess nobody waits on, and the cost of being late is a user
+ * looking at yesterday's lineup the morning a model ships. A stale list is
+ * still served immediately and refreshed behind the answer, so this is the
+ * window in which a new model can be missing, not a delay anyone sits through.
  */
-const TTL_MS = 12 * 60 * 60 * 1000;
+const TTL_MS = 3 * 60 * 60 * 1000;
 
-interface Cached {
-  /** Bumped when the row shape changes, so an older cache is simply re-fetched. */
-  schema: number;
+/**
+ * And how long after a *failure* before trying again. Short, because a harness
+ * that failed is one whose rows are currently missing or stale — the state
+ * this file most wants to leave. Long enough not to spawn a subprocess every
+ * time a menu opens.
+ */
+const RETRY_MS = 5 * 60 * 1000;
+
+/** A hung CLI must not become a picker that never fills. */
+const PROBE_TIMEOUT_MS = 20_000;
+
+interface HarnessCache {
   fetchedAt: number;
   models: AgentModel[];
 }
 
-const SCHEMA = 2;
+interface Cached {
+  /** Bumped when the row shape changes, so an older cache is simply re-fetched. */
+  schema: number;
+  /**
+   * Per harness, so a bad afternoon for one cannot discard the other's rows —
+   * or, worse, get written over the top of good rows as an empty list.
+   */
+  harnesses: Partial<Record<HarnessId, HarnessCache>>;
+}
+
+const SCHEMA = 3;
+
+const HARNESSES = Object.keys(FLOOR) as HarnessId[];
 
 function cacheFile(): string {
   return path.join(app.getPath("userData"), "models-cache.json");
 }
 
 let memory: Cached | null = null;
-let inFlight: Promise<AgentModel[]> | null = null;
+/** When each harness last failed, so a failure has its own shorter cooldown. */
+const failedAt = new Map<HarnessId, number>();
+let inFlight: Promise<void> | null = null;
+
+/** Never let one harness's subprocess hang the list. */
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timed out")), ms).unref?.()),
+  ]);
+}
 
 /**
  * Claude Code's list, over the SDK's control channel.
@@ -108,7 +184,7 @@ let inFlight: Promise<AgentModel[]> | null = null;
  */
 async function claudeModels(): Promise<AgentModel[]> {
   const [sdk, executable] = await Promise.all([loadAgentSdk(), resolveExecutable("claude")]);
-  if (!executable) return [];
+  if (!executable) throw new Error("claude is not on PATH");
 
   const idle = (async function* () {
     await new Promise(() => {});
@@ -127,7 +203,8 @@ async function claudeModels(): Promise<AgentModel[]> {
   });
 
   try {
-    const models = await response.supportedModels();
+    const models = await withTimeout(response.supportedModels(), PROBE_TIMEOUT_MS);
+    if (models.length === 0) throw new Error("claude listed no models");
     return models.map((model) => ({
       id: model.value,
       label: model.displayName,
@@ -162,68 +239,80 @@ interface CodexModel {
  */
 async function codexModels(): Promise<AgentModel[]> {
   const file = path.join(os.homedir(), ".codex", "models_cache.json");
-  const raw = await fs.readFile(file, "utf8").catch(() => null);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as { models?: CodexModel[] };
-    return (parsed.models ?? [])
-      .filter((m) => m.slug && m.visibility === "list" && m.supported_in_api !== false)
-      .sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999))
-      .map((m) => ({
-        id: m.slug!,
-        label: m.display_name ?? m.slug!,
-        // Codex's names already carry it: "GPT-5.5", "GPT-5.4-Mini".
-        version: null,
-        detail: m.description ?? "",
-        harness: "codex" as const,
-      }));
-  } catch {
-    return [];
-  }
+  const raw = await fs.readFile(file, "utf8");
+  const parsed = JSON.parse(raw) as { models?: CodexModel[] };
+  const models = (parsed.models ?? [])
+    .filter((m) => m.slug && m.visibility === "list" && m.supported_in_api !== false)
+    .sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999))
+    .map((m) => ({
+      id: m.slug!,
+      label: m.display_name ?? m.slug!,
+      // Codex's names already carry it: "GPT-5.5", "GPT-5.4-Mini".
+      version: null,
+      detail: m.description ?? "",
+      harness: "codex" as const,
+    }));
+  if (models.length === 0) throw new Error("codex listed no models");
+  return models;
 }
 
-async function collect(): Promise<AgentModel[]> {
-  // Neither list is allowed to cost the other one: a Claude CLI that hangs
-  // should not empty the Codex rows.
-  const [claude, codex] = await Promise.all([
-    claudeModels().catch(() => []),
-    codexModels().catch(() => []),
-  ]);
-  return [...claude, ...codex];
-}
+const PROBE: Record<HarnessId, () => Promise<AgentModel[]>> = {
+  "claude-code": claudeModels,
+  codex: codexModels,
+};
 
-async function readCache(): Promise<Cached | null> {
+async function readCache(): Promise<Cached> {
   if (memory) return memory;
   const raw = await fs.readFile(cacheFile(), "utf8").catch(() => null);
-  if (!raw) return null;
+  const empty: Cached = { schema: SCHEMA, harnesses: {} };
+  if (!raw) return (memory = empty);
   try {
     const parsed = JSON.parse(raw) as Cached;
-    if (!Array.isArray(parsed?.models) || parsed.schema !== SCHEMA) return null;
-    memory = parsed;
-    return parsed;
+    memory = parsed?.schema === SCHEMA && parsed.harnesses ? parsed : empty;
   } catch {
-    return null;
+    memory = empty;
   }
+  return memory;
 }
 
-async function refresh(): Promise<AgentModel[]> {
-  inFlight ??= collect()
-    .then(async (models) => {
-      // An empty answer is not worth caching over a good one: it means a CLI
-      // was mid-install or busy, and the old list is closer to the truth.
-      if (models.length === 0 && memory?.models.length) return memory.models;
-      // Only ever what a harness actually said. Fallbacks are added on the way
-      // out, so a bad afternoon cannot bake a floor into the cache and leave
-      // the picker short a model until the TTL expires.
-      memory = { schema: SCHEMA, fetchedAt: Date.now(), models };
-      await fs
-        .writeFile(cacheFile(), `${JSON.stringify(memory, null, 2)}\n`, "utf8")
-        .catch(() => null);
-      return models;
-    })
-    .finally(() => {
-      inFlight = null;
-    });
+/** Due for a re-ask: never answered, answer gone stale, or failed a while ago. */
+function due(cache: Cached, harness: HarnessId, now: number): boolean {
+  const failed = failedAt.get(harness);
+  if (failed !== undefined && now - failed < RETRY_MS) return false;
+  const entry = cache.harnesses[harness];
+  return !entry || now - entry.fetchedAt > TTL_MS;
+}
+
+/**
+ * Re-ask whichever harnesses are due, and keep what they say.
+ *
+ * A harness that fails keeps whatever it last said. Stale-but-real beats
+ * invented, every time: "Opus 5.5" from yesterday is still the name of a model
+ * the user has, while a floor row reading "Opus" is a claim about nothing.
+ */
+async function refresh(harnesses: HarnessId[]): Promise<void> {
+  const cache = await readCache();
+  await Promise.all(
+    harnesses.map(async (harness) => {
+      try {
+        const models = await withTimeout(PROBE[harness](), PROBE_TIMEOUT_MS);
+        cache.harnesses[harness] = { fetchedAt: Date.now(), models };
+        failedAt.delete(harness);
+      } catch {
+        failedAt.set(harness, Date.now());
+      }
+    }),
+  );
+  memory = cache;
+  await fs.writeFile(cacheFile(), `${JSON.stringify(cache, null, 2)}\n`, "utf8").catch(() => null);
+}
+
+/** One refresh at a time — several tabs opening the picker is still one probe. */
+function refreshOnce(harnesses: HarnessId[]): Promise<void> {
+  if (harnesses.length === 0) return Promise.resolve();
+  inFlight ??= refresh(harnesses).finally(() => {
+    inFlight = null;
+  });
   return inFlight;
 }
 
@@ -232,20 +321,37 @@ async function refresh(): Promise<AgentModel[]> {
  *
  * Answers from cache when there is one, so opening the picker never waits on a
  * subprocess, and refreshes behind the answer when that cache has gone stale.
+ * A harness with nothing cached is waited for, once: the alternative is showing
+ * a floor row on first launch and correcting it a second later.
+ *
+ * `force` is the picker's Retry — the user telling us the list is wrong, which
+ * is better information than any cooldown of ours.
  */
-export async function listModels(): Promise<AgentModel[]> {
-  const cached = await readCache();
-  const discovered = cached ? cached.models : await refresh().catch(() => []);
-  if (cached && Date.now() - cached.fetchedAt > TTL_MS) void refresh();
-  return withFallbacks(discovered);
-}
+export async function listModels(force = false): Promise<ModelList> {
+  const cache = await readCache();
+  const now = Date.now();
 
-/** Each harness's own answer, or its floor when it had none. */
-function withFallbacks(discovered: AgentModel[]): AgentModel[] {
-  return (Object.keys(FALLBACK) as HarnessId[]).flatMap((harness) => {
-    const own = discovered.filter((model) => model.harness === harness);
-    return own.length > 0 ? own : FALLBACK[harness];
-  });
+  if (force) {
+    failedAt.clear();
+    await refreshOnce(HARNESSES);
+  } else {
+    const missing = HARNESSES.filter((h) => !cache.harnesses[h]?.models.length && due(cache, h, now));
+    const stale = HARNESSES.filter((h) => due(cache, h, now) && !missing.includes(h));
+    // Nothing to show for a harness yet: worth the ~1.5s. Something to show:
+    // show it, and let the re-ask land in the background.
+    if (missing.length > 0) await refreshOnce([...missing, ...stale]);
+    else if (stale.length > 0) void refreshOnce(stale);
+  }
+
+  const current = await readCache();
+  const models: AgentModel[] = [];
+  const unread: HarnessId[] = [];
+  for (const harness of HARNESSES) {
+    const own = current.harnesses[harness]?.models ?? [];
+    models.push(...(own.length > 0 ? own : [FLOOR[harness]]));
+    if (failedAt.has(harness)) unread.push(harness);
+  }
+  return { models, unread };
 }
 
 /** Fill the cache before anyone opens the picker. Best-effort, never awaited. */

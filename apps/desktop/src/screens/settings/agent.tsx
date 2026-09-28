@@ -11,7 +11,7 @@ import { Section } from "./section";
  * absence.
  */
 export function AgentSection() {
-  const { state, choose } = useHarness();
+  const { state, choose, refresh } = useHarness();
 
   if (!state) {
     return (
@@ -45,8 +45,10 @@ export function AgentSection() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {models.map((model) => {
+                  // An empty id is "let the harness choose", which is also
+                  // what no stored model means, so they are the same chip.
                   const active =
-                    state.active === harness.id && state.activeModel === model.id;
+                    state.active === harness.id && (state.activeModel ?? "") === model.id;
                   return (
                     <button
                       key={model.id}
@@ -71,6 +73,23 @@ export function AgentSection() {
                   <span className="text-[0.857rem] text-text-tertiary">No models reported.</span>
                 )}
               </div>
+              {/* Every chip above is a name the harness itself gave. When it
+                  couldn't be asked, that is said rather than filled in. */}
+              {!locked && state.modelsUnread.includes(harness.id) && (
+                <p className="mt-2 text-[0.786rem] text-text-tertiary">
+                  {models.length === 1 && models[0]?.id === ""
+                    ? `Couldn't read ${harness.label}'s model list.`
+                    : `Couldn't reach ${harness.label}, so this list may be out of date.`}{" "}
+                  <button
+                    type="button"
+                    onClick={() => refresh.mutate()}
+                    disabled={refresh.isPending}
+                    className="text-text-secondary underline underline-offset-2 hover:text-text-primary disabled:opacity-60"
+                  >
+                    {refresh.isPending ? "Checking…" : "Retry"}
+                  </button>
+                </p>
+              )}
             </div>
           );
         })}

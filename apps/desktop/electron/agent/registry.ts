@@ -29,6 +29,11 @@ export interface HarnessState {
   options: HarnessOption[];
   /** Every model the picker can offer, across harnesses. */
   models: AgentModel[];
+  /**
+   * Harnesses whose own model list couldn't be read, so the picker can say so
+   * rather than passing off a nameless placeholder as their lineup.
+   */
+  modelsUnread: HarnessId[];
 }
 
 const DEFAULT: HarnessId = "claude-code";
@@ -52,8 +57,11 @@ function storedEffort(settings: Settings, harness: HarnessId): EffortLevel {
  * Detection runs per call rather than being cached at launch: a user who
  * installs Claude Code while the app is open should see it appear when they
  * open the picker, not after a restart.
+ *
+ * `force` is the picker's Retry: re-ask every harness for its models now,
+ * ignoring both the cache and the cooldown after a failure.
  */
-export async function harnessState(): Promise<HarnessState> {
+export async function harnessState(force = false): Promise<HarnessState> {
   const detected = await detectAgents();
   const missing: Record<string, string> = {
     "claude-code": "Not found on PATH — install Claude Code and sign in.",
@@ -71,7 +79,10 @@ export async function harnessState(): Promise<HarnessState> {
   const fallback = options.find((o) => o.supported && o.installed);
   const active = usable?.id ?? fallback?.id ?? DEFAULT;
 
-  const models = await listModels().catch(() => []);
+  const { models, unread } = await listModels(force).catch(() => ({
+    models: [] as AgentModel[],
+    unread: [] as HarnessId[],
+  }));
   // A stored model that the harness no longer lists — renamed, retired, or
   // chosen on another machine — falls back to the harness's own default rather
   // than being sent as-is and failing at the first turn.
@@ -79,7 +90,14 @@ export async function harnessState(): Promise<HarnessState> {
   const activeModel =
     chosen && models.some((m) => m.harness === active && m.id === chosen) ? chosen : null;
 
-  return { active, activeModel, activeEffort: storedEffort(settings, active), options, models };
+  return {
+    active,
+    activeModel,
+    activeEffort: storedEffort(settings, active),
+    options,
+    models,
+    modelsUnread: unread,
+  };
 }
 
 /**
