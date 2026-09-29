@@ -10,6 +10,7 @@ import { EnginePicker } from "../engine-picker";
 import { FolderAccess, useShareFolder } from "../folder-access";
 import { api, type RecentProject } from "../api";
 import { hasUpdate, useUpdate } from "../lib/use-update";
+import { useTabActive } from "../tabs/active-tab";
 import { useRecentProjectsStore } from "./recent-projects-store";
 import type { UpdateState } from "../../electron/shared";
 
@@ -93,6 +94,14 @@ function UpdateHint({ state, onOpen }: { state: UpdateState; onOpen: () => void 
  */
 const GRID_COUNT = 6;
 const LIST_PAGE = 12;
+
+/**
+ * How long after returning to Home the list is asked once more.
+ *
+ * Only when a card came back without a picture. Comfortably past the main
+ * process's own settle before it photographs a project (4s), plus the capture.
+ */
+const THUMBNAIL_RETRY_MS = 6000;
 
 const listVariants = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const cardVariants = {
@@ -206,6 +215,9 @@ export function Home({
   const cursorRef = useRef(0);
   const busyRef = useRef(false);
   const update = useUpdate();
+  // Home is a tab; it stays mounted behind the project tabs. See the refresh
+  // effect below for what that means for the grid.
+  const tabActive = useTabActive();
   // "Share a folder" in the composer's `+`: folders picked here are held for
   // whichever project the prompt creates.
   const shareFolder = useShareFolder(null);
@@ -256,6 +268,54 @@ export function Home({
   useEffect(() => {
     void loadMore();
   }, [loadMore]);
+
+  /**
+   * Coming back to Home, re-ask for the pages already on screen.
+   *
+   * Home is never unmounted — it is a tab like any other — so without this the
+   * grid is exactly as old as the last visit. A project made or opened since
+   * then is standing in from `pending` with no card image, because the picture
+   * is captured in the main process a moment after the folder settles, long
+   * after the entry was put on the grid. One call for everything loaded rather
+   * than replaying each page; the cursor counts what has been asked for, so it
+   * is the limit.
+   */
+  useEffect(() => {
+    if (!tabActive || cursorRef.current === 0 || busyRef.current) return;
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const refresh = (retry: boolean) => {
+      busyRef.current = true;
+      void api
+        .recentProjects({ offset: 0, limit: cursorRef.current })
+        .then((page) => {
+          if (!live) return;
+          setProjects(page.items);
+          setTotal(page.total);
+          // Leaving a project seconds after making it can beat its own card
+          // image: the capture runs once the folder stops changing. Ask once
+          // more, late, rather than poll — and only when something on screen
+          // is actually missing a picture.
+          if (retry && page.items.some((project) => !project.thumbnail)) {
+            timer = setTimeout(() => refresh(false), THUMBNAIL_RETRY_MS);
+          }
+        })
+        .catch(() => {
+          // A failed refresh leaves the list it already had, which is still
+          // true enough to click on.
+        })
+        .finally(() => {
+          busyRef.current = false;
+        });
+    };
+
+    refresh(true);
+    return () => {
+      live = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [tabActive]);
 
   // Once the fetched list itself carries a pending project — its real
   // thumbnail included — there is nothing left for the pending copy to add.
