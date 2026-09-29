@@ -212,6 +212,19 @@ export function useProjectMutations(projectId: string) {
     onSettled: invalidate,
   });
 
+  /**
+   * Step back through the manual timeline edits — the ones made from the dock,
+   * never the agent's. The main process owns the stack (it snapshots the files
+   * each edit writes), so there is nothing to send: the last one goes.
+   */
+  const undoTimeline = useMutation({
+    mutationFn: () =>
+      api<{ undone: string | null }>(`/api/projects/${projectId}/timeline/undo`, {
+        method: "POST",
+      }),
+    onSettled: invalidate,
+  });
+
   return {
     renameProject,
     reorderScenes,
@@ -222,6 +235,7 @@ export function useProjectMutations(projectId: string) {
     updateAudioClip,
     splitAudioClip,
     deleteAudioClip,
+    undoTimeline,
     invalidate,
   };
 }

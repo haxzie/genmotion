@@ -14,6 +14,7 @@ import {
 // package's other consumers (the API) have no reason to install.
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { HyperframesEngine } from "./hyperframes/engine";
+import { TimelineHistory } from "./timeline-history";
 import type { DesktopProject, SceneBundle } from "./shared";
 
 export interface AgentContextUsage {
@@ -141,6 +142,8 @@ export class ProjectSession {
 
   /** Shared with the agent's validate tool so both see one incremental build. */
   readonly bundler: SceneBundler;
+  /** The manual timeline edits made here, newest last, for the dock's Undo. */
+  readonly history: TimelineHistory;
   /**
    * Which runtime the folder is written for, read from the manifest at open
    * and again on every reload — a project does not change engine in practice,
@@ -178,6 +181,7 @@ export class ProjectSession {
     // Take the bundler's symlink-resolved root so watcher paths, asset
     // containment checks, and esbuild's reported inputs all agree.
     this.dir = this.bundler.projectDir;
+    this.history = new TimelineHistory(this.dir);
   }
 
   static async open(dir: string, assetKey: string): Promise<ProjectSession> {
@@ -533,6 +537,7 @@ export class ProjectSession {
         missing: [],
         manifestError: null,
         folderMissing: false,
+      undoLabel: this.history.label,
         hyperframes: state,
       };
     }
@@ -615,6 +620,7 @@ export class ProjectSession {
       missing,
       manifestError: null,
       folderMissing: false,
+      undoLabel: this.history.label,
     };
   }
 
@@ -642,6 +648,7 @@ export class ProjectSession {
       missing: [],
       manifestError,
       folderMissing,
+      undoLabel: this.history.label,
     };
   }
 

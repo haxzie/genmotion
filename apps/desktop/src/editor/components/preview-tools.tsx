@@ -86,8 +86,14 @@ const TOOLS: {
   },
 ];
 
-export const toolButton = "flex size-8 items-center justify-center rounded-lg transition-colors";
+/* `outline-none`: the dock says which tool is picked with its own lighter
+   chip, and a focus ring on top of that reads as a second, competing state.
+   Keyboard focus still announces itself — it opens the button's tooltip. */
+export const toolButton =
+  "flex size-8 items-center justify-center rounded-lg transition-colors outline-none";
 export const toolIdle = "text-text-secondary hover:bg-surface-hover hover:text-text-primary";
+/** The picked mode: a step lighter than the row it sits in, and nothing else. */
+export const toolActive = "bg-surface-hover text-text-primary";
 
 /** How long the pointer rests on a button before its tooltip shows. */
 const TIP_DELAY_MS = 350;

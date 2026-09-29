@@ -39,6 +39,8 @@ export interface DesktopProject extends ProjectData {
   manifestError: string | null;
   /** The folder itself is gone (moved, deleted, unmounted). Nothing to show. */
   folderMissing: boolean;
+  /** The manual timeline edit Undo would take back; null when there is none. */
+  undoLabel: string | null;
 }
 
 // ── Filmstrips ─────────────────────────────────────────────────────────────

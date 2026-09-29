@@ -11,6 +11,7 @@ import {
   type McpServerPatch,
 } from "@genmotion/shared";
 import {
+  MANIFEST_FILE,
   readManifest,
   writeManifest,
   type ProjectEngine,
@@ -875,6 +876,13 @@ export async function startLocalServer(
     // one file in it. Not just the manifest's scenes — a project is mostly
     // shared components, helpers and config by the time the agent is done,
     // and none of that used to be reachable from the editor.
+    // Step back through the manual timeline edits made from the dock. The
+    // watcher picks the restored files up and re-announces the project, so
+    // nothing here has to tell the editor what changed.
+    if (section === "timeline" && target === "undo" && method === "POST") {
+      return { undone: await session.history.undo() };
+    }
+
     if (section === "files" && method === "GET") return readProjectTree(session.dir);
     if (section === "file" && method === "GET") {
       if (!target) return undefined;
@@ -916,15 +924,17 @@ export async function startLocalServer(
     if (section === "scenes") {
       if (target === "reorder" && method === "PATCH") {
         const body = await readJson<{ orderedSceneIds: string[] }>(req);
-        await mutate(session, (manifest) => {
-          const byFile = new Map(manifest.scenes.map((s) => [s.file, s]));
-          const ordered = body.orderedSceneIds
-            .map((id) => byFile.get(id))
-            .filter((s): s is NonNullable<typeof s> => Boolean(s));
-          // Anything the client didn't mention keeps its place at the end.
-          const missing = manifest.scenes.filter((s) => !body.orderedSceneIds.includes(s.file));
-          manifest.scenes = [...ordered, ...missing];
-        });
+        await session.history.record("Reorder scenes", [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            const byFile = new Map(manifest.scenes.map((s) => [s.file, s]));
+            const ordered = body.orderedSceneIds
+              .map((id) => byFile.get(id))
+              .filter((s): s is NonNullable<typeof s> => Boolean(s));
+            // Anything the client didn't mention keeps its place at the end.
+            const missing = manifest.scenes.filter((s) => !body.orderedSceneIds.includes(s.file));
+            manifest.scenes = [...ordered, ...missing];
+          }),
+        );
         return { ok: true };
       }
 
@@ -934,15 +944,23 @@ export async function startLocalServer(
           durationInFrames?: number;
           audioVolume?: number;
         }>(req);
-        await mutate(session, (manifest) => {
-          const scene = manifest.scenes.find((s) => s.file === target);
-          if (!scene) throw new Error(`Unknown scene ${target}`);
-          if (body.name?.trim()) scene.name = body.name.trim();
-          if (typeof body.durationInFrames === "number") {
-            scene.durationInFrames = Math.max(1, Math.round(body.durationInFrames));
-          }
-          if (typeof body.audioVolume === "number") scene.audioVolume = body.audioVolume;
-        });
+        const label =
+          body.name !== undefined
+            ? "Rename scene"
+            : body.audioVolume !== undefined
+              ? "Mute scene"
+              : "Resize scene";
+        await session.history.record(label, [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            const scene = manifest.scenes.find((s) => s.file === target);
+            if (!scene) throw new Error(`Unknown scene ${target}`);
+            if (body.name?.trim()) scene.name = body.name.trim();
+            if (typeof body.durationInFrames === "number") {
+              scene.durationInFrames = Math.max(1, Math.round(body.durationInFrames));
+            }
+            if (typeof body.audioVolume === "number") scene.audioVolume = body.audioVolume;
+          }),
+        );
         return { ok: true };
       }
 
@@ -961,33 +979,40 @@ export async function startLocalServer(
           throw new Error("The cut has to fall inside the scene");
         }
         const copy = await uniqueSiblingPath(session.dir, file);
-        await fs.copyFile(path.join(session.dir, file), path.join(session.dir, copy));
-        await mutate(session, (m) => {
-          const index = m.scenes.findIndex((s) => s.file === file);
-          const first = m.scenes[index];
-          if (!first) throw new Error(`Unknown scene ${file}`);
-          const startFrom = first.startFrom ?? 0;
-          const source = first.sourceDurationInFrames ?? startFrom + first.durationInFrames;
-          m.scenes.splice(index + 1, 0, {
-            ...first,
-            file: copy,
-            startFrom: startFrom + at,
-            durationInFrames: first.durationInFrames - at,
-            sourceDurationInFrames: source,
+        // The copy is snapshotted too, as the nothing it is right now: undoing
+        // the cut has to take the second half's file away again, not only its
+        // manifest entry.
+        await session.history.record("Slice scene", [MANIFEST_FILE, copy], async () => {
+          await fs.copyFile(path.join(session.dir, file), path.join(session.dir, copy));
+          await mutate(session, (m) => {
+            const index = m.scenes.findIndex((s) => s.file === file);
+            const first = m.scenes[index];
+            if (!first) throw new Error(`Unknown scene ${file}`);
+            const startFrom = first.startFrom ?? 0;
+            const source = first.sourceDurationInFrames ?? startFrom + first.durationInFrames;
+            m.scenes.splice(index + 1, 0, {
+              ...first,
+              file: copy,
+              startFrom: startFrom + at,
+              durationInFrames: first.durationInFrames - at,
+              sourceDurationInFrames: source,
+            });
+            first.durationInFrames = at;
+            first.sourceDurationInFrames = source;
           });
-          first.durationInFrames = at;
-          first.sourceDurationInFrames = source;
         });
         return { file: copy };
       }
 
       if (target && method === "DELETE") {
-        await mutate(session, (manifest) => {
-          manifest.scenes = manifest.scenes.filter((s) => s.file !== target);
+        await session.history.record("Delete scene", [MANIFEST_FILE, target], async () => {
+          await mutate(session, (manifest) => {
+            manifest.scenes = manifest.scenes.filter((s) => s.file !== target);
+          });
+          // The file goes to the project's trash rather than being destroyed:
+          // deleting a scene should mean "not in the video", not "gone forever".
+          await trashFile(session.dir, target);
         });
-        // The file goes to the project's trash rather than being destroyed:
-        // deleting a scene should mean "not in the video", not "gone forever".
-        await trashFile(session.dir, target);
         return { ok: true };
       }
     }
@@ -996,49 +1021,53 @@ export async function startLocalServer(
       if (!target && method === "POST") {
         const body = await readJson<AudioClipInput>(req);
         const id = randomUUID();
-        await mutate(session, (manifest) => {
-          manifest.audio.push({
-            id,
-            file: toProjectRelative(session, body.url),
-            track: body.track ?? 0,
-            startFrame: body.startFrame ?? 0,
-            durationInFrames: Math.max(1, Math.round(body.durationInFrames ?? 90)),
-            startFrom: body.startFrom ?? 0,
-            volume: body.volume ?? 1,
-            fadeInFrames: Math.max(0, Math.round(body.fadeInFrames ?? 0)),
-            fadeOutFrames: Math.max(0, Math.round(body.fadeOutFrames ?? 0)),
-            muted: body.muted ?? false,
-            ...(body.name ? { name: body.name } : {}),
-          });
-        });
+        await session.history.record("Add audio clip", [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            manifest.audio.push({
+              id,
+              file: toProjectRelative(session, body.url),
+              track: body.track ?? 0,
+              startFrame: body.startFrame ?? 0,
+              durationInFrames: Math.max(1, Math.round(body.durationInFrames ?? 90)),
+              startFrom: body.startFrom ?? 0,
+              volume: body.volume ?? 1,
+              fadeInFrames: Math.max(0, Math.round(body.fadeInFrames ?? 0)),
+              fadeOutFrames: Math.max(0, Math.round(body.fadeOutFrames ?? 0)),
+              muted: body.muted ?? false,
+              ...(body.name ? { name: body.name } : {}),
+            });
+          }),
+        );
         return { id };
       }
 
       if (target && method === "PATCH") {
         const body = await readJson<Partial<AudioClipInput>>(req);
-        await mutate(session, (manifest) => {
-          const clip = manifest.audio.find((c) => c.id === target);
-          if (!clip) throw new Error(`Unknown audio clip ${target}`);
-          if (typeof body.track === "number") clip.track = body.track;
-          if (typeof body.startFrame === "number") clip.startFrame = Math.max(0, Math.round(body.startFrame));
-          if (typeof body.durationInFrames === "number") {
-            clip.durationInFrames = Math.max(1, Math.round(body.durationInFrames));
-          }
-          if (typeof body.startFrom === "number") clip.startFrom = body.startFrom;
-          if (typeof body.volume === "number") {
-            // The schema's ceiling, applied here too: a client sending 50 is a
-            // bug, and clamping beats writing a manifest that fails to parse.
-            clip.volume = Math.min(2, Math.max(0, body.volume));
-          }
-          if (typeof body.fadeInFrames === "number") {
-            clip.fadeInFrames = Math.max(0, Math.round(body.fadeInFrames));
-          }
-          if (typeof body.fadeOutFrames === "number") {
-            clip.fadeOutFrames = Math.max(0, Math.round(body.fadeOutFrames));
-          }
-          if (typeof body.muted === "boolean") clip.muted = body.muted;
-          if (body.name) clip.name = body.name;
-        });
+        await session.history.record("Edit audio clip", [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            const clip = manifest.audio.find((c) => c.id === target);
+            if (!clip) throw new Error(`Unknown audio clip ${target}`);
+            if (typeof body.track === "number") clip.track = body.track;
+            if (typeof body.startFrame === "number") clip.startFrame = Math.max(0, Math.round(body.startFrame));
+            if (typeof body.durationInFrames === "number") {
+              clip.durationInFrames = Math.max(1, Math.round(body.durationInFrames));
+            }
+            if (typeof body.startFrom === "number") clip.startFrom = body.startFrom;
+            if (typeof body.volume === "number") {
+              // The schema's ceiling, applied here too: a client sending 50 is a
+              // bug, and clamping beats writing a manifest that fails to parse.
+              clip.volume = Math.min(2, Math.max(0, body.volume));
+            }
+            if (typeof body.fadeInFrames === "number") {
+              clip.fadeInFrames = Math.max(0, Math.round(body.fadeInFrames));
+            }
+            if (typeof body.fadeOutFrames === "number") {
+              clip.fadeOutFrames = Math.max(0, Math.round(body.fadeOutFrames));
+            }
+            if (typeof body.muted === "boolean") clip.muted = body.muted;
+            if (body.name) clip.name = body.name;
+          }),
+        );
         return { ok: true };
       }
 
@@ -1065,38 +1094,46 @@ export async function startLocalServer(
             duration: clip.duration ?? Math.max(0, state.durationSeconds - clip.start),
             mediaStart: clip.mediaStart,
           });
-          await fs.writeFile(entryPath, updated, "utf8");
+          // The composition is the timeline here, so the entry document is
+          // what an undo of this cut puts back.
+          await session.history.record("Slice audio clip", [ENTRY_FILE], () =>
+            fs.writeFile(entryPath, updated, "utf8"),
+          );
           return { id: newId };
         }
 
         const id = randomUUID();
-        await mutate(session, (manifest) => {
-          const index = manifest.audio.findIndex((c) => c.id === clipId);
-          const first = manifest.audio[index];
-          if (!first) throw new Error(`Unknown audio clip ${clipId}`);
-          if (!Number.isFinite(at) || at < 1 || at >= first.durationInFrames) {
-            throw new Error("The cut has to fall inside the clip");
-          }
-          // A fade belongs to the edge it sits on: the fade-in stays with the
-          // first half, the fade-out goes with the second.
-          manifest.audio.splice(index + 1, 0, {
-            ...first,
-            id,
-            startFrame: first.startFrame + at,
-            durationInFrames: first.durationInFrames - at,
-            startFrom: Math.round((first.startFrom + at / manifest.fps) * 1000) / 1000,
-            fadeInFrames: 0,
-          });
-          first.durationInFrames = at;
-          first.fadeOutFrames = 0;
-        });
+        await session.history.record("Slice audio clip", [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            const index = manifest.audio.findIndex((c) => c.id === clipId);
+            const first = manifest.audio[index];
+            if (!first) throw new Error(`Unknown audio clip ${clipId}`);
+            if (!Number.isFinite(at) || at < 1 || at >= first.durationInFrames) {
+              throw new Error("The cut has to fall inside the clip");
+            }
+            // A fade belongs to the edge it sits on: the fade-in stays with the
+            // first half, the fade-out goes with the second.
+            manifest.audio.splice(index + 1, 0, {
+              ...first,
+              id,
+              startFrame: first.startFrame + at,
+              durationInFrames: first.durationInFrames - at,
+              startFrom: Math.round((first.startFrom + at / manifest.fps) * 1000) / 1000,
+              fadeInFrames: 0,
+            });
+            first.durationInFrames = at;
+            first.fadeOutFrames = 0;
+          }),
+        );
         return { id };
       }
 
       if (target && method === "DELETE") {
-        await mutate(session, (manifest) => {
-          manifest.audio = manifest.audio.filter((c) => c.id !== target);
-        });
+        await session.history.record("Delete audio clip", [MANIFEST_FILE], () =>
+          mutate(session, (manifest) => {
+            manifest.audio = manifest.audio.filter((c) => c.id !== target);
+          }),
+        );
         return { ok: true };
       }
     }

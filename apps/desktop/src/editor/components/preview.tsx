@@ -147,7 +147,7 @@ export function PreviewTransport({
       <div className="flex items-center gap-3">
         {/* The timeline's tools sit by the readout, on the opposite side from
             the preview's: each dock next to the thing it acts on. */}
-        {timelineTools && <TimelineTools />}
+        {timelineTools && <TimelineTools projectId={projectId} />}
         <span className="font-mono text-[0.857rem] text-text-secondary tabular-nums">
           {framesToTimecode(frame, fps)}{" "}
           <span className="text-text-tertiary">/ {framesToTimecode(totalFrames, fps)}</span>
