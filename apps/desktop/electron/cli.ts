@@ -28,12 +28,25 @@ const run = promisify(execFile);
 /** How a launch tells the app which folder it came from. */
 const FLAG = "--gm-cwd=";
 
+/** How `genmotion clone <repo>` tells the app what to clone. */
+const CLONE_FLAG = "--gm-clone=";
+
 /** Where the command goes. On PATH by default on macOS, unlike ~/.local/bin. */
 const BIN_DIR = "/usr/local/bin";
 const BIN_PATH = path.join(BIN_DIR, "genmotion");
 
 /** Marks a script as ours, and says which app it points at. */
 const MARKER = "# gm-app:";
+
+/**
+ * What the shim can do, bumped whenever it learns a new subcommand.
+ *
+ * Without this an installed shim from the same app bundle reports itself
+ * current — the app path hasn't changed — and the user never finds out that
+ * `genmotion clone` exists on their machine but not in their `/usr/local/bin`.
+ */
+const CONTRACT = 2;
+const CONTRACT_MARKER = "# gm-cli:";
 
 /**
  * Where `genmotion upgrade` goes.
@@ -61,6 +74,13 @@ export function launchDirFromArgv(argv: string[]): string | null {
   if (!found) return null;
   const dir = found.slice(FLAG.length).trim();
   return dir ? path.resolve(dir) : null;
+}
+
+/** `--gm-clone=…` out of a process's arguments, if it carried one. */
+export function cloneSourceFromArgv(argv: string[]): string | null {
+  const found = argv.find((arg) => arg.startsWith(CLONE_FLAG));
+  if (!found) return null;
+  return found.slice(CLONE_FLAG.length).trim() || null;
 }
 
 export function setLaunchDir(dir: string | null): void {
@@ -104,10 +124,12 @@ function script(): string {
   const launch = bundle
     ? {
         withDir: `exec open -n -a ${shellQuote(bundle)} --args "${FLAG}$DIR"`,
+        withClone: `exec open -n -a ${shellQuote(bundle)} --args "${CLONE_FLAG}$2"`,
         bare: `exec open -a ${shellQuote(bundle)}`,
       }
     : {
         withDir: `exec ${shellQuote(app.getPath("exe"))} ${shellQuote(app.getAppPath())} "${FLAG}$DIR"`,
+        withClone: `exec ${shellQuote(app.getPath("exe"))} ${shellQuote(app.getAppPath())} "${CLONE_FLAG}$2"`,
         bare: `exec ${shellQuote(app.getPath("exe"))} ${shellQuote(app.getAppPath())}`,
       };
 
@@ -115,18 +137,27 @@ function script(): string {
 # GenMotion ${app.getVersion()} — command line launcher.
 # Written by the app. Reinstall it from the account menu if it stops working.
 ${MARKER} ${target}
+${CONTRACT_MARKER} ${CONTRACT}
 
 case "$1" in
   upgrade)
     exec /bin/sh -c 'curl -fsSL ${INSTALL_URL} | /bin/sh'
     ;;
+  clone)
+    if [ -z "$2" ]; then
+      echo "usage: genmotion clone <owner/name | github url>" >&2
+      exit 1
+    fi
+    ${launch.withClone}
+    ;;
   -h|--help)
     echo "usage: genmotion [folder]"
     echo
-    echo "  genmotion          open GenMotion"
-    echo "  genmotion .        open GenMotion and share this folder with the agent"
-    echo "  genmotion <path>   the same, for another folder"
-    echo "  genmotion upgrade  install the latest version"
+    echo "  genmotion             open GenMotion"
+    echo "  genmotion .           open GenMotion and share this folder with the agent"
+    echo "  genmotion <path>      the same, for another folder"
+    echo "  genmotion clone <repo>  clone a GitHub repository and open it"
+    echo "  genmotion upgrade     install the latest version"
     exit 0
     ;;
   -v|--version)
@@ -169,8 +200,11 @@ export async function cliStatus(): Promise<CliStatus> {
     installed: true,
     // An app moved to a different folder, or a shim from a build that is no
     // longer there, leaves a command that opens nothing. Say so rather than
-    // reporting it installed.
-    current: existing.includes(`${MARKER} ${target}\n`),
+    // reporting it installed — and likewise for a shim that predates a
+    // subcommand this version of the app answers.
+    current:
+      existing.includes(`${MARKER} ${target}\n`) &&
+      existing.includes(`${CONTRACT_MARKER} ${CONTRACT}\n`),
   };
 }
 

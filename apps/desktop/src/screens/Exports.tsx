@@ -2,6 +2,8 @@ import { cx } from "@/components/ui";
 import { api as http } from "@/lib/api";
 import { api } from "../api";
 import type { DesktopExportJob } from "../../electron/shared";
+import { ShareAction } from "../editor/components/share-action";
+import { useShares, type SharedVideo } from "../tabs/use-shares";
 import {
   ACTIVE_EXPORT,
   EXPORT_STATUS_LABEL,
@@ -41,9 +43,15 @@ function timeOfDay(ms: number): string {
 
 function Card({
   job,
+  share,
+  onSharesChanged,
+  onRemoveShare,
   onOpenProject,
 }: {
   job: DesktopExportJob;
+  share: SharedVideo | undefined;
+  onSharesChanged: () => void;
+  onRemoveShare: (share: SharedVideo) => Promise<void>;
   onOpenProject: (dir: string) => void;
 }) {
   const active = ACTIVE_EXPORT.has(job.status);
@@ -100,7 +108,9 @@ function Card({
             job.status === "failed" ? "text-danger" : "text-text-secondary",
           )}
         >
-          {job.status === "done"
+          {share
+            ? `Shared · ${share.url.replace(/^https?:\/\//, "")}`
+            : job.status === "done"
             ? job.fileMissing
               ? `Exported at ${timeOfDay(stamp)} — the file has since been moved or deleted`
               : `Exported at ${timeOfDay(stamp)}`
@@ -113,6 +123,12 @@ function Card({
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 text-[0.857rem]">
+        <ShareAction
+          job={job}
+          share={share}
+          onChanged={onSharesChanged}
+          onRemoved={onRemoveShare}
+        />
         {job.status === "done" && !job.fileMissing && (
           <button
             type="button"
@@ -152,6 +168,7 @@ function Card({
  */
 export function Exports({ onOpenProject }: { onOpenProject: (dir: string) => void }) {
   const { jobs, loaded } = useExports({ live: true, thumbnails: true });
+  const shares = useShares();
 
   const groups: { label: string; jobs: DesktopExportJob[] }[] = [];
   for (const job of jobs) {
@@ -196,7 +213,14 @@ export function Exports({ onOpenProject }: { onOpenProject: (dir: string) => voi
             </h2>
             <ul className="flex flex-col gap-2">
               {group.jobs.map((job) => (
-                <Card key={job.id} job={job} onOpenProject={onOpenProject} />
+                <Card
+                  key={job.id}
+                  job={job}
+                  share={shares.byExport.get(job.id)}
+                  onSharesChanged={shares.refresh}
+                  onRemoveShare={shares.remove}
+                  onOpenProject={onOpenProject}
+                />
               ))}
             </ul>
           </section>

@@ -195,6 +195,7 @@ cat > "$tmp/genmotion" <<'SHIM'
 # GenMotion @VERSION@ — command line launcher.
 # Written by the installer; `genmotion upgrade` replaces it.
 # gm-app: /Applications/GenMotion.app
+# gm-cli: 2
 
 APP='/Applications/GenMotion.app'
 
@@ -202,13 +203,21 @@ case "$1" in
   upgrade)
     exec /bin/sh -c 'curl -fsSL https://genmotion.dev/install.sh | /bin/sh'
     ;;
+  clone)
+    if [ -z "$2" ]; then
+      echo "usage: genmotion clone <owner/name | github url>" >&2
+      exit 1
+    fi
+    exec open -n -a "$APP" --args "--gm-clone=$2"
+    ;;
   -h|--help)
     echo "usage: genmotion [folder]"
     echo
-    echo "  genmotion          open GenMotion"
-    echo "  genmotion .        open GenMotion and share this folder with the agent"
-    echo "  genmotion <path>   the same, for another folder"
-    echo "  genmotion upgrade  install the latest version"
+    echo "  genmotion             open GenMotion"
+    echo "  genmotion .           open GenMotion and share this folder with the agent"
+    echo "  genmotion <path>      the same, for another folder"
+    echo "  genmotion clone <repo>  clone a GitHub repository and open it"
+    echo "  genmotion upgrade     install the latest version"
     exit 0
     ;;
   -v|--version)

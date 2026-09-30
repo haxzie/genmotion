@@ -49,8 +49,16 @@ import {
   type RestoredTabs,
   type StoredTabs,
 } from "./shared";
-import { cliStatus, getLaunchDir, installCli, launchDirFromArgv, setLaunchDir } from "./cli";
+import {
+  cliStatus,
+  cloneSourceFromArgv,
+  getLaunchDir,
+  installCli,
+  launchDirFromArgv,
+  setLaunchDir,
+} from "./cli";
 import { fetchRemixBundle, writeRemix } from "./remix";
+import { clone as cloneRepo } from "./git/repo";
 import { allocateProjectDir, projectsRoot } from "./projects-dir";
 import { seedSampleProjects } from "./samples";
 import { projectDefaults } from "./preferences";
@@ -181,6 +189,72 @@ async function remixTemplateAndOpen(templateId: string, name?: string): Promise<
   }
   track("template_remixed", { templateId, revision: bundle.revision });
   return openSession(dir);
+}
+
+/**
+ * Clone a GitHub repository and open it as a project.
+ *
+ * Shaped exactly like `remixTemplateAndOpen` above, for the same reasons: the
+ * folder is allocated by us, so removing it on failure can only ever remove
+ * what we just made.
+ *
+ * A cloned repo that already holds a `project.json` opens as itself. One that
+ * doesn't is adopted — scaffolded in place, writing only files that aren't
+ * already there, so somebody's existing repo keeps its README, its package.json
+ * and its history. That is the "I already cloned it" case: point the app at the
+ * folder and it becomes a project without losing anything.
+ */
+async function cloneAndOpen(source: string): Promise<DesktopProject> {
+  const trimmed = source.trim();
+  if (!trimmed) throw new Error("Give a GitHub repository, like owner/name or a github.com URL.");
+  const dir = await allocateProjectDir(repoNameOf(trimmed));
+  try {
+    // `allocateProjectDir` created the folder; `gh repo clone` wants to create
+    // it itself, and refuses a non-empty target.
+    await fs.rm(dir, { recursive: true, force: true });
+    await cloneRepo(trimmed, dir);
+    if (!(await exists(path.join(dir, "project.json")))) {
+      await adoptFolderAsProject(dir);
+    }
+  } catch (err) {
+    await fs.rm(dir, { recursive: true, force: true });
+    throw err;
+  }
+  track("project_cloned");
+  return openSession(dir);
+}
+
+/**
+ * Give a folder the files that make it a project, without touching what's
+ * already in it.
+ *
+ * Used for a cloned repo that is not a GenMotion project, and for "set this
+ * folder up" on the start screen. HyperFrames because it is what every new
+ * project is; the `adopt` flag is what keeps it from overwriting anything.
+ */
+async function adoptFolderAsProject(dir: string): Promise<void> {
+  const defaults = await projectDefaults();
+  await createProject({
+    dir,
+    name: path.basename(dir),
+    width: defaults.width,
+    height: defaults.height,
+    fps: defaults.fps,
+    engine: "hyperframes",
+    adopt: true,
+    hyperframes: {
+      version: HYPERFRAMES_VERSION,
+      gsapVersion: GSAP_VERSION,
+      guide: HYPERFRAMES_AUTHORING_GUIDE,
+    },
+  });
+}
+
+/** The folder name a clone should land in: the repo's own name. */
+function repoNameOf(source: string): string {
+  const cleaned = source.trim().replace(/\.git$/, "").replace(/\/+$/, "");
+  const last = cleaned.split("/").filter(Boolean).at(-1);
+  return last || "cloned-project";
 }
 
 /** Replace the pre-spawned agent process, which fixed its roots when it started. */
@@ -315,6 +389,11 @@ function registerIpc(): void {
   ipcMain.handle(IPC.remixTemplate, async (_event, input: RemixTemplateInput) =>
     remixTemplateAndOpen(input.templateId, input.name),
   );
+  ipcMain.handle(IPC.cloneProject, async (_event, source: string) => cloneAndOpen(source));
+  ipcMain.handle(IPC.adoptProject, async (_event, dir: string) => {
+    await adoptFolderAsProject(dir);
+    return openSession(dir);
+  });
 
   ipcMain.handle(IPC.openProject, async (_event, dir: string) => openSession(dir));
   /**
@@ -440,7 +519,13 @@ function registerIpc(): void {
     return { deleted: true };
   });
 
-  ipcMain.handle(IPC.launchContext, async () => launchContext());
+  ipcMain.handle(IPC.launchContext, async () => {
+    const context = await launchContext();
+    // The renderer is mounted and listening; anything the command line asked
+    // for at launch can be acted on now.
+    setImmediate(drainPendingClone);
+    return context;
+  });
   ipcMain.handle(IPC.cliStatus, async () => cliStatus());
   ipcMain.handle(IPC.cliInstall, async () => installCli());
 
@@ -448,6 +533,20 @@ function registerIpc(): void {
   ipcMain.handle(IPC.updateCheck, async () => checkForUpdate());
   ipcMain.handle(IPC.updateDownload, async () => downloadUpdate());
   ipcMain.handle(IPC.updateInstall, async () => installUpdate());
+
+  ipcMain.handle(IPC.openRepo, async (_event, projectId: string) => {
+    const session = getSession(projectId);
+    if (!session) return;
+    const { repoStatus } = await import("./git/repo");
+    const remote = (await repoStatus(session.dir)).remoteUrl;
+    if (!remote) return;
+    // The remote came off the user's own folder rather than the renderer, but
+    // it is still a string from disk that an agent could have written with
+    // `git remote set-url`. Only a real web URL reaches the browser.
+    const url = new URL(remote);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return;
+    await shell.openExternal(url.toString());
+  });
 
   ipcMain.handle(IPC.openWeb, async (_event, target: string) => {
     // Pinned to our own origin. `new URL(target, base)` alone would not do it:
@@ -556,6 +655,47 @@ function handleDeepLink(url: string): void {
   desktopAuth.pollNow();
 }
 
+/**
+ * `genmotion clone <repo>` — clone it and put a tab on it.
+ *
+ * Same shape as the template deep link above: the work happens outside the
+ * renderer, so the renderer has to be told a project appeared, and a failure
+ * has no dialog of its own to land in.
+ */
+/**
+ * A `genmotion clone` asked for before the renderer existed.
+ *
+ * The clone ends by pushing `projectOpened` at the window, and a push sent
+ * before the renderer has mounted its listener is simply lost. So a launch-time
+ * request waits here until the renderer asks for its launch context — the first
+ * thing it does on mount, and therefore proof that it is listening.
+ */
+let pendingClone: string | null = null;
+
+function drainPendingClone(): void {
+  const source = pendingClone;
+  pendingClone = null;
+  if (source) handleCloneRequest(source);
+}
+
+function handleCloneRequest(source: string): void {
+  if (window) {
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  }
+  cloneAndOpen(source)
+    .then((project) => {
+      window?.webContents.send(IPC.projectOpened, project);
+    })
+    .catch((err: unknown) => {
+      dialog.showErrorBox(
+        "Couldn’t open that repository",
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    });
+}
+
 /** On Windows and Linux the URL arrives as a launch argument, not an event. */
 function deepLinkFromArgv(argv: string[]): string | undefined {
   return argv.find((arg) => arg.startsWith(`${DESKTOP_PROTOCOL}://`));
@@ -615,21 +755,44 @@ function createWindow(): void {
   // Links to our own web app open in the real browser (where the session
   // cookie is); anything else is dropped.
   const ownDocument = DEV_SERVER ?? (localServer ? `${localServer.origin}/index.html` : null);
-  window.webContents.on("will-navigate", (event, url) => {
+  /**
+   * The one policy for "the renderer is trying to send us somewhere".
+   *
+   * A file in the project is revealed in Finder; our own web app opens in the
+   * real browser, which is where the session cookie lives; anything else is
+   * dropped. The renderer evaluates agent-authored code, so this list is
+   * deliberately short — anything that genuinely needs to open an external
+   * page goes through a named IPC channel that resolves the address in the
+   * main process rather than taking one from the window.
+   */
+  const sendElsewhere = (url: string): void => {
     if (url.startsWith("gm-asset:")) {
-      event.preventDefault();
       const target = assetPathFromUrl(url);
       if (target) shell.showItemInFolder(target);
       return;
     }
-    if (ownDocument && url.split("#")[0] === ownDocument.split("#")[0]) return;
-    event.preventDefault();
     try {
       const parsed = new URL(url);
       if (parsed.origin === new URL(WEB_URL).origin) void shell.openExternal(parsed.toString());
     } catch {
       // Not a URL we can reason about — dropping it is the safe outcome.
     }
+  };
+
+  // `window.open` had no handler, and Electron's default for that is a bare
+  // BrowserWindow with no preload and no chrome — not the user's browser,
+  // which is what a link to github.com is actually asking for. Nothing in this
+  // app wants a second window.
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    sendElsewhere(url);
+    return { action: "deny" };
+  });
+
+  window.webContents.on("will-navigate", (event, url) => {
+    // The editor is a single page; letting it navigate would unload it.
+    if (ownDocument && url.split("#")[0] === ownDocument.split("#")[0]) return;
+    event.preventDefault();
+    sendElsewhere(url);
   });
 
   // The tab strip leaves room for the traffic lights; in full screen macOS
@@ -654,6 +817,12 @@ if (!app.requestSingleInstanceLock()) {
     const url = deepLinkFromArgv(argv);
     if (url) {
       handleDeepLink(url);
+      return;
+    }
+    // `genmotion clone <repo>` while the app is already up.
+    const cloning = cloneSourceFromArgv(argv);
+    if (cloning) {
+      handleCloneRequest(cloning);
       return;
     }
     // `genmotion <path>` while the app is already up. The new process exists
@@ -687,6 +856,7 @@ app.on("open-url", (event, url) => {
 void app.whenReady().then(async () => {
   // Before anything else reads it: a project opened during startup shares it.
   setLaunchDir(launchDirFromArgv(process.argv));
+  pendingClone = cloneSourceFromArgv(process.argv);
   registerProtocolClient();
   registerIpc();
   registerAssetProtocol();

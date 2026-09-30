@@ -236,7 +236,15 @@ function Shell() {
         const { tabs, activeId } = useTabsStore.getState();
         const order = [HOME_TAB, ...tabs.map((t) => t.dir)];
         const index = order.indexOf(activeId);
-        if (command === "close") {
+        if (command === "clone") {
+          // The dialog belongs to Home, so Home has to be in front before it
+          // can be opened. A DOM event rather than a prop threaded through the
+          // shell — the same shape `gm:exports-pulse` uses to reach a component
+          // the tab machinery doesn't otherwise talk to.
+          useTabsStore.getState().setHomeView("create");
+          activate(HOME_TAB);
+          requestAnimationFrame(() => window.dispatchEvent(new Event("gm:open-clone")));
+        } else if (command === "close") {
           if (activeId !== HOME_TAB) void close(activeId);
         } else if (command === "next") {
           activate(order[(index + 1) % order.length]!);
@@ -340,7 +348,6 @@ function Shell() {
       <TabStrip
         onActivate={activate}
         onClose={(dir) => void close(dir)}
-        onOpenProject={(dir) => void open(dir)}
         onShowAllExports={() => {
           useTabsStore.getState().setHomeView("exports");
           activate(HOME_TAB);

@@ -31,6 +31,9 @@ export { mimeForAsset };
 import { answerQuestion } from "./agent/questions";
 import { beginTurn, endTurn } from "./agent/turns";
 import { readRemixOrigin } from "./remix";
+import { ghStatus } from "./git/gh";
+import { repoStatus, unlink as unlinkRemote } from "./git/repo";
+import { getGitJob, onGitChange, startPublish, startSync } from "./git/service";
 
 /**
  * A loopback HTTP server speaking the same routes as the hosted Hono API, so
@@ -418,6 +421,86 @@ export async function startLocalServer(
       send(res, result.status, result.body);
       return;
     }
+    // Sharing a finished export to a public page. The upload itself goes
+    // straight from the main process to storage; what comes through here is
+    // the job it runs under, and the list the Exports tab reads — the renderer
+    // has no session token of its own, so anything hosted is proxied.
+    if (rest[0] === "share") {
+      const { desktopAuth } = await import("./auth");
+      const action = rest[1];
+
+      if (method === "POST" && !action) {
+        const body = await readJson<{
+          exportId?: string;
+          projectDir?: string;
+          title?: string;
+          description?: string;
+        }>(req);
+        if (!body.exportId || !body.projectDir || !body.title?.trim()) {
+          send(res, 400, { error: "An export and a title are required." });
+          return;
+        }
+        const { startShare } = await import("./share/service");
+        send(
+          res,
+          200,
+          startShare({
+            exportId: body.exportId,
+            projectDir: body.projectDir,
+            title: body.title.trim(),
+            ...(body.description?.trim() ? { description: body.description.trim() } : {}),
+          }),
+        );
+        return;
+      }
+
+      // One job's progress, as a named `progress` event — the same stream
+      // shape the export and publish buttons already listen on.
+      if (method === "GET" && action === "jobs" && rest[2] && rest[3] === "events") {
+        const { getShareJob, onShareChange } = await import("./share/service");
+        res.writeHead(200, {
+          "content-type": "text/event-stream",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
+        });
+        const write = (job: unknown) =>
+          res.write(`event: progress\ndata: ${JSON.stringify(job)}\n\n`);
+        const initial = getShareJob(rest[2]);
+        if (initial) write(initial);
+        if (initial && initial.status !== "running") {
+          res.end();
+          return;
+        }
+        const off = onShareChange((job) => {
+          if (job.id !== rest[2]) return;
+          write(job);
+          if (job.status !== "running") {
+            off();
+            res.end();
+          }
+        });
+        res.on("close", off);
+        return;
+      }
+
+      if (method === "GET" && action === "list") {
+        const result = await desktopAuth.request<unknown>("/api/shares");
+        send(res, result.status, result.body);
+        return;
+      }
+
+      if (method === "DELETE" && action && action !== "jobs" && action !== "list") {
+        const result = await desktopAuth.request<unknown>(`/api/shares/${encodeURIComponent(action)}`, {
+          method: "DELETE",
+        });
+        send(res, result.status, result.body);
+        return;
+      }
+
+      send(res, 404, { error: "No route for that share action" });
+      return;
+    }
+
     // Help & feedback, and "contact us": forwarded to the API with this
     // build's version stamped on, so the channel knows what they were on.
     if (rest[0] === "feedback" && method === "POST") {
@@ -521,6 +604,7 @@ export async function startLocalServer(
     }
     if (head === "assets") return assetRoutes(method, tail, url, req);
     if (head === "exports") return exportRoutes(method, tail, url, req, res);
+    if (head === "git") return gitRoutes(method, tail, url, req, res);
     if (head === "mcp") {
       const match = matchProjectPath(listSessions(), tail);
       return mcpRoute(match?.session ?? null, method, req);
@@ -1354,6 +1438,111 @@ export async function startLocalServer(
         if (job.id !== target) return;
         write(job);
         if (["done", "failed", "cancelled"].includes(job.status)) {
+          off();
+          res.end();
+        }
+      });
+      res.on("close", off);
+      return HANDLED;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Publishing a project to GitHub, and keeping it there.
+   *
+   * Reads name their project as `?projectId=`, mutations in the body — the
+   * same split exports uses, for the same reason: a GET is a URL someone may
+   * want to open, and a POST already has somewhere to put a payload.
+   *
+   * Nothing here talks to api.github.com on the renderer's behalf as a proxy
+   * would; it drives the user's own `gh`. The renderer could not make those
+   * calls itself in any case — the packaged CSP allows `'self'` and the
+   * loopback origin and nothing else.
+   */
+  async function gitRoutes(
+    method: string,
+    tail: string[],
+    url: URL,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): Promise<unknown | Response | undefined> {
+    const [action, target, sub] = tail;
+
+    // Is `gh` here and signed in. Machine-wide, so no project is named.
+    if (action === "cli" && method === "GET") {
+      return ghStatus({ fresh: url.searchParams.get("fresh") === "1" });
+    }
+
+    // Drives the button's label, so it runs often and must stay cheap.
+    if (action === "status" && method === "GET") {
+      return repoStatus(sessionFromQuery(url).dir);
+    }
+
+    if (action === "publish" && method === "POST") {
+      const body = await readJson<{
+        projectId?: string;
+        name?: string;
+        visibility?: "public" | "private";
+        description?: string;
+        writeReadme?: boolean;
+      }>(req);
+      const session = getSession(body.projectId ?? "");
+      if (!session) throw new ProjectNotOpen();
+      const name = body.name?.trim();
+      if (!name) throw new Error("A repository name is required.");
+      const project = await session.load();
+      return startPublish(
+        session,
+        {
+          name,
+          visibility: body.visibility === "private" ? "private" : "public",
+          ...(body.description ? { description: body.description } : {}),
+          ...(body.writeReadme ? { writeReadme: true } : {}),
+        },
+        project.name,
+        project.engine,
+      );
+    }
+
+    if (action === "sync" && method === "POST") {
+      const body = await readJson<{ projectId?: string }>(req);
+      const session = getSession(body.projectId ?? "");
+      if (!session) throw new ProjectNotOpen();
+      return startSync(session, (await session.load()).name);
+    }
+
+    if (action === "unlink" && method === "POST") {
+      const body = await readJson<{ projectId?: string }>(req);
+      const session = getSession(body.projectId ?? "");
+      if (!session) throw new ProjectNotOpen();
+      await unlinkRemote(session.dir);
+      return repoStatus(session.dir);
+    }
+
+    // One job's progress, named `progress` like the export stream so the
+    // button's EventSource listener is the same code.
+    if (action === "jobs" && target && sub === "events" && method === "GET") {
+      res.writeHead(200, {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+      const write = (job: unknown) =>
+        res.write(`event: progress\ndata: ${JSON.stringify(job)}\n\n`);
+      const initial = getGitJob(target);
+      if (initial) write(initial);
+      // A job that finished before the stream opened would otherwise leave the
+      // button spinning on a connection that never sends anything.
+      if (initial && initial.status !== "running") {
+        res.end();
+        return HANDLED;
+      }
+      const off = onGitChange((job) => {
+        if (job.id !== target) return;
+        write(job);
+        if (job.status !== "running") {
           off();
           res.end();
         }

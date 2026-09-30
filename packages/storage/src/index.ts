@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -112,6 +113,43 @@ export async function presignUpload(
     ContentType: contentType,
   });
   return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+/**
+ * A presigned GET, for handing a large object straight to the client.
+ *
+ * The counterpart to `presignUpload`, and used for the same reason: a file the
+ * API would otherwise have to read into memory and pipe through itself. A
+ * redirect costs us nothing and the bytes never touch the process.
+ */
+export async function presignDownload(
+  key: string,
+  expiresInSeconds = 600,
+): Promise<string> {
+  const command = new GetObjectCommand({ Bucket: BUCKET, Key: key });
+  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+/**
+ * Size and type of a stored object, or null if it isn't there.
+ *
+ * Exists because an upload that went straight to storage never passed through
+ * us: the only thing that said how big it would be was the client, and a
+ * client's claim about what it just wrote is not a fact. This is how the
+ * server checks.
+ */
+export async function headObject(
+  key: string,
+): Promise<{ sizeBytes: number; contentType?: string } | null> {
+  try {
+    const res = await client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return {
+      sizeBytes: res.ContentLength ?? 0,
+      ...(res.ContentType ? { contentType: res.ContentType } : {}),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Server-side upload (used by the render worker and the sandbox sync). */

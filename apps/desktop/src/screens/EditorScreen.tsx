@@ -6,6 +6,7 @@ import { useCompiledThreeScenes } from "@/hooks/use-compiled-three-scenes";
 import { ThreeStage } from "@/components/editor/three/stage";
 import { Topbar } from "@/components/editor/topbar";
 import { ExportButton } from "@/components/editor/export-button";
+import { PublishButton } from "@/components/editor/publish-button";
 import { ChatPanel } from "@/components/editor/chat-panel";
 import { PreviewStage, PreviewTransport } from "@/components/editor/preview";
 import { Timeline } from "@/components/editor/timeline";
@@ -342,22 +343,27 @@ function EditorBody({
                 </button>
               ))}
             </div>
-            <ExportButton
-              projectId={project.dir}
-              project={project}
-              disabled={hf ? hfFrames === 0 || !!hf.compileError : project.scenes.length === 0}
-              composition={
-                hf
-                  ? {
-                      totalFrames: hfFrames,
-                      signature: hfSignature,
-                      sceneCount: project.scenes.length,
-                      width: hf.width ?? project.width,
-                      height: hf.height ?? project.height,
-                    }
-                  : undefined
-              }
-            />
+            <div className="flex items-center gap-2">
+              {/* Publishing comes before exporting: Export is the primary
+                  action and keeps the right edge. */}
+              <PublishButton projectId={project.dir} projectName={project.name} />
+              <ExportButton
+                projectId={project.dir}
+                project={project}
+                disabled={hf ? hfFrames === 0 || !!hf.compileError : project.scenes.length === 0}
+                composition={
+                  hf
+                    ? {
+                        totalFrames: hfFrames,
+                        signature: hfSignature,
+                        sceneCount: project.scenes.length,
+                        width: hf.width ?? project.width,
+                        height: hf.height ?? project.height,
+                      }
+                    : undefined
+                }
+              />
+            </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

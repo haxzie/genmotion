@@ -29,7 +29,7 @@ export function HomeShell({
   busy: boolean;
   onOpen: (dir: string) => void;
   onCreate: (input: { prompt: string; width: number; height: number; files: File[] }) => void;
-  /** A remixed template arrives as a whole project, ready to open. */
+  /** A remixed template or a cloned repository arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
   /** From the Exports page: bring that project's tab up, opening it if need be. */
   onOpenProject: (dir: string) => void;
@@ -61,6 +61,7 @@ export function HomeShell({
               busy={busy}
               onOpen={onOpen}
               onCreate={onCreate}
+              onAdopt={onAdopt}
               onOpenUpdate={() => setUpdateOpen(true)}
             />
           ) : tab === "templates" ? (

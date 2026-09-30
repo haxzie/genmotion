@@ -49,6 +49,28 @@ export function testDatabaseUrl(): string {
   return assertTestDatabase(url.toString());
 }
 
+/**
+ * The same guarantee as `assertTestDatabase`, for object storage.
+ *
+ * The repo-root `.env` carries production R2 credentials — it is the file the
+ * deployed API reads — and `packages/storage` builds its client straight from
+ * `process.env` at module load. Without this, any test that uploads writes to
+ * the live bucket, and any test that deletes deletes from it.
+ *
+ * Localhost only, so a mis-set variable fails the suite instead of reaching a
+ * real bucket.
+ */
+export function assertLocalStorage(endpoint: string): string {
+  const host = new URL(endpoint).hostname;
+  if (host !== "localhost" && host !== "127.0.0.1") {
+    throw new Error(
+      `Refusing to run tests against object storage at "${host}": the endpoint must be ` +
+        `local. Start MinIO with \`docker compose up -d\`, or set S3_ENDPOINT.`,
+    );
+  }
+  return endpoint;
+}
+
 /** The maintenance connection used to CREATE DATABASE. */
 export function maintenanceUrl(testUrl: string): string {
   const url = new URL(testUrl);

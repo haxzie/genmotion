@@ -170,6 +170,78 @@ export interface DesktopExportJob extends ExportJobData {
 }
 
 /**
+ * Whether this machine can publish to GitHub.
+ *
+ * The app carries no GitHub credentials of its own — it drives the user's own
+ * `gh`, which is already signed in to whatever hosts and organisations they
+ * belong to. That makes "is this possible right now" a question about their
+ * machine rather than about their account, with three answers the publish
+ * dialog says something different for.
+ */
+export interface GitCliStatus {
+  git: boolean;
+  gh: "missing" | "logged-out" | "ready";
+  /** Their GitHub login, when signed in — shown so they can see which account they'd publish as. */
+  login?: string;
+}
+
+/** What the Publish/Sync button reads to decide which verb it is. */
+export interface GitRepoStatus {
+  isRepo: boolean;
+  /** An https URL someone can open, or null for a repo with no `origin`. */
+  remoteUrl: string | null;
+  branch: string | null;
+  /** Uncommitted paths, from `git status --porcelain`. */
+  changedFiles: number;
+  /** Commits made here that GitHub hasn't got. */
+  ahead: number;
+}
+
+export type GitJobKind = "publish" | "sync";
+
+/** One run of Publish or Sync, streamed to the button that started it. */
+export interface GitJob {
+  id: string;
+  kind: GitJobKind;
+  projectId: string;
+  projectDir: string;
+  status: "running" | "done" | "failed";
+  /** A short line naming what is happening now: "Pushing", "Rebasing". */
+  step: string;
+  progress: number;
+  createdAt: number;
+  finishedAt?: number;
+  /** The repository, once there is one. */
+  url?: string;
+  error?: string;
+}
+
+/** One run of Share: uploading a finished export to a public page. */
+export interface ShareJob {
+  id: string;
+  /** The export being published — a share is always of a file that already exists. */
+  exportId: string;
+  projectDir: string;
+  status: "running" | "done" | "failed";
+  step: string;
+  progress: number;
+  createdAt: number;
+  finishedAt?: number;
+  /** The public page, once there is one. */
+  url?: string;
+  error?: string;
+}
+
+/** A share as the Exports list shows it: which export it belongs to, and where it lives. */
+export interface SharedVideo {
+  id: string;
+  slug: string;
+  title: string;
+  url: string;
+  createdAt: string;
+}
+
+/**
  * Where the app is in the update cycle.
  *
  * `idle` covers both "no update" and "not checked yet" on purpose: from the
@@ -229,7 +301,13 @@ export interface RestoredTabs {
 export type CloseProjectResult = { closed: true } | { closed: false; reason: "turn-running" };
 
 /** Tab shortcuts the OS menu forwards to the renderer. */
-export type TabCommand = "close" | "next" | "prev" | { select: number };
+export type TabCommand =
+  | "close"
+  | "next"
+  | "prev"
+  /** File ▸ Open from GitHub — brings Home to the front and opens its clone dialog. */
+  | "clone"
+  | { select: number };
 
 /** Which slice of the recents list to build. */
 export interface RecentProjectRange {
@@ -359,6 +437,31 @@ export interface DesktopApi {
    * renderer navigates identically after either.
    */
   remixTemplate(input: RemixTemplateInput): Promise<DesktopProject>;
+  /**
+   * Clone a GitHub repository into a new project folder and open it.
+   *
+   * Takes `owner/name` or a github.com URL. A repo that is already a GenMotion
+   * project opens as itself; one that isn't is scaffolded in place without
+   * overwriting anything it already has.
+   *
+   * IPC rather than a loopback route, unlike the rest of the GitHub feature:
+   * there is no open session to name yet, the folder is allocated here, and
+   * the result has to go through the same open path every other project does.
+   */
+  cloneProject(source: string): Promise<DesktopProject>;
+  /**
+   * Open a project's GitHub repository in the real browser.
+   *
+   * Takes the project, not a URL. The renderer never gets to name the address:
+   * the main process reads it from the folder's own `origin` remote and checks
+   * the host before handing it to the browser. The editor runs agent-authored
+   * code, so a channel that opened whatever it was passed would be a way for a
+   * scene to send the user anywhere — the same reason `openWeb` is pinned to
+   * our own origin.
+   */
+  openRepo(projectId: string): Promise<void>;
+  /** Give an existing folder the files that make it a project, then open it. */
+  adoptProject(dir: string): Promise<DesktopProject>;
   /** Open a folder, or return the project already open at it — several can be open at once. */
   openProject(dir: string): Promise<DesktopProject>;
   /**
@@ -468,6 +571,9 @@ export interface DesktopApi {
 export const IPC = {
   createProject: "project:create",
   remixTemplate: "template:remix",
+  cloneProject: "project:clone",
+  openRepo: "project:open-repo",
+  adoptProject: "project:adopt",
   paths: "app:paths",
   revealPath: "shell:reveal",
   openProject: "project:open",

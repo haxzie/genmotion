@@ -172,6 +172,15 @@ export async function closeSession(
   releaseWarmHost(resolved);
   const { cancelScaffoldInstall } = await import("./hyperframes/scaffold");
   cancelScaffoldInstall(resolved);
+  // A push in flight for a project nobody is looking at any more. The local
+  // repo survives a killed `git push` — at worst a commit didn't reach GitHub,
+  // which the next Sync sends.
+  const { cancelGitForProject } = await import("./git/service");
+  cancelGitForProject(resolved);
+  // An upload in flight for a project nobody is looking at any more. It leaves
+  // a `pending` row with no bytes, which no public route ever serves.
+  const { cancelSharesForProject } = await import("./share/service");
+  cancelSharesForProject(resolved);
   return { closed: true };
 }
 

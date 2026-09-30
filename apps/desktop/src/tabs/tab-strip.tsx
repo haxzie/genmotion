@@ -193,13 +193,10 @@ function TabButton({
 export function TabStrip({
   onActivate,
   onClose,
-  onOpenProject,
   onShowAllExports,
 }: {
   onActivate: (id: string) => void;
   onClose: (dir: string) => void;
-  /** From the exports panel — the project may not have a tab yet. */
-  onOpenProject: (dir: string) => void;
   /** The panel's "Show all": the Exports page on the Home tab. */
   onShowAllExports: () => void;
 }) {
@@ -270,7 +267,7 @@ export function TabStrip({
       </div>
 
       <div>
-        <ExportsButton onOpenProject={onOpenProject} onShowAll={onShowAllExports} />
+        <ExportsButton onShowAll={onShowAllExports} />
       </div>
     </div>
   );

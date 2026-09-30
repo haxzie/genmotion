@@ -33,6 +33,12 @@ export function installMenu(getWindow: () => BrowserWindow | null): void {
       label: "File",
       submenu: [
         {
+          label: "Open from GitHub…",
+          accelerator: "Shift+CmdOrCtrl+O",
+          click: () => send("clone"),
+        },
+        { type: "separator" },
+        {
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",
           click: () => {

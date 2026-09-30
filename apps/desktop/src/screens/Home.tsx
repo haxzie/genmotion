@@ -12,7 +12,9 @@ import { api, type RecentProject } from "../api";
 import { hasUpdate, useUpdate } from "../lib/use-update";
 import { useTabActive } from "../tabs/active-tab";
 import { useRecentProjectsStore } from "./recent-projects-store";
-import type { UpdateState } from "../../electron/shared";
+import { CloneFromGitHub } from "./clone-from-github";
+import { AdoptLaunchFolder } from "./adopt-launch-folder";
+import type { DesktopProject, UpdateState } from "../../electron/shared";
 
 // Gentle on-load entrance: fade + a small slide up, composer trailing the heading.
 const enter = {
@@ -195,11 +197,14 @@ export function Home({
   busy,
   onOpen,
   onCreate,
+  onAdopt,
   onOpenUpdate,
 }: {
   busy: boolean;
   onOpen: (dir: string) => void;
   onCreate: (input: { prompt: string; width: number; height: number; files: File[] }) => void;
+  /** A cloned repository arrives as a whole project, ready to open. */
+  onAdopt: (project: DesktopProject) => void;
   onOpenUpdate: () => void;
 }) {
   const [projects, setProjects] = useState<RecentProject[] | null>(null);
@@ -470,11 +475,18 @@ export function Home({
 
       <section className="relative z-10 mx-auto -mt-24 w-full max-w-6xl px-6 pb-20">
         <div className="rounded-2xl border border-border bg-background p-5 shadow-[0_-8px_40px_rgba(10,10,20,0.35)] sm:p-6">
+          <AdoptLaunchFolder onAdopted={onAdopt} />
+
           <div className="mb-5 flex items-center gap-2">
             <h2 className="text-xl font-medium">Projects</h2>
             {total + newCount > 0 && (
               <span className="text-[0.857rem] text-text-tertiary">{total + newCount}</span>
             )}
+            {/* Next to the list it joins, rather than up beside the composer:
+                this opens something that already exists. */}
+            <div className="ml-auto">
+              <CloneFromGitHub onCloned={onAdopt} />
+            </div>
           </div>
 
           {settling ? (

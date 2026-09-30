@@ -7,6 +7,7 @@ import {
   getAllTerms,
 } from "@/lib/marketing/content";
 import { SITE_URL } from "@/lib/marketing/site";
+import { listSharedVideos } from "@/lib/marketing/shares";
 
 const BASE = SITE_URL;
 
@@ -16,7 +17,7 @@ const BASE = SITE_URL;
  * `[name](url): notes` links. Generated from the same content as the site so it
  * never drifts. See also robots.ts (which welcomes AI crawlers) and sitemap.ts.
  */
-export function GET() {
+export async function GET() {
   const out: string[] = [];
   const section = (title: string, rows: string[]) => {
     if (!rows.length) return;
@@ -74,6 +75,16 @@ export function GET() {
     "Glossary",
     getAllTerms().map((t) => `- [${t.term}](${BASE}/glossary/${t.slug}): ${t.description}`),
   );
+
+  // Videos people have shared publicly. Bounded, because this list grows
+  // without limit and a map of the site should stay a map.
+  const shared = (await listSharedVideos()).slice(0, 100);
+  if (shared.length > 0) {
+    section(
+      "Shared videos",
+      shared.map((v) => `- [${v.title}](${BASE}/v/${v.slug}): a video made with GenMotion`),
+    );
+  }
 
   return new Response(out.join("\n"), {
     headers: {

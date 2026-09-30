@@ -296,3 +296,73 @@ export const exportEvents = pgTable(
   // The gate's only query: count this org's rows since the start of the month.
   (t) => [index("export_events_org_created_idx").on(t.organizationId, t.createdAt)],
 );
+
+/**
+ * A rendered video published to a public page on the site.
+ *
+ * Deliberately not a row about a *project*. A desktop project is a folder on
+ * the user's disk that the server has never seen — the same reason
+ * `export_events` exists — so this hangs off the org and the user directly and
+ * carries everything the public page needs inline.
+ *
+ * What is stored is the video and its poster, and nothing else. Sharing does
+ * not upload the project: the composition is the user's source code, it is
+ * where their brand assets and licensed footage live, and a public page has no
+ * need of it to play a video.
+ */
+export const shares = pgTable(
+  "shares",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * The public URL segment, `<title-slug>-<short id>`.
+     *
+     * Unique and never released. A row is only ever soft-deleted, so a slug
+     * stays reserved for good — otherwise a link someone posted months ago
+     * could later resolve to a different person's video.
+     */
+    slug: text("slug").notNull().unique(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Nullable to match `projects`, whose older rows predate organizations. */
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description"),
+    /**
+     * The desktop export this was published from.
+     *
+     * A machine-local id (`exp_<stamp>_<hex>`) and meaningless to the server —
+     * it is here purely as a join key, so the Exports list can tell which of
+     * its rows already has a link without keeping a second copy of that fact on
+     * disk. Nullable because a share need not have come from one.
+     */
+    exportId: text("export_id"),
+    /** Storage keys under `shares/<id>/`. The poster may be absent. */
+    videoKey: text("video_key").notNull(),
+    posterKey: text("poster_key"),
+    videoBytes: integer("video_bytes"),
+    width: integer("width"),
+    height: integer("height"),
+    durationSeconds: real("duration_seconds"),
+    /**
+     * `pending` until the bytes are confirmed in storage. Only `ready` rows are
+     * ever served, so an abandoned upload is invisible rather than broken.
+     */
+    status: text("status", { enum: ["pending", "ready"] })
+      .notNull()
+      .default("pending"),
+    /**
+     * Set instead of deleting the row. Lets the public routes answer `410 Gone`
+     * rather than `404` — the difference between "withdrawn" and "never
+     * existed", and what gets an indexed page dropped fastest. Every read path
+     * must filter on it; they all go through one helper for that reason.
+     */
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("shares_org_created_idx").on(t.organizationId, t.createdAt)],
+);

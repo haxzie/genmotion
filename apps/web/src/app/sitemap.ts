@@ -10,6 +10,7 @@ import {
 import { getAllTemplateSummaries } from "@/lib/marketing/templates";
 import { TEMPLATE_CATEGORIES } from "@/lib/marketing/template-categories";
 import { SITE_URL } from "@/lib/marketing/site";
+import { listSharedVideos } from "@/lib/marketing/shares";
 
 const BASE = SITE_URL;
 
@@ -76,6 +77,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
   }));
 
+  // Shared videos. Each is a page about a video made with GenMotion, which is
+  // the whole reason they are indexed rather than unlisted. `lastModified`
+  // comes from the row so a re-shared title does not look stale.
+  const sharedRoutes = (await listSharedVideos()).map((v) => ({
+    url: `${BASE}/v/${v.slug}`,
+    lastModified: v.updatedAt,
+    changeFrequency: "monthly" as const,
+  }));
+
   return [
     ...staticRoutes,
     ...featureRoutes,
@@ -86,5 +96,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...showcaseRoutes,
     ...templateRoutes,
     ...templateCategoryRoutes,
+    ...sharedRoutes,
   ];
 }

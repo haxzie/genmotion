@@ -126,12 +126,25 @@ function LogOutIcon({ className }: IconProps) {
  */
 const NAV = [
   { label: "Dashboard", href: "/dashboard", Icon: DashboardIcon },
+  // Content rather than account settings, so it sits above the two org rows.
+  { label: "Shared", href: "/shared", Icon: ShareIcon },
   { label: "Members", href: "/settings/members", Icon: UsersIcon },
   { label: "Billing", href: "/settings/billing", Icon: CreditCardIcon },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function ShareIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+    </svg>
+  );
 }
 
 function CheckIcon({ className }: IconProps) {

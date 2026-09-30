@@ -4,6 +4,8 @@ import { cx } from "@/components/ui";
 import { api } from "../api";
 import type { DesktopExportJob } from "../../electron/shared";
 import { EXPORTS_TARGET_ID, onExportsPulse } from "./fly-to-exports";
+import { ShareAction, ShareDialog } from "../editor/components/share-action";
+import { useShares, type SharedVideo } from "./use-shares";
 import { ACTIVE_EXPORT, EXPORT_STATUS_LABEL, formatBytes, timeAgo, useExports } from "./use-exports";
 
 /** How many the panel shows; the rest are on the Exports page. */
@@ -21,10 +23,12 @@ function DownloadIcon({ className }: { className?: string }) {
 
 function Row({
   job,
-  onOpenProject,
+  share,
+  onRequestShare,
 }: {
   job: DesktopExportJob;
-  onOpenProject: (dir: string) => void;
+  share: SharedVideo | undefined;
+  onRequestShare: (job: DesktopExportJob) => void;
 }) {
   const active = ACTIVE_EXPORT.has(job.status);
   const showProgress = job.status === "rendering" || job.status === "encoding";
@@ -33,8 +37,10 @@ function Row({
       ? [job.sizeBytes ? formatBytes(job.sizeBytes) : null, job.fileMissing ? "file moved" : null]
       : [EXPORT_STATUS_LABEL[job.status], job.status === "rendering" ? `${job.progress}%` : null];
   // A finished export's row is the file: click anywhere on it to see it in
-  // Finder, the way a browser's downloads panel opens what it lists. The
-  // project name inside is its own link and keeps its own click.
+  // Finder, the way a browser's downloads panel opens what it lists. The whole
+  // row means one thing — the project name used to be a second, competing
+  // target inside it, which made the row's own behaviour a coin toss depending
+  // on where the pointer landed.
   const revealable = job.status === "done" && !job.fileMissing;
   return (
     <li
@@ -49,17 +55,9 @@ function Row({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenProject(job.projectDir);
-            }}
-            title="Open project"
-            className="block max-w-full truncate text-left text-[0.857rem] font-medium text-text-primary hover:underline"
-          >
+          <p className="max-w-full truncate text-[0.857rem] font-medium text-text-primary">
             {job.projectName}
-          </button>
+          </p>
           <div className="mt-0.5 flex items-center gap-1.5 text-[0.75rem] text-text-tertiary">
             <span className="uppercase">{job.format}</span>
             {detail.filter(Boolean).map((part) => (
@@ -73,6 +71,13 @@ function Row({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 text-[0.786rem]">
+          <ShareAction
+            job={job}
+            share={share}
+            variant="icon"
+            onChanged={() => {}}
+            onRequestShare={onRequestShare}
+          />
           {active && (
             <button
               type="button"
@@ -115,18 +120,15 @@ function Row({
  * progress and a way to the file or the project that made it. The rest are a
  * click away on the Exports page.
  */
-export function ExportsButton({
-  onOpenProject,
-  onShowAll,
-}: {
-  onOpenProject: (dir: string) => void;
-  onShowAll: () => void;
-}) {
+export function ExportsButton({ onShowAll }: { onShowAll: () => void }) {
   const [open, setOpen] = useState(false);
   // Fetched at mount for the badge, then live while the panel is open; the
   // badge also refreshes whenever an export is started (see `onExportsPulse`).
   const [tick, setTick] = useState(0);
   const { jobs } = useExports({ live: open || tick > 0, limit: PANEL_LIMIT });
+  const shares = useShares();
+  /** The export whose share dialog is up, owned here so it outlives the popover. */
+  const [sharing, setSharing] = useState<DesktopExportJob | null>(null);
   const root = useRef<HTMLDivElement>(null);
 
   const activeJobs = jobs.filter((job) => ACTIVE_EXPORT.has(job.status));
@@ -269,9 +271,13 @@ export function ExportsButton({
                 <Row
                   key={job.id}
                   job={job}
-                  onOpenProject={(dir) => {
+                  share={shares.byExport.get(job.id)}
+                  onRequestShare={(target) => {
+                    // Close the popover first: the dialog is owned out here,
+                    // and leaving a popover open behind a modal gives the user
+                    // two dismissable layers stacked on one another.
                     setOpen(false);
-                    onOpenProject(dir);
+                    setSharing(target);
                   }}
                 />
               ))}
@@ -288,6 +294,15 @@ export function ExportsButton({
             Show all exports
           </button>
         </div>
+      )}
+
+      {sharing && (
+        <ShareDialog
+          job={sharing}
+          onClose={() => setSharing(null)}
+          onShared={() => setSharing(null)}
+          onCompleted={() => void shares.refresh()}
+        />
       )}
     </div>
   );
