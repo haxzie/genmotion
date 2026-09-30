@@ -1,0 +1,241 @@
+{
+  "name": "Samsung Pay on GenMotion",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-hook-type.ts",
+      "durationInFrames": 112,
+      "name": "Hook type"
+    },
+    {
+      "file": "scenes/02-icon-orbit.ts",
+      "durationInFrames": 105,
+      "name": "Icon orbit"
+    },
+    {
+      "file": "scenes/03-icon-column.ts",
+      "durationInFrames": 33,
+      "name": "Icon column"
+    },
+    {
+      "file": "scenes/04-introducing.ts",
+      "durationInFrames": 92,
+      "name": "Introducing"
+    },
+    {
+      "file": "scenes/05-phone-flow.ts",
+      "durationInFrames": 180,
+      "name": "Phone flow"
+    },
+    {
+      "file": "scenes/06-secure-sheet.ts",
+      "durationInFrames": 161,
+      "name": "Secure sheet"
+    },
+    {
+      "file": "scenes/07-confirm-success.ts",
+      "durationInFrames": 106,
+      "name": "Confirm → success"
+    },
+    {
+      "file": "scenes/08-now-on.ts",
+      "durationInFrames": 39,
+      "name": "Now on"
+    },
+    {
+      "file": "scenes/09-fast-safe-simple.ts",
+      "durationInFrames": 87,
+      "name": "Fast safe simple"
+    },
+    {
+      "file": "scenes/10-cta-lockups.ts",
+      "durationInFrames": 86,
+      "name": "CTA + lockups"
+    }
+  ],
+  "audio": [
+    {
+      "id": "bgm",
+      "file": "assets/bgm-pop-launch.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1001,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 4,
+      "fadeOutFrames": 15,
+      "muted": false
+    },
+    {
+      "id": "sfx-01-logo-hit",
+      "file": "assets/sfx-logo-hit.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 48,
+      "startFrom": 0,
+      "volume": 0.45,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-05-pop",
+      "file": "assets/sfx-pop.mp3",
+      "track": 1,
+      "startFrame": 292,
+      "durationInFrames": 6,
+      "startFrom": 0,
+      "volume": 0.55,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-08-tap",
+      "file": "assets/sfx-tap.mp3",
+      "track": 1,
+      "startFrame": 430,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-09-tap",
+      "file": "assets/sfx-tap.mp3",
+      "track": 1,
+      "startFrame": 448,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-10-tap",
+      "file": "assets/sfx-tap.mp3",
+      "track": 1,
+      "startFrame": 496,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-12-tap",
+      "file": "assets/sfx-tap.mp3",
+      "track": 1,
+      "startFrame": 602,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-13-tap",
+      "file": "assets/sfx-tap.mp3",
+      "track": 1,
+      "startFrame": 614,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-14-success-chime",
+      "file": "assets/sfx-success-chime.mp3",
+      "track": 1,
+      "startFrame": 654,
+      "durationInFrames": 42,
+      "startFrom": 0,
+      "volume": 0.35,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-16-success-chime",
+      "file": "assets/sfx-success-chime.mp3",
+      "track": 1,
+      "startFrame": 744,
+      "durationInFrames": 42,
+      "startFrom": 0,
+      "volume": 0.75,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-18-pop",
+      "file": "assets/sfx-pop.mp3",
+      "track": 3,
+      "startFrame": 789,
+      "durationInFrames": 6,
+      "startFrom": 0,
+      "volume": 0.5,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-20-pop",
+      "file": "assets/sfx-pop.mp3",
+      "track": 2,
+      "startFrame": 832,
+      "durationInFrames": 6,
+      "startFrom": 0,
+      "volume": 0.45,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-21-pop",
+      "file": "assets/sfx-pop.mp3",
+      "track": 2,
+      "startFrame": 854,
+      "durationInFrames": 6,
+      "startFrom": 0,
+      "volume": 0.45,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-22-pop",
+      "file": "assets/sfx-pop.mp3",
+      "track": 2,
+      "startFrame": 876,
+      "durationInFrames": 6,
+      "startFrom": 0,
+      "volume": 0.45,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-23-logo-hit",
+      "file": "assets/sfx-logo-hit.mp3",
+      "track": 1,
+      "startFrame": 963,
+      "durationInFrames": 38,
+      "startFrom": 0,
+      "volume": 0.9,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

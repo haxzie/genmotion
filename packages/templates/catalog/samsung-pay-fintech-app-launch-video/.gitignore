@@ -1,0 +1,3 @@
+node_modules/
+.genmotion/cache/
+.DS_Store
