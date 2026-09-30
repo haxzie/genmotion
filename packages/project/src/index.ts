@@ -6,3 +6,5 @@ export * from "./bundle";
 export * from "./scaffold-hyperframes";
 export * from "./scaffold-three";
 export * from "./scaffold-readme";
+export * from "./scaffold-agents";
+export * from "./scenes";

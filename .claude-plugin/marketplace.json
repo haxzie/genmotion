@@ -1,0 +1,19 @@
+{
+  "name": "genmotion",
+  "owner": {
+    "name": "GenMotion",
+    "url": "https://genmotion.dev"
+  },
+  "metadata": {
+    "description": "Make videos with your coding agent: Three.js scenes, a live studio, headless MP4 rendering."
+  },
+  "plugins": [
+    {
+      "name": "genmotion",
+      "source": "./plugins/genmotion",
+      "description": "Create, preview, check and render videos from Claude Code. Adds the genmotion MCP tools and a make-video skill.",
+      "category": "media",
+      "homepage": "https://genmotion.dev"
+    }
+  ]
+}

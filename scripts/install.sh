@@ -195,7 +195,7 @@ cat > "$tmp/genmotion" <<'SHIM'
 # GenMotion @VERSION@ — command line launcher.
 # Written by the installer; `genmotion upgrade` replaces it.
 # gm-app: /Applications/GenMotion.app
-# gm-cli: 2
+# gm-cli: 3
 
 APP='/Applications/GenMotion.app'
 
@@ -210,6 +210,11 @@ case "$1" in
     fi
     exec open -n -a "$APP" --args "--gm-clone=$2"
     ;;
+  init|create|new|dev|studio|preview|render|still|snapshot|check|lint|validate|info|compositions|scene|templates|mcp|skills|browser|doctor)
+    # The terminal workflow lives in the npm CLI; hand it the whole command.
+    # npx prefers the project's own node_modules copy when there is one.
+    exec npx -y genmotion "$@"
+    ;;
   -h|--help)
     echo "usage: genmotion [folder]"
     echo
@@ -218,6 +223,8 @@ case "$1" in
     echo "  genmotion <path>      the same, for another folder"
     echo "  genmotion clone <repo>  clone a GitHub repository and open it"
     echo "  genmotion upgrade     install the latest version"
+    echo
+    echo "  genmotion init|dev|render|check|still|mcp …   the terminal workflow (npx genmotion --help)"
     exit 0
     ;;
   -v|--version)

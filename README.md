@@ -19,6 +19,24 @@ That installs the app and the `genmotion` command — `genmotion .` opens the ap
 with the current folder shared with the agent, and `genmotion upgrade` pulls the
 next release.
 
+### Or skip the app: the CLI
+
+The same studio, renderer and agent tools run from any terminal, with any agent:
+
+```sh
+npx genmotion init my-video && cd my-video && npm install
+npm run dev       # live studio
+npm run render    # exports/my-video.mp4
+```
+
+A new project ships `AGENTS.md`, `CLAUDE.md`, `.mcp.json` and a skill, so
+Claude Code, Codex or Cursor opened in the folder can build the video
+straight away. See [`packages/cli`](packages/cli) for the commands and the MCP
+tools. [`examples/three-starter`](examples/three-starter) is a ready-made
+starter repo (it renders in CI), and
+[`docs/research/hyperframes-remotion.md`](docs/research/hyperframes-remotion.md)
+compares the approach with HyperFrames and Remotion.
+
 ## Architecture
 
 ```

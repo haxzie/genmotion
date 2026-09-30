@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "genmotion": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "genmotion",
+        "mcp"
+      ]
+    }
+  }
+}

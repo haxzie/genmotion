@@ -1,0 +1,8 @@
+node_modules/
+.genmotion/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/genmotion/
+exports/
+.DS_Store
