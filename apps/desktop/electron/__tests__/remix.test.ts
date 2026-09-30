@@ -85,6 +85,7 @@ describe("safePath", () => {
       "tsconfig.json",
       ".npmrc",
       ".gitignore",
+      "README.md",
       "template.json",
       "poster.jpg",
     ]) {

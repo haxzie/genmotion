@@ -1,5 +1,6 @@
 import { ASSETS_DIR, INTERNAL_DIR, MANIFEST_FILE, SCENES_DIR } from "./paths";
 import { toPackageName } from "./scaffold";
+import { renderGitignoreLines } from "./scaffold-readme";
 
 /** The root composition. Sub-compositions are `scenes/*.html`. */
 export const HYPERFRAMES_ENTRY = "index.html";
@@ -56,9 +57,7 @@ export function renderHyperframesJson(input: {
 }
 
 export function renderHyperframesGitignore(): string {
-  // `.agents/` holds per-machine symlinks to the app's skill pack (see the
-  // desktop's plugin wiring); they mean nothing on another computer.
-  return ["node_modules/", `${INTERNAL_DIR}/cache/`, ".agents/", "exports/", ".DS_Store", ""].join("\n");
+  return renderGitignoreLines();
 }
 
 /** The starter scene's file, mounted by the root as scene one. */

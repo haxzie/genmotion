@@ -36,6 +36,7 @@ import {
   renderTsconfig,
   type ScaffoldVersions,
 } from "./scaffold";
+import { missingGitignoreLines, renderReadme } from "./scaffold-readme";
 import {
   DEFAULT_THREE_VERSIONS,
   renderThreeAgentsMd,
@@ -101,6 +102,17 @@ export interface CreateProjectInput {
   versions?: ScaffoldVersions;
   /** Skip the starter scene (used when importing an existing project). */
   empty?: boolean;
+  /**
+   * Turn a folder that already has things in it into a project, rather than
+   * filling an empty one.
+   *
+   * The difference is that nothing is overwritten: a file the scaffold would
+   * write is skipped if it is already there, and `.gitignore` has its missing
+   * lines appended instead of being replaced. A cloned repo arrives with its
+   * own README, package.json and history, and adopting it must not be a way to
+   * lose them.
+   */
+  adopt?: boolean;
   /** Which runtime the folder is written for. Defaults to `react` — the callers that want HyperFrames or Three.js say so. */
   engine?: ProjectEngine;
   /** Required when `engine` is `hyperframes`: what the host knows that this package does not. */
@@ -151,24 +163,19 @@ export async function createProject(
     audio: [],
   });
 
+  const write = scaffoldWriter(dir, input.adopt);
   await Promise.all([
     writeManifest(dir, manifest),
-    fs.writeFile(
-      path.join(dir, "package.json"),
-      renderPackageJson(name, input.versions ?? DEFAULT_VERSIONS),
-      "utf8",
-    ),
-    fs.writeFile(path.join(dir, "tsconfig.json"), renderTsconfig(), "utf8"),
-    fs.writeFile(path.join(dir, ".npmrc"), renderNpmrc(), "utf8"),
-    fs.writeFile(path.join(dir, ".gitignore"), renderGitignore(), "utf8"),
-    fs.writeFile(
-      path.join(dir, "AGENTS.md"),
+    write("package.json", renderPackageJson(name, input.versions ?? DEFAULT_VERSIONS)),
+    write("tsconfig.json", renderTsconfig()),
+    write(".npmrc", renderNpmrc()),
+    write(".gitignore", renderGitignore()),
+    write("README.md", renderReadme({ projectName: name })),
+    write(
+      "AGENTS.md",
       renderAgentsMd({ projectName: name, authoringGuide: input.authoringGuide }),
-      "utf8",
     ),
-    input.empty
-      ? Promise.resolve()
-      : fs.writeFile(path.join(dir, starter), renderStarterScene(), "utf8"),
+    input.empty ? Promise.resolve() : write(starter, renderStarterScene()),
   ]);
 
   return manifest;
@@ -207,35 +214,23 @@ async function createHyperframesProject(
     await fs.mkdir(path.join(dir, sub), { recursive: true });
   }
 
+  const write = scaffoldWriter(dir, input.adopt);
   await Promise.all([
     writeManifest(dir, manifest),
-    fs.writeFile(
-      path.join(dir, HYPERFRAMES_ENTRY),
+    write(
+      HYPERFRAMES_ENTRY,
       renderHyperframesIndexHtml({ name, width, height, gsapVersion: hf.gsapVersion }),
-      "utf8",
     ),
-    fs.writeFile(
-      path.join(dir, HYPERFRAMES_STARTER_SCENE),
-      renderHyperframesStarterScene({ width, height }),
-      "utf8",
-    ),
-    fs.writeFile(
-      path.join(dir, "hyperframes.json"),
-      renderHyperframesJson({ name, version: hf.version, width, height, fps }),
-      "utf8",
-    ),
-    fs.writeFile(
-      path.join(dir, "package.json"),
+    write(HYPERFRAMES_STARTER_SCENE, renderHyperframesStarterScene({ width, height })),
+    write("hyperframes.json", renderHyperframesJson({ name, version: hf.version, width, height, fps })),
+    write(
+      "package.json",
       renderHyperframesPackageJson(name, { hyperframes: hf.version, gsap: hf.gsapVersion }),
-      "utf8",
     ),
-    fs.writeFile(path.join(dir, ".npmrc"), renderNpmrc(), "utf8"),
-    fs.writeFile(path.join(dir, ".gitignore"), renderHyperframesGitignore(), "utf8"),
-    fs.writeFile(
-      path.join(dir, "AGENTS.md"),
-      renderHyperframesAgentsMd({ projectName: name, guide: hf.guide }),
-      "utf8",
-    ),
+    write(".npmrc", renderNpmrc()),
+    write(".gitignore", renderHyperframesGitignore()),
+    write("README.md", renderReadme({ projectName: name, engine: "hyperframes" })),
+    write("AGENTS.md", renderHyperframesAgentsMd({ projectName: name, guide: hf.guide })),
   ]);
 
   return manifest;
@@ -271,20 +266,19 @@ async function createThreeProject(
     audio: [],
   });
 
+  const write = scaffoldWriter(dir, input.adopt);
   await Promise.all([
     writeManifest(dir, manifest),
-    fs.writeFile(path.join(dir, "package.json"), renderThreePackageJson(name, versions), "utf8"),
-    fs.writeFile(path.join(dir, "tsconfig.json"), renderThreeTsconfig(), "utf8"),
-    fs.writeFile(path.join(dir, ".npmrc"), renderNpmrc(), "utf8"),
-    fs.writeFile(path.join(dir, ".gitignore"), renderThreeGitignore(), "utf8"),
-    fs.writeFile(
-      path.join(dir, "AGENTS.md"),
+    write("package.json", renderThreePackageJson(name, versions)),
+    write("tsconfig.json", renderThreeTsconfig()),
+    write(".npmrc", renderNpmrc()),
+    write(".gitignore", renderThreeGitignore()),
+    write("README.md", renderReadme({ projectName: name, engine: "three" })),
+    write(
+      "AGENTS.md",
       renderThreeAgentsMd({ projectName: name, authoringGuide: input.authoringGuide }),
-      "utf8",
     ),
-    input.empty
-      ? Promise.resolve()
-      : fs.writeFile(path.join(dir, starter), renderThreeStarterScene(), "utf8"),
+    input.empty ? Promise.resolve() : write(starter, renderThreeStarterScene()),
   ]);
 
   return manifest;
@@ -355,6 +349,43 @@ export async function loadProject(
     scenes,
     audioClips,
     missing,
+  };
+}
+
+/**
+ * How a scaffold puts a file on disk.
+ *
+ * Ordinarily the folder is empty and this is just `fs.writeFile`. Adopting an
+ * existing folder turns it into "write it only if it isn't there": a cloned
+ * repo arrives with its own README, package.json and AGENTS.md, and setting it
+ * up as a project must not be a way to lose them.
+ *
+ * `.gitignore` is the one exception, merged rather than skipped. The user's own
+ * rules are worth keeping, and the lines that keep `.genmotion/` out of a
+ * commit are worth adding — that folder holds the chat transcript, and this
+ * function runs on folders that are about to be pushed somewhere.
+ */
+function scaffoldWriter(dir: string, adopt: boolean | undefined) {
+  return async function write(relative: string, contents: string): Promise<void> {
+    const file = path.join(dir, relative);
+    if (!adopt) {
+      await fs.writeFile(file, contents, "utf8");
+      return;
+    }
+    const existing = await fs.readFile(file, "utf8").catch(() => null);
+    if (existing === null) {
+      await fs.writeFile(file, contents, "utf8");
+      return;
+    }
+    if (relative !== ".gitignore") return;
+    const wanted = contents
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const missing = missingGitignoreLines(existing, wanted);
+    if (missing.length === 0) return;
+    const body = existing.endsWith("\n") ? existing : `${existing}\n`;
+    await fs.writeFile(file, `${body}\n# GenMotion\n${missing.join("\n")}\n`, "utf8");
   };
 }
 

@@ -5,6 +5,7 @@ import {
   MANIFEST_FILE as MANIFEST,
   SCENES_DIR,
 } from "./paths";
+import { renderGitignoreLines } from "./scaffold-readme";
 
 /**
  * Versions a new project declares. These are all host-provided at runtime (see
@@ -100,7 +101,7 @@ export function renderNpmrc(): string {
 }
 
 export function renderGitignore(): string {
-  return ["node_modules/", `${INTERNAL_DIR}/cache/`, ".DS_Store", ""].join("\n");
+  return renderGitignoreLines();
 }
 
 /**

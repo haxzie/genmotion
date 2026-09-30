@@ -6,6 +6,7 @@ import {
   SCENES_DIR,
 } from "./paths";
 import { toPackageName } from "./scaffold";
+import { renderGitignoreLines } from "./scaffold-readme";
 
 /**
  * Versions a new three-engine project declares. All host-provided at runtime
@@ -70,7 +71,7 @@ export function renderThreeTsconfig(): string {
 }
 
 export function renderThreeGitignore(): string {
-  return ["node_modules/", `${INTERNAL_DIR}/cache/`, ".DS_Store", ""].join("\n");
+  return renderGitignoreLines();
 }
 
 /**

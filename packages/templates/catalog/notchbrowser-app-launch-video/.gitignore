@@ -1,3 +1,5 @@
 node_modules/
-.genmotion/cache/
+.genmotion/
+.agents/
+exports/
 .DS_Store

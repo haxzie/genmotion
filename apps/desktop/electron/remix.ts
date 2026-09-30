@@ -38,6 +38,10 @@ const BINARY_EXT = new Set([
  * refused rather than allowed to overwrite the scaffold. `AGENTS.md` is the
  * deliberate exception: a template's own is written about that video, and it
  * is the first thing a remixer's coding agent reads.
+ *
+ * `README.md` is not that exception. It is written for whoever lands on the
+ * repository once the project is published, and the scaffold's version is the
+ * one that explains how to open the folder they are looking at.
  */
 const SCAFFOLD_OWNED = new Set([
   "project.json",
@@ -45,6 +49,7 @@ const SCAFFOLD_OWNED = new Set([
   "tsconfig.json",
   ".npmrc",
   ".gitignore",
+  "README.md",
   "template.json",
   "poster.jpg",
 ]);

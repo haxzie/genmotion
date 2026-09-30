@@ -4,6 +4,7 @@ import os from "node:os";
 import fs from "node:fs/promises";
 import { createProject, loadProject, readManifest, writeManifest } from "../project";
 import { renderStarterScene } from "../scaffold";
+import { missingGitignoreLines, renderReadme } from "../scaffold-readme";
 import { projectManifestSchema, sceneNameFromFile } from "../schema";
 import { SCENES_DIR } from "../paths";
 import { createSceneBundler } from "../bundle";
@@ -33,6 +34,7 @@ describe("createProject", () => {
         "package.json",
         "tsconfig.json",
         "AGENTS.md",
+        "README.md",
         ".npmrc",
         ".gitignore",
         SCENES_DIR,
@@ -90,6 +92,7 @@ describe("createProject", () => {
         "hyperframes.json",
         "package.json",
         "AGENTS.md",
+        "README.md",
         ".npmrc",
         ".gitignore",
         "assets",
@@ -140,6 +143,7 @@ describe("createProject", () => {
         "package.json",
         "tsconfig.json",
         "AGENTS.md",
+        "README.md",
         ".npmrc",
         ".gitignore",
         "assets",
@@ -242,5 +246,85 @@ describe("sceneNameFromFile", () => {
     expect(sceneNameFromFile("scenes/01-intro.tsx")).toBe("Intro");
     expect(sceneNameFromFile("scenes/02-key-features.tsx")).toBe("Key Features");
     expect(sceneNameFromFile("scenes/outro.tsx")).toBe("Outro");
+  });
+});
+
+describe("the scaffolded .gitignore", () => {
+  // `.genmotion/` holds chat.jsonl — the whole conversation with the agent.
+  // Publishing to GitHub happens from inside the app, so an engine whose
+  // ignore rules miss this folder is an engine that leaks transcripts.
+  for (const engine of ["react", "hyperframes", "three"] as const) {
+    it(`keeps ${engine} app state and exports out of a commit`, async () => {
+      await createProject({
+        dir,
+        name: "Private Thoughts",
+        engine,
+        hyperframes: { version: "0.8.34", gsapVersion: "3.14.2", guide: "guide" },
+      });
+
+      const ignored = await fs.readFile(path.join(dir, ".gitignore"), "utf8");
+      expect(ignored).toContain(".genmotion/\n");
+      expect(ignored).toContain("exports/");
+      expect(ignored).toContain("node_modules/");
+      // The app links its skill pack into every project as it opens, whatever
+      // the engine. Miss this and the project reports a change to push from
+      // the moment it is first opened, for ever.
+      expect(ignored).toContain(".agents/");
+    });
+  }
+});
+
+describe("missingGitignoreLines", () => {
+  it("treats a broader rule as covering a narrower one", () => {
+    expect(missingGitignoreLines(".genmotion/\n", [".genmotion/cache/"])).toEqual([]);
+  });
+
+  it("reports only what is absent", () => {
+    expect(missingGitignoreLines("node_modules/\n", ["node_modules/", "exports/"])).toEqual([
+      "exports/",
+    ]);
+  });
+});
+
+describe("renderReadme", () => {
+  it("links to GenMotion and names the project", () => {
+    const readme = renderReadme({ projectName: "Launch Film" });
+    expect(readme).toContain("# Launch Film");
+    expect(readme).toContain("https://genmotion.dev");
+    expect(readme).toContain("genmotion .");
+  });
+
+  it("describes the engine the project is actually written for", () => {
+    expect(renderReadme({ projectName: "x", engine: "hyperframes" })).toContain("index.html");
+    expect(renderReadme({ projectName: "x", engine: "three" })).toContain("Three.js");
+  });
+});
+
+describe("adopting an existing folder", () => {
+  it("keeps every file the folder already had", async () => {
+    await fs.writeFile(path.join(dir, "README.md"), "# Someone else's work\n", "utf8");
+    await fs.writeFile(path.join(dir, "package.json"), '{ "name": "theirs" }\n', "utf8");
+    await fs.writeFile(path.join(dir, ".gitignore"), "dist/\n", "utf8");
+
+    await createProject({ dir, name: "Adopted", adopt: true });
+
+    expect(await fs.readFile(path.join(dir, "README.md"), "utf8")).toBe(
+      "# Someone else's work\n",
+    );
+    expect(JSON.parse(await fs.readFile(path.join(dir, "package.json"), "utf8")).name).toBe(
+      "theirs",
+    );
+    // Written, because it wasn't there.
+    expect(await fs.readFile(path.join(dir, "project.json"), "utf8")).toContain("Adopted");
+  });
+
+  it("appends missing ignore rules instead of replacing the file", async () => {
+    await fs.writeFile(path.join(dir, ".gitignore"), "dist/\n", "utf8");
+
+    await createProject({ dir, name: "Adopted", adopt: true });
+
+    const ignored = await fs.readFile(path.join(dir, ".gitignore"), "utf8");
+    expect(ignored).toContain("dist/");
+    expect(ignored).toContain(".genmotion/");
   });
 });
