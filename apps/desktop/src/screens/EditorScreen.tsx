@@ -1,4 +1,5 @@
 import { useCallback, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useProject, useProjectMutations } from "@/hooks/use-project";
 import { useCompiledScenes } from "@/hooks/use-compiled-scenes";
 import { useCompiledThreeScenes } from "@/hooks/use-compiled-three-scenes";
@@ -221,6 +222,7 @@ function EditorBody({
     initializing: threeInitializing,
   } = useCompiledThreeScenes(project.scenes);
   const isThree = project.engine === "three";
+  const reduceMotion = useReducedMotion();
   const firstError = project.scenes.find((s) => s.id in (isThree ? threeErrors : errors));
 
   // The HyperFrames half. Null for a React project, and every branch below
@@ -294,35 +296,52 @@ function EditorBody({
         </div>
         {resizing && <div className="fixed inset-0 z-[100] cursor-col-resize" />}
 
-        {/* Right column: tabs/export header (over the preview) + preview */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-12 shrink-0 items-end justify-between pr-3">
-            {/* File-folder tabs: the active one is cut from the same cloth as
-                the pane below — its colour, its border on three sides — and
-                hangs a pixel over the pane's top edge to cover the line
-                between them, so tab and page read as one surface. Flush with
-                the pane's left edge: the first tab's border is the pane's. */}
-            <div className="relative z-10 -mb-px flex items-end gap-0.5 text-[0.857rem]">
+        {/* Right column: tabs/export header (over the preview) + preview.
+            One surface top to bottom — the header sits on the same panel as
+            the view under it, so the tabs are pills on it rather than folder
+            tabs cut out of it. */}
+        <div className="flex min-w-0 flex-1 flex-col rounded-tl-xl border-l border-t border-border bg-surface">
+          <div className="flex h-12 shrink-0 items-center justify-between px-3">
+            <div className="flex items-center gap-1 text-[0.857rem]">
               {VIEW_TABS.map(({ id, label, Icon }) => (
                 <button
                   key={id}
                   type="button"
+                  // On press, not on release: the pill should already be
+                  // travelling by the time the finger comes up.
+                  onPointerDown={() => setTab(id)}
+                  // Keyboard activation (Enter/Space) never fires pointerdown.
                   onClick={() => setTab(id)}
                   aria-selected={tab === id}
                   role="tab"
                   className={cx(
-                    "inline-flex items-center gap-1.5 rounded-t-lg border border-b-0 px-3 transition-colors",
+                    "relative inline-flex h-8 items-center gap-1.5 rounded-full px-3 transition-colors",
                     tab === id
-                      ? "h-9 border-border bg-surface text-text-primary"
-                      : "mb-px h-8 border-transparent text-text-secondary hover:bg-white/[0.05] hover:text-text-primary",
+                      ? "text-text-primary"
+                      : "text-text-secondary hover:bg-white/[0.05] hover:text-text-primary",
                   )}
                 >
-                  <Icon className="size-3.5" />
-                  {label}
+                  {/* One pill shared by all three tabs, so picking another
+                      slides it across rather than blinking it over there. */}
+                  {tab === id && (
+                    <motion.span
+                      aria-hidden
+                      layoutId={`${project.dir}:view-tab-pill`}
+                      className="absolute inset-0 rounded-full bg-surface-hover"
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : { type: "spring", stiffness: 520, damping: 42, mass: 0.7 }
+                      }
+                    />
+                  )}
+                  <span className="relative inline-flex items-center gap-1.5">
+                    <Icon className="size-3.5" />
+                    {label}
+                  </span>
                 </button>
               ))}
             </div>
-            <div className="mb-1.5">
             <ExportButton
               projectId={project.dir}
               project={project}
@@ -339,10 +358,9 @@ function EditorBody({
                   : undefined
               }
             />
-            </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-l border-t border-border bg-surface">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {project.manifestError && (
                 <div className="border-b border-danger/30 bg-danger/10 px-4 py-1.5 text-[0.857rem] text-danger">
                   project.json: {project.manifestError}
@@ -383,7 +401,7 @@ function EditorBody({
                     </div>
                   )}
                   <div className="flex min-h-0 flex-1 flex-col">
-                    <div className="relative min-h-0 flex-1 p-4">
+                    <div className="relative min-h-0 flex-1 px-4 pb-4 pt-1">
                       <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border p-6 shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
                         {/* A compile error alone does not take the stage away: the
                             last good page stays up under the banner above, since

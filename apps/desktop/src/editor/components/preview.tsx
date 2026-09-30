@@ -200,7 +200,7 @@ export function PreviewStage({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 p-4">
+      <div className="relative min-h-0 flex-1 px-4 pb-4 pt-1">
         {/* The stage. The dotted canvas lives here, not on the inspector, so it
             backs every state — compiling, empty and playing alike — and fills
             whatever the window leaves rather than only the frame's footprint.

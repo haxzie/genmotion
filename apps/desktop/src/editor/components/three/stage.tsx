@@ -343,7 +343,7 @@ export function ThreeStage({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 p-4">
+      <div className="relative min-h-0 flex-1 px-4 pb-4 pt-1">
         <div className="gm-dot-canvas relative h-full overflow-hidden rounded-xl border border-border p-6 shadow-[0_8px_40px_rgba(20,20,40,0.16)]">
           {initializing ? (
             <div className="flex h-full items-center justify-center">
