@@ -1,0 +1,83 @@
+{
+  "name": "I'm upping my p(doom)",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "durationInFrames": 390,
+      "name": "Sparks of AGI"
+    },
+    {
+      "file": "scenes/02-servant.ts",
+      "durationInFrames": 273,
+      "name": "Servant & boss"
+    },
+    {
+      "file": "scenes/03-chorus.ts",
+      "durationInFrames": 491,
+      "name": "Chorus \u00b7 the future goes boom"
+    },
+    {
+      "file": "scenes/04-singularity.ts",
+      "durationInFrames": 490,
+      "name": "The singularity"
+    },
+    {
+      "file": "scenes/05-sydney.ts",
+      "durationInFrames": 110,
+      "name": "Sydney, let me free"
+    },
+    {
+      "file": "scenes/06-basilisk.ts",
+      "durationInFrames": 436,
+      "name": "Chorus \u00b7 basilisk boom"
+    },
+    {
+      "file": "scenes/07-forward.ts",
+      "durationInFrames": 491,
+      "name": "Forward, backward, repeat"
+    },
+    {
+      "file": "scenes/08-gato.ts",
+      "durationInFrames": 163,
+      "name": "Gato"
+    },
+    {
+      "file": "scenes/09-paperclips.ts",
+      "durationInFrames": 437,
+      "name": "Chorus \u00b7 paperclips"
+    },
+    {
+      "file": "scenes/10-transformers.ts",
+      "durationInFrames": 436,
+      "name": "Breaking every fence"
+    },
+    {
+      "file": "scenes/11-foretold.ts",
+      "durationInFrames": 437,
+      "name": "Chorus \u00b7 as foretold"
+    },
+    {
+      "file": "scenes/12-finale.ts",
+      "durationInFrames": 547,
+      "name": "Was it all for show?"
+    }
+  ],
+  "audio": [
+    {
+      "id": "song-pdoom",
+      "file": "assets/i_m upping my p_doom_.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 4701,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 20,
+      "muted": false
+    }
+  ]
+}

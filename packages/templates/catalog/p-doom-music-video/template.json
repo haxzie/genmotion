@@ -1,0 +1,15 @@
+{
+  "id": "p-doom-music-video",
+  "title": "AI doom music video",
+  "description": "A two-and-a-half-minute animated music video built from twelve real-time Three.js scenes, cut to the beat with word-by-word karaoke lyrics and a p(doom) meter that climbs as the song goes on.",
+  "metaTitle": "Animated Music Video Template (Three.js Lyric Video) — GenMotion",
+  "category": "social",
+  "tags": [
+    "Social Media",
+    "Promotional"
+  ],
+  "publishedAt": "2026-09-30",
+  "featured": false,
+  "order": 28,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/p-doom-music-video/video.mp4"
+}
