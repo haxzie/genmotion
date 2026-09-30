@@ -1,0 +1,53 @@
+{
+  "name": "Crypto launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-link.ts",
+      "durationInFrames": 135,
+      "name": "Link"
+    },
+    {
+      "file": "scenes/02-share.ts",
+      "durationInFrames": 147,
+      "name": "Share"
+    },
+    {
+      "file": "scenes/03-tree.ts",
+      "durationInFrames": 210,
+      "name": "Tree"
+    },
+    {
+      "file": "scenes/04-bound.ts",
+      "durationInFrames": 117,
+      "name": "Bound"
+    },
+    {
+      "file": "scenes/05-dashboard.ts",
+      "durationInFrames": 258,
+      "name": "Dashboard"
+    },
+    {
+      "file": "scenes/06-outro.ts",
+      "durationInFrames": 183,
+      "name": "Outro"
+    }
+  ],
+  "audio": [
+    {
+      "id": "soundtrack",
+      "file": "assets/soundtrack.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1050,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false
+    }
+  ]
+}

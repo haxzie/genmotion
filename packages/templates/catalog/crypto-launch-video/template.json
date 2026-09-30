@@ -1,0 +1,16 @@
+{
+  "id": "crypto-launch-video",
+  "title": "Crypto launch video",
+  "description": "A 35-second Three.js launch film for a crypto referral program, written as a straight-faced parody: the link is copied out of the URL bar, shared to Telegram, X and Discord, a two-tier referral tree branches off it, and the camera glides over a tilted rewards dashboard.",
+  "metaTitle": "Crypto Launch Video Template for Web3 Apps — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "publishedAt": "2026-09-30",
+  "sampleAt": 0.64,
+  "featured": false,
+  "order": 29,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/crypto-launch-video/video.mp4"
+}
