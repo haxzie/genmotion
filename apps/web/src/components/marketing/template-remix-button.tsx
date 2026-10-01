@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { desktopRemixUrl } from "@genmotion/shared";
 import { cx } from "@/lib/cx";
 import { DOWNLOAD_PAGE } from "@/components/marketing/download-button";
+import { AgentGlyphs } from "@/components/marketing/agent-badges";
+import { CheckIcon, CopyIcon, useCopy } from "@/components/marketing/copy";
+import { InstallCommand } from "@/components/marketing/install-command";
+import { templateRemixCommand, templateRemixPrompt } from "@/lib/marketing/setup";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -42,19 +46,24 @@ function DownloadIcon({ className }: { className?: string }) {
  * The web site's equivalent of the in-app Remix button.
  *
  * A page can't write a project to disk itself, so pressing it doesn't remix
- * on the spot — it offers the two ways that lead there: hand off to an
+ * on the spot — it offers the ways that lead there: a prompt for the user's
+ * own coding agent, which remixes through the CLI; a hand-off to an
  * already-installed app (a `genmotion://` deep link the desktop app answers
- * by running the exact same remix its own button does), or go get the app
- * first.
+ * by running the exact same remix its own button does); getting the app
+ * first; or the one CLI command. None of them needs an account: the template
+ * files come from the public `/api/templates/:id/files`.
  */
 export function TemplateRemixButton({
   templateId,
+  title,
   className,
 }: {
   templateId: string;
+  title: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const prompt = useCopy(templateRemixPrompt({ id: templateId, title }));
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,8 +98,35 @@ export function TemplateRemixButton({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-border bg-surface p-1.5 shadow-xl"
+          className="absolute right-0 top-full z-10 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-surface p-1.5 shadow-xl"
         >
+          {/* Stays open on copy, so the confirmation is seen where it was clicked. */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={prompt.copy}
+            className="flex w-full cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-surface-raised"
+          >
+            {prompt.copied ? (
+              <CheckIcon className="mt-0.5 size-5 shrink-0 text-green" />
+            ) : (
+              <CopyIcon className="mt-0.5 size-5 shrink-0 text-text-tertiary" />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-[0.95rem] font-medium text-text-primary">
+                  {prompt.copied ? "Copied. Paste into your agent" : "Copy prompt for your agent"}
+                </span>
+                {!prompt.copied && <AgentGlyphs className="gap-1.5 text-[0.75rem] text-text-tertiary" />}
+              </span>
+              <span className="block text-[0.8rem] text-text-tertiary">
+                Claude Code, Codex or OpenCode remixes it in a local folder
+              </span>
+            </span>
+            <span className="sr-only" role="status">
+              {prompt.copied ? "Prompt copied" : ""}
+            </span>
+          </button>
           <a
             href={desktopRemixUrl(templateId)}
             role="menuitem"
@@ -124,6 +160,10 @@ export function TemplateRemixButton({
               </span>
             </span>
           </a>
+          <div className="mt-1 border-t border-border px-3 pb-1.5 pt-3">
+            <p className="mb-2 text-[0.8rem] text-text-tertiary">Or in a terminal</p>
+            <InstallCommand command={templateRemixCommand(templateId)} className="w-full" />
+          </div>
         </div>
       )}
     </div>
