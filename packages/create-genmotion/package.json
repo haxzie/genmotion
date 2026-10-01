@@ -1,6 +1,6 @@
 {
   "name": "create-genmotion",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "npm create genmotion — start a video project that coding agents can build, preview and render.",
   "license": "Apache-2.0",
   "repository": {
@@ -9,12 +9,21 @@
     "directory": "packages/create-genmotion"
   },
   "homepage": "https://genmotion.dev",
-  "keywords": ["video", "threejs", "create", "scaffold", "genmotion"],
+  "keywords": [
+    "video",
+    "threejs",
+    "create",
+    "scaffold",
+    "genmotion"
+  ],
   "type": "module",
   "bin": {
     "create-genmotion": "./bin/create-genmotion.js"
   },
-  "files": ["bin", "LICENSE"],
+  "files": [
+    "bin",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
