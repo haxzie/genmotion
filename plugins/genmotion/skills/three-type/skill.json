@@ -1,0 +1,48 @@
+{
+  "id": "three-type",
+  "title": "Type (Three.js)",
+  "description": "Typography in Three.js scenes: a shared label component, sizes that stay readable in every aspect ratio, word-by-word and line-by-line reveals, counters that tick to a number, highlight sweeps, captions, and a headline that survives a camera move. Load it whenever a Three.js scene puts words on screen: titles, taglines, stats, captions, calls to action.",
+  "summary": "Readable, consistent type in Three.js scenes: reveals, counters, highlights and captions.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "typography",
+    "threejs",
+    "text"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Legibility is a frame check."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "animate the headline word by word",
+    "count up to 10,000 users",
+    "the text is blurry",
+    "add captions to the video",
+    "highlight the key word",
+    "the title is too small on mobile"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🔤"
+}

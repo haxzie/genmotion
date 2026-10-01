@@ -36,3 +36,11 @@ export { createSkillCatalog, revisionOf } from "./registry";
 export { searchSkills, bm25Scores, cosine, decodeVectors, tokenize } from "./search";
 export type { SkillHit, SkillEmbeddings, SearchOptions } from "./search";
 export { embeddingSources, sourceHashOf } from "./embed-sources";
+export {
+  CAPABILITIES,
+  TOOL_CAPABILITIES,
+  availableOn,
+  fallbackFor,
+  capabilityTable,
+} from "./capabilities";
+export type { SkillSurface, CapabilitySpec } from "./capabilities";

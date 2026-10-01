@@ -102,7 +102,7 @@ genmotion .
 
 That opens the project, plays it, and gives your coding agent the context to
 edit it. Export to MP4 from the editor.
-
+${cliSection(engine)}
 ## What's in here
 
 | Path | |
@@ -139,6 +139,28 @@ function structureRows(engine: ProjectEngine): string {
           ["`AGENTS.md`", "how to edit this project, for a coding agent"],
         ];
   return rows.map(([path, what]) => `| ${path} | ${what} |`).join("\n");
+}
+
+/**
+ * The same loop without the app. Only the Three.js scaffold declares the
+ * `genmotion` CLI as a dependency, so only its README promises the scripts.
+ */
+function cliSection(engine: ProjectEngine): string {
+  if (engine !== "three") return "";
+  return `
+## Or stay in the terminal
+
+\`\`\`sh
+npm install
+npm run dev       # studio at http://localhost:4200, reloads on save
+npm run check     # compile, determinism and a headless render of every scene
+npm run render    # exports/<name>.mp4
+\`\`\`
+
+Give any coding agent the same tools and GenMotion's video-type skills with
+\`npx genmotion skills add\`, which writes \`CLAUDE.md\`, \`.mcp.json\` and the
+skills (a project made with \`genmotion init\` has them already).
+`;
 }
 
 function engineNote(engine: ProjectEngine): string {

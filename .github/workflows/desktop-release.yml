@@ -19,14 +19,32 @@ name: Release desktop (macOS)
 #
 # Run it from the Actions tab (workflow_dispatch) to rehearse the whole thing —
 # build, sign, notarize, verify — without publishing anything.
+#
+# Normally it is not started by hand: release.yml versions the app with
+# Changesets, tags `desktop-v<version>` once a "Version packages" merge lands a
+# new apps/desktop version on main, and calls this workflow with that tag. It
+# has to be called rather than triggered, because a tag pushed with
+# GITHUB_TOKEN starts no workflow runs. Pushing a `desktop-v*` tag yourself
+# still works the way it always has.
 
 on:
   push:
     tags: ["desktop-v*"]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: "The desktop-v<version> tag to build and publish"
+        type: string
+        required: true
+
+# The tag being released: the caller's input, or the pushed tag itself.
+# Empty for a dispatch rehearsal, which builds without publishing.
+env:
+  RELEASE_TAG: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
 
 concurrency:
-  group: desktop-release-${{ github.ref }}
+  group: desktop-release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -44,6 +62,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Refuse a non-arm64 runner
         run: |
@@ -88,13 +108,13 @@ jobs:
       # app is the kind of mistake nobody notices until a bug report cites a
       # version that was never built.
       - name: Check the tag matches the app version
-        if: startsWith(github.ref, 'refs/tags/')
+        if: env.RELEASE_TAG != ''
         run: |
-          tag_version="${GITHUB_REF_NAME#desktop-v}"
+          tag_version="${RELEASE_TAG#desktop-v}"
           app_version="$(node -p "require('./apps/desktop/package.json').version")"
           echo "tag=$tag_version  package.json=$app_version"
           if [ "$tag_version" != "$app_version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME says $tag_version but apps/desktop/package.json says $app_version." \
+            echo "::error::Tag $RELEASE_TAG says $tag_version but apps/desktop/package.json says $app_version." \
                  "Bump the package version and re-tag."
             exit 1
           fi
@@ -168,7 +188,7 @@ jobs:
       # app. A draft added a manual step between all of that and the user
       # without adding a check.
       - name: Publish the release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: env.RELEASE_TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -194,8 +214,21 @@ jobs:
             "Download the \`.dmg\`, open it, and drag GenMotion to Applications." \
             > "$RUNNER_TEMP/notes.md"
 
-          gh release create "$GITHUB_REF_NAME" \
-            --title "GenMotion ${GITHUB_REF_NAME#desktop-}" \
+          # What changed, from the Changesets changelog: this version's section
+          # of apps/desktop/CHANGELOG.md, when there is one. A tag pushed by
+          # hand for a version Changesets never wrote simply has no section.
+          version="${RELEASE_TAG#desktop-v}"
+          if [ -f apps/desktop/CHANGELOG.md ]; then
+            awk -v v="## $version" '$0 == v {on=1; next} on && /^## / {exit} on' apps/desktop/CHANGELOG.md \
+              > "$RUNNER_TEMP/changes.md"
+            if [ -s "$RUNNER_TEMP/changes.md" ]; then
+              printf '\n## What changed\n' >> "$RUNNER_TEMP/notes.md"
+              cat "$RUNNER_TEMP/changes.md" >> "$RUNNER_TEMP/notes.md"
+            fi
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            --title "GenMotion ${RELEASE_TAG#desktop-}" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             "${files[@]}"
 
@@ -208,8 +241,8 @@ jobs:
   # that human, and with them the event, so the mirror has to be invoked.
   mirror:
     needs: release
-    if: startsWith(github.ref, 'refs/tags/')
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/release-mirror.yml
     with:
-      tag: ${{ github.ref_name }}
+      tag: ${{ inputs.tag || github.ref_name }}
     secrets: inherit

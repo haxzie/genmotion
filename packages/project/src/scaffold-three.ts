@@ -15,6 +15,8 @@ import { renderGitignoreLines } from "./scaffold-readme";
  * truthful npm project rather than one that only builds inside our app.
  */
 export interface ThreeScaffoldVersions {
+  /** The CLI behind the project's `dev`/`render`/`check` scripts. */
+  genmotion: string;
   threeEngine: string;
   three: string;
   threeTypes: string;
@@ -22,6 +24,7 @@ export interface ThreeScaffoldVersions {
 }
 
 export const DEFAULT_THREE_VERSIONS: ThreeScaffoldVersions = {
+  genmotion: "^0.1.0",
   threeEngine: "^0.1.0",
   three: "^0.185.1",
   threeTypes: "^0.185.4",
@@ -36,14 +39,21 @@ export function renderThreePackageJson(
     name: toPackageName(projectName),
     private: true,
     type: "module",
+    // The whole loop runs from the folder itself — no app required. The
+    // desktop app ignores these and does the same work in-process.
     scripts: {
-      check: "tsc --noEmit",
+      dev: "genmotion dev",
+      render: "genmotion render",
+      still: "genmotion still",
+      check: "genmotion check",
+      typecheck: "tsc --noEmit",
     },
     dependencies: {
       "@genmotion/three-engine": versions.threeEngine,
       three: versions.three,
     },
     devDependencies: {
+      genmotion: versions.genmotion,
       "@types/three": versions.threeTypes,
       typescript: versions.typescript,
     },

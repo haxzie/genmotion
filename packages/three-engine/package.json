@@ -1,17 +1,33 @@
 {
   "name": "@genmotion/three-engine",
   "version": "0.0.0",
-  "private": true,
+  "description": "The frame-deterministic Three.js runtime GenMotion videos are written against: scene context, render host, interpolate/Easing.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haxzie/genmotion.git",
+    "directory": "packages/three-engine"
+  },
+  "homepage": "https://genmotion.dev",
+  "keywords": [
+    "threejs",
+    "three",
+    "video",
+    "animation",
+    "motion-graphics",
+    "genmotion"
+  ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.mjs"
   },
   "dependencies": {
-    "@genmotion/shared": "workspace:*",
+    "@genmotion/shared": "workspace:^",
     "three": "^0.185.1"
   },
   "devDependencies": {
@@ -19,5 +35,21 @@
     "@types/three": "^0.185.4",
     "typescript": "^5.9.3",
     "vitest": "^3.2.0"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "sideEffects": false
 }

@@ -1,0 +1,10 @@
+{
+  "name": "genmotion",
+  "version": "0.1.0",
+  "description": "Create, preview, check and render videos from Claude Code. Adds the genmotion MCP tools (capture_frames, check_project, render_video, …) and a make-video skill.",
+  "author": { "name": "GenMotion", "url": "https://genmotion.dev" },
+  "homepage": "https://genmotion.dev",
+  "repository": "https://github.com/haxzie/genmotion",
+  "license": "Apache-2.0",
+  "keywords": ["video", "threejs", "animation", "render", "mp4"]
+}

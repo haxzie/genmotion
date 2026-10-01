@@ -2,11 +2,12 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { SKILL_ASPECTS, SKILL_DOC, SKILL_FILE } from "@genmotion/shared";
+import { SKILL_ASPECTS, SKILL_CAPABILITIES, SKILL_DOC, SKILL_FILE } from "@genmotion/shared";
 import { readSkills } from "../catalog";
 import { createSkillCatalog, SKILL_CATALOG } from "../index";
 import { sourceHashOf } from "../embed-sources";
 import { searchSkills, type SkillEmbeddings } from "../search";
+import { CAPABILITIES, TOOL_CAPABILITIES } from "../capabilities";
 
 /**
  * The authoring conventions, as tests.
@@ -31,20 +32,14 @@ const hyperframesIds = fs
   .filter((e) => e.isDirectory())
   .map((e) => e.name);
 
-/** Tool names the desktop app actually gives the agent. */
-const GENMOTION_TOOLS = [
-  "project_overview",
-  "validate_composition",
-  "validate_scene",
-  "capture_frames",
-  "save_asset",
-  "generate_image",
-  "generate_voiceover",
-  "generate_sfx",
-  "pick_voice",
-  "search_skills",
-  "recommend_integration",
-];
+/**
+ * Desktop tool names. The pack names capabilities instead (`capture-frames`,
+ * not `capture_frames`) because the same text is read by agents on the
+ * desktop, over `genmotion mcp`, and from a plain shell — each surface maps
+ * the capability to what it has (`CAPABILITIES`). A tool name in a skill is
+ * a word that means nothing on two of the three.
+ */
+const TOOL_NAMES = Object.keys(TOOL_CAPABILITIES);
 
 /**
  * Skills in this pack are creative direction — what the video should be —
@@ -146,11 +141,29 @@ describe.each(skills.map((s) => [s.meta.id, s] as const))("%s", (_id, skill) => 
     }
   });
 
-  it("mentions validate_scene wherever it mentions validate_composition", () => {
-    // The two tools are the same check for different engines, and each
-    // refuses to run on the wrong one. Naming only one steers a React or
-    // Three project at a tool that will tell it to call the other.
-    if (doc.includes("validate_composition")) expect(doc).toContain("validate_scene");
+  it("names capabilities, never a surface's tool names", () => {
+    for (const tool of TOOL_NAMES) {
+      expect(doc, `${skill.meta.id} names \`${tool}\` — use the capability \`${TOOL_CAPABILITIES[tool]}\``).not.toMatch(
+        new RegExp(`\\b${tool}\\b`),
+      );
+    }
+  });
+
+  it("only cites capabilities that exist", () => {
+    for (const [, id] of doc.matchAll(/`([a-z]+(?:-[a-z]+)+)`/g)) {
+      const known = (SKILL_CAPABILITIES as readonly string[]).includes(id!) || skills.some((s) => s.meta.id === id);
+      // Kebab-case words that are neither are fine (a template id, a file), but
+      // a near-miss of a capability is a typo the agent will not resolve.
+      if (!known && /^(capture|save|generate|pick|search|project|recommend)-/.test(id!)) {
+        throw new Error(`${skill.meta.id} cites \`${id}\`, which is not a capability`);
+      }
+    }
+  });
+
+  it("is routable when it owns a video", () => {
+    if (skill.meta.kind === "workflow" || skill.meta.kind === "style") {
+      expect(skill.meta.route, `${skill.meta.id} owns videos, so it needs a route block`).toBeDefined();
+    }
   });
 
   it("tells nobody to fetch from the network", () => {
@@ -171,16 +184,18 @@ describe.each(skills.map((s) => [s.meta.id, s] as const))("%s", (_id, skill) => 
     }
   });
 
-  it("names only tools that exist", () => {
+  it("requires capabilities and skills that exist", () => {
     for (const req of skill.meta.requires) {
-      if (req.kind === "tool") expect(GENMOTION_TOOLS).toContain(req.id);
+      expect(req.kind, "the first-party pack requires capabilities, not tool names").not.toBe("tool");
       if (req.kind === "skill") {
         expect([...skills.map((s) => s.meta.id), ...hyperframesIds]).toContain(req.id);
+        // A HyperFrames-pack skill is only loaded for HyperFrames projects.
+        if (hyperframesIds.includes(req.id)) expect(req.engines).toEqual(["hyperframes"]);
       }
     }
     for (const model of skill.meta.models) {
       if (model.via.startsWith("mcp:")) continue;
-      expect(GENMOTION_TOOLS).toContain(model.via);
+      expect(Object.keys(CAPABILITIES)).toContain(model.via);
     }
   });
 

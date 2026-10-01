@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./search": "./src/search.ts",
+    "./capabilities": "./src/capabilities.ts",
     "./catalog": "./generated/index.json",
     "./embeddings": "./generated/embeddings.json",
     "./node": "./src/catalog.ts",

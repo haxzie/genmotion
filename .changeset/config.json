@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "genmotion",
+      "create-genmotion"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@genmotion/ai",
+    "@genmotion/api",
+    "@genmotion/compiler",
+    "@genmotion/config",
+    "@genmotion/db",
+    "@genmotion/hyperframes",
+    "@genmotion/motion",
+    "@genmotion/player",
+    "@genmotion/project",
+    "@genmotion/render",
+    "@genmotion/renderer",
+    "@genmotion/skills",
+    "@genmotion/storage",
+    "@genmotion/templates",
+    "@genmotion/web"
+  ],
+  "privatePackages": {
+    "version": true,
+    "tag": false
+  }
+}

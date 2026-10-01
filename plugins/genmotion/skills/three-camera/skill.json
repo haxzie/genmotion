@@ -1,0 +1,48 @@
+{
+  "id": "three-camera",
+  "title": "Camera moves (Three.js)",
+  "description": "Camera language for Three.js scenes: push-ins, pull-backs, orbits, dolly-and-track, parallax layers, rack-focus by depth, path moves along a curve, and punch-in emphasis, each written as a pure function of the frame. Also how to frame a subject exactly for any aspect ratio and how to hand a camera move across a cut. Load it when a Three.js scene needs the camera to do something, or when a format skill asks for a punch-in, a zoom or a reframe.",
+  "summary": "Push-ins, orbits, path moves and punch-ins for Three.js scenes, framed exactly for any aspect.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "camera",
+    "threejs",
+    "motion"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "A camera move is only checked by looking at its start, middle and end."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "add a slow push in on the logo",
+    "make the camera orbit the product",
+    "fly the camera through the scene",
+    "punch in on the key line",
+    "the subject is too small in vertical",
+    "camera glides over the dashboard"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎥"
+}

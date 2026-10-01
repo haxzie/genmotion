@@ -1,0 +1,47 @@
+{
+  "id": "three-transitions",
+  "title": "Transitions (Three.js)",
+  "description": "Getting from one Three.js scene to the next without a fade to black: handoff objects, match-cuts on shape and colour, camera carries, fill-the-frame wipes, iris and shutter masks built from planes, and shader dissolves with ShaderMaterial. Covers the timing contract on both sides of the cut and the transitions to avoid. Load it when a Three.js video has more than one scene, or when cuts feel abrupt.",
+  "summary": "Cut between Three.js scenes without fading to black: handoffs, wipes, match-cuts, dissolves.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "transitions",
+    "threejs",
+    "editing"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Each cut is checked on the frames either side of it."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "make the scenes flow into each other",
+    "the cuts feel abrupt",
+    "add a wipe between scenes",
+    "seamless transition between scenes",
+    "one continuous take feel"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🔀"
+}

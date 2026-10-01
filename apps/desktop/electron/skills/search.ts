@@ -1,5 +1,6 @@
 import type { ResolvedSkillRequirement, SkillCatalogEntry } from "@genmotion/shared";
 import { searchSkills, type SkillHit } from "@genmotion/skills/search";
+import { availableOn } from "@genmotion/skills/capabilities";
 import { cloudFetch } from "../auth";
 import { mcpManager } from "../mcp/manager";
 import { loadCatalog, skillPath } from "./catalog";
@@ -18,19 +19,6 @@ import { loadCatalog, skillPath } from "./catalog";
  * servers this machine actually has, which is what lets the agent say "this
  * wants ElevenLabs and you have not got it" instead of silently degrading.
  */
-
-const GENMOTION_TOOLS = new Set([
-  "project_overview",
-  "validate_composition",
-  "capture_frames",
-  "save_asset",
-  "generate_image",
-  "generate_voiceover",
-  "generate_sfx",
-  "pick_voice",
-  "search_skills",
-  "recommend_integration",
-]);
 
 /** Query vectors, by query string. Identical queries inside a session are common. */
 const vectors = new Map<string, Float32Array | null>();
@@ -52,10 +40,15 @@ async function embedQuery(query: string): Promise<Float32Array | undefined> {
   return vectors.get(key) ?? undefined;
 }
 
-async function resolveRequirements(entry: SkillCatalogEntry): Promise<ResolvedSkillRequirement[]> {
+async function resolveRequirements(entry: SkillCatalogEntry, engine?: string): Promise<ResolvedSkillRequirement[]> {
   const servers = await mcpManager.list().catch(() => []);
   const catalog = await loadCatalog();
-  return entry.requires.map((req) => {
+  // A skill requirement scoped to other engines (`three-camera` on a
+  // HyperFrames project) is not this project's to load.
+  const applies = entry.requires.filter(
+    (req) => req.kind !== "skill" || !req.engines || !engine || (req.engines as readonly string[]).includes(engine),
+  );
+  return applies.map((req) => {
     if (req.kind === "mcp") {
       const server = servers.find((s) => s.catalogId === req.id || s.id === req.id);
       return {
@@ -80,9 +73,10 @@ async function resolveRequirements(entry: SkillCatalogEntry): Promise<ResolvedSk
       id: req.id,
       label: req.id,
       why: req.why,
-      // A built-in tool is always there. A capability either is (ffmpeg ships
-      // with the app) or is a paid generator that reports its own refusal.
-      installed: req.kind !== "tool" || GENMOTION_TOOLS.has(req.id),
+      // Every capability the pack names has a desktop tool (the paid
+      // generators report their own refusal); an old-style tool name is
+      // resolved to its capability first.
+      installed: availableOn(req, "desktop"),
     };
   });
 }
@@ -105,7 +99,9 @@ export async function findSkills(opts: {
     query: opts.query,
     entries,
     embeddings: embeddings ?? undefined,
-    queryVector: await embedQuery(opts.query),
+    // No baked skill vectors, nothing to compare a query vector against:
+    // don't spend a network round trip on one.
+    queryVector: embeddings ? await embedQuery(opts.query) : undefined,
     kind: opts.kind as never,
     engine: opts.engine,
     limit: opts.limit ?? 5,
@@ -115,7 +111,7 @@ export async function findSkills(opts: {
     hits.map(async (hit) => ({
       ...hit,
       path: await skillPath(hit.entry.id, opts.projectDir, opts.engine),
-      requirements: await resolveRequirements(hit.entry),
+      requirements: await resolveRequirements(hit.entry, opts.engine),
     })),
   );
 }

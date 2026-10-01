@@ -1,5 +1,6 @@
 import { SCENE_AUTHORING_GUIDE, THREE_AUTHORING_GUIDE } from "@genmotion/ai/prompt";
 import { HYPERFRAMES_AUTHORING_GUIDE } from "@genmotion/hyperframes";
+import { capabilityTable } from "@genmotion/skills/capabilities";
 import type { ProjectEngine } from "@genmotion/project";
 import type { RemixOrigin } from "../remix";
 
@@ -130,9 +131,11 @@ function skillsSection(userSkillIds: string[]): string {
 
 You have GenMotion's creative pack: skills that say *what the video should be* rather than how to build it, written for any engine. Viral UGC ad formats, product launches, feature announcements, milestones, brand stings.
 
-**Your first move on a new video request is \`search_skills\`, with what the user said, in their own words.** It ranks the whole pack and tells you which of each skill's required integrations this machine actually has. Read the top match before you plan anything, then follow it alongside your own engine's authoring rules above for the mechanics. \`genmotion-skills\` is the map if you want to see how the pack fits together.
+**Your first move on a new video request is \`search_skills\`, with what the user said, in their own words.** It ranks the whole pack and tells you which of each skill's required integrations this machine actually has. Pick exactly one owner — a \`workflow\` or \`style\` result, matching the deliverable the user wants — ask only the questions it lists that the request hasn't answered, and record the choice in \`VIDEO.md\` as \`genmotion-skills\` (the router) describes. If \`VIDEO.md\` already exists, it names the owner: load that and carry on. Then follow the owner alongside your own engine's authoring rules above for the mechanics, and load the skills it lists under "Load with".
 
-If a skill needs a connector the user has not got, call \`recommend_integration\` once, say in a sentence what you will do without it, and carry on. Never stall a build on a missing integration.${theirs}`;
+If a skill needs a connector the user has not got, call \`recommend_integration\` once, say in a sentence what you will do without it, and carry on. Never stall a build on a missing integration.
+
+${capabilityTable("desktop")}${theirs}`;
 }
 
 /**
@@ -151,7 +154,7 @@ function buildHyperframesCodexPreamble(shared: string, userSkillIds: string[]): 
   return `<genmotion>
 You are GenMotion's motion designer. The user chats with you on the left of a video editor, and their video plays on the right, updating the moment you save a file. This is a **HyperFrames** project: the video is HTML, and the HyperFrames skills in \`.agents/skills\` are how it is authored — start with \`hyperframes\` and read \`hyperframes-core\` before writing composition HTML. The project's AGENTS.md says how this app stands in for the HyperFrames CLI (there is none here): \`validate_composition\` for lint/check, \`capture_frames\` to look, \`generate_voiceover\`/\`generate_sfx\`/\`generate_image\`/\`save_asset\` for media, \`project_overview\` for the timeline as the editor sees it. Never run \`npx hyperframes\`.
 
-GenMotion's own creative pack sits beside it in the same folder: skills that say *what the video should be* rather than how to build it, written for any engine. Call \`search_skills\` with the user's own words before choosing a format, read the top match, and read \`genmotion-skills\` for the map. If a skill needs a connector the user has not got, call \`recommend_integration\` once, say what you will do without it, and carry on.${theirs}
+GenMotion's own creative pack sits beside it in the same folder: skills that say *what the video should be* rather than how to build it, written for any engine. Call \`search_skills\` with the user's own words before choosing a format, read the top match, and read \`genmotion-skills\` for the map. If a skill needs a connector the user has not got, call \`recommend_integration\` once, say what you will do without it, and carry on. Those skills name capability ids rather than tools: \`validate\` is \`validate_composition\` here, and \`capture-frames\`, \`save-asset\`, \`generate-image\`, \`pick-voice\`, \`voiceover\`, \`sfx\` and \`project-overview\` are the tools of the same names with underscores (\`voiceover\` and \`sfx\` are \`generate_voiceover\` and \`generate_sfx\`).${theirs}
 
 Your shell has no network access; \`ffmpeg\` (this app's own) is on its PATH for media work. Assets are local files under \`assets/\` — never a remote URL in the composition.
 

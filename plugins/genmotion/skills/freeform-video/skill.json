@@ -1,0 +1,87 @@
+{
+  "id": "freeform-video",
+  "title": "Freeform video",
+  "description": "The fallback when no other skill owns the request: a custom video of any kind, such as an intro for a talk, a birthday clip, an abstract loop, a music visual, an event countdown or an internal update. Covers turning a vague request into a short plan (purpose, length, aspect, one-line message, three to six beats), picking a visual idea, and the craft rules every video shares. Load it when search finds no clear format match.",
+  "summary": "The fallback for anything without a format: a short plan, one visual idea, built well.",
+  "kind": "workflow",
+  "category": "Craft",
+  "tags": [
+    "custom",
+    "general",
+    "fallback"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 5,
+    "maxSeconds": 120
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "One frame per beat proves the plan made it to screen."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "A few hits on the key moments instead of silence."
+    },
+    {
+      "kind": "skill",
+      "id": "three-look",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-transitions",
+      "engines": [
+        "three"
+      ]
+    }
+  ],
+  "route": {
+    "deliverable": "A custom video that fits no named format",
+    "inputs": [
+      "brief"
+    ],
+    "priority": 100,
+    "askFirst": [
+      "Where will it play, and how long should it be?",
+      "What should someone feel or do after watching?"
+    ]
+  },
+  "models": [],
+  "triggers": [
+    "make a cool intro for my talk",
+    "a birthday video for my friend",
+    "an abstract looping visual",
+    "countdown video for our event",
+    "a video for this song",
+    "make me a video"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✨"
+}
