@@ -343,7 +343,10 @@ The contract: the last ~10–15 frames of scene N and the first ~10–15 of scen
 ## Working from the terminal
 
 Everything the GenMotion app does for this folder, the `genmotion` CLI does too.
-Every command takes `--json` and prints exactly one JSON object.
+Every command takes `--json` and prints exactly one JSON object. The command
+comes from the npm package `@genmotion/cli` (already in `devDependencies`);
+there is no package called `genmotion`, so `npx genmotion` only works after
+`npm install`, and `npx @genmotion/cli` works everywhere.
 
 | Step | Command | MCP tool (`npx @genmotion/cli mcp`, wired in `.mcp.json`) |
 |---|---|---|

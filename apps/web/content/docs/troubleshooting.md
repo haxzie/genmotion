@@ -4,9 +4,11 @@ seoTitle: "Troubleshooting GenMotion installs, renders and agents"
 description: "Fix common GenMotion problems: Chromium or ffmpeg not found, slow renders, blank scenes, MCP server not loading, Node version errors and Mac app issues."
 group: Reference
 order: 4
-keywords: [GenMotion troubleshooting, genmotion render error, Chromium not found, ffmpeg not found, MCP server not connecting, blank Three.js render]
+keywords: [GenMotion troubleshooting, genmotion npm 404, @genmotion/cli, genmotion render error, Chromium not found, ffmpeg not found, MCP server not connecting, blank Three.js render]
 updated: 2026-10-01
 faqs:
+  - q: Why is there no genmotion package on npm?
+    a: npm refuses the name genmotion as too similar to the existing emotion package. The CLI is published as @genmotion/cli, and it installs the genmotion command. Use npx @genmotion/cli or npm install -g @genmotion/cli.
   - q: Why does the first render take longer?
     a: The first render downloads a headless Chromium (about 100 MB) and ffmpeg, once per machine. Later renders start immediately. Run npx @genmotion/cli browser install to do it ahead of time.
   - q: Does GenMotion work on Windows?
@@ -20,6 +22,17 @@ faqs:
 Start with `npx @genmotion/cli doctor`. It checks Node, ffmpeg, Chromium and WebGL, and prints the fix for anything that fails.
 
 ## Installing
+
+### "404 Not Found: genmotion" from npm or npx
+
+The CLI's npm package is `@genmotion/cli`; it provides the `genmotion` command. npm refuses the bare name `genmotion`, so `npx genmotion@latest` and `npm install -g genmotion` fail outside a project. Use these instead:
+
+```sh
+npx @genmotion/cli@latest init my-video      # or: npm create genmotion@latest my-video
+npm install -g @genmotion/cli                # the genmotion command, everywhere
+```
+
+Inside a project, after `npm install`, `npx genmotion` and the `npm run` scripts work as before. If an agent is following an older setup prompt, copy the current one from [Quickstart](/docs/quickstart#let-your-agent-set-it-up).
 
 ### "Node 22 or newer is required"
 

@@ -14,14 +14,18 @@ export const CLI_INIT_COMMAND = "npx @genmotion/cli@latest init my-video";
 export const DOCS_PATH = "/docs";
 
 /**
- * Pasted into any coding agent (Claude Code, Codex, Cursor) in an empty
- * folder. Written as instructions to the agent, not the reader, and kept to
- * commands that exist in the published CLI.
+ * Pasted into any coding agent (Claude Code, Codex, OpenCode, Cursor) in an
+ * empty folder. Written as instructions to the agent, not the reader, and kept
+ * to commands that exist in the published CLI. It names the package outright:
+ * agents that see a `genmotion` command go looking for a `genmotion` package,
+ * which npm will never have (the name is refused as too close to `emotion`).
  */
 export const SETUP_PROMPT = `Set up a GenMotion video project in this folder and help me make a video.
 
+The CLI is the npm package \`@genmotion/cli\` (Node 22 or newer). It provides the \`genmotion\` command; there is no package called \`genmotion\`.
+
 1. Run \`npx @genmotion/cli@latest init my-video --yes\` (add \`--size portrait\` for a vertical video), then \`cd my-video && npm install\`.
-2. Read \`AGENTS.md\` and the \`genmotion\` and \`genmotion-skills\` skills in \`.claude/skills/\`.
+2. Read \`AGENTS.md\` and the \`genmotion\` and \`genmotion-skills\` skills in \`.claude/skills/\` (the same files are in \`.agents/skills/\`).
 3. Ask me what the video is for, how long it should be and where it will be shown, unless I already told you.
 4. Run \`npx @genmotion/cli skills search "<my request>"\`, pick the one skill that owns this kind of video, follow it, and record the choice in \`VIDEO.md\`.
 5. Build the scenes. Before telling me it is done, run \`npx @genmotion/cli check\` and \`npx @genmotion/cli still --at 50%\` and look at the frames.
