@@ -11,6 +11,8 @@ updated: 2026-10-01
 
 GenMotion Studio is the desktop app: your agent's chat, a frame-accurate preview, a timeline and one-click export in one window.
 
+![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")
+
 ## Requirements
 
 | | |

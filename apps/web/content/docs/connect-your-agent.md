@@ -77,6 +77,8 @@ Pass `--dir <path>` in `args` if the client doesn't start in the project folder.
 
 The Studio runs Claude Code or Codex for you, with its own tools wired in, so none of the above is needed there. Open a folder with `genmotion .` and talk to the agent in the chat panel.
 
+![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")
+
 ::: tip
 Agents do best when they can see the result. The `capture_frames` tool returns rendered frames as images, and the project's instructions tell the agent to look at them before calling a video done.
 :::

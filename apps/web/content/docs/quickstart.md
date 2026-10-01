@@ -61,6 +61,8 @@ The first render downloads a headless Chromium and ffmpeg, once per machine.
 
 [GenMotion Studio](/docs/install-studio) does all of this in one window on a Mac: chat with your agent on the left, the preview in the middle, a timeline below and an Export button.
 
+![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")
+
 ## Next steps
 
 ::: cards

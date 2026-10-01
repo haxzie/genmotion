@@ -156,6 +156,21 @@ const components = {
     <td className="px-4 py-2.5 align-top [&_code]:whitespace-nowrap">{children}</td>
   ),
   hr: () => <hr className="my-10 border-border" />,
+  // Inside a <p> in the Markdown tree, so spans rather than <figure>: a block
+  // element there would be invalid HTML and React would warn on hydration.
+  img: ({ src = "", alt = "", title }: { src?: string; alt?: string; title?: string }) => (
+    <span className="my-8 block">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        className="block w-full rounded-xl border border-border bg-surface shadow-2xl shadow-black/40"
+      />
+      {title && <span className="mt-3 block text-center text-[0.85rem] text-text-tertiary">{title}</span>}
+    </span>
+  ),
 } as unknown as Partial<Components>;
 
 /** Parsed and slugged up front, in document order, before React renders anything. */

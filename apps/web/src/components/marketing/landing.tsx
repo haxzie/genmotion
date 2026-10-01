@@ -4,7 +4,7 @@ import { InstallCommand } from "@/components/marketing/install-command";
 import { CopyTextButton } from "@/components/marketing/copy";
 import { SETUP_PROMPT } from "@/lib/marketing/setup";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
-import { AgentBadges } from "@/components/marketing/agent-badges";
+import { AgentBadges, AgentGlyphs } from "@/components/marketing/agent-badges";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { Container, Eyebrow, LinkButton, Section } from "@/components/marketing/primitives";
@@ -69,7 +69,7 @@ export async function LandingHero({
   lede: React.ReactNode;
   /** No room left under the hero for a screenshot to be pulled into. */
   compact?: boolean;
-  /** A "Copy setup prompt" button beside the download, for the CLI path. */
+  /** A "Copy prompt" button beside the download, for the CLI path, in place of the install command. */
   setupPrompt?: boolean;
   /** Anything extra under the download, e.g. a secondary link. */
   children?: React.ReactNode;
@@ -109,25 +109,29 @@ export async function LandingHero({
         <p className="mt-6 max-w-xl text-lg text-text-secondary">{lede}</p>
         <AgentBadges className="mt-6" />
         <div className="mt-8 flex w-full flex-col items-center">
-          {/* Above the button, deliberately quieter than it: the terminal
-              install is the faster path for the people it suits, and the only
-              one that leaves the `genmotion` command behind. */}
-          <InstallCommand className="mb-4" />
           {setupPrompt ? (
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <DownloadButton size="lg" href={release?.downloadUrl} />
+              {/* To /download rather than the dmg: that page offers the Studio
+                  and the CLI, and this hero is for both. */}
+              <DownloadButton size="lg" />
               {/* The no-install path: the prompt has the agent run the CLI,
                   so it works on any machine the agent runs on, Mac or not. */}
               <CopyTextButton
                 size="lg"
                 text={SETUP_PROMPT}
-                label="Copy setup prompt"
+                label="Copy prompt"
                 copiedLabel="Paste it into your agent"
-                ariaLabel="Copy a prompt that sets up GenMotion in Claude Code, Codex or Cursor"
+                ariaLabel="Copy a prompt that sets up GenMotion in Claude Code, Codex or OpenCode"
+                icon={<AgentGlyphs />}
               />
             </div>
           ) : (
-            <DownloadButton size="lg" href={release?.downloadUrl} />
+            <>
+              {/* Above the button, deliberately quieter than it: the terminal
+                  install is the faster path for the people it suits. */}
+              <InstallCommand className="mb-4" />
+              <DownloadButton size="lg" href={release?.downloadUrl} />
+            </>
           )}
           <p className="mt-4 text-[0.9rem] text-text-secondary">
             {release ? (

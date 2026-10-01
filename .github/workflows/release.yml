@@ -86,6 +86,7 @@ jobs:
         run: pnpm --filter ./packages/shared --filter ./packages/three-engine --filter ./packages/render --filter ./packages/cli test
 
       - name: Version PR or publish
+        id: publish
         uses: changesets/action@v1
         with:
           publish: pnpm release
@@ -96,6 +97,36 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
+
+      # `changeset publish` runs npm with --json and, when npm's error isn't
+      # the shape it expects, crashes in its own error handling instead of
+      # printing it ("Cannot read properties of undefined (reading
+      # 'includes')"). Publish whatever is still missing one package at a time
+      # with npm's own output, so a failure says what npm actually objected to.
+      - name: Publish what's missing, with npm's own errors
+        if: failure() && steps.publish.outcome == 'failure'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l)
+          if [ "$pending" -gt 0 ]; then
+            echo "$pending changeset(s) pending: nothing is due to publish yet"
+            exit 1
+          fi
+          status=0
+          for dir in packages/shared packages/three-engine packages/cli packages/create-genmotion; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm"
+              continue
+            fi
+            echo "::group::publish $name@$version"
+            (cd "$dir" && pnpm publish --access public --no-git-checks) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
 
   # Called, not triggered by the tag: a tag pushed with GITHUB_TOKEN starts
   # no workflow runs. `always()` because the npm side may fail after the tag

@@ -4,6 +4,7 @@ import { Container, Section, Card, Eyebrow, LinkButton } from "@/components/mark
 import { DownloadButton } from "@/components/marketing/download-button";
 import { InstallCommand } from "@/components/marketing/install-command";
 import { CopyTextButton } from "@/components/marketing/copy";
+import { AgentGlyphs } from "@/components/marketing/agent-badges";
 import { pageMetadata } from "@/lib/marketing/seo";
 import { getLatestRelease, formatSize } from "@/lib/marketing/latest-release";
 import {
@@ -134,7 +135,7 @@ npm run render   # exports/my-video.mp4`}
               empty folder. The agent installs the project and asks what the
               video is for.
             </p>
-            <CopyTextButton text={SETUP_PROMPT} label="Copy setup prompt" className="mt-3 self-start" />
+            <CopyTextButton text={SETUP_PROMPT} label="Copy prompt" icon={<AgentGlyphs />} className="mt-3 self-start" />
 
             <ul className="mt-8 flex flex-col gap-2 border-t border-border pt-6 text-[0.9rem] text-text-secondary">
               <li><span className="text-text-primary">Requires</span> Node 22 or newer, on macOS or Linux.</li>
