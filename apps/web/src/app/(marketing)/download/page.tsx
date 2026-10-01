@@ -86,8 +86,9 @@ export default async function DownloadPage() {
 
             <h3 className="mt-8 text-[0.95rem] font-medium">Or install from Terminal</h3>
             <p className="mt-1 text-[0.9rem] text-text-secondary">
-              Installs the app and adds the <code className="font-mono text-[0.9em]">genmotion</code> command,
-              so <code className="font-mono text-[0.9em]">genmotion .</code> opens any folder.
+              Installs the app and, with Node 22 or newer, the{" "}
+              <code className="font-mono text-[0.9em]">genmotion</code> command, so{" "}
+              <code className="font-mono text-[0.9em]">genmotion .</code> opens any folder.
             </p>
             <InstallCommand command={STUDIO_INSTALL_COMMAND} className="mt-3" />
 

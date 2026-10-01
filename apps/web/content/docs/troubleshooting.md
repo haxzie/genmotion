@@ -69,9 +69,9 @@ Make sure it was opened in the project folder, so it can read `AGENTS.md` or `CL
 
 Install one and sign in once in a terminal (`claude` or `codex`), then restart GenMotion.
 
-### `genmotion` opens the app instead of running a command
+### Two `genmotion` commands, or a command that's out of date
 
-That's the Studio's launcher. It passes `init`, `dev`, `render`, `check` and the other CLI commands through to the CLI, and opens the app for folders.
+Older versions of the Studio wrote a launcher script to `/usr/local/bin/genmotion`, which can block `npm install -g genmotion` or answer ahead of it. `npx genmotion doctor` lists every `genmotion` on your PATH and flags the old script. Run `genmotion upgrade`, or choose **Update the 'genmotion' command** in the Studio's account menu, to replace it with the npm command.
 
 ### HyperFrames projects in the CLI
 

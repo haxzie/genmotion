@@ -4,11 +4,13 @@ import { api } from "../api";
 import type { CliStatus } from "../../electron/shared";
 
 /**
- * The `genmotion` shell command: whether it is there, and putting it there.
+ * The `genmotion` command: whether it is there, and putting it there.
  *
- * Installed state is shown rather than hidden — a command that is already
- * there is the answer to "did that work?", and one left behind by an app that
- * has since moved is worth saying out loud, since it opens nothing.
+ * It is npm's `genmotion`, installed with `npm install -g`, so it needs Node;
+ * without it the control says so instead of failing. Installed state is shown
+ * rather than hidden: a command that is already there is the answer to "did
+ * that work?", and a script from an older build is worth replacing, since it
+ * can shadow npm's command on PATH.
  *
  * Shared by the account menu and the Settings screen, which want the same
  * behaviour in different chrome: `render` supplies the row.
@@ -35,7 +37,7 @@ export function useCommandLine() {
   const label = installing
     ? "Installing…"
     : ready
-      ? "Command line tool installed"
+      ? `Command line tool installed${cli?.version ? ` · v${cli.version}` : ""}`
       : cli?.installed
         ? "Update the ‘genmotion’ command"
         : "Install the ‘genmotion’ command";
@@ -58,10 +60,18 @@ export function CommandLineHint({
       <p className={cx("text-[0.786rem] leading-snug text-warning", className)}>{cli.error}</p>
     );
   }
+  if (!ready && cli?.needsNode) {
+    return (
+      <p className={cx("text-[0.786rem] leading-snug text-text-tertiary", className)}>
+        Installs with npm, so it needs <a href="https://nodejs.org" target="_blank" rel="noreferrer" className="underline">Node 22 or newer</a>.
+      </p>
+    );
+  }
   if (!ready) return null;
   return (
     <p className={cx("text-[0.786rem] leading-snug text-text-tertiary", className)}>
-      Run <code>genmotion .</code> in a folder to open the app with it shared.
+      Run <code>genmotion .</code> in a folder to open the app with it shared, or{" "}
+      <code>genmotion init</code> to work from the terminal.
     </p>
   );
 }

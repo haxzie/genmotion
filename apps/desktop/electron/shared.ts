@@ -356,15 +356,22 @@ export interface LaunchContext {
   isProject: boolean;
 }
 
-/** Where the `genmotion` shell command stands. See electron/cli.ts. */
+/** Where the `genmotion` command stands. See electron/cli.ts and cli-install.ts. */
 export interface CliStatus {
-  /** False on platforms where nothing is written yet — Windows, Linux. */
+  /** False on Windows, where the control is hidden. */
   supported: boolean;
+  /** Some `genmotion` is on PATH: npm's, or a script an older build wrote. */
   installed: boolean;
-  /** True when an installed command points at *this* app rather than an old one. */
+  /** The `genmotion` a shell runs first is npm's, not an old script. */
   current: boolean;
-  /** Where the command is, or would go. */
+  /** The `genmotion` a shell runs, or just "genmotion" when there is none. */
   path: string;
+  /** npm's `genmotion --version`, when that is what runs. */
+  version?: string;
+  /** No npm on PATH: the command can't be installed until Node is. */
+  needsNode?: boolean;
+  /** A script from an older build is still on PATH. */
+  legacy?: boolean;
   /** Present when installing failed, phrased for the menu. */
   error?: string;
 }

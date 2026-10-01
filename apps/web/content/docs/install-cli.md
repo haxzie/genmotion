@@ -37,6 +37,14 @@ npm install
 
 The project pins its own copy of `genmotion`, so `npm run` scripts and `npx genmotion` use the same version.
 
+Want `genmotion` without `npx`, everywhere? Install it globally:
+
+```sh
+npm install -g genmotion
+```
+
+That is the same command GenMotion Studio installs. If the Studio is on this Mac, `genmotion .` opens the current folder in it.
+
 ### Run it
 
 ```sh

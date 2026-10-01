@@ -1,7 +1,7 @@
 ---
 title: CLI commands
 seoTitle: "genmotion CLI reference: every command and flag"
-description: "Reference for every genmotion CLI command: init, dev, check, still, render, info, scene, skills, templates, mcp and doctor, with flags and JSON output."
+description: "Reference for every genmotion CLI command: init, dev, check, still, render, info, scene, skills, templates, mcp, doctor and upgrade, with flags and JSON output."
 group: Reference
 order: 1
 keywords: [genmotion CLI reference, genmotion render, genmotion dev, genmotion check, video CLI commands, npx genmotion]
@@ -40,6 +40,7 @@ Failures say what went wrong and how to fix it, and exit with code 1:
 | `mcp` | Run the MCP server over stdio |
 | `browser install` | Download headless Chromium ahead of time |
 | `doctor` | Check this machine can preview and render |
+| `upgrade` | Update this command, and the Studio when it's installed |
 
 ## dev
 

@@ -7,11 +7,11 @@ import { dev } from "./commands/dev";
 import { render, still } from "./commands/render";
 import { check } from "./commands/check";
 import { info, scene } from "./commands/project";
-import { browser, doctor, mcp, skills, templates } from "./commands/tools";
+import { browser, doctor, mcp, skills, templates, upgrade } from "./commands/tools";
 import { openDesktop } from "./desktop";
 import { VERSION } from "./version";
 
-const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, templates, mcp, skills, browser, doctor];
+const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, templates, mcp, skills, browser, doctor, upgrade];
 const ALIASES: Record<string, string> = {
   create: "init",
   new: "init",
@@ -45,7 +45,7 @@ ${bold("Every command")}
 ${bold("Start here")}
   npx genmotion init my-video && cd my-video && npm install && npm run dev
 
-${dim("Docs: https://github.com/haxzie/genmotion/tree/main/packages/cli")}`;
+${dim("Docs: https://genmotion.dev/docs")}`;
 }
 
 export async function main(argv: string[]): Promise<number> {
