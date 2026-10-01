@@ -97,7 +97,7 @@ export default async function DownloadPage() {
               <li><span className="text-text-primary">Signed</span> with a Developer ID and notarized by Apple, so it opens without a warning.</li>
               <li><span className="text-text-primary">Updates</span> are checked at launch and never download until you say so.</li>
             </ul>
-            <Link href={`${DOCS_PATH}#studio`} className="mt-6 text-[0.95rem] text-text-secondary underline underline-offset-2 hover:text-green">
+            <Link href={`${DOCS_PATH}/install-studio`} className="mt-6 text-[0.95rem] text-text-secondary underline underline-offset-2 hover:text-green">
               Studio setup guide
             </Link>
           </Card>
@@ -141,7 +141,7 @@ npm run render   # exports/my-video.mp4`}
               <li><span className="text-text-primary">Engines</span> Three.js (the default) and React. HyperFrames projects open in the Studio.</li>
               <li><span className="text-text-primary">No account</span> and no license key.</li>
             </ul>
-            <Link href={`${DOCS_PATH}#cli`} className="mt-6 text-[0.95rem] text-text-secondary underline underline-offset-2 hover:text-green">
+            <Link href={`${DOCS_PATH}/install-cli`} className="mt-6 text-[0.95rem] text-text-secondary underline underline-offset-2 hover:text-green">
               CLI setup guide
             </Link>
           </Card>

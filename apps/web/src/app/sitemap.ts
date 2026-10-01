@@ -11,6 +11,7 @@ import { getAllTemplateSummaries } from "@/lib/marketing/templates";
 import { TEMPLATE_CATEGORIES } from "@/lib/marketing/template-categories";
 import { SITE_URL } from "@/lib/marketing/site";
 import { listSharedVideos } from "@/lib/marketing/shares";
+import { DOCS_HOME, docUrl, getAllDocs } from "@/lib/docs/content";
 
 const BASE = SITE_URL;
 
@@ -19,7 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "",
     "/pricing",
     "/download",
-    "/docs",
     "/about",
     "/features",
     "/use-cases",
@@ -31,6 +31,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/ugc-ads",
     "/educational-videos",
   ].map((path) => ({ url: `${BASE}${path}`, changeFrequency: "weekly" as const }));
+
+  // Every docs page, the introduction at /docs itself. The ways in are the
+  // pages most worth surfacing, so they rank above the reference.
+  const docRoutes = getAllDocs().map((d) => ({
+    url: docUrl(d.slug),
+    lastModified: d.updated || undefined,
+    changeFrequency: "weekly" as const,
+    priority: d.slug === DOCS_HOME || d.slug === "quickstart" ? 0.9 : d.group === "Getting started" ? 0.8 : 0.7,
+  }));
 
   const featureRoutes = FEATURES.map((f) => ({
     url: `${BASE}/features/${f.slug}`,
@@ -90,6 +99,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticRoutes,
+    ...docRoutes,
     ...featureRoutes,
     ...useCaseRoutes,
     ...toolRoutes,

@@ -166,6 +166,7 @@ failure mode if crossed:
 | `src/lib/marketing/tools.ts` | Copy for the free `/tools` generator pages. |
 | `src/lib/marketing/integrations.ts` | Marketplace/MCP-integrations section copy. |
 | `src/components/marketing/faq.tsx`, `site-nav.tsx`, `site-footer.tsx`, `cta-section.tsx` | Shared components that render copy from the lib files above; don't hardcode strings here. |
+| `content/docs/*.md` | The docs at `/docs`, one page per file. Frontmatter sets the sidebar group and order and the SEO fields (`seoTitle`, a 140 to 160 character `description`, `keywords`, `updated`). Shared commands are `{{TOKEN}}`s from `src/lib/marketing/setup.ts`. A new page lands in the sidebar, search, sitemap, `llms.txt` and `llms-full.txt` on its own. |
 | `src/app/sitemap.ts`, `robots.ts`, `llms.txt/route.ts` | Must stay in sync whenever a new content type is added (`AGENTS.md`). |
 
 ## Before it ships

@@ -291,6 +291,9 @@ pnpm changeset                        # describe a change to a published package
   paths.
 - `apps/web/src/app/sitemap.ts` — enumerates public routes (marketing, features,
   tools, blog, glossary, showcase).
+- `apps/web/content/docs/*.md` — the `/docs` pages. Each file is a page, and
+  is picked up by the sidebar, search, sitemap, `llms.txt`, `llms-full.txt` and
+  its `/docs/<slug>.md` twin with no other change.
 - `apps/web/src/app/llms.txt/route.ts` — Markdown site map for LLMs
   ([llmstxt.org](https://llmstxt.org)). When you add a marketing content type,
   add it to sitemap + llms.txt too.

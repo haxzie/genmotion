@@ -19,6 +19,19 @@ const nextConfig: NextConfig = {
     "@genmotion/player",
     "@genmotion/compiler",
   ],
+  async rewrites() {
+    return {
+      // Every docs page has a Markdown twin one suffix away, for agents and
+      // llms.txt. `beforeFiles`, or the docs catch-all route would claim the
+      // `.md` URL first and 404 it.
+      beforeFiles: [
+        { source: "/docs.md", destination: "/docs-md/introduction" },
+        { source: "/docs/:slug([a-z0-9-]+)\\.md", destination: "/docs-md/:slug" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async redirects() {
     return [
       // Projects were merged into the app home (alongside the create composer).
