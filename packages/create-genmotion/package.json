@@ -1,6 +1,6 @@
 {
   "name": "create-genmotion",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "npm create genmotion — start a video project that coding agents can build, preview and render.",
   "license": "Apache-2.0",
   "repository": {
