@@ -13,7 +13,7 @@ GenMotion turns a description into a finished video. Your coding agent writes th
 - [Quickstart](/docs/quickstart): Make your first video in five minutes, from a prompt or three commands.
 - [Install the Studio](/docs/install-studio): The desktop app for Mac: chat, preview, timeline and one-click export.
 - [Install the CLI](/docs/install-cli): `npx @genmotion/cli` for any terminal, any agent, and CI.
-- [Connect your agent](/docs/connect-your-agent): Claude Code, Codex, Cursor or any MCP client.
+- [Connect your agent](/docs/connect-your-agent): Claude Code, Codex, OpenCode, Cursor or any MCP client.
 :::
 
 ## How it works

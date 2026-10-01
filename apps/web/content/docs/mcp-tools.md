@@ -1,7 +1,7 @@
 ---
 title: MCP tools
 seoTitle: "genmotion MCP server: tools for coding agents"
-description: "The genmotion MCP server gives Claude Code, Codex and Cursor tools to create projects, add scenes, check them, capture frames as images and render MP4."
+description: "The genmotion MCP server gives Claude Code, Codex, OpenCode and Cursor tools to create projects, add scenes, check them, capture frames and render MP4."
 group: Reference
 order: 3
 keywords: [genmotion MCP server, MCP video tools, Claude Code MCP tools, capture frames MCP, render video MCP, Model Context Protocol video]

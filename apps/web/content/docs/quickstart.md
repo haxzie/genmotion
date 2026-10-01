@@ -12,7 +12,7 @@ There are two ways in. Let your agent do the setup, or run three commands yourse
 
 ## Let your agent set it up
 
-Open Claude Code, Codex or Cursor in an empty folder and paste this prompt. The agent installs the project, reads the rules, asks what the video is for and builds it.
+Open Claude Code, Codex, OpenCode or Cursor in an empty folder and paste this prompt. The agent installs the project, reads the rules, asks what the video is for and builds it.
 
 ```text title="Setup prompt"
 {{SETUP_PROMPT}}
