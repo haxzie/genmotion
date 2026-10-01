@@ -75,7 +75,7 @@ never prompts unless it's running in a terminal without `--yes`.
 | Command | |
 |---|---|
 | `genmotion init [dir]` | New project. `--template <id\|path>`, `--size 1920x1080\|portrait\|square\|4k`, `--fps`, `--engine three\|react` |
-| `genmotion dev` | Studio: the picture over a timeline of scenes and audio lanes with waveforms, sound in sync. Reloads on save, at the frame you were on. `--background` / `--status` / `--stop` for agents |
+| `genmotion dev` | Studio: the picture over a timeline of scenes and audio lanes with waveforms, sound in sync. Export MP4 and Edit in studio buttons. Reloads on save, at the frame you were on. `--background` / `--status` / `--stop` for agents |
 | `genmotion render [out]` | `--codec mp4\|webm\|gif\|mov\|png`, `--frames 0-89\|1s-3s`, `--scale 2`, `--quality`, `--crf`, `--concurrency`, `--gl gpu` |
 | `genmotion still` | `--at 1.5s --at 50% --at 120` writes PNG or JPEG frames |
 | `genmotion check` | Compiles every scene, enforces the determinism rules, and renders each scene's first, middle and last frame headlessly, catching throws, console errors and blank frames. Exits 1 on errors. `--static` skips the browser |
