@@ -2,10 +2,10 @@
 title: Install the genmotion CLI
 seoTitle: "Install the genmotion CLI with npm and Node 22"
 sidebarTitle: Install the CLI
-description: "Install the genmotion CLI with npm and Node 22. Scaffold a video project with npx genmotion init, preview it live, and render MP4 on macOS, Linux or CI."
+description: "Install the genmotion CLI with npm and Node 22. Scaffold a video project with npx @genmotion/cli init, preview it live, and render MP4 on macOS, Linux or CI."
 group: Getting started
 order: 4
-keywords: [genmotion npm, npx genmotion, video CLI, render video from the command line, Three.js video CLI, programmatic video Node]
+keywords: [genmotion npm, npx @genmotion/cli, video CLI, render video from the command line, Three.js video CLI, programmatic video Node]
 updated: 2026-10-01
 ---
 
@@ -35,15 +35,19 @@ cd my-video
 npm install
 ```
 
-The project pins its own copy of `genmotion`, so `npm run` scripts and `npx genmotion` use the same version.
+The project pins its own copy of `@genmotion/cli`, so `npm run` scripts and `npx @genmotion/cli` use the same version.
 
 Want `genmotion` without `npx`, everywhere? Install it globally:
 
 ```sh
-npm install -g genmotion
+npm install -g @genmotion/cli
 ```
 
 That is the same command GenMotion Studio installs. If the Studio is on this Mac, `genmotion .` opens the current folder in it.
+
+::: note
+The package is `@genmotion/cli` and the command it installs is `genmotion`. Inside a project, `npm run dev` and the other scripts call `genmotion` directly; elsewhere, `npx @genmotion/cli <command>` runs it without installing anything.
+:::
 
 ### Run it
 
@@ -67,14 +71,14 @@ npm run render    # exports/my-video.mp4
 | `--json` | Print one JSON object, for scripts and agents |
 
 ```sh
-npx genmotion init reel --size portrait --fps 60
-npx genmotion init launch --template crypto-launch-video
+npx @genmotion/cli init reel --size portrait --fps 60
+npx @genmotion/cli init launch --template crypto-launch-video
 ```
 
 ## Check your machine
 
 ```sh
-npx genmotion doctor
+npx @genmotion/cli doctor
 ```
 
 It checks Node, ffmpeg, Chromium and WebGL, and prints the fix for anything missing.
@@ -99,8 +103,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx genmotion check
-      - run: npx genmotion render
+      - run: npx @genmotion/cli check
+      - run: npx @genmotion/cli render
       - uses: actions/upload-artifact@v4
         with:
           name: video

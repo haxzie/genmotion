@@ -10,7 +10,7 @@ GenMotion videos are folders of scenes (Three.js by default) listed in `project.
 ## 0. Find or create the project
 
 - A folder with a `project.json` is a GenMotion project: work there and read its `AGENTS.md` (the scene rules) first.
-- No project yet: create one with `create_project` (or `npx genmotion init <folder> --yes`; `--size portrait` for 9:16). A catalog template is `list_templates`, then `create_project` with `template`.
+- No project yet: create one with `create_project` (or `npx @genmotion/cli init <folder> --yes`; `--size portrait` for 9:16). A catalog template is `list_templates`, then `create_project` with `template`.
 
 ## 1. Pick the skill that owns this video
 
@@ -34,7 +34,7 @@ GenMotion ships a skill pack: one skill per kind of video, plus craft skills (ca
 
 ## 4. Deliver
 
-- A live preview for the user: `npx genmotion dev --background` prints the URL.
+- A live preview for the user: `npx @genmotion/cli dev --background` prints the URL.
 - The MP4, when asked or at the end: `render_video` writes `exports/<name>.mp4`. Report the path and length.
 
 ## Capabilities

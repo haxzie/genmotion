@@ -115,7 +115,7 @@ These are the overclaim traps specific to this product, each with a real
 failure mode if crossed:
 
 - **Not a library, not an API, no per-user backend rendering.** GenMotion is a
-  desktop studio plus the `genmotion` CLI (`npx genmotion`, a command-line
+  desktop studio plus the `genmotion` CLI (`npx @genmotion/cli`, a command-line
   tool and MCP server on npm, documented at `/docs`). Neither is a library you
   import or a render API: that boundary is stated in the comparison posts
   (`content/blog/hyperframes-alternatives.md`,

@@ -4,7 +4,7 @@
   "commit": false,
   "fixed": [
     [
-      "genmotion",
+      "@genmotion/cli",
       "create-genmotion"
     ]
   ],

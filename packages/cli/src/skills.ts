@@ -35,7 +35,7 @@ export function catalog(): SkillCatalogEntry[] {
 
 function entryOrThrow(id: string): SkillCatalogEntry {
   const entry = findSkill(id);
-  if (!entry) throw new CliError(`No skill "${id}"`, { fix: "npx genmotion skills list" });
+  if (!entry) throw new CliError(`No skill "${id}"`, { fix: "npx @genmotion/cli skills list" });
   return entry;
 }
 

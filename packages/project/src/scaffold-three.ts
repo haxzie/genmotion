@@ -15,8 +15,8 @@ import { renderGitignoreLines } from "./scaffold-readme";
  * truthful npm project rather than one that only builds inside our app.
  */
 export interface ThreeScaffoldVersions {
-  /** The CLI behind the project's `dev`/`render`/`check` scripts. */
-  genmotion: string;
+  /** `@genmotion/cli`, behind the project's `dev`/`render`/`check` scripts. */
+  cli: string;
   threeEngine: string;
   three: string;
   threeTypes: string;
@@ -24,7 +24,7 @@ export interface ThreeScaffoldVersions {
 }
 
 export const DEFAULT_THREE_VERSIONS: ThreeScaffoldVersions = {
-  genmotion: "^0.1.0",
+  cli: "^0.2.1",
   threeEngine: "^0.1.0",
   three: "^0.185.1",
   threeTypes: "^0.185.4",
@@ -53,7 +53,7 @@ export function renderThreePackageJson(
       three: versions.three,
     },
     devDependencies: {
-      genmotion: versions.genmotion,
+      "@genmotion/cli": versions.cli,
       "@types/three": versions.threeTypes,
       typescript: versions.typescript,
     },

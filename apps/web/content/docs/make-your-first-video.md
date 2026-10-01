@@ -54,4 +54,4 @@ Or press Export in the Studio. The file lands in `exports/`. Need a different fo
 - **One message, one goal.** A focused note gets a focused change.
 - **Name the destination.** "Instagram Reel" implies 9:16, captions and a strong first second; "website hero" implies a loop.
 - **Give real copy.** Headlines, product names and numbers you provide beat placeholders the agent invents.
-- **Start from a template** when one is close: `npx genmotion init my-video --template <id>`, or Remix in the Studio. The agent edits a finished video instead of starting from zero.
+- **Start from a template** when one is close: `npx @genmotion/cli init my-video --template <id>`, or Remix in the Studio. The agent edits a finished video instead of starting from zero.

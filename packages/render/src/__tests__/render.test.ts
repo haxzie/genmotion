@@ -10,7 +10,7 @@ import { runFfmpeg } from "../ffmpeg";
 
 /**
  * The real pipeline against a real browser: scaffold, check, capture, encode.
- * Skipped where no Chromium is installed (`npx genmotion browser install`).
+ * Skipped where no Chromium is installed (`npx @genmotion/cli browser install`).
  */
 const chromium = findChromium().path;
 let dir: string;

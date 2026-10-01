@@ -8,7 +8,7 @@ keywords: [genmotion MCP server, MCP video tools, Claude Code MCP tools, capture
 updated: 2026-10-01
 ---
 
-`npx genmotion mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It gives agents tools instead of more text to read. Projects made with `init` register it already; see [Connect your agent](/docs/connect-your-agent) to add it anywhere else.
+`npx @genmotion/cli mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It gives agents tools instead of more text to read. Projects made with `init` register it already; see [Connect your agent](/docs/connect-your-agent) to add it anywhere else.
 
 ## Tools
 

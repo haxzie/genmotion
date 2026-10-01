@@ -23,7 +23,7 @@ GenMotion works with the agent you already use. A project folder carries its own
 | `.cursor/mcp.json` | Cursor | The same server, for Cursor |
 | `.claude/skills/`, `.agents/skills/` | Claude Code, Codex | The make-a-video workflow and the skill router |
 
-Already have a project from somewhere else? `npx genmotion skills add` writes the same files into it, and `npx genmotion skills update` refreshes them after an upgrade.
+Already have a project from somewhere else? `npx @genmotion/cli skills add` writes the same files into it, and `npx @genmotion/cli skills update` refreshes them after an upgrade.
 
 ## Claude Code
 
@@ -50,10 +50,10 @@ claude plugin install genmotion@genmotion
 Open Codex in the project folder. It reads `AGENTS.md` and the skills in `.agents/skills/`. To give it the MCP tools too:
 
 ```sh
-codex mcp add genmotion -- npx -y genmotion mcp
+codex mcp add genmotion -- npx -y @genmotion/cli mcp
 ```
 
-Without MCP, Codex runs the same steps as shell commands (`npx genmotion check --json` and so on), which `AGENTS.md` lists.
+Without MCP, Codex runs the same steps as shell commands (`npx @genmotion/cli check --json` and so on), which `AGENTS.md` lists.
 
 ## Cursor
 
@@ -66,7 +66,7 @@ The server speaks MCP over stdio. Add it to any client's config:
 ```json
 {
   "mcpServers": {
-    "genmotion": { "command": "npx", "args": ["-y", "genmotion", "mcp"] }
+    "genmotion": { "command": "npx", "args": ["-y", "@genmotion/cli", "mcp"] }
   }
 }
 ```

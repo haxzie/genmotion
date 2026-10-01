@@ -59,7 +59,7 @@ Start a new project from the home screen or from a template. From a terminal, `g
 
 ## The `genmotion` command
 
-The `genmotion` command is the [genmotion CLI](/docs/install-cli) from npm. The installer adds it when Node 22 or newer is installed; otherwise choose **Install the 'genmotion' command** from the app's account menu after installing Node, or run `npm install -g genmotion`. With no arguments, or a folder, it opens the Studio:
+The `genmotion` command is the [genmotion CLI](/docs/install-cli) from npm. The installer adds it when Node 22 or newer is installed; otherwise choose **Install the 'genmotion' command** from the app's account menu after installing Node, or run `npm install -g @genmotion/cli`. With no arguments, or a folder, it opens the Studio:
 
 ```sh
 genmotion .            # open this folder in the app

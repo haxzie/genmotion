@@ -8,13 +8,13 @@ keywords: [render Three.js to MP4, headless video rendering, export video from c
 updated: 2026-10-01
 ---
 
-`npx genmotion render` turns a project into a video file. In the Studio, Export does the same thing with the same engine.
+`npx @genmotion/cli render` turns a project into a video file. In the Studio, Export does the same thing with the same engine.
 
 ```sh
-npx genmotion render                      # exports/<project>.mp4
-npx genmotion render teaser.webm          # format from the extension
-npx genmotion render --codec gif --frames 0-89
-npx genmotion render --scale 2            # 3840×2160 from a 1080p project
+npx @genmotion/cli render                      # exports/<project>.mp4
+npx @genmotion/cli render teaser.webm          # format from the extension
+npx @genmotion/cli render --codec gif --frames 0-89
+npx @genmotion/cli render --scale 2            # 3840×2160 from a 1080p project
 ```
 
 ## Options
@@ -57,7 +57,7 @@ The default WebGL backend, SwiftShader, renders on the CPU. It's slower, but it 
 Parallel rendering produces exactly the same frames as rendering in order, because every frame is a function of time alone. Raising `--concurrency` never changes the result.
 
 ::: tip
-Preview a section before a full render: `npx genmotion render --frames 4s-6s` or `npx genmotion still --at 5s`.
+Preview a section before a full render: `npx @genmotion/cli render --frames 4s-6s` or `npx @genmotion/cli still --at 5s`.
 :::
 
 ## Formats

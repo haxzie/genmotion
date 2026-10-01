@@ -13,8 +13,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx genmotion check
-      - run: npx genmotion render
+      - run: npx @genmotion/cli check
+      - run: npx @genmotion/cli render
       - uses: actions/upload-artifact@v4
         with:
           name: video

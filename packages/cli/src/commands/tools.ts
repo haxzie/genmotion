@@ -22,9 +22,9 @@ export const mcp: Command = {
 Speaks MCP over stdio. New projects already carry the config (.mcp.json,
 .cursor/mcp.json). To add it by hand:
 
-  Claude Code   claude mcp add genmotion -- npx -y genmotion mcp
-  Codex         codex mcp add genmotion -- npx -y genmotion mcp
-  Any client    { "command": "npx", "args": ["-y", "genmotion", "mcp"] }
+  Claude Code   claude mcp add genmotion -- npx -y @genmotion/cli mcp
+  Codex         codex mcp add genmotion -- npx -y @genmotion/cli mcp
+  Any client    { "command": "npx", "args": ["-y", "@genmotion/cli", "mcp"] }
 
 Tools: search_skills, get_skill, project_overview, create_project,
 add_scene, validate_scene, check_project, capture_frames, render_video,
@@ -80,7 +80,7 @@ Options
     }
     if (action === "search") {
       const query = args.join(" ").trim();
-      if (!query) throw new CliError("What is the video?", { fix: 'npx genmotion skills search "launch video for my app"' });
+      if (!query) throw new CliError("What is the video?", { fix: 'npx @genmotion/cli skills search "launch video for my app"' });
       const results = searchPack({ query, kind, engine, limit: num(values.limit, "limit") ?? 5, surface: "shell" });
       out.result(
         { engine: engine ?? null, query, results },
@@ -91,19 +91,19 @@ Options
               missing.length ? `\n  ${yellow("not here:")} ${missing.join(", ")}` : ""
             }`;
           })
-          .join("\n") + `\n\n${dim("Read one: npx genmotion skills show <id>")}`,
+          .join("\n") + `\n\n${dim("Read one: npx @genmotion/cli skills show <id>")}`,
       );
       return;
     }
     if (action === "show") {
       const [id, file] = args;
-      if (!id) throw new CliError("Which skill?", { fix: "npx genmotion skills list" });
+      if (!id) throw new CliError("Which skill?", { fix: "npx @genmotion/cli skills list" });
       const skill = await readSkill(id, file);
       out.result({ ...skill }, `${skill.text}${skill.references.length && !file ? `\n---\n${dim(`references: ${skill.references.join(", ")}`)}` : ""}`);
       return;
     }
     if (action !== "add" && action !== "update") {
-      throw new CliError(`Unknown action "${action}"`, { fix: "npx genmotion skills --help" });
+      throw new CliError(`Unknown action "${action}"`, { fix: "npx @genmotion/cli skills --help" });
     }
 
     const projectDir = resolveProjectDir(str(values.dir));
@@ -133,13 +133,13 @@ export const templates: Command = {
   summary: "List starter templates",
   help: `Usage: genmotion templates [--json]
 
-Start from one with: npx genmotion init my-video --template <id>`,
+Start from one with: npx @genmotion/cli init my-video --template <id>`,
   options: {},
   async run({ out }) {
     const list = await listTemplates();
     out.result(
       { templates: list },
-      list.map((t) => `${bold(t.id.padEnd(40))} ${dim(t.title)}`).join("\n") + `\n\n${dim("npx genmotion init my-video --template <id>")}`,
+      list.map((t) => `${bold(t.id.padEnd(40))} ${dim(t.title)}`).join("\n") + `\n\n${dim("npx @genmotion/cli init my-video --template <id>")}`,
     );
   },
 };
@@ -158,16 +158,16 @@ GENMOTION_CHROMIUM=/path/to/chrome overrides the choice.`,
     const action = positionals[0] ?? "path";
     if (action === "path") {
       const found = findChromium();
-      if (!found.path) throw new CliError("No Chromium found", { fix: "npx genmotion browser install" });
+      if (!found.path) throw new CliError("No Chromium found", { fix: "npx @genmotion/cli browser install" });
       out.result({ path: found.path }, found.path);
       return;
     }
-    if (action !== "install") throw new CliError(`Unknown action "${action}"`, { fix: "npx genmotion browser install" });
+    if (action !== "install") throw new CliError(`Unknown action "${action}"`, { fix: "npx @genmotion/cli browser install" });
     out.info("Downloading Chromium headless shell…");
     const installed = await installChromium().catch((err: Error) => {
       throw new CliError(err.message, { fix: "Set GENMOTION_CHROMIUM to an installed Chrome instead" });
     });
-    if (!installed) throw new CliError("Chromium downloaded but can't be found", { fix: "npx genmotion doctor" });
+    if (!installed) throw new CliError("Chromium downloaded but can't be found", { fix: "npx @genmotion/cli doctor" });
     out.result({ path: installed }, `${green("✓")} ${installed}`);
   },
 };
@@ -185,14 +185,14 @@ export const doctor: Command = {
 
     const ff = await ensureFfmpeg();
     const ffOk = (ff !== "ffmpeg" && existsSync(ff)) || spawnSync(ff, ["-version"]).status === 0;
-    checks.push({ name: "ffmpeg", ok: ffOk, detail: ff, fix: ffOk ? undefined : "Reinstall genmotion, or set FFMPEG_PATH" });
+    checks.push({ name: "ffmpeg", ok: ffOk, detail: ff, fix: ffOk ? undefined : "Reinstall @genmotion/cli, or set FFMPEG_PATH" });
 
     const chromium = findChromium();
     checks.push({
       name: "chromium",
       ok: chromium.path !== null,
       detail: chromium.path ?? "not found",
-      fix: chromium.path ? undefined : "npx genmotion browser install",
+      fix: chromium.path ? undefined : "npx @genmotion/cli browser install",
     });
 
     if (chromium.path) {
@@ -230,8 +230,8 @@ export const doctor: Command = {
         warn: legacy.length > 0,
         detail: onPath.length
           ? onPath.map((p) => (isLegacyLauncher(p) ? `${p} (old app launcher)` : p)).join(", ")
-          : "not on PATH (npx genmotion works without it)",
-        fix: legacy.length ? "genmotion upgrade, or npm install -g genmotion" : undefined,
+          : "not on PATH (npx @genmotion/cli works without it)",
+        fix: legacy.length ? "genmotion upgrade, or npm install -g @genmotion/cli" : undefined,
       });
     }
 
@@ -250,9 +250,9 @@ const INSTALL_URL = "https://genmotion.dev/install.sh";
 
 /** The globally installed `genmotion` version, as npm reports it. */
 function globalCliVersion(): string | null {
-  const ls = spawnSync("npm", ["ls", "-g", "genmotion", "--depth=0", "--json"], { encoding: "utf8", shell: process.platform === "win32" });
+  const ls = spawnSync("npm", ["ls", "-g", "@genmotion/cli", "--depth=0", "--json"], { encoding: "utf8", shell: process.platform === "win32" });
   try {
-    return (JSON.parse(ls.stdout) as { dependencies?: { genmotion?: { version?: string } } }).dependencies?.genmotion?.version ?? null;
+    return (JSON.parse(ls.stdout) as { dependencies?: Record<string, { version?: string }> }).dependencies?.["@genmotion/cli"]?.version ?? null;
   } catch {
     return null;
   }
@@ -265,10 +265,10 @@ export const upgrade: Command = {
 
 With the GenMotion app installed (macOS), runs the app's installer, which
 updates the app and this command together. Otherwise runs
-npm install -g genmotion@latest.
+npm install -g @genmotion/cli@latest.
 
 In a project, the project's own copy is in package.json:
-  npm install genmotion@latest`,
+  npm install @genmotion/cli@latest`,
   options: {},
   async run({ out }) {
     const app = process.platform === "darwin" ? findDesktopApp() : null;
@@ -280,10 +280,10 @@ In a project, the project's own copy is in package.json:
       ? (out.info("Updating GenMotion and the genmotion command…"),
         spawnSync("/bin/sh", ["-c", `curl -fsSL ${INSTALL_URL} | sh`], { stdio }))
       : (out.info("Updating the genmotion command…"),
-        spawnSync("npm", ["install", "-g", "genmotion@latest"], { stdio, shell: process.platform === "win32" }));
+        spawnSync("npm", ["install", "-g", "@genmotion/cli@latest"], { stdio, shell: process.platform === "win32" }));
     if (ran.status !== 0) {
-      throw new CliError(app ? "The GenMotion installer failed" : "npm install -g genmotion@latest failed", {
-        fix: app ? `curl -fsSL ${INSTALL_URL} | sh` : "npm install -g genmotion@latest",
+      throw new CliError(app ? "The GenMotion installer failed" : "npm install -g @genmotion/cli@latest failed", {
+        fix: app ? `curl -fsSL ${INSTALL_URL} | sh` : "npm install -g @genmotion/cli@latest",
       });
     }
 

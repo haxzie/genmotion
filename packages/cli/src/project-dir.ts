@@ -12,7 +12,7 @@ export function resolveProjectDir(dir: string | undefined): string {
   if (dir) {
     const absolute = path.resolve(dir);
     if (!existsSync(path.join(absolute, MANIFEST_FILE))) {
-      throw new CliError(`No ${MANIFEST_FILE} in ${absolute}`, { fix: `npx genmotion init ${dir}` });
+      throw new CliError(`No ${MANIFEST_FILE} in ${absolute}`, { fix: `npx @genmotion/cli init ${dir}` });
     }
     return absolute;
   }
@@ -24,6 +24,6 @@ export function resolveProjectDir(dir: string | undefined): string {
     current = parent;
   }
   throw new CliError(`Not inside a GenMotion project (no ${MANIFEST_FILE} here or above)`, {
-    fix: "npx genmotion init my-video && cd my-video",
+    fix: "npx @genmotion/cli init my-video && cd my-video",
   });
 }

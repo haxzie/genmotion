@@ -24,7 +24,7 @@ npm run render    # exports/<name>.mp4
 ```
 
 Give any coding agent the same tools and GenMotion's video-type skills with
-`npx genmotion skills add`, which writes `CLAUDE.md`, `.mcp.json` and the
+`npx @genmotion/cli skills add`, which writes `CLAUDE.md`, `.mcp.json` and the
 skills (a project made with `genmotion init` has them already).
 
 ## What's in here

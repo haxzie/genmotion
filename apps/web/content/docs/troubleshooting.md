@@ -8,7 +8,7 @@ keywords: [GenMotion troubleshooting, genmotion render error, Chromium not found
 updated: 2026-10-01
 faqs:
   - q: Why does the first render take longer?
-    a: The first render downloads a headless Chromium (about 100 MB) and ffmpeg, once per machine. Later renders start immediately. Run npx genmotion browser install to do it ahead of time.
+    a: The first render downloads a headless Chromium (about 100 MB) and ffmpeg, once per machine. Later renders start immediately. Run npx @genmotion/cli browser install to do it ahead of time.
   - q: Does GenMotion work on Windows?
     a: The Studio runs on macOS with Apple silicon. The CLI is tested on macOS and Linux; on Windows, run it inside WSL.
   - q: Can I use my own Chrome and ffmpeg?
@@ -17,7 +17,7 @@ faqs:
     a: No. Projects are folders on your machine, and the preview and the render both run locally.
 ---
 
-Start with `npx genmotion doctor`. It checks Node, ffmpeg, Chromium and WebGL, and prints the fix for anything that fails.
+Start with `npx @genmotion/cli doctor`. It checks Node, ffmpeg, Chromium and WebGL, and prints the fix for anything that fails.
 
 ## Installing
 
@@ -27,7 +27,7 @@ Install a current Node from [nodejs.org](https://nodejs.org) or with a version m
 
 ### "No Chromium found"
 
-The first render downloads one automatically. If your network blocks the download, run `npx genmotion browser install` on another network, or point `GENMOTION_CHROMIUM` at an installed Chrome.
+The first render downloads one automatically. If your network blocks the download, run `npx @genmotion/cli browser install` on another network, or point `GENMOTION_CHROMIUM` at an installed Chrome.
 
 ### "ffmpeg not found"
 
@@ -41,11 +41,11 @@ Add `--gl gpu` to use your graphics card, and raise `--concurrency` on a machine
 
 ### A scene renders blank or black
 
-Run `npx genmotion check`. It flags frames that are a single flat color and says whether the camera is pointing away or the objects are unlit. Then `npx genmotion still --at 50%` to see the frame yourself.
+Run `npx @genmotion/cli check`. It flags frames that are a single flat color and says whether the camera is pointing away or the objects are unlit. Then `npx @genmotion/cli still --at 50%` to see the frame yourself.
 
 ### The export doesn't match the preview
 
-A scene is reading a clock or random numbers. `npx genmotion check` names the line; replace it with the `time`, `frame` or `progress` the update function receives. See [the determinism rules](/docs/project-structure#the-determinism-rules).
+A scene is reading a clock or random numbers. `npx @genmotion/cli check` names the line; replace it with the `time`, `frame` or `progress` the update function receives. See [the determinism rules](/docs/project-structure#the-determinism-rules).
 
 ### "Not inside a GenMotion project"
 
@@ -57,11 +57,11 @@ Run the command from the project folder (any subfolder works), or pass `--dir pa
 
 - **Claude Code:** approve the `genmotion` server when asked, or run `claude mcp list`. Restart the session after adding it.
 - **Cursor:** enable it under Settings → MCP.
-- **Any client:** the server must start in the project folder, or get `--dir`. Run `npx -y genmotion mcp` in a terminal; it should wait silently for input.
+- **Any client:** the server must start in the project folder, or get `--dir`. Run `npx -y @genmotion/cli mcp` in a terminal; it should wait silently for input.
 
 ### The agent ignores the project's rules
 
-Make sure it was opened in the project folder, so it can read `AGENTS.md` or `CLAUDE.md`. `npx genmotion skills update` rewrites those files if they're missing or stale.
+Make sure it was opened in the project folder, so it can read `AGENTS.md` or `CLAUDE.md`. `npx @genmotion/cli skills update` rewrites those files if they're missing or stale.
 
 ## GenMotion Studio
 
@@ -71,7 +71,7 @@ Install one and sign in once in a terminal (`claude` or `codex`), then restart G
 
 ### Two `genmotion` commands, or a command that's out of date
 
-Older versions of the Studio wrote a launcher script to `/usr/local/bin/genmotion`, which can block `npm install -g genmotion` or answer ahead of it. `npx genmotion doctor` lists every `genmotion` on your PATH and flags the old script. Run `genmotion upgrade`, or choose **Update the 'genmotion' command** in the Studio's account menu, to replace it with the npm command.
+Older versions of the Studio wrote a launcher script to `/usr/local/bin/genmotion`, which can block `npm install -g @genmotion/cli` or answer ahead of it. `npx @genmotion/cli doctor` lists every `genmotion` on your PATH and flags the old script. Run `genmotion upgrade`, or choose **Update the 'genmotion' command** in the Studio's account menu, to replace it with the npm command.
 
 ### HyperFrames projects in the CLI
 

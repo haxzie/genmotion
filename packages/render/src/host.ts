@@ -44,7 +44,7 @@ async function loadBundle(name: string): Promise<string> {
     .map((ext) => path.join(here, "browser", `${name}${ext}`))
     .find((file) => existsSync(file));
   if (!source) {
-    throw new Error(`The ${name} browser bundle is missing from ${path.join(here, "browser")} — reinstall genmotion`);
+    throw new Error(`The ${name} browser bundle is missing from ${path.join(here, "browser")} — reinstall @genmotion/cli`);
   }
   const { buildBrowserBundle } = await import("./build-browser");
   return buildBrowserBundle(source);

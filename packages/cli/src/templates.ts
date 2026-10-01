@@ -67,7 +67,7 @@ async function fetchJson(url: string): Promise<unknown> {
       fix: "Check your connection, or pass a local folder: --template ./path/to/project",
     });
   }
-  if (res.status === 404) throw new CliError(`Not found: ${url}`, { fix: "npx genmotion templates" });
+  if (res.status === 404) throw new CliError(`Not found: ${url}`, { fix: "npx @genmotion/cli templates" });
   if (!res.ok) throw new CliError(`${url} answered ${res.status}`);
   return res.json();
 }
@@ -119,7 +119,7 @@ function isLocal(template: string): boolean {
 
 async function fetchTemplate(id: string): Promise<RemixBundle> {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) {
-    throw new CliError(`"${id}" isn't a template id`, { fix: "npx genmotion templates" });
+    throw new CliError(`"${id}" isn't a template id`, { fix: "npx @genmotion/cli templates" });
   }
   return (await fetchJson(`${API_URL}/api/templates/${id}/files`)) as RemixBundle;
 }

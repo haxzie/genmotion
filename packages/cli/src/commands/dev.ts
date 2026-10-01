@@ -102,11 +102,11 @@ Options
         await new Promise((r) => setTimeout(r, 150));
         const state = await readState(projectDir);
         if (state) {
-          out.result({ running: true, ...state }, `${green("●")} Studio running at ${bold(state.url)} ${dim(`(stop: npx genmotion dev --stop)`)}`);
+          out.result({ running: true, ...state }, `${green("●")} Studio running at ${bold(state.url)} ${dim(`(stop: npx @genmotion/cli dev --stop)`)}`);
           return;
         }
       }
-      throw new CliError("The background studio didn't start within 15s", { fix: "Run `npx genmotion dev` in the foreground to see why" });
+      throw new CliError("The background studio didn't start within 15s", { fix: "Run `npx @genmotion/cli dev` in the foreground to see why" });
     }
 
     const host = str(values.host) ?? "127.0.0.1";

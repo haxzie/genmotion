@@ -12,7 +12,7 @@ GenMotion turns a description into a finished video. Your coding agent writes th
 ::: cards
 - [Quickstart](/docs/quickstart): Make your first video in five minutes, from a prompt or three commands.
 - [Install the Studio](/docs/install-studio): The desktop app for Mac: chat, preview, timeline and one-click export.
-- [Install the CLI](/docs/install-cli): `npx genmotion` for any terminal, any agent, and CI.
+- [Install the CLI](/docs/install-cli): `npx @genmotion/cli` for any terminal, any agent, and CI.
 - [Connect your agent](/docs/connect-your-agent): Claude Code, Codex, Cursor or any MCP client.
 :::
 
@@ -31,7 +31,7 @@ GenMotion turns a description into a finished video. Your coding agent writes th
 | What it is | Desktop app: chat, preview, timeline, export | Command-line tool and MCP server on npm |
 | Runs on | macOS on Apple silicon | Node 22 or newer on macOS or Linux |
 | Your agent | Claude Code or Codex, inside the app | Any coding agent, or your own terminal |
-| Export | One click | `npx genmotion render` |
+| Export | One click | `npx @genmotion/cli render` |
 | Account | Free plan, no card | None |
 
 ![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")

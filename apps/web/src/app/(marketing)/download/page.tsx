@@ -139,7 +139,7 @@ npm run render   # exports/my-video.mp4`}
 
             <ul className="mt-8 flex flex-col gap-2 border-t border-border pt-6 text-[0.9rem] text-text-secondary">
               <li><span className="text-text-primary">Requires</span> Node 22 or newer, on macOS or Linux.</li>
-              <li><span className="text-text-primary">Downloads</span> headless Chromium and ffmpeg on the first render. <code className="font-mono text-[0.9em]">npx genmotion doctor</code> checks the machine.</li>
+              <li><span className="text-text-primary">Downloads</span> headless Chromium and ffmpeg on the first render. <code className="font-mono text-[0.9em]">npx @genmotion/cli doctor</code> checks the machine.</li>
               <li><span className="text-text-primary">Engines</span> Three.js (the default) and React. HyperFrames projects open in the Studio.</li>
               <li><span className="text-text-primary">No account</span> and no license key.</li>
             </ul>

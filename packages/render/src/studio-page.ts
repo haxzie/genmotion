@@ -72,7 +72,7 @@ export const STUDIO_HTML = `<!DOCTYPE html>
     <button id="next" title="Next frame (&#8594;)">&#8250;</button>
     <input id="scrub" type="range" min="0" value="0" step="1" aria-label="Frame">
     <span id="time"></span>
-    <span class="hint">Render with <code>npx genmotion render</code></span>
+    <span class="hint">Render with <code>npx @genmotion/cli render</code></span>
   </div>
 </footer>
 <script src="/__gm/host.js"></script>

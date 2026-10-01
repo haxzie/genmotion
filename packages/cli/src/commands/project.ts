@@ -104,9 +104,9 @@ Options
   },
   async run({ values, positionals, out }) {
     const [action, ...rest] = positionals;
-    if (action !== "add") throw new CliError(`Unknown scene action "${action ?? ""}"`, { fix: 'npx genmotion scene add "Intro" --duration 4s' });
+    if (action !== "add") throw new CliError(`Unknown scene action "${action ?? ""}"`, { fix: 'npx @genmotion/cli scene add "Intro" --duration 4s' });
     const name = rest.join(" ").trim();
-    if (!name) throw new CliError("Give the scene a name", { fix: 'npx genmotion scene add "Intro" --duration 4s' });
+    if (!name) throw new CliError("Give the scene a name", { fix: 'npx @genmotion/cli scene add "Intro" --duration 4s' });
     const projectDir = resolveProjectDir(str(values.dir));
     const manifest = await readManifest(projectDir);
     const added = await addScene({

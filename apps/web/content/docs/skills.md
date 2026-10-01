@@ -50,10 +50,10 @@ The router skill, `genmotion-skills`, runs at the start of a new video:
 ## Use skills from the terminal
 
 ```sh
-npx genmotion skills list
-npx genmotion skills search "explainer about how our sync engine works"
-npx genmotion skills show explainer
-npx genmotion skills add explainer   # copy it and what it needs into the project
+npx @genmotion/cli skills list
+npx @genmotion/cli skills search "explainer about how our sync engine works"
+npx @genmotion/cli skills show explainer
+npx @genmotion/cli skills add explainer   # copy it and what it needs into the project
 ```
 
 Over MCP the same thing is `search_skills` and `get_skill`. Every search result says what the skill delivers, which questions it asks first, and anything it needs that this setup doesn't have, with what to do instead.
