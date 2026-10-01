@@ -4,7 +4,7 @@ seoTitle: "Troubleshooting GenMotion installs, renders and agents"
 description: "Fix common GenMotion problems: Chromium or ffmpeg not found, slow renders, blank scenes, MCP server not loading, Node version errors and Mac app issues."
 group: Reference
 order: 4
-keywords: [GenMotion troubleshooting, genmotion npm 404, @genmotion/cli, genmotion render error, Chromium not found, ffmpeg not found, MCP server not connecting, blank Three.js render]
+keywords: [GenMotion troubleshooting, genmotion npm 404, "@genmotion/cli", genmotion render error, Chromium not found, ffmpeg not found, MCP server not connecting, blank Three.js render]
 updated: 2026-10-01
 faqs:
   - q: Why is there no genmotion package on npm?
