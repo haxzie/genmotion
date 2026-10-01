@@ -61,7 +61,7 @@ Never call `play()`. The frame callback sets `currentTime` for every frame, whic
 
 ## Audio
 
-Audio never lives in a scene. Music, voiceover and sound effects are files in `assets/` listed in `project.json`'s `audio` array, with `startFrame`, `durationInFrames`, `volume` and fades. The render mixes only what the manifest lists.
+Audio never lives in a scene. Music, voiceover and sound effects are files in `assets/` placed on the timeline with `place-audio`, which writes them into `project.json`'s `audio` array with a lane, `startFrame`, `durationInFrames`, `volume` and fades. The render mixes only what the manifest lists, and the dev studio plays the same mix under the picture. Keep music around 0.15 to 0.35 volume under narration, and fade it in and out (half a second at least) rather than letting it start and stop dead.
 
 ## Requirements
 
@@ -69,6 +69,7 @@ Audio never lives in a scene. Music, voiceover and sound effects are files in `a
 | --- | --- | --- |
 | Remote files | `save-asset` | Ask the user to drop the file into `assets/` |
 | Trimming recordings | `ffmpeg` | Use the recording whole and seek into it with an offset |
+| Music, narration, effects | `place-audio` | None: audio outside the manifest is silent in the export |
 | Seeing it loaded | `capture-frames` | None |
 
 ## Checks before you finish

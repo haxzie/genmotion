@@ -76,14 +76,20 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     desktop: "`generate_voiceover`",
     mcp: null,
     shell: null,
-    fallback: "use an audio file the user provides (put it in `assets/` and add it to `project.json`'s `audio`), or carry the words as on-screen type",
+    fallback: "use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type",
   },
   sfx: {
     label: "Whooshes, clicks, ambience",
     desktop: "`generate_sfx`",
     mcp: null,
     shell: null,
-    fallback: "use sound files the user provides, or leave the moment silent",
+    fallback: "place sound files the user provides with `place-audio`, or leave the moment silent",
+  },
+  "place-audio": {
+    label: "Put music, narration or an effect on the timeline (`project.json`'s `audio`)",
+    desktop: "an entry in `project.json`'s `audio` array (unique `id`, `file`, `track` 0-3, `startFrame`, `durationInFrames`, `volume`, fades)",
+    mcp: "`add_audio` (then `update_audio` / `remove_audio`)",
+    shell: "`npx @genmotion/cli audio add assets/<file> --at <time> --fade-out 1s --json` (then `audio set` / `audio remove`)",
   },
   "search-skills": {
     label: "Rank the skill pack against a request",

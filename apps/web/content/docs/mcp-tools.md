@@ -21,6 +21,9 @@ updated: 2026-10-01
 | `check_project` | The full check: manifest, every scene compiled, and a headless render of each scene's first, middle and last frame |
 | `capture_frames` | Render frames and return them as images the agent can look at. Times like `1.5s`, `45`, `500ms`, `60%` |
 | `render_video` | Render the video to a file, `exports/<name>.mp4` by default |
+| `add_audio` | Put music, narration or an effect on the timeline, from a project file or a URL. Picks a free lane and fades, volume and offsets as given |
+| `update_audio` | Move, retime, trim, re-level, fade, rename or mute a clip by id or name |
+| `remove_audio` | Take a clip off the timeline. The file stays in `assets/` |
 | `save_asset` | Download a remote image, audio, video, font or 3D model into `assets/` (up to 25 MB) |
 | `add_package` | Install a browser-safe npm package, with lifecycle scripts disabled |
 | `search_skills` | Find the skill that owns this kind of video, from the user's own words |
@@ -36,7 +39,7 @@ A typical session:
 
 1. `project_overview` to learn the project.
 2. `search_skills` and `get_skill` to pick how this video is made.
-3. `add_scene` for each scene, then edits the files.
+3. `add_scene` for each scene, then edits the files, and `add_audio` for music, narration and effects.
 4. `check_project` and `capture_frames` after each change, and looks at the frames.
 5. `render_video` at the end, or when you ask.
 

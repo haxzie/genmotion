@@ -104,6 +104,8 @@ export const SKILL_CAPABILITIES = [
   "voiceover",
   /** Whooshes, clicks, ambience. */
   "sfx",
+  /** Put a sound on the timeline: music, narration, effects. */
+  "place-audio",
   /** Rank the skill pack against a request. */
   "search-skills",
   /** Offer the user a connector a skill wants. */

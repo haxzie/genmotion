@@ -16,7 +16,19 @@ export interface ProjectOverview {
   totalFrames: number;
   durationSeconds: number;
   scenes: { index: number; file: string; name: string; startFrame: number; durationInFrames: number; seconds: number; exists: boolean }[];
-  audio: { id: string; file: string; startFrame: number; durationInFrames: number; volume: number; muted: boolean }[];
+  audio: {
+    id: string;
+    name?: string;
+    file: string;
+    track: number;
+    startFrame: number;
+    durationInFrames: number;
+    startFrom: number;
+    volume: number;
+    fadeInFrames: number;
+    fadeOutFrames: number;
+    muted: boolean;
+  }[];
   assets: string[];
 }
 
@@ -53,10 +65,15 @@ export async function projectOverview(projectDir: string): Promise<ProjectOvervi
     scenes,
     audio: manifest.audio.map((a) => ({
       id: a.id,
+      ...(a.name ? { name: a.name } : {}),
       file: a.file,
+      track: a.track,
       startFrame: a.startFrame,
       durationInFrames: a.durationInFrames,
+      startFrom: a.startFrom,
       volume: a.volume,
+      fadeInFrames: a.fadeInFrames,
+      fadeOutFrames: a.fadeOutFrames,
       muted: a.muted,
     })),
     assets,

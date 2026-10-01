@@ -37,6 +37,11 @@
     },
     {
       "kind": "capability",
+      "id": "place-audio",
+      "why": "Sound goes on the timeline, never in a scene."
+    },
+    {
+      "kind": "capability",
       "id": "capture-frames",
       "why": "A blank or stretched texture only shows in a frame."
     }

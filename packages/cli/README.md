@@ -75,12 +75,13 @@ never prompts unless it's running in a terminal without `--yes`.
 | Command | |
 |---|---|
 | `genmotion init [dir]` | New project. `--template <id\|path>`, `--size 1920x1080\|portrait\|square\|4k`, `--fps`, `--engine three\|react` |
-| `genmotion dev` | Studio: play, scrub, step frames, jump between scenes. Reloads on save. `--background` / `--status` / `--stop` for agents |
+| `genmotion dev` | Studio: the picture over a timeline of scenes and audio lanes with waveforms, sound in sync. Reloads on save, at the frame you were on. `--background` / `--status` / `--stop` for agents |
 | `genmotion render [out]` | `--codec mp4\|webm\|gif\|mov\|png`, `--frames 0-89\|1s-3s`, `--scale 2`, `--quality`, `--crf`, `--concurrency`, `--gl gpu` |
 | `genmotion still` | `--at 1.5s --at 50% --at 120` writes PNG or JPEG frames |
 | `genmotion check` | Compiles every scene, enforces the determinism rules, and renders each scene's first, middle and last frame headlessly, catching throws, console errors and blank frames. Exits 1 on errors. `--static` skips the browser |
 | `genmotion info` | Size, fps, scenes and their timing, audio, assets |
 | `genmotion scene add <name>` | Creates the scene file and registers it in `project.json`. `--duration 4s`, `--after <scene>` |
+| `genmotion audio add\|set\|remove\|list` | Timeline audio: `audio add assets/music.mp3 --at 0 --fade-out 1s --volume 0.3` (a URL is saved into `assets/` first). `--at`, `--duration`, `--from`, `--track`, `--volume`, `--fade-in`, `--fade-out`, `--name`, `--mute` |
 | `genmotion templates` | The starter catalog |
 | `genmotion mcp` | MCP server over stdio |
 | `genmotion skills list\|search\|show\|add\|update` | Find, read and install video-type skills, and write or refresh the agent files |
@@ -97,7 +98,7 @@ script of their own.
 ### MCP tools
 
 `search_skills`, `get_skill`, `project_overview`, `create_project`,
-`add_scene`, `validate_scene`, `check_project`, `capture_frames` (returns the
+`add_scene`, `add_audio`, `update_audio`, `remove_audio`, `validate_scene`, `check_project`, `capture_frames` (returns the
 images), `render_video`, `save_asset`, `add_package`, `get_guide`,
 `list_templates`.
 

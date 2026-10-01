@@ -32,3 +32,30 @@ The CLI is the npm package \`@genmotion/cli\` (Node 22 or newer). It provides th
 6. Start a preview I can open with \`npx @genmotion/cli dev --background\`. Render the MP4 with \`npx @genmotion/cli render\` when I ask.
 
 Docs: https://genmotion.dev/docs`;
+
+/** A catalog template as a new local project, from any terminal. */
+export function templateRemixCommand(templateId: string): string {
+  return `npx @genmotion/cli@latest init my-video --template ${templateId}`;
+}
+
+/**
+ * The template page's "Copy prompt": the same hand-off as `SETUP_PROMPT`, but
+ * the project starts as a copy of this template. The template's own
+ * `AGENTS.md` describes how the video is built, which is what makes "change
+ * the brand and the copy" a small job instead of a rewrite.
+ */
+export function templateRemixPrompt(template: { id: string; title: string }): string {
+  return `Remix the GenMotion template "${template.title}" into a video of my own, in this folder.
+
+The CLI is the npm package \`@genmotion/cli\` (Node 22 or newer). It provides the \`genmotion\` command; there is no package called \`genmotion\`.
+
+1. Run \`${templateRemixCommand(template.id)} --yes\`, then \`cd my-video && npm install\`. This copies the template's scenes, components and assets into a new project. No account is needed.
+2. Read \`AGENTS.md\` (it describes how this video is built) and the \`genmotion\` skill in \`.claude/skills/\` (the same files are in \`.agents/skills/\`). Run \`npx @genmotion/cli info\` to see the scenes and their timing.
+3. Start a preview I can open with \`npx @genmotion/cli dev --background\` and give me the URL.
+4. Ask me what to change: the product or brand, the copy, colors, logo, length and size. Keep the template's structure and motion unless I ask otherwise.
+5. Make the changes. Before telling me it is done, run \`npx @genmotion/cli check\` and \`npx @genmotion/cli still --at 50%\` and look at the frames.
+6. Render the MP4 with \`npx @genmotion/cli render\` when I ask.
+
+Template: https://genmotion.dev/templates/${template.id}
+Docs: https://genmotion.dev/docs`;
+}

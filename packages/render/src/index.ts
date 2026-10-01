@@ -28,7 +28,7 @@ export {
   type LaunchOptions,
   type GlMode,
 } from "./browser";
-export { ffmpegPath, ensureFfmpeg, runFfmpeg, encoderArgs, crfFor, CODEC_EXTENSIONS, FfmpegError, type Codec } from "./ffmpeg";
+export { ffmpegPath, ensureFfmpeg, runFfmpeg, probeMediaDuration, encoderArgs, crfFor, CODEC_EXTENSIONS, FfmpegError, type Codec } from "./ffmpeg";
 export {
   parseTime,
   parseDuration,

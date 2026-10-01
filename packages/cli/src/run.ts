@@ -7,11 +7,12 @@ import { dev } from "./commands/dev";
 import { render, still } from "./commands/render";
 import { check } from "./commands/check";
 import { info, scene } from "./commands/project";
+import { audio } from "./commands/audio";
 import { browser, doctor, mcp, skills, templates, upgrade } from "./commands/tools";
 import { openDesktop } from "./desktop";
 import { VERSION } from "./version";
 
-const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, templates, mcp, skills, browser, doctor, upgrade];
+const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, audio, templates, mcp, skills, browser, doctor, upgrade];
 const ALIASES: Record<string, string> = {
   create: "init",
   new: "init",

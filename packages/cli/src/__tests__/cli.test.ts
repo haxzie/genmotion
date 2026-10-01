@@ -94,6 +94,22 @@ describe("genmotion --json", () => {
     expect(json.scenes[1]).toMatchObject({ name: "Hero reveal", startFrame: 120, durationInFrames: 48, exists: true });
   });
 
+  it("audio add/set/list/remove edit the timeline in project.json", async () => {
+    const dir = path.join(tmp, "video");
+    await fs.mkdir(path.join(dir, "assets"), { recursive: true });
+    await fs.writeFile(path.join(dir, "assets", "music.mp3"), "");
+    const added = gm(["audio", "add", "assets/music.mp3", "--at", "1s", "--duration", "3s", "--fade-out", "0.5s", "--name", "Music"], dir);
+    expect(added.json).toMatchObject({ ok: true, clip: { file: "assets/music.mp3", track: 0, startFrame: 24, durationInFrames: 72, fadeOutFrames: 12, name: "Music" } });
+    const set = gm(["audio", "set", "Music", "--volume", "0.5", "--mute"], dir);
+    expect(set.json).toMatchObject({ ok: true, clip: { volume: 0.5, muted: true, startFrame: 24 } });
+    expect(gm(["audio", "set", "Music", "--volume", "9"], dir).json.ok).toBe(false);
+    const list = gm(["audio", "list"], dir);
+    expect(list.json.audio).toHaveLength(1);
+    expect(gm(["info"], dir).json.audio[0]).toMatchObject({ name: "Music", track: 0, fadeOutFrames: 12, muted: true });
+    expect(gm(["audio", "remove", "Music"], dir).json).toMatchObject({ ok: true, removed: { name: "Music" } });
+    expect(gm(["audio", "remove", "Music"], dir).json.ok).toBe(false);
+  }, 60_000);
+
   it("check --static passes a fresh project", () => {
     const { code, json } = gm(["check", "--static"], path.join(tmp, "video"));
     expect(code).toBe(0);
@@ -190,6 +206,9 @@ describe("genmotion mcp", () => {
           "capture_frames",
           "render_video",
           "save_asset",
+          "add_audio",
+          "update_audio",
+          "remove_audio",
           "get_guide",
           "search_skills",
           "get_skill",

@@ -44,7 +44,7 @@ my-video/
 
 Scenes play in array order. `npx @genmotion/cli scene add "Hero" --duration 4s` creates the file and adds the entry in one step. `npx @genmotion/cli info` prints the timeline with each scene's start frame.
 
-Audio clips sit on tracks with a `file`, `startFrame`, `durationInFrames`, and optional `volume`, `fadeInFrames` and `fadeOutFrames`. They are mixed into the export.
+Audio clips sit on up to four tracks (`track` 0 to 3) with a `file`, `startFrame`, `durationInFrames`, and optional `startFrom` (seconds into the file), `volume`, `fadeInFrames`, `fadeOutFrames` and `muted`. Two clips never overlap on one track. They are mixed into the export and play in the `dev` studio's timeline. `npx @genmotion/cli audio add assets/music.mp3 --fade-out 1s` writes a valid entry for you, lane included.
 
 ## A scene
 

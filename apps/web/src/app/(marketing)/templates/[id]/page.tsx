@@ -135,7 +135,7 @@ export default async function TemplateDetailPage({ params }: Params) {
 
           <div className="mt-8 flex items-center justify-between gap-4 rounded-xl border border-border bg-surface-raised px-5 py-4">
             <p className="text-text-secondary">Remix this into a project of your own.</p>
-            <TemplateRemixButton templateId={summary.id} />
+            <TemplateRemixButton templateId={summary.id} title={summary.title} />
           </div>
 
           <div className="mt-8">
