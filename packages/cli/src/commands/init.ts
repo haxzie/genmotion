@@ -1,8 +1,8 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
-import { createProject, DEFAULT_THREE_VERSIONS, projectEngineSchema, type ProjectEngine } from "@genmotion/project";
-import { VERSION } from "../version";
+import { createProject, projectEngineSchema, type ProjectEngine } from "@genmotion/project";
+import { THREE_VERSIONS } from "../version";
 import { wireAgents, THREE_AUTHORING_GUIDE } from "../agents";
 import { createFromTemplate } from "../templates";
 import { CliError, bold, cyan, dim, green } from "../output";
@@ -103,7 +103,7 @@ Examples
           // the scaffold's defaults were when it was last released. The minor
           // line, not the exact patch, so a patch release doesn't change what
           // `init` writes (examples/three-starter is checked for drift).
-          threeVersions: { ...DEFAULT_THREE_VERSIONS, cli: `^${VERSION.split(".").slice(0, 2).join(".")}.0` },
+          threeVersions: THREE_VERSIONS,
         });
     const wired = await wireAgents(dir, { engine: manifest.engine });
 

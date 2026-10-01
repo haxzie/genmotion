@@ -20,7 +20,7 @@ import { ROUTER_SKILL, readSkill, searchPack } from "./skills";
 import { SKILL_KINDS } from "@genmotion/shared";
 import { parseSize } from "./commands/init";
 import { CliError } from "./output";
-import { VERSION } from "./version";
+import { THREE_VERSIONS, VERSION } from "./version";
 
 
 /**
@@ -96,7 +96,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       const [width, height] = parseSize(size ?? "landscape");
       const manifest = template
         ? await createFromTemplate(dir, template)
-        : await createProject({ dir, engine: "three", width, height, fps: fps ?? 30, authoringGuide: THREE_AUTHORING_GUIDE });
+        : await createProject({ dir, engine: "three", width, height, fps: fps ?? 30, authoringGuide: THREE_AUTHORING_GUIDE, threeVersions: THREE_VERSIONS });
       await wireAgents(path.resolve(dir), { engine: manifest.engine });
       return { dir: path.resolve(dir), name: manifest.name, engine: manifest.engine, scenes: manifest.scenes };
     },

@@ -24,7 +24,7 @@ export interface ThreeScaffoldVersions {
 }
 
 export const DEFAULT_THREE_VERSIONS: ThreeScaffoldVersions = {
-  cli: "^0.2.1",
+  cli: "^0.3.0",
   threeEngine: "^0.1.0",
   three: "^0.185.1",
   threeTypes: "^0.185.4",
