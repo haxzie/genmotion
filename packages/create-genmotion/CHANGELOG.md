@@ -1,5 +1,13 @@
 # create-genmotion
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [fb22c93]
+- Updated dependencies [d1b6cbe]
+  - @genmotion/cli@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes
