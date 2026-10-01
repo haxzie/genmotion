@@ -34,6 +34,8 @@ GenMotion turns a description into a finished video. Your coding agent writes th
 | Export | One click | `npx genmotion render` |
 | Account | Free plan, no card | None |
 
+![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")
+
 A project made in one opens in the other. Pick the Studio if you want to see and click. Pick the CLI if you already live in a terminal or a coding agent, or want to render in CI.
 
 ::: tip

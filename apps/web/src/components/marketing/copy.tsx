@@ -64,10 +64,13 @@ export function CopyTextButton({
   copiedLabel = "Copied",
   ariaLabel,
   size = "md",
+  icon,
   className,
 }: {
   text: string;
   label: string;
+  /** Replaces the default spark, e.g. the agents a prompt is meant for. */
+  icon?: React.ReactNode;
   copiedLabel?: string;
   ariaLabel?: string;
   size?: "md" | "lg";
@@ -80,15 +83,16 @@ export function CopyTextButton({
       onClick={copy}
       aria-label={ariaLabel ?? label}
       className={[
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        "inline-flex cursor-pointer items-center justify-center rounded-full font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         "border border-border bg-surface-raised text-text-primary hover:border-border-strong hover:bg-surface-hover",
         size === "lg" ? "h-12 px-6 text-[1.05rem]" : "h-9 px-4 text-[1rem]",
+        icon ? "gap-3" : "gap-2",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {copied ? <CheckIcon className="size-[1.1em] shrink-0 text-green" /> : <SparkIcon className="size-[1.1em] shrink-0" />}
+      {copied ? <CheckIcon className="size-[1.1em] shrink-0 text-green" /> : (icon ?? <SparkIcon className="size-[1.1em] shrink-0" />)}
       {copied ? copiedLabel : label}
       <span className="sr-only" role="status">
         {copied ? "Copied to clipboard" : ""}

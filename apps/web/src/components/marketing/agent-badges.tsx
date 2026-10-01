@@ -109,6 +109,34 @@ export function AgentMarks({
   );
 }
 
+/**
+ * OpenCode's mark: its square "O", drawn as a frame with a heavier base.
+ * Traced rather than imported, like the two above.
+ */
+const OPENCODE_PATH = "M3 2h18v20H3Zm4 4v11h10V6Z";
+
+/**
+ * The agents a setup prompt works in, as flat glyphs in the current text
+ * color: Claude Code, Codex, OpenCode. Single-color on purpose, unlike
+ * `AgentMarks`: these sit inside a button, where three brand palettes would
+ * fight its label.
+ */
+export function AgentGlyphs({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={join("inline-flex shrink-0 items-center gap-2.5", className)}>
+      <svg viewBox="0 0 24 24" className="size-[1.35em]" fill="currentColor">
+        <path d={CLAUDE_PATH} />
+      </svg>
+      <svg viewBox="0 0 250 250" className="size-[1.25em]" fill="currentColor">
+        <path d={CODEX_PATH} />
+      </svg>
+      <svg viewBox="0 0 24 24" className="size-[1.2em]" fill="currentColor" fillRule="evenodd">
+        <path d={OPENCODE_PATH} />
+      </svg>
+    </span>
+  );
+}
+
 export function AgentBadges({ className }: { className?: string }) {
   return (
     <div className={join("flex items-center gap-3", className)}>
