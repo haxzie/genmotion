@@ -19,6 +19,7 @@ export const STUDIO_HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GenMotion Studio</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='14 14 484 484'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='61' y1='88.5' x2='428.5' y2='430' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23C6F91E'/%3E%3Cstop offset='1' stop-color='%2316F5BD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url%28%23g%29' d='M280.083 111.725V38.5C280.083 25.2083 269.208 14.3333 255.917 14.3333C179.55 14.3333 118.65 108.1 111.642 231.833H38.4167C25.125 231.833 14.25 242.708 14.25 256C14.25 332.367 108.017 393.267 231.75 400.275V473.5C231.75 486.792 242.625 497.667 255.917 497.667C332.283 497.667 393.183 403.9 400.192 280.167H473.417C486.708 280.167 497.583 269.292 497.583 256C497.583 179.633 403.817 118.733 280.083 111.725ZM255.917 292.25C235.858 292.25 219.667 276.058 219.667 256C219.667 235.942 235.858 219.75 255.917 219.75C275.975 219.75 292.167 235.942 292.167 256C292.167 276.058 275.975 292.25 255.917 292.25Z'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0b0b0f; --panel: #14141b; --line: #262631; --text: #ececf1; --muted: #8b8b99;
@@ -37,10 +38,9 @@ export const STUDIO_HTML = `<!DOCTYPE html>
   header .actions .logo { width: 14px; height: 14px; }
   #export { position: relative; overflow: hidden; }
   #export .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: rgba(198, 249, 30, .16); pointer-events: none; }
-  #export span { position: relative; }
+  #export span, #export .icon { position: relative; }
   #export.done { color: var(--accent); border-color: #4b5a17; }
-  #edit { background: var(--text); color: #0b0b0f; border-color: var(--text); font-weight: 600; }
-  #edit:hover { background: #fff; }
+  header .actions .icon { width: 14px; height: 14px; flex: none; }
   header .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); flex: none; }
   header .dot.stale { background: var(--muted); }
   main { position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px; }
@@ -93,7 +93,7 @@ export const STUDIO_HTML = `<!DOCTYPE html>
   <svg class="logo" viewBox="14 14 484 484" aria-hidden="true"><path d="M280.083 111.725V38.5C280.083 25.2083 269.208 14.3333 255.917 14.3333C179.55 14.3333 118.65 108.1 111.642 231.833H38.4167C25.125 231.833 14.25 242.708 14.25 256C14.25 332.367 108.017 393.267 231.75 400.275V473.5C231.75 486.792 242.625 497.667 255.917 497.667C332.283 497.667 393.183 403.9 400.192 280.167H473.417C486.708 280.167 497.583 269.292 497.583 256C497.583 179.633 403.817 118.733 280.083 111.725ZM255.917 292.25C235.858 292.25 219.667 276.058 219.667 256C219.667 235.942 235.858 219.75 255.917 219.75C275.975 219.75 292.167 235.942 292.167 256C292.167 276.058 275.975 292.25 255.917 292.25Z" fill="url(#gm-grad)"/></svg><h1 id="title">GenMotion Studio</h1>
   <span class="dot" id="live" title="Watching for changes"></span>
   <div class="actions">
-    <button id="export" title="Render the video to exports/ and download it"><span class="fill"></span><span id="export-label">Export<span class="label-long"> MP4</span></span></button>
+    <button id="export" title="Render the video to exports/ and download it"><span class="fill"></span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span id="export-label">Export<span class="label-long"> MP4</span></span></button>
     <button id="edit" title="Open this project in the GenMotion app"><svg class="logo" viewBox="14 14 484 484" aria-hidden="true"><path d="M280.083 111.725V38.5C280.083 25.2083 269.208 14.3333 255.917 14.3333C179.55 14.3333 118.65 108.1 111.642 231.833H38.4167C25.125 231.833 14.25 242.708 14.25 256C14.25 332.367 108.017 393.267 231.75 400.275V473.5C231.75 486.792 242.625 497.667 255.917 497.667C332.283 497.667 393.183 403.9 400.192 280.167H473.417C486.708 280.167 497.583 269.292 497.583 256C497.583 179.633 403.817 118.733 280.083 111.725ZM255.917 292.25C235.858 292.25 219.667 276.058 219.667 256C219.667 235.942 235.858 219.75 255.917 219.75C275.975 219.75 292.167 235.942 292.167 256C292.167 276.058 275.975 292.25 255.917 292.25Z" fill="url(#gm-grad)"/></svg><span>Edit<span class="label-long"> in studio</span></span></button>
   </div>
 </header>
