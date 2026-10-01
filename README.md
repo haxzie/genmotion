@@ -15,9 +15,12 @@ signed and notarized. Or from a terminal:
 curl -fsSL https://genmotion.dev/install.sh | sh
 ```
 
-That installs the app and the `genmotion` command — `genmotion .` opens the app
-with the current folder shared with the agent, and `genmotion upgrade` pulls the
-next release.
+That installs the app and, if Node 22+ is installed, the `genmotion` command
+from npm: `genmotion .` opens the app with the current folder shared with the
+agent, `genmotion init` starts a video from the terminal, and `genmotion
+upgrade` pulls the next release of both. The app's account menu installs the
+same command. There is one `genmotion`, the npm package; the app no longer
+writes a launcher script of its own.
 
 ### Or skip the app: the CLI
 

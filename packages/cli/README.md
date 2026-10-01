@@ -85,10 +85,14 @@ never prompts unless it's running in a terminal without `--yes`.
 | `genmotion mcp` | MCP server over stdio |
 | `genmotion skills list\|search\|show\|add\|update` | Find, read and install video-type skills, and write or refresh the agent files |
 | `genmotion browser install` | Fetch headless Chromium. Also happens automatically on the first render |
-| `genmotion doctor` | Checks Node, ffmpeg, Chromium and WebGL |
+| `genmotion doctor` | Checks Node, ffmpeg, Chromium and WebGL, the app, and which `genmotion` is on PATH |
+| `genmotion upgrade` | Updates this command, and the GenMotion app when it's installed |
 
-`genmotion .` still opens the folder in the [GenMotion desktop app](https://genmotion.dev)
-if it's installed.
+Installed globally (`npm install -g genmotion`), this is also the GenMotion
+desktop app's command: `genmotion .` opens the current folder in the
+[app](https://genmotion.dev) and `genmotion clone <repo>` clones and opens a
+repository. The app and its installer install this package rather than a
+script of their own.
 
 ### MCP tools
 

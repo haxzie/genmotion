@@ -261,6 +261,11 @@ pnpm changeset                        # describe a change to a published package
   match on every machine) and to the `dev` studio. Chromium and ffmpeg download
   on first use, because a project's `.npmrc` has `ignore-scripts`. HyperFrames
   projects aren't rendered by the CLI yet — it says so and points to the app.
+  It is also the desktop app's `genmotion` command (`genmotion .`, `clone`,
+  bare `genmotion` open the app): the app's account menu and `install.sh`
+  install it with `npm install -g` (`apps/desktop/electron/cli-install.ts`)
+  and replace the `/usr/local/bin` launcher script older builds wrote — never
+  write a second `genmotion` of the app's own.
   Versions go through Changesets (`.changeset/`); `release.yml` publishes.
 - **Releases** are Changesets-driven for everything that ships: the npm
   packages (`genmotion`, `create-genmotion`, `@genmotion/three-engine`,
@@ -291,6 +296,9 @@ pnpm changeset                        # describe a change to a published package
   paths.
 - `apps/web/src/app/sitemap.ts` — enumerates public routes (marketing, features,
   tools, blog, glossary, showcase).
+- `apps/web/content/docs/*.md` — the `/docs` pages. Each file is a page, and
+  is picked up by the sidebar, search, sitemap, `llms.txt`, `llms-full.txt` and
+  its `/docs/<slug>.md` twin with no other change.
 - `apps/web/src/app/llms.txt/route.ts` — Markdown site map for LLMs
   ([llmstxt.org](https://llmstxt.org)). When you add a marketing content type,
   add it to sitemap + llms.txt too.

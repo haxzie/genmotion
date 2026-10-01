@@ -12,6 +12,7 @@ import { USE_CASES } from "@/lib/marketing/use-cases";
 const LINKS = [
   { label: "Templates", href: "/templates" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Docs", href: "/docs" },
   { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
 ] as const;

@@ -115,11 +115,15 @@ These are the overclaim traps specific to this product, each with a real
 failure mode if crossed:
 
 - **Not a library, not an API, no per-user backend rendering.** GenMotion is a
-  desktop studio, not an npm package or a render API — that boundary is stated
-  explicitly and repeatedly in the comparison posts (`content/blog/hyperframes-alternatives.md`,
-  `content/blog/remotion-alternatives.md`) precisely because it's the question
+  desktop studio plus the `genmotion` CLI (`npx genmotion`, a command-line
+  tool and MCP server on npm, documented at `/docs`). Neither is a library you
+  import or a render API: that boundary is stated in the comparison posts
+  (`content/blog/hyperframes-alternatives.md`,
+  `content/blog/remotion-alternatives.md`) because it's the question
   developers ask first. Never imply "integrate this into your product" or
-  "render video from your backend."
+  "render video from your backend"; rendering a project from a CI job with the
+  CLI is fine to say. The CLI renders Three.js and React projects, not
+  HyperFrames ones, and has no voiceover/SFX/image generation.
 - **Intel Macs are not supported.** Apple Silicon only
   (`download/page.tsx`). State this as a requirement, not an apology, same as
   Prequel's macOS-version line — it's the difference between a sale and a
@@ -162,6 +166,7 @@ failure mode if crossed:
 | `src/lib/marketing/tools.ts` | Copy for the free `/tools` generator pages. |
 | `src/lib/marketing/integrations.ts` | Marketplace/MCP-integrations section copy. |
 | `src/components/marketing/faq.tsx`, `site-nav.tsx`, `site-footer.tsx`, `cta-section.tsx` | Shared components that render copy from the lib files above; don't hardcode strings here. |
+| `content/docs/*.md` | The docs at `/docs`, one page per file. Frontmatter sets the sidebar group and order and the SEO fields (`seoTitle`, a 140 to 160 character `description`, `keywords`, `updated`). Shared commands are `{{TOKEN}}`s from `src/lib/marketing/setup.ts`. A new page lands in the sidebar, search, sitemap, `llms.txt` and `llms-full.txt` on its own. |
 | `src/app/sitemap.ts`, `robots.ts`, `llms.txt/route.ts` | Must stay in sync whenever a new content type is added (`AGENTS.md`). |
 
 ## Before it ships

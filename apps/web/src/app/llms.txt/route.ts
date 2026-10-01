@@ -8,6 +8,7 @@ import {
 } from "@/lib/marketing/content";
 import { SITE_URL } from "@/lib/marketing/site";
 import { listSharedVideos } from "@/lib/marketing/shares";
+import { docMarkdownHref, getAllDocs } from "@/lib/docs/content";
 
 const BASE = SITE_URL;
 
@@ -44,10 +45,18 @@ export async function GET() {
 
   // The app-free path: what an agent needs to make a video from a terminal.
   section("Command line & coding agents", [
+    `- [Full docs as one file](${BASE}/llms-full.txt): every docs page below, concatenated`,
+    `- [Download](${BASE}/download): GenMotion Studio for Mac and the genmotion CLI, with install steps for each`,
     "- [genmotion on npm](https://www.npmjs.com/package/genmotion): `npx genmotion init my-video` scaffolds a Three.js video project that Claude Code, Codex or Cursor can build; `genmotion dev` previews, `genmotion check` validates every scene in a headless browser, `genmotion render` exports MP4/WebM/GIF. Every command takes `--json`",
     "- [MCP server and commands](https://github.com/haxzie/genmotion/tree/main/packages/cli): `npx genmotion mcp` gives agents project_overview, add_scene, check_project, capture_frames (returns images), render_video and more",
     "- [Starter repo](https://github.com/haxzie/genmotion/tree/main/examples/three-starter): a ready-to-run project with AGENTS.md, CLAUDE.md, .mcp.json and a render CI workflow",
   ]);
+
+  // Each docs page by its Markdown twin: the same words without the HTML.
+  section(
+    "Docs",
+    getAllDocs().map((d) => `- [${d.title}](${BASE}${docMarkdownHref(d.slug)}): ${d.description}`),
+  );
 
   section(
     "Use cases",

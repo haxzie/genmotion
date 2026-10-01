@@ -7,21 +7,14 @@
 # folder before every build, so the URL and the repo cannot drift apart.
 #
 # It downloads the latest signed release from GitHub, installs GenMotion.app
-# into /Applications, and writes the `genmotion` command into /usr/local/bin.
-# An administrator password is asked for only where the current user cannot
-# write — on most Macs that is /usr/local/bin and not /Applications.
-#
-# The `genmotion` script it writes is the same one the app writes from its
-# account menu (apps/desktop/electron/cli.ts). Two copies is the price of the
-# command working before the app has ever been opened; keep them in step.
+# into /Applications, and, when Node is installed, the `genmotion` command
+# from npm. An administrator password is asked for only where the current user
+# cannot write.
 
 set -eu
 
 REPO="haxzie/genmotion"
 APP="/Applications/GenMotion.app"
-BIN_DIR="/usr/local/bin"
-BIN="$BIN_DIR/genmotion"
-INSTALL_URL="https://genmotion.dev/install.sh"
 # A copy of the DMG on our own CDN, and a latest.json saying where it is.
 # GitHub stays the fallback and the source of truth — this is here because the
 # same bytes come off it an order of magnitude faster.
@@ -189,103 +182,63 @@ staging=""
 say "Installed ${B}$APP${R}"
 
 # ── Install the command ─────────────────────────────────────────────────────
+#
+# The `genmotion` command is the npm package `genmotion`: the terminal workflow
+# (init, dev, render, …) and the app launcher (`genmotion .`, `clone`, a bare
+# `genmotion`) in one. Installers used to write a shell script of their own to
+# /usr/local/bin instead, which then blocked `npm i -g genmotion` there. An old
+# script is moved out of npm's way first and put back if npm fails, so nobody
+# ends up with no command; the app's account menu runs the same sequence
+# (apps/desktop/electron/cli-install.ts).
 
-cat > "$tmp/genmotion" <<'SHIM'
-#!/bin/sh
-# GenMotion @VERSION@ — command line launcher.
-# Written by the installer; `genmotion upgrade` replaces it.
-# gm-app: /Applications/GenMotion.app
-# gm-cli: 3
+LEGACY="/usr/local/bin/genmotion"
 
-APP='/Applications/GenMotion.app'
+# A script an older installer or app wrote: ours to replace, nothing else is.
+is_ours() {
+  [ -f "$1" ] && [ ! -L "$1" ] && head -n 1 "$1" | grep -q '^#!/bin/sh' && grep -q '^# gm-app:' "$1"
+}
+# "sudo" when the current user can't write the folder.
+sudo_for() {
+  [ -w "$1" ] || printf 'sudo'
+}
 
-case "$1" in
-  upgrade)
-    exec /bin/sh -c 'curl -fsSL https://genmotion.dev/install.sh | /bin/sh'
-    ;;
-  clone)
-    if [ -z "$2" ]; then
-      echo "usage: genmotion clone <owner/name | github url>" >&2
-      exit 1
-    fi
-    exec open -n -a "$APP" --args "--gm-clone=$2"
-    ;;
-  init|create|new|dev|studio|preview|render|still|snapshot|check|lint|validate|info|compositions|scene|templates|mcp|skills|browser|doctor)
-    # The terminal workflow lives in the npm CLI; hand it the whole command.
-    # npx prefers the project's own node_modules copy when there is one.
-    exec npx -y genmotion "$@"
-    ;;
-  -h|--help)
-    echo "usage: genmotion [folder]"
-    echo
-    echo "  genmotion             open GenMotion"
-    echo "  genmotion .           open GenMotion and share this folder with the agent"
-    echo "  genmotion <path>      the same, for another folder"
-    echo "  genmotion clone <repo>  clone a GitHub repository and open it"
-    echo "  genmotion upgrade     install the latest version"
-    echo
-    echo "  genmotion init|dev|render|check|still|mcp …   the terminal workflow (npx genmotion --help)"
-    exit 0
-    ;;
-  -v|--version)
-    echo "@VERSION@"
-    exit 0
-    ;;
-esac
-
-# -P so the path is the physical one, which is the shape the app stores a
-# shared folder as: /tmp and /private/tmp have to end up as the same folder.
-if [ -n "$1" ]; then
-  DIR=$(cd -- "$1" 2>/dev/null && pwd -P) || {
-    echo "genmotion: no such folder: $1" >&2
-    exit 1
-  }
-  # The app refuses these too — a grant is meant to name a folder, and the
-  # whole disk or home directory names every credential in it. Saying so here
-  # is the difference between a rule and a command that quietly did nothing.
-  if [ "$DIR" = "/" ] || [ "$DIR" = "$HOME" ]; then
-    echo "genmotion: not sharing your whole home folder or disk — opening without it." >&2
-    exec open -a "$APP"
-  fi
-  exec open -n -a "$APP" --args "--gm-cwd=$DIR"
-fi
-
-exec open -a "$APP"
-SHIM
-
-sed -i '' "s/@VERSION@/$version/g" "$tmp/genmotion"
-
-BIN_SUDO=""
-if [ -d "$BIN_DIR" ]; then
-  [ -w "$BIN_DIR" ] || BIN_SUDO="sudo"
-else
-  [ -w /usr/local ] || BIN_SUDO="sudo"
-fi
-if [ -n "$BIN_SUDO" ]; then
-  say "Administrator password needed to write $BIN_DIR."
-fi
-# Not fatal, and deliberately so: the app is already in /Applications by this
-# point, so dying here would report a failed install of something that
-# succeeded. The password prompt is the usual reason this fails — a pipeline
-# with no terminal behind it, or somebody declining — and the app can write the
-# command itself from its account menu afterwards.
 cli=no
-if $BIN_SUDO mkdir -p "$BIN_DIR" && $BIN_SUDO install -m 755 "$tmp/genmotion" "$BIN"; then
-  cli=yes
-  say "Installed ${B}$BIN${R}"
+npm_bin=$(command -v npm 2>/dev/null || true)
+if [ -n "$npm_bin" ]; then
+  prefix=$("$npm_bin" prefix -g 2>/dev/null || true)
+  target="$prefix/bin/genmotion"
+  aside=""
+  moved=yes
+  if [ -n "$prefix" ] && is_ours "$target"; then
+    aside="$target.gm-legacy"
+    $(sudo_for "$prefix/bin") mv -f "$target" "$aside" || moved=no
+  fi
+  say "Installing the ${B}genmotion${R} command with npm…"
+  if [ "$moved" = yes ] && "$npm_bin" install -g genmotion@latest >"$tmp/npm.log" 2>&1; then
+    cli=yes
+    if [ -n "$aside" ]; then
+      $(sudo_for "$prefix/bin") rm -f "$aside" || true
+    fi
+    # An old script anywhere else could still answer ahead of npm's on PATH.
+    if [ "$target" != "$LEGACY" ] && is_ours "$LEGACY"; then
+      $(sudo_for /usr/local/bin) rm -f "$LEGACY" || true
+    fi
+    say "Installed ${B}genmotion${R} $("$target" --version 2>/dev/null || true)"
+  else
+    if [ -n "$aside" ] && [ "$moved" = yes ]; then
+      $(sudo_for "$prefix/bin") mv -f "$aside" "$target" || true
+    fi
+    say ""
+    say "${B}GenMotion is installed, but the genmotion command is not.${R}"
+    if [ -s "$tmp/npm.log" ]; then
+      say "${DIM}npm: $(grep -v '^\s*$' "$tmp/npm.log" | tail -n 1)${R}"
+    fi
+    say "Run ${B}npm install -g genmotion${R} to try again, or install it from the app's account menu."
+  fi
 else
   say ""
-  say "${B}GenMotion is installed, but the genmotion command is not.${R}"
-  say "Writing $BIN needs an administrator password. Run this installer again"
-  say "from a terminal, or open GenMotion and choose \"Install the 'genmotion'"
-  say "command\" from the account menu."
-fi
-
-if [ "$cli" = yes ]; then
-  case ":$PATH:" in
-    *":$BIN_DIR:"*) ;;
-    *) say "${DIM}Note: $BIN_DIR is not on your PATH — add it to use the command.${R}" ;;
-  esac
+  say "${DIM}The genmotion command installs with npm. Install Node 22 or newer"
+  say "(nodejs.org), then run: npm install -g genmotion${R}"
 fi
 
 # ── Done ────────────────────────────────────────────────────────────────────

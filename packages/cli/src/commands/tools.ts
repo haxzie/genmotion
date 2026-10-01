@@ -12,6 +12,7 @@ import { resolveProjectDir } from "../project-dir";
 import { CliError, bold, dim, green, red, yellow } from "../output";
 import { num, str, type Command } from "../command";
 import { VERSION } from "../version";
+import { desktopAppVersion, findDesktopApp, isLegacyLauncher } from "../desktop";
 
 export const mcp: Command = {
   name: "mcp",
@@ -177,7 +178,8 @@ export const doctor: Command = {
   help: "Usage: genmotion doctor [--json]",
   options: {},
   async run({ out }) {
-    const checks: { name: string; ok: boolean; detail: string; fix?: string }[] = [];
+    // `warn` is worth fixing but doesn't stop a render, so it doesn't fail doctor.
+    const checks: { name: string; ok: boolean; warn?: boolean; detail: string; fix?: string }[] = [];
     const major = Number(process.versions.node.split(".")[0]);
     checks.push({ name: "node", ok: major >= 22, detail: process.versions.node, fix: major >= 22 ? undefined : "Install Node 22 or newer" });
 
@@ -212,13 +214,85 @@ export const doctor: Command = {
     }
     checks.push({ name: "platform", ok: true, detail: `${os.platform()} ${os.arch()} · ${os.cpus().length} cores · genmotion ${VERSION}` });
 
+    const appVersion = desktopAppVersion();
+    checks.push({ name: "app", ok: true, detail: findDesktopApp() ? `GenMotion ${appVersion ?? "installed"}` : "not installed (optional)" });
+
+    // Every `genmotion` on PATH, first one first: that one is what a shell
+    // runs. A launcher script from an older app ahead of this package would
+    // answer instead of it.
+    if (process.platform !== "win32") {
+      const found = spawnSync("which", ["-a", "genmotion"], { encoding: "utf8" });
+      const onPath = [...new Set((found.stdout ?? "").split("\n").map((l) => l.trim()).filter(Boolean))];
+      const legacy = onPath.filter(isLegacyLauncher);
+      checks.push({
+        name: "command",
+        ok: true,
+        warn: legacy.length > 0,
+        detail: onPath.length
+          ? onPath.map((p) => (isLegacyLauncher(p) ? `${p} (old app launcher)` : p)).join(", ")
+          : "not on PATH (npx genmotion works without it)",
+        fix: legacy.length ? "genmotion upgrade, or npm install -g genmotion" : undefined,
+      });
+    }
+
     const ok = checks.every((c) => c.ok);
     out.result(
       { healthy: ok, checks },
       checks
-        .map((c) => `${c.ok ? green("✓") : red("✗")} ${c.name.padEnd(9)} ${dim(c.detail)}${c.fix ? `\n  ${yellow("fix:")} ${c.fix}` : ""}`)
+        .map((c) => `${!c.ok ? red("✗") : c.warn ? yellow("!") : green("✓")} ${c.name.padEnd(9)} ${dim(c.detail)}${c.fix ? `\n  ${yellow("fix:")} ${c.fix}` : ""}`)
         .join("\n"),
     );
     return ok ? 0 : 1;
+  },
+};
+
+const INSTALL_URL = "https://genmotion.dev/install.sh";
+
+/** The globally installed `genmotion` version, as npm reports it. */
+function globalCliVersion(): string | null {
+  const ls = spawnSync("npm", ["ls", "-g", "genmotion", "--depth=0", "--json"], { encoding: "utf8", shell: process.platform === "win32" });
+  try {
+    return (JSON.parse(ls.stdout) as { dependencies?: { genmotion?: { version?: string } } }).dependencies?.genmotion?.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export const upgrade: Command = {
+  name: "upgrade",
+  summary: "Update the genmotion command, and the GenMotion app when it's installed",
+  help: `Usage: genmotion upgrade [--json]
+
+With the GenMotion app installed (macOS), runs the app's installer, which
+updates the app and this command together. Otherwise runs
+npm install -g genmotion@latest.
+
+In a project, the project's own copy is in package.json:
+  npm install genmotion@latest`,
+  options: {},
+  async run({ out }) {
+    const app = process.platform === "darwin" ? findDesktopApp() : null;
+    const before = { app: desktopAppVersion(app), cli: globalCliVersion() };
+    // Under --json the child's output goes to stderr: stdout is the one JSON object.
+    const stdio: ("inherit" | number)[] = ["inherit", out.json ? 2 : "inherit", "inherit"];
+
+    const ran = app
+      ? (out.info("Updating GenMotion and the genmotion command…"),
+        spawnSync("/bin/sh", ["-c", `curl -fsSL ${INSTALL_URL} | sh`], { stdio }))
+      : (out.info("Updating the genmotion command…"),
+        spawnSync("npm", ["install", "-g", "genmotion@latest"], { stdio, shell: process.platform === "win32" }));
+    if (ran.status !== 0) {
+      throw new CliError(app ? "The GenMotion installer failed" : "npm install -g genmotion@latest failed", {
+        fix: app ? `curl -fsSL ${INSTALL_URL} | sh` : "npm install -g genmotion@latest",
+      });
+    }
+
+    const after = { app: desktopAppVersion(app), cli: globalCliVersion() };
+    const line = (name: string, a: string | null, b: string | null) =>
+      `${green("✓")} ${name.padEnd(9)} ${a && a !== b ? `${dim(a)} → ` : ""}${b ?? dim("not installed")}`;
+    out.result(
+      { app: app ? { before: before.app, after: after.app } : null, cli: { before: before.cli, after: after.cli } },
+      [...(app ? [line("app", before.app, after.app)] : []), line("genmotion", before.cli, after.cli)].join("\n"),
+    );
   },
 };
