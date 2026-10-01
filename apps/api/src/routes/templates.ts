@@ -14,6 +14,7 @@ import {
   toSummary,
 } from "@genmotion/templates";
 import { anonymousDistinctId, clientIp, trackServer } from "../analytics";
+import { notifyRemixIntent } from "../slack";
 
 /**
  * The starter templates.
@@ -140,6 +141,75 @@ export function remixClient(headers: Headers): { name: string; version?: string 
   if (/Mozilla\//.test(agent)) return { name: "browser" };
   return { name: "other" };
 }
+
+/** The website's Remix menu options, as `template_remix_chosen` names them. */
+const REMIX_OPTIONS = new Set(["agent_prompt", "cli_command", "desktop_app", "download"]);
+
+/**
+ * Per visitor and template, one Slack line per option per window: a person
+ * clicking "Copy prompt" five times is one decision, not five.
+ */
+const INTENT_WINDOW_MS = 10 * 60_000;
+/** And a ceiling for the whole feed, so a script hammering this can't flood the channel. */
+const INTENT_HOURLY_CAP = 60;
+const intentSeen = new Map<string, number>();
+let intentHour = { start: 0, count: 0 };
+
+/** Test hook: forget every throttle. */
+export function resetRemixIntentThrottle(): void {
+  intentSeen.clear();
+  intentHour = { start: 0, count: 0 };
+}
+
+function intentAllowed(key: string, now = Date.now()): boolean {
+  if (now - intentHour.start > 3_600_000) intentHour = { start: now, count: 0 };
+  const last = intentSeen.get(key);
+  if (last !== undefined && now - last < INTENT_WINDOW_MS) return false;
+  if (intentHour.count >= INTENT_HOURLY_CAP) return false;
+  intentSeen.set(key, now);
+  intentHour.count++;
+  if (intentSeen.size > 5_000) {
+    for (const [k, at] of intentSeen) if (now - at >= INTENT_WINDOW_MS) intentSeen.delete(k);
+  }
+  return true;
+}
+
+/**
+ * The website reports which Remix option someone picked, so it can be posted
+ * to the team's Slack feed. Public like the rest of this router (most people
+ * remixing have no account), which is why it accepts only a known template
+ * and a known option, carries no free text into the message, and is
+ * throttled. A signed-in visitor is named from their session cookie; the body
+ * can't claim to be anyone.
+ */
+templateRoutes.post("/:id/remix-intent", async (c) => {
+  const record = await getTemplate(c.req.param("id")).catch(() => null);
+  if (!record) return c.json({ error: "Not found" }, 404);
+  const body = (await c.req.json().catch(() => null)) as { option?: unknown } | null;
+  const option = typeof body?.option === "string" ? body.option : "";
+  if (!REMIX_OPTIONS.has(option)) return c.json({ error: "Unknown option" }, 400);
+
+  const key = `${anonymousDistinctId(c.req.raw.headers)}|${record.meta.id}|${option}`;
+  if (!intentAllowed(key)) return c.body(null, 204);
+
+  // Lazily: the session lookup needs the database, which nothing else in this
+  // router touches, and a visitor without a cookie never needs it.
+  let user: { name?: string | null; email: string } | null = null;
+  if (c.req.header("cookie")) {
+    user = await import("../auth")
+      .then(({ auth }) => auth.api.getSession({ headers: c.req.raw.headers }))
+      .then((session) => session?.user ?? null)
+      .catch(() => null);
+  }
+  notifyRemixIntent({
+    user,
+    templateId: record.meta.id,
+    templateName: record.meta.title,
+    option,
+    country: c.req.header("cf-ipcountry") ?? c.req.header("x-vercel-ip-country") ?? null,
+  });
+  return c.body(null, 204);
+});
 
 templateRoutes.get("/:id/poster", async (c) => {
   const id = c.req.param("id");

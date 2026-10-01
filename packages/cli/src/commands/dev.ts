@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { serveProject } from "@genmotion/render";
 import { INTERNAL_DIR } from "@genmotion/project";
 import { resolveProjectDir } from "../project-dir";
+import { findDesktopApp, openDesktop } from "../desktop";
 import { CliError, bold, dim, green } from "../output";
 import { num, str, type Command } from "../command";
 
@@ -114,7 +115,13 @@ Options
     let server;
     for (let port = requested ?? DEFAULT_PORT; ; port++) {
       try {
-        server = await serveProject({ projectDir, port, host, studio: true });
+        server = await serveProject({
+          projectDir,
+          port,
+          host,
+          studio: true,
+          desktop: { installed: findDesktopApp() !== null, open: () => openDesktop({ dir: projectDir }) },
+        });
         break;
       } catch (err) {
         const code = (err as NodeJS.ErrnoException).code;

@@ -246,6 +246,32 @@ export function notifyTemplateRemixed(opts: {
   );
 }
 
+/** What each website Remix option is called in the feed. */
+const REMIX_OPTION_LABELS: Record<string, string> = {
+  agent_prompt: "copied the agent prompt for",
+  cli_command: "copied the CLI command for",
+  desktop_app: "opened the app to remix",
+  download: "went to download the app from",
+};
+
+/**
+ * A Remix choice on the website's template page. Fired by the page, so it is
+ * intent rather than a finished remix: the remix itself (desktop or CLI)
+ * arrives separately, as `notifyTemplateRemixed` or in PostHog.
+ */
+export function notifyRemixIntent(opts: {
+  user?: { name?: string | null; email: string } | null;
+  templateId: string;
+  templateName?: string | null;
+  option: string;
+  country?: string | null;
+}): void {
+  const title = escapeSlack(opts.templateName?.trim() || opts.templateId);
+  const link = `<${env.WEB_URL}/templates/${encodeURIComponent(opts.templateId)}|${title}>`;
+  const who = opts.user ? person(opts.user) : "A visitor" + (opts.country ? ` (${escapeSlack(opts.country)})` : "");
+  postToSlack("events", `🧩 ${who} ${REMIX_OPTION_LABELS[opts.option] ?? "picked a remix option on"} ${link}`);
+}
+
 /** Old enough that the message should say when, not just that. */
 const LATE_EVENT_MS = 5 * 60_000;
 

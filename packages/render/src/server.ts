@@ -6,6 +6,7 @@ import { INTERNAL_DIR } from "@genmotion/project";
 import { compileComposition, createProjectBundler, FILES_PREFIX, type CompiledComposition } from "./composition";
 import { hostBundle } from "./host";
 import { STUDIO_HTML } from "./studio-page";
+import { createStudioExport } from "./studio-export";
 
 /**
  * A loopback HTTP server for one project folder: the page Chromium renders,
@@ -30,6 +31,11 @@ export interface ServeOptions {
   host?: string;
   /** Serve the studio UI at `/` and push reloads on file changes. */
   studio?: boolean;
+  /**
+   * The desktop app, for the studio's "Edit in studio" button. The CLI owns
+   * finding and launching it; absent means the button links to the download.
+   */
+  desktop?: { installed: boolean; open(): Promise<void> };
 }
 
 export const RENDER_PAGE = "/__gm/render";
@@ -182,6 +188,52 @@ export async function serveProject(options: ServeOptions): Promise<ProjectServer
     }
   }
 
+  const exporter = createStudioExport(projectDir);
+
+  /**
+   * The studio's buttons. Reads are open like the rest of this server; the
+   * actions start a render or launch an app, so they answer only this
+   * machine, and only a request carrying the studio's own header: a page on
+   * another site can POST to localhost, but it can't add a custom header
+   * without a CORS preflight this server never grants.
+   */
+  const studioRoute = async (req: http.IncomingMessage, res: http.ServerResponse, pathname: string) => {
+    if (req.method === "GET" && pathname === "/__gm/studio") {
+      return sendJson(res, 200, { app: options.desktop?.installed ?? false, export: exporter.status() });
+    }
+    if (req.method === "GET" && pathname === "/__gm/studio/export/file") {
+      const file = exporter.output();
+      if (!file || !fs.existsSync(file)) return send(res, 404, "text/plain", "No export to download");
+      const stat = fs.statSync(file);
+      res.writeHead(200, {
+        "Content-Type": MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream",
+        "Content-Length": stat.size,
+        "Content-Disposition": `attachment; filename="${path.basename(file).replace(/"/g, "")}"`,
+        "Cache-Control": "no-store",
+      });
+      return void fs.createReadStream(file).pipe(res);
+    }
+    if (req.method !== "POST") return send(res, 405, "text/plain", "Method not allowed");
+    if (!isLoopback(req.socket.remoteAddress) || req.headers["x-genmotion-studio"] !== "1") {
+      return send(res, 403, "text/plain", "Studio actions only answer the studio page on this machine");
+    }
+    if (pathname === "/__gm/studio/export") return sendJson(res, 200, exporter.start());
+    if (pathname === "/__gm/studio/export/cancel") {
+      exporter.cancel();
+      return sendJson(res, 200, exporter.status());
+    }
+    if (pathname === "/__gm/studio/open-app") {
+      if (!options.desktop?.installed) return sendJson(res, 404, { error: "The GenMotion app isn't installed" });
+      try {
+        await options.desktop.open();
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    send(res, 404, "text/plain", "Not found");
+  };
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", "http://localhost");
@@ -214,6 +266,7 @@ export async function serveProject(options: ServeOptions): Promise<ProjectServer
       if (pathname.startsWith(FILES_PREFIX)) {
         return serveFile(req, res, projectDir, pathname.slice(FILES_PREFIX.length));
       }
+      if (options.studio && pathname.startsWith("/__gm/studio")) return studioRoute(req, res, pathname);
       send(res, 404, "text/plain", "Not found");
     } catch (err) {
       send(res, 500, "text/plain", err instanceof Error ? err.message : String(err));
@@ -233,6 +286,7 @@ export async function serveProject(options: ServeOptions): Promise<ProjectServer
     projectDir,
     composition,
     async close() {
+      exporter.cancel();
       watcher?.close();
       for (const client of clients) client.end();
       server.closeAllConnections();
@@ -240,6 +294,10 @@ export async function serveProject(options: ServeOptions): Promise<ProjectServer
       await bundler.dispose();
     },
   };
+}
+
+function isLoopback(address: string | undefined): boolean {
+  return !!address && (address === "::1" || address.startsWith("127.") || address === "::ffff:127.0.0.1");
 }
 
 function send(res: http.ServerResponse, status: number, type: string, body: string | Buffer): void {

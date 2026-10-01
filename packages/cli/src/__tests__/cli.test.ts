@@ -73,6 +73,16 @@ describe("genmotion --json", () => {
     expect(mcp.mcpServers.genmotion.args).toEqual(["-y", "@genmotion/cli", "mcp"]);
   });
 
+  it("a remix pins the project to this CLI's line, like init does", async () => {
+    const template = fileURLToPath(new URL("../../../templates/catalog/x-numbers-launch-video", import.meta.url));
+    const { code } = gm(["init", "remix", "--template", template, "--yes"]);
+    expect(code).toBe(0);
+    const pkg = JSON.parse(await fs.readFile(path.join(tmp, "remix", "package.json"), "utf8"));
+    const ours = JSON.parse(await fs.readFile(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"));
+    // An older pin installs an older studio: 0.2.x has no audio.
+    expect(pkg.devDependencies["@genmotion/cli"]).toBe(`^${ours.version.split(".").slice(0, 2).join(".")}.0`);
+  }, 60_000);
+
   it("refuses a folder that already has files in it", () => {
     const { code, json } = gm(["init", "video", "--yes"]);
     expect(code).toBe(1);

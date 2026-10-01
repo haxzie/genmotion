@@ -60,6 +60,8 @@ npx @genmotion/cli dev --open
 
 The studio plays, scrubs and steps frames under a timeline: a ruler, the scene track, and every audio lane from `project.json` with its waveform. Click or drag anywhere on the timeline to seek, and click a scene to jump to its start. Audio plays in sync with the picture, with each clip's volume, fades and mute applied as the render mixes them; `m` turns the sound off.
 
+Two buttons sit at the top right. **Export MP4** runs the same render as `render`, saves it in `exports/` and downloads it through your browser; click it again while it runs to cancel. **Edit in studio** opens the project in the GenMotion app, or links to the download when the app isn't installed.
+
 Saving a file reloads the studio at the frame you were on, so the timeline updates as your agent adds scenes and audio. Editing happens through the agent or the `audio` command, not by dragging.
 
 ## check

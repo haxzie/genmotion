@@ -10,7 +10,7 @@ import {
   type ProjectManifest,
 } from "@genmotion/project";
 import { CliError } from "./output";
-import { VERSION } from "./version";
+import { THREE_VERSIONS, VERSION } from "./version";
 
 /**
  * Starter templates come from the same public, anonymous endpoint the desktop
@@ -89,6 +89,7 @@ export async function createFromTemplate(dir: string, template: string, name?: s
     fps: manifest.fps,
     width: manifest.width,
     height: manifest.height,
+    threeVersions: THREE_VERSIONS,
     empty: true,
   });
 
