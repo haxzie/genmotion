@@ -111,11 +111,8 @@ export async function LandingHero({
         <div className="mt-8 flex w-full flex-col items-center">
           {setupPrompt ? (
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {/* To /download rather than the dmg: that page offers the Studio
-                  and the CLI, and this hero is for both. */}
-              <DownloadButton size="lg" />
-              {/* The no-install path: the prompt has the agent run the CLI,
-                  so it works on any machine the agent runs on, Mac or not. */}
+              {/* First: the no-install path. The prompt has the agent run the
+                  CLI, so it works on any machine the agent runs on, Mac or not. */}
               <CopyTextButton
                 size="lg"
                 text={SETUP_PROMPT}
@@ -124,6 +121,9 @@ export async function LandingHero({
                 ariaLabel="Copy a prompt that sets up GenMotion in Claude Code, Codex or OpenCode"
                 icon={<AgentGlyphs />}
               />
+              {/* To /download rather than the dmg: that page offers the Studio
+                  and the CLI, and this hero is for both. */}
+              <DownloadButton size="lg" />
             </div>
           ) : (
             <>
