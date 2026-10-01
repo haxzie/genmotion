@@ -1,6 +1,6 @@
 {
   "name": "@genmotion/three-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The frame-deterministic Three.js runtime GenMotion videos are written against: scene context, render host, interpolate/Easing.",
   "license": "Apache-2.0",
   "repository": {

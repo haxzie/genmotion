@@ -1,6 +1,6 @@
 {
   "name": "@genmotion/shared",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shared types and frame math for GenMotion video projects.",
   "license": "Apache-2.0",
   "repository": {
