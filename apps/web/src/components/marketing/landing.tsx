@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { DownloadButton } from "@/components/marketing/download-button";
 import { InstallCommand } from "@/components/marketing/install-command";
+import { CopyTextButton } from "@/components/marketing/copy";
+import { SETUP_PROMPT } from "@/lib/marketing/setup";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
 import { AgentBadges } from "@/components/marketing/agent-badges";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
@@ -59,6 +61,7 @@ export async function LandingHero({
   title,
   lede,
   compact = false,
+  setupPrompt = false,
   children,
 }: {
   badge?: HeroBadge;
@@ -66,6 +69,8 @@ export async function LandingHero({
   lede: React.ReactNode;
   /** No room left under the hero for a screenshot to be pulled into. */
   compact?: boolean;
+  /** A "Copy setup prompt" button beside the download, for the CLI path. */
+  setupPrompt?: boolean;
   /** Anything extra under the download, e.g. a secondary link. */
   children?: React.ReactNode;
 }) {
@@ -108,7 +113,22 @@ export async function LandingHero({
               install is the faster path for the people it suits, and the only
               one that leaves the `genmotion` command behind. */}
           <InstallCommand className="mb-4" />
-          <DownloadButton size="lg" href={release?.downloadUrl} />
+          {setupPrompt ? (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <DownloadButton size="lg" href={release?.downloadUrl} />
+              {/* The no-install path: the prompt has the agent run the CLI,
+                  so it works on any machine the agent runs on, Mac or not. */}
+              <CopyTextButton
+                size="lg"
+                text={SETUP_PROMPT}
+                label="Copy setup prompt"
+                copiedLabel="Paste it into your agent"
+                ariaLabel="Copy a prompt that sets up GenMotion in Claude Code, Codex or Cursor"
+              />
+            </div>
+          ) : (
+            <DownloadButton size="lg" href={release?.downloadUrl} />
+          )}
           <p className="mt-4 text-[0.9rem] text-text-secondary">
             {release ? (
               <>

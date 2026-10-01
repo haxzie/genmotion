@@ -115,11 +115,15 @@ These are the overclaim traps specific to this product, each with a real
 failure mode if crossed:
 
 - **Not a library, not an API, no per-user backend rendering.** GenMotion is a
-  desktop studio, not an npm package or a render API — that boundary is stated
-  explicitly and repeatedly in the comparison posts (`content/blog/hyperframes-alternatives.md`,
-  `content/blog/remotion-alternatives.md`) precisely because it's the question
+  desktop studio plus the `genmotion` CLI (`npx genmotion`, a command-line
+  tool and MCP server on npm, documented at `/docs`). Neither is a library you
+  import or a render API: that boundary is stated in the comparison posts
+  (`content/blog/hyperframes-alternatives.md`,
+  `content/blog/remotion-alternatives.md`) because it's the question
   developers ask first. Never imply "integrate this into your product" or
-  "render video from your backend."
+  "render video from your backend"; rendering a project from a CI job with the
+  CLI is fine to say. The CLI renders Three.js and React projects, not
+  HyperFrames ones, and has no voiceover/SFX/image generation.
 - **Intel Macs are not supported.** Apple Silicon only
   (`download/page.tsx`). State this as a requirement, not an apology, same as
   Prequel's macOS-version line — it's the difference between a sale and a
