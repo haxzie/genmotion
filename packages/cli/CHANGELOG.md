@@ -1,5 +1,11 @@
 # genmotion
 
+## 0.4.1
+
+### Patch Changes
+
+- 76dd298: The `dev` studio uses the GenMotion logo as its favicon, Edit in studio matches the dark Export button, and Export MP4 gets a download icon.
+
 ## 0.4.0
 
 ### Minor Changes
