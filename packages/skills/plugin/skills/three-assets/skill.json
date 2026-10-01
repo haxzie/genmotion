@@ -1,0 +1,58 @@
+{
+  "id": "three-assets",
+  "title": "Assets (Three.js)",
+  "description": "Bringing real material into Three.js scenes: logos (SVG drawn into a texture, or extruded from path data), product screenshots and photos on planes and device frames, screen recordings as video textures seeked per frame, and the audio that goes on the timeline instead of in a scene. Covers loading everything through the frame barrier so no frame ships untextured. Load it when a scene uses a logo, screenshot, photo, recording or any file from assets/.",
+  "summary": "Logos, screenshots, photos and screen recordings in Three.js scenes, loaded so no frame ships blank.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "assets",
+    "threejs",
+    "logos",
+    "screenshots"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "save-asset",
+      "why": "Remote files come into assets/ before a scene uses them."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trim a screen recording to the moment that matters."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "A blank or stretched texture only shows in a frame."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "put our logo in the video",
+    "show this screenshot on a phone",
+    "use my screen recording",
+    "the image shows up blank",
+    "add background music"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🖼️"
+}

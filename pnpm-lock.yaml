@@ -515,6 +515,12 @@ importers:
       '@genmotion/render':
         specifier: workspace:*
         version: link:../render
+      '@genmotion/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@genmotion/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@types/node':
         specifier: ^22
         version: 22.19.20

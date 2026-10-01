@@ -43,6 +43,7 @@ export const SKILL_CATEGORIES = [
   "Announcement",
   "Social",
   "Brand",
+  "Explainer",
   "Craft",
 ] as const;
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
@@ -76,23 +77,99 @@ export const SKILL_MODEL_PURPOSES = [
 export type SkillModelPurpose = (typeof SKILL_MODEL_PURPOSES)[number];
 
 /**
+ * What an agent can do, named once for every surface it runs on.
+ *
+ * A skill says "`capture-frames` on the hook" rather than naming a tool,
+ * because the same skill is read by the desktop app's agent (in-process
+ * tools), by any agent talking to `genmotion mcp`, and by one that only has a
+ * shell and the `genmotion` CLI — three surfaces with three different
+ * spellings, and some of them without the ability at all. Each surface maps
+ * these ids to what it actually has (`CAPABILITIES` in `@genmotion/skills`),
+ * and tells the agent what to do when one is missing.
+ */
+export const SKILL_CAPABILITIES = [
+  /** Compile and check the scenes or composition just written. */
+  "validate",
+  /** Render chosen frames and look at them. */
+  "capture-frames",
+  /** The project's scenes, timing, audio and assets. */
+  "project-overview",
+  /** Copy a remote image, video, font or audio file into `assets/`. */
+  "save-asset",
+  /** Generate artwork. */
+  "generate-image",
+  /** Choose a voice before narrating. */
+  "pick-voice",
+  /** Narration. */
+  "voiceover",
+  /** Whooshes, clicks, ambience. */
+  "sfx",
+  /** Rank the skill pack against a request. */
+  "search-skills",
+  /** Offer the user a connector a skill wants. */
+  "recommend-integration",
+  /** Trims, transcodes and frame extraction on the command line. */
+  "ffmpeg",
+  /** Looking things up on the web. */
+  "web-research",
+  /** Old spelling of `generate-image`, kept so existing user skills still parse. */
+  "image-generation",
+] as const;
+export type SkillCapability = (typeof SKILL_CAPABILITIES)[number];
+
+/**
  * Something a skill needs that may or may not be there.
  *
  * `mcp` names a marketplace catalog id, which is what lets the agent say
  * "this wants ElevenLabs, and you don't have it" and offer to connect it.
- * `tool` names a built-in GenMotion tool, `capability` a coarser ability, and
- * `skill` another skill to load alongside.
+ * `capability` is one of `SKILL_CAPABILITIES`, which each surface resolves to
+ * its own tool. `tool` names a desktop tool directly — kept for user skills
+ * written before capabilities existed; the first-party pack uses capabilities.
+ * `skill` is another skill to load alongside.
  */
 export const skillRequirementSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("mcp"), id: z.string().min(1), why: z.string().min(1).max(160) }),
   z.object({ kind: z.literal("tool"), id: z.string().min(1), why: z.string().min(1).max(160) }),
   z.object({
     kind: z.literal("capability"),
-    id: z.enum(["web-research", "ffmpeg", "image-generation", "voiceover", "sfx"]),
+    id: z.enum(SKILL_CAPABILITIES),
     why: z.string().min(1).max(160),
   }),
-  z.object({ kind: z.literal("skill"), id: z.string().min(1) }),
+  z.object({
+    kind: z.literal("skill"),
+    id: z.string().min(1),
+    /**
+     * Only for projects on these engines — how a skill gets the same craft on
+     * each one: `hyperframes-keyframes` for HyperFrames, `three-camera` for
+     * Three.js. Absent means every engine.
+     */
+    engines: z.array(z.enum(["hyperframes", "react", "three"])).min(1).optional(),
+  }),
 ]);
+
+/** What a request starts from, so routing can match it to the right skill. */
+export const SKILL_ROUTE_INPUTS = ["brief", "url", "script", "footage", "screen-recording", "repo", "data", "audio", "logo"] as const;
+export type SkillRouteInput = (typeof SKILL_ROUTE_INPUTS)[number];
+
+/**
+ * How a `workflow` or `style` skill gets picked: the router's table row.
+ *
+ * The same idea as HyperFrames' route files, carried as data so search can
+ * show it and the router can apply it without reading every skill first:
+ * match the deliverable the user wants (not a word in passing), break ties by
+ * `priority`, then ask only `askFirst`.
+ */
+export const skillRouteSchema = z.object({
+  /** What the user ends up with, in one line. */
+  deliverable: z.string().min(1).max(160),
+  /** What the request usually arrives with. */
+  inputs: z.array(z.enum(SKILL_ROUTE_INPUTS)).min(1),
+  /** Lower wins when two skills fit equally. The fallback skill is the highest. */
+  priority: z.number().int().min(1).max(100),
+  /** The must-have questions, asked only when the request doesn't answer them. */
+  askFirst: z.array(z.string().min(4).max(160)).max(3),
+});
+export type SkillRoute = z.infer<typeof skillRouteSchema>;
 export type SkillRequirement = z.infer<typeof skillRequirementSchema>;
 
 const slug = z.string().regex(/^[a-z0-9][a-z0-9-]*$/, "lowercase words joined by hyphens");
@@ -124,13 +201,15 @@ export const skillMetaSchema = z
     duration: z.object({ minSeconds: z.number().int().positive(), maxSeconds: z.number().int().positive() }),
     engines: z.array(z.enum(SKILL_ENGINES)).min(1),
     requires: z.array(skillRequirementSchema).default([]),
+    /** How a `workflow` or `style` skill is picked. Required for those two kinds. */
+    route: skillRouteSchema.optional(),
     /** What to generate each asset with, and through which connector. */
     models: z
       .array(
         z.object({
           purpose: z.enum(SKILL_MODEL_PURPOSES),
           model: z.string().min(1),
-          /** A GenMotion tool name, or `mcp:<catalog id>`. */
+          /** A capability (`voiceover`), a desktop tool name, or `mcp:<catalog id>`. */
           via: z.string().min(1),
           note: z.string().max(160).optional(),
         }),
@@ -216,9 +295,15 @@ export const SKILL_DOC = "SKILL.md";
  * the staleness hash that catches a skill edited without re-running it.
  */
 export function skillSearchText(meta: SkillMeta): string {
-  return [meta.title, meta.summary, meta.description, meta.category, meta.tags.join(" "), meta.triggers.join(" ")].join(
-    "\n",
-  );
+  return [
+    meta.title,
+    meta.summary,
+    meta.description,
+    meta.category,
+    meta.tags.join(" "),
+    meta.triggers.join(" "),
+    meta.route?.deliverable ?? "",
+  ].join("\n");
 }
 
 /**

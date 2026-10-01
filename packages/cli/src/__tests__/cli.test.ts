@@ -50,7 +50,17 @@ describe("genmotion --json", () => {
     expect(code).toBe(0);
     expect(json).toMatchObject({ ok: true, engine: "three", width: 1080, height: 1080, fps: 24 });
     const dir = path.join(tmp, "video");
-    for (const file of ["AGENTS.md", "CLAUDE.md", ".mcp.json", ".cursor/mcp.json", ".claude/skills/genmotion/SKILL.md", ".agents/skills/genmotion/SKILL.md", "scenes/01-intro.ts"]) {
+    for (const file of [
+      "AGENTS.md",
+      "CLAUDE.md",
+      ".mcp.json",
+      ".cursor/mcp.json",
+      ".claude/skills/genmotion/SKILL.md",
+      ".agents/skills/genmotion/SKILL.md",
+      ".claude/skills/genmotion-skills/SKILL.md",
+      ".agents/skills/genmotion-skills/SKILL.md",
+      "scenes/01-intro.ts",
+    ]) {
       await expect(fs.stat(path.join(dir, file))).resolves.toBeTruthy();
     }
     const pkg = JSON.parse(await fs.readFile(path.join(dir, "package.json"), "utf8"));
@@ -105,6 +115,57 @@ describe("genmotion --json", () => {
     });
   });
 
+  it("skills search routes a request to the skill that owns it", () => {
+    const dir = path.join(tmp, "video");
+    const cases: [string, string][] = [
+      ["launch video for my new app", "launch-playbook"],
+      ["explain how our sync engine works", "explainer"],
+      ["logo animation for our brand", "brand-sting"],
+      ["we hit 10k github stars", "announce-milestone"],
+      ["a birthday video for my friend", "freeform-video"],
+    ];
+    for (const [query, owner] of cases) {
+      const { json } = gm(["skills", "search", query], dir);
+      // The owner is the first result that can own a video.
+      const first = json.results.find((r: { kind: string }) => r.kind === "workflow" || r.kind === "style");
+      expect(first?.id, query).toBe(owner);
+      expect(first.route.deliverable).toBeTruthy();
+      expect(gm(["skills", "search", query, "--kind", first.kind], dir).json.results[0].id, `${query} --kind`).toBe(owner);
+    }
+  }, 60_000);
+
+  it("skills search says what this surface can't do, and what to do instead", () => {
+    const { json } = gm(["skills", "search", "launch video for my new app"], path.join(tmp, "video"));
+    const launch = json.results.find((r: { id: string }) => r.id === "launch-playbook");
+    const voice = launch.requires.find((r: { id: string }) => r.id === "voiceover");
+    expect(voice).toMatchObject({ available: false });
+    expect(voice.instead).toBeTruthy();
+    // Three.js craft is listed for a three project; HyperFrames' own skills are not.
+    const skillIds = launch.requires.filter((r: { kind: string }) => r.kind === "skill").map((r: { id: string }) => r.id);
+    expect(skillIds).toContain("three-look");
+    expect(skillIds.some((id: string) => id.startsWith("hyperframes-"))).toBe(false);
+  });
+
+  it("skills show prints a skill and its reference files", () => {
+    const { json } = gm(["skills", "show", "ugc-hooks"], path.join(tmp, "video"));
+    expect(json.text).toContain("name: ugc-hooks");
+    expect(json.references).toContain("references/hook-library.md");
+    const ref = gm(["skills", "show", "ugc-hooks", "references/hook-library.md"], path.join(tmp, "video")).json;
+    expect(ref.file).toBe("references/hook-library.md");
+    expect(gm(["skills", "show", "ugc-hooks", "../../etc/passwd"], path.join(tmp, "video")).json.ok).toBe(false);
+  });
+
+  it("skills add installs a skill with what it requires for this engine", async () => {
+    const dir = path.join(tmp, "video");
+    const { json } = gm(["skills", "add", "brand-sting"], dir);
+    expect(json.installed).toEqual(expect.arrayContaining(["brand-sting", "three-look", "three-camera", "three-assets"]));
+    for (const root of [".claude/skills", ".agents/skills"]) {
+      await expect(fs.stat(path.join(dir, root, "brand-sting", "SKILL.md"))).resolves.toBeTruthy();
+      await expect(fs.stat(path.join(dir, root, "hyperframes-keyframes"))).rejects.toThrow();
+    }
+    expect(await fs.readFile(path.join(dir, ".gitignore"), "utf8")).toContain("!.agents/skills/");
+  });
+
   it("explains being outside a project", () => {
     const { code, json } = gm(["info"], os.tmpdir());
     expect(code).toBe(1);
@@ -121,13 +182,34 @@ describe("genmotion mcp", () => {
     try {
       const { tools } = await client.listTools();
       expect(tools.map((t) => t.name)).toEqual(
-        expect.arrayContaining(["project_overview", "add_scene", "validate_scene", "check_project", "capture_frames", "render_video", "save_asset", "get_guide"]),
+        expect.arrayContaining([
+          "project_overview",
+          "add_scene",
+          "validate_scene",
+          "check_project",
+          "capture_frames",
+          "render_video",
+          "save_asset",
+          "get_guide",
+          "search_skills",
+          "get_skill",
+        ]),
       );
       const overview = await client.callTool({ name: "project_overview", arguments: {} });
       const body = JSON.parse((overview.content as { text: string }[])[0]!.text);
       expect(body.engine).toBe("three");
       const invalid = await client.callTool({ name: "add_scene", arguments: { name: "x", after: "no-such-scene" } });
       expect(invalid.isError).toBe(true);
+
+      const search = await client.callTool({ name: "search_skills", arguments: { query: "changelog video for our new search feature" } });
+      const found = JSON.parse((search.content as { text: string }[])[0]!.text);
+      expect(found.engine).toBe("three");
+      expect(found.results[0].id).toBe("announce-feature");
+
+      const skill = await client.callTool({ name: "get_skill", arguments: { id: "genmotion-skills" } });
+      expect((skill.content as { text: string }[])[0]!.text).toContain("VIDEO.md");
+      const missing = await client.callTool({ name: "get_skill", arguments: { id: "no-such-skill" } });
+      expect(missing.isError).toBe(true);
     } finally {
       await client.close();
     }

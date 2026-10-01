@@ -6,14 +6,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Browser } from "playwright-core";
-import { addScene, createProject, readManifest, renderGenmotionSkill } from "@genmotion/project";
+import { addScene, createProject, readManifest } from "@genmotion/project";
 import { createSceneBundler } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { checkProject, launchBrowser, parseDuration, renderProject, renderStills, type Codec } from "@genmotion/render";
 import { projectOverview } from "./commands/project";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
-import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, wireAgents } from "./agents";
+import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, renderProjectSkill, wireAgents } from "./agents";
+import { ROUTER_SKILL, readSkill, searchPack } from "./skills";
+import { SKILL_KINDS } from "@genmotion/shared";
 import { parseSize } from "./commands/init";
 import { CliError } from "./output";
 import { VERSION } from "./version";
@@ -35,7 +37,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     { name: "genmotion", version: VERSION },
     {
       instructions:
-        "Tools for making a GenMotion video in the current project folder. Loop: project_overview → add_scene / edit scene files → check_project → capture_frames (look at the images) → render_video when asked. Call get_guide('three') before writing your first scene.",
+        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), then build: project_overview → add_scene / edit scene files → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
     },
   );
 
@@ -266,16 +268,60 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
 
   tool(
     "get_guide",
-    "Reference docs, on demand. 'three' = how to write a Three.js scene (read before your first scene); 'workflow' = the make-a-video loop; 'cli' = terminal commands.",
+    "Reference docs, on demand. 'three' = how to write a Three.js scene (read before your first scene); 'workflow' = the make-a-video loop, including how skills are picked and the capability table; 'cli' = terminal commands.",
     { topic: z.enum(["three", "workflow", "cli"]) },
     async ({ topic }) => ({
       content: [
         {
           type: "text",
-          text: topic === "three" ? THREE_AUTHORING_GUIDE : topic === "workflow" ? renderGenmotionSkill() : TERMINAL_SECTION,
+          text: topic === "three" ? THREE_AUTHORING_GUIDE : topic === "workflow" ? renderProjectSkill({ surfaces: ["mcp"] }) : TERMINAL_SECTION,
         },
       ],
     }),
+    { readOnlyHint: true },
+  );
+
+  /** The project's engine, when there is a project, so search filters to skills that apply. */
+  const engineOf = async (dir?: string) => {
+    try {
+      return (await readManifest(project(dir))).engine;
+    } catch {
+      return undefined;
+    }
+  };
+
+  tool(
+    "search_skills",
+    "Find the GenMotion skill that owns this kind of video — launch, feature announcement, milestone, explainer, logo sting, app store preview, walkthrough, UGC ad formats, freeform — plus craft skills for the engine. Pass the user's request in their own words. Results show each skill's kind (pick one `workflow` or `style` as the owner), what it delivers, the questions it asks first, and which of its needs this setup has (with what to do instead when not).",
+    {
+      ...dirArg,
+      query: z.string().min(2).describe("The user's request, in their words."),
+      kind: z.enum(SKILL_KINDS).optional().describe("Only this kind: workflow/style own a video; technique/reference are loaded alongside."),
+      limit: z.number().int().min(1).max(10).default(5),
+    },
+    async ({ dir, query, kind, limit }) => {
+      const engine = await engineOf(dir);
+      return {
+        engine: engine ?? null,
+        results: searchPack({ query, kind, engine, limit, surface: "mcp" }),
+        next: "Pick one workflow/style owner, read it with get_skill, ask only its missing askFirst questions, and record the choice in VIDEO.md (see get_skill('genmotion-skills')).",
+      };
+    },
+    { readOnlyHint: true },
+  );
+
+  tool(
+    "get_skill",
+    `Read a GenMotion skill: SKILL.md plus the list of its reference files. Pass \`file\` (e.g. references/hook-library.md) to read one reference — only when the skill says that step needs it. '${ROUTER_SKILL}' is the router: how to pick and record the owner skill.`,
+    {
+      id: z.string().min(1).describe("Skill id from search_skills."),
+      file: z.string().optional().describe("A file inside the skill, e.g. references/hook-library.md. Omit for SKILL.md."),
+    },
+    async ({ id, file }) => {
+      const skill = await readSkill(id, file);
+      const footer = skill.references.length && !file ? `\n\n---\nReference files (read with get_skill + file, only when needed): ${skill.references.join(", ")}` : "";
+      return { content: [{ type: "text", text: `${skill.text}${footer}` }] };
+    },
     { readOnlyHint: true },
   );
 

@@ -3,7 +3,7 @@
     {
       "id": "ad-qa",
       "title": "Ad QA",
-      "description": "The pre-ship review gate for a short-form ad: six tests run with capture_frames (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished.",
+      "description": "The pre-ship review gate for a short-form ad: six tests run with frame captures (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished.",
       "summary": "The six-test gate before an ad ships: first frame, mute, safe zones, captions, ad codes and claims.",
       "kind": "technique",
       "category": "Craft",
@@ -35,18 +35,18 @@
           "id": "ugc-ad-foundations"
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Every one of the six tests is a frame you actually look at."
         },
         {
-          "kind": "tool",
-          "id": "validate_composition",
+          "kind": "capability",
+          "id": "validate",
           "why": "Run it first; a failing composition captures nothing useful."
         },
         {
-          "kind": "tool",
-          "id": "project_overview",
+          "kind": "capability",
+          "id": "project-overview",
           "why": "The scene boundaries the captures are taken at."
         }
       ],
@@ -112,26 +112,36 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
         },
         {
-          "kind": "tool",
-          "id": "pick_voice",
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "pick-voice",
           "why": "One voice per project, chosen before any line is generated."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The narration the presenter is lipsynced to."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "The portrait that gets driven by the lipsync model."
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The user's own clip, which beats every synthetic route."
         }
       ],
@@ -145,13 +155,13 @@
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Direct it flat. Over-performance is the usual failure."
         },
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Generate wider than 9:16 so you can reframe between cuts."
         }
       ],
@@ -204,37 +214,78 @@
           "id": "screen-capture"
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The real feature footage the whole video is built around."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The what-changed and why-it-matters lines, said plainly."
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "A click on the interaction that matters."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Legibility of the new control is a frame check."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 20–45 second changelog video for one feature or a small set",
+        "inputs": [
+          "brief",
+          "screen-recording",
+          "url"
+        ],
+        "priority": 30,
+        "askFirst": [
+          "Which feature, and what changed for the user?",
+          "Do you have a screen recording of it?"
+        ]
+      },
       "models": [
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Plain and present-tense, like a real changelog entry."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx"
+          "via": "sfx"
         }
       ],
       "triggers": [
@@ -286,26 +337,66 @@
       ],
       "requires": [
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The what-it-means and gratitude lines, when the cut is narrated."
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Real contributor, customer or investor logos."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "The count-up hold and digit stability are judged by looking."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 15–30 second celebration of one number: users, stars, revenue, a funding round",
+        "inputs": [
+          "data",
+          "brief"
+        ],
+        "priority": 25,
+        "askFirst": [
+          "What is the number, and when was it hit?",
+          "Who is it thanking?"
+        ]
+      },
       "models": [
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Warm, not triumphant. The number does the work."
         }
       ],
@@ -362,8 +453,8 @@
           "id": "screen-capture"
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The real, current-build screen recordings the whole preview depends on."
         },
         {
@@ -372,11 +463,58 @@
           "why": "Trimming and cropping the recording into the store's exact aspect."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "A muted-review pass on each of the three cuts."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 15–30 second App Store or Google Play preview built from the app's own screens",
+        "inputs": [
+          "screen-recording",
+          "brief"
+        ],
+        "priority": 20,
+        "askFirst": [
+          "Which store, and which device sizes?",
+          "Do you have screen recordings or screenshots of the app?"
+        ]
+      },
       "models": [],
       "triggers": [
         "make an App Store preview video",
@@ -423,26 +561,73 @@
       ],
       "requires": [
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The real logo file, never a redrawn one."
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "The whoosh and the hit that sell the landing."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "The final lockup frame is checked by looking at it exactly."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 2–8 second logo reveal, bumper, or intro/outro tag with no narration",
+        "inputs": [
+          "logo",
+          "brief"
+        ],
+        "priority": 10,
+        "askFirst": [
+          "Do you have the logo file (SVG is best)?",
+          "Opaque background, or transparent to overlay on other footage?"
+        ]
+      },
       "models": [
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx",
+          "via": "sfx",
           "note": "A rising build into one solid hit, optional short decay."
         }
       ],
@@ -498,26 +683,66 @@
           "id": "screen-capture"
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The real, complete workflow footage the tour is built on."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "Narration that can orient the viewer ahead of a step."
         },
         {
-          "kind": "tool",
-          "id": "project_overview",
+          "kind": "capability",
+          "id": "project-overview",
           "why": "Checking chapter share of the runtime against the plan."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 1–3 minute guided walkthrough of one product flow, start to finish",
+        "inputs": [
+          "screen-recording",
+          "url"
+        ],
+        "priority": 35,
+        "askFirst": [
+          "Which flow should it walk through?",
+          "Do you have a screen recording, or should it be built from screenshots?"
+        ]
+      },
       "models": [
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Measured, explanatory. This viewer already opted in."
         }
       ],
@@ -538,10 +763,196 @@
       "source": "first-party"
     },
     {
+      "id": "explainer",
+      "title": "Explainer",
+      "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, with or without narration. Covers the one-question test, the four explainer shapes (how it works, why it matters, this vs that, by the numbers), one idea per scene, visual metaphors over bullet points, and pacing narration against motion. Load it for any request to explain, teach, break down or visualise something, rather than to sell or announce it.",
+      "summary": "A concept, process, comparison or number made visual in 30 seconds to 3 minutes.",
+      "kind": "workflow",
+      "category": "Explainer",
+      "tags": [
+        "explainer",
+        "education",
+        "diagram",
+        "data"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1"
+      ],
+      "duration": {
+        "minSeconds": 30,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "hyperframes",
+        "react",
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "web-research",
+          "why": "Facts behind the explanation."
+        },
+        {
+          "kind": "capability",
+          "id": "voiceover",
+          "why": "Narration, when the explainer is narrated."
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Each metaphor has to read without the narration."
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        }
+      ],
+      "route": {
+        "deliverable": "A 30 second to 3 minute video that explains one concept, process, comparison or number",
+        "inputs": [
+          "brief",
+          "script",
+          "data"
+        ],
+        "priority": 60,
+        "askFirst": [
+          "What question should the viewer be able to answer afterwards?",
+          "Narrated, or on-screen text only?",
+          "Who is it for, and how much do they already know?"
+        ]
+      },
+      "models": [],
+      "triggers": [
+        "explain how our sync engine works",
+        "make a video explaining this concept",
+        "types of databases in 60 seconds",
+        "visualise this data as a video",
+        "an educational video about how vaccines work",
+        "break down this process step by step"
+      ],
+      "templates": [
+        "types-of-databases"
+      ],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🧠",
+      "source": "first-party"
+    },
+    {
+      "id": "freeform-video",
+      "title": "Freeform video",
+      "description": "The fallback when no other skill owns the request: a custom video of any kind, such as an intro for a talk, a birthday clip, an abstract loop, a music visual, an event countdown or an internal update. Covers turning a vague request into a short plan (purpose, length, aspect, one-line message, three to six beats), picking a visual idea, and the craft rules every video shares. Load it when search finds no clear format match.",
+      "summary": "The fallback for anything without a format: a short plan, one visual idea, built well.",
+      "kind": "workflow",
+      "category": "Craft",
+      "tags": [
+        "custom",
+        "general",
+        "fallback"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 5,
+        "maxSeconds": 120
+      },
+      "engines": [
+        "hyperframes",
+        "react",
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "One frame per beat proves the plan made it to screen."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "A few hits on the key moments instead of silence."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        }
+      ],
+      "route": {
+        "deliverable": "A custom video that fits no named format",
+        "inputs": [
+          "brief"
+        ],
+        "priority": 100,
+        "askFirst": [
+          "Where will it play, and how long should it be?",
+          "What should someone feel or do after watching?"
+        ]
+      },
+      "models": [],
+      "triggers": [
+        "make a cool intro for my talk",
+        "a birthday video for my friend",
+        "an abstract looping visual",
+        "countdown video for our event",
+        "a video for this song",
+        "make me a video"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "✨",
+      "source": "first-party"
+    },
+    {
       "id": "genmotion-skills",
       "title": "The GenMotion pack",
-      "description": "GenMotion's creative pack: what to make, for the kinds of video people actually ask for, from viral UGC ads to product launches, feature announcements, milestones and brand stings. Read this when a request names an ad, a launch, an announcement or a social clip, or when search_skills returns something and you want to know how the pack fits together. It is creative direction, the same for every engine: your project's own authoring rules still own how a scene actually gets built.",
-      "summary": "The map of GenMotion's creative skills, and the order to use them in.",
+      "description": "The router for GenMotion's creative pack: start here for any new video request. It picks the one skill that owns the video type (launch, feature announcement, milestone, explainer, brand sting, app store preview, walkthrough, UGC ad formats, or a freeform fallback), loads what that skill needs for this project's engine, and records the choice in VIDEO.md so later sessions resume instead of re-deciding. Creative direction for every engine; your project's own authoring rules still own how a scene gets built.",
+      "summary": "The router: picks the one skill that owns the video, loads what it needs, records the choice.",
       "kind": "reference",
       "category": "Craft",
       "tags": [
@@ -567,10 +978,12 @@
       "requires": [],
       "models": [],
       "triggers": [
-        "what skills do you have",
+        "make me a video",
+        "what kind of videos can you make",
         "which format should this video be",
         "help me pick a style for this ad",
-        "what can you make"
+        "what skills do you have",
+        "start a new video"
       ],
       "templates": [],
       "author": {
@@ -614,31 +1027,79 @@
           "id": "ugc-scripting"
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "Narration for problem-first, demo-first and metric-first shapes."
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Real product screenshots and brand assets, never invented."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "The muted-playback and first-five-seconds checks are frame captures."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 30–90 second product launch film: problem, product, proof, call to action",
+        "inputs": [
+          "brief",
+          "url",
+          "script"
+        ],
+        "priority": 40,
+        "askFirst": [
+          "What is the product, and the one thing it does better than the alternative?",
+          "Where will it run, and at what aspect ratio?"
+        ]
+      },
       "models": [
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover"
+          "via": "voiceover"
         },
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Only for a manifesto shape's invented visuals, never a product shot."
         }
       ],
@@ -648,7 +1109,8 @@
         "promo video for our SaaS launch",
         "product hunt launch video",
         "make a video announcing our company",
-        "video for our funding and product launch"
+        "video for our funding and product launch",
+        "launch video for my new app"
       ],
       "templates": [
         "notion-launch-video",
@@ -702,25 +1164,45 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-core"
+          "id": "hyperframes-core",
+          "engines": [
+            "hyperframes"
+          ]
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "skill",
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Copies the user's recording into assets/ so nothing is hot-linked."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "Placeholder content inside a rebuilt UI."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Legibility of interface text is judged by looking at a frame."
         }
       ],
@@ -728,7 +1210,7 @@
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Avatars and thumbnails inside a rebuilt UI only."
         }
       ],
@@ -798,25 +1280,45 @@
         },
         {
           "kind": "skill",
-          "id": "media-use"
+          "id": "media-use",
+          "engines": [
+            "hyperframes"
+          ]
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "skill",
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The user's own material, and real brand imagery, into assets/."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "Staged stills nobody has photographed."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Whether a shot reads as real is a judgement made by looking."
         }
       ],
@@ -836,7 +1338,7 @@
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Phone photo, available light, a cluttered real room."
         }
       ],
@@ -854,6 +1356,260 @@
       },
       "version": "1.0.0",
       "icon": "🎞️",
+      "source": "first-party"
+    },
+    {
+      "id": "three-assets",
+      "title": "Assets (Three.js)",
+      "description": "Bringing real material into Three.js scenes: logos (SVG drawn into a texture, or extruded from path data), product screenshots and photos on planes and device frames, screen recordings as video textures seeked per frame, and the audio that goes on the timeline instead of in a scene. Covers loading everything through the frame barrier so no frame ships untextured. Load it when a scene uses a logo, screenshot, photo, recording or any file from assets/.",
+      "summary": "Logos, screenshots, photos and screen recordings in Three.js scenes, loaded so no frame ships blank.",
+      "kind": "technique",
+      "category": "Craft",
+      "tags": [
+        "assets",
+        "threejs",
+        "logos",
+        "screenshots"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 1,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "save-asset",
+          "why": "Remote files come into assets/ before a scene uses them."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Trim a screen recording to the moment that matters."
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "A blank or stretched texture only shows in a frame."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "put our logo in the video",
+        "show this screenshot on a phone",
+        "use my screen recording",
+        "the image shows up blank",
+        "add background music"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🖼️",
+      "source": "first-party"
+    },
+    {
+      "id": "three-camera",
+      "title": "Camera moves (Three.js)",
+      "description": "Camera language for Three.js scenes: push-ins, pull-backs, orbits, dolly-and-track, parallax layers, rack-focus by depth, path moves along a curve, and punch-in emphasis, each written as a pure function of the frame. Also how to frame a subject exactly for any aspect ratio and how to hand a camera move across a cut. Load it when a Three.js scene needs the camera to do something, or when a format skill asks for a punch-in, a zoom or a reframe.",
+      "summary": "Push-ins, orbits, path moves and punch-ins for Three.js scenes, framed exactly for any aspect.",
+      "kind": "technique",
+      "category": "Craft",
+      "tags": [
+        "camera",
+        "threejs",
+        "motion"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 1,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "A camera move is only checked by looking at its start, middle and end."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "add a slow push in on the logo",
+        "make the camera orbit the product",
+        "fly the camera through the scene",
+        "punch in on the key line",
+        "the subject is too small in vertical",
+        "camera glides over the dashboard"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🎥",
+      "source": "first-party"
+    },
+    {
+      "id": "three-look",
+      "title": "Look and lighting (Three.js)",
+      "description": "The look of a Three.js video: lighting setups (product, dramatic, soft, neon), backgrounds and fog, palettes with one accent, materials that read on camera, glow and grain built from planes and shaders, and how to keep the look consistent across scenes. Load it when a Three.js scene looks flat, muddy, dark or cheap, or when setting the visual direction for a new video.",
+      "summary": "Lighting setups, palettes, materials, glow and grain that make a Three.js video look finished.",
+      "kind": "technique",
+      "category": "Craft",
+      "tags": [
+        "lighting",
+        "threejs",
+        "color",
+        "style"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 1,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Lighting is judged by looking at frames."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "it looks too dark",
+        "make it look more premium",
+        "the 3D looks flat and cheap",
+        "give it a neon look",
+        "match our brand colours"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "💡",
+      "source": "first-party"
+    },
+    {
+      "id": "three-transitions",
+      "title": "Transitions (Three.js)",
+      "description": "Getting from one Three.js scene to the next without a fade to black: handoff objects, match-cuts on shape and colour, camera carries, fill-the-frame wipes, iris and shutter masks built from planes, and shader dissolves with ShaderMaterial. Covers the timing contract on both sides of the cut and the transitions to avoid. Load it when a Three.js video has more than one scene, or when cuts feel abrupt.",
+      "summary": "Cut between Three.js scenes without fading to black: handoffs, wipes, match-cuts, dissolves.",
+      "kind": "technique",
+      "category": "Craft",
+      "tags": [
+        "transitions",
+        "threejs",
+        "editing"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 1,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Each cut is checked on the frames either side of it."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "make the scenes flow into each other",
+        "the cuts feel abrupt",
+        "add a wipe between scenes",
+        "seamless transition between scenes",
+        "one continuous take feel"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🔀",
+      "source": "first-party"
+    },
+    {
+      "id": "three-type",
+      "title": "Type (Three.js)",
+      "description": "Typography in Three.js scenes: a shared label component, sizes that stay readable in every aspect ratio, word-by-word and line-by-line reveals, counters that tick to a number, highlight sweeps, captions, and a headline that survives a camera move. Load it whenever a Three.js scene puts words on screen: titles, taglines, stats, captions, calls to action.",
+      "summary": "Readable, consistent type in Three.js scenes: reveals, counters, highlights and captions.",
+      "kind": "technique",
+      "category": "Craft",
+      "tags": [
+        "typography",
+        "threejs",
+        "text"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 1,
+        "maxSeconds": 180
+      },
+      "engines": [
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Legibility is a frame check."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "animate the headline word by word",
+        "count up to 10,000 users",
+        "the text is blurry",
+        "add captions to the video",
+        "highlight the key word",
+        "the title is too small on mobile"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🔤",
       "source": "first-party"
     },
     {
@@ -894,8 +1650,8 @@
           "id": "ugc-scripting"
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "The five QA checks are all frame captures."
         }
       ],
@@ -949,13 +1705,13 @@
           "id": "ugc-ad-foundations"
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "Every cut, click and caption card wants a sound."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Shot length and caption legibility are judged by looking."
         }
       ],
@@ -963,7 +1719,7 @@
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx",
+          "via": "sfx",
           "note": "Whoosh, click, tick, confirmation tone."
         },
         {
@@ -1026,26 +1782,66 @@
           "id": "ai-presenter"
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Bring the screenshot or page the presenter is reacting to into assets/."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "Stand in for a source the user cannot supply, and for the presenter still."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The commentary is the whole ad; it has to sound unproduced."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Legibility of the source behind the cutout is a frame check."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 10–45 second vertical ad with a presenter talking over a page, post or screenshot",
+        "inputs": [
+          "url",
+          "brief"
+        ],
+        "priority": 50,
+        "askFirst": [
+          "What page or post is the presenter reacting to?",
+          "Is there a real presenter clip, or should one be generated?"
+        ]
+      },
       "models": [
         {
           "purpose": "lipsync",
@@ -1056,12 +1852,12 @@
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover"
+          "via": "voiceover"
         },
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "For the presenter still and any stand-in source."
         }
       ],
@@ -1114,13 +1910,13 @@
           "id": "ugc-ad-foundations"
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Frame zero is judged by looking at it, not by reading the markup."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "Most hook plates are a staged still nobody has a photo of."
         }
       ],
@@ -1128,19 +1924,19 @@
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Available light, mid-gesture, imperfect framing."
         },
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Flat delivery. A performed hook reads as an ad."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx",
+          "via": "sfx",
           "note": "One transient on frame 1."
         }
       ],
@@ -1198,51 +1994,93 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "generate-image",
           "why": "The failure and relief beats are a matched pair of stills."
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Bring the user's own footage in before trimming it."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The turn lands on a line, said flatly."
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "The audio drop at the turn is half of what sells it."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "The failure and relief frames have to read as the same place."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "A 10–45 second vertical ad: the pain, the product, the payoff",
+        "inputs": [
+          "brief"
+        ],
+        "priority": 55,
+        "askFirst": [
+          "What is the specific pain the viewer has right now?",
+          "What is the proof it works?"
+        ]
+      },
       "models": [
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Prompt the pair together so geometry matches."
         },
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Tired, not performative, through the agitation."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx"
+          "via": "sfx"
         }
       ],
       "triggers": [
@@ -1303,7 +2141,17 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         },
         {
           "kind": "capability",
@@ -1311,43 +2159,83 @@
           "why": "Trim, crop and reframe a desktop recording into the vertical canvas before it hits the timeline."
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "capability",
+          "id": "save-asset",
           "why": "Bring the user's own screen recording into assets/."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "The flat, unproduced narration this format runs on."
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "A click per interaction and a confirmation tone on completion."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Every readability and click-feedback check is a frame capture."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "An 8–45 second vertical ad where a creator demos the app on screen",
+        "inputs": [
+          "screen-recording",
+          "brief"
+        ],
+        "priority": 45,
+        "askFirst": [
+          "What is the app's one-sentence payoff?",
+          "Do you have a screen recording of the moment it pays off?"
+        ]
+      },
       "models": [
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Pick a conversational voice, not a narrator."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx",
+          "via": "sfx",
           "note": "UI click, soft whoosh, confirmation tone."
         },
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Only for placeholder content inside a rebuilt UI."
         }
       ],
@@ -1410,18 +2298,18 @@
           "id": "ugc-hooks"
         },
         {
-          "kind": "tool",
-          "id": "pick_voice",
+          "kind": "capability",
+          "id": "pick-voice",
           "why": "One voice per project, chosen before the first line is generated."
         },
         {
-          "kind": "tool",
-          "id": "generate_voiceover",
+          "kind": "capability",
+          "id": "voiceover",
           "why": "Turns the written script into the narration track."
         },
         {
-          "kind": "tool",
-          "id": "project_overview",
+          "kind": "capability",
+          "id": "project-overview",
           "why": "Check the script's beats against where the picture actually cuts."
         }
       ],
@@ -1429,7 +2317,7 @@
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "generate_voiceover",
+          "via": "voiceover",
           "note": "Conversational, not narrator. Flat through the problem."
         }
       ],
@@ -1485,34 +2373,83 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes"
+          "id": "hyperframes-keyframes",
+          "engines": [
+            "hyperframes"
+          ]
         },
         {
-          "kind": "tool",
-          "id": "save_asset",
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "save-asset",
           "why": "The user's product photography is always better than a generated box."
         },
         {
-          "kind": "tool",
-          "id": "generate_image",
+          "kind": "capability",
+          "id": "generate-image",
           "why": "Fill the reveal stages the user has no photo for."
         },
         {
-          "kind": "tool",
-          "id": "generate_sfx",
+          "kind": "capability",
+          "id": "sfx",
           "why": "Tape, cardboard, tissue and the set-down are the retention device."
         },
         {
-          "kind": "tool",
-          "id": "capture_frames",
+          "kind": "capability",
+          "id": "capture-frames",
           "why": "Every stage of the reveal is checked as a frame."
+        },
+        {
+          "kind": "skill",
+          "id": "three-look",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
+      "route": {
+        "deliverable": "An 8–40 second vertical ad that reveals a physical product stage by stage",
+        "inputs": [
+          "brief"
+        ],
+        "priority": 50,
+        "askFirst": [
+          "Do you have product photos or footage?",
+          "What is the reveal moment — the thing people should see last?"
+        ]
+      },
       "models": [
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
-          "via": "generate_image",
+          "via": "generate-image",
           "note": "Available light, a real surface, hands in frame."
         },
         {
@@ -1524,7 +2461,7 @@
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "generate_sfx",
+          "via": "sfx",
           "note": "Tape peel, cardboard flex, paper rustle, a soft set-down."
         }
       ],
@@ -1544,5 +2481,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "06f1bfd8"
+  "revision": "198c8f02"
 }

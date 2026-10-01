@@ -347,15 +347,17 @@ Every command takes `--json` and prints exactly one JSON object.
 
 | Step | Command | MCP tool (`npx genmotion mcp`, wired in `.mcp.json`) |
 |---|---|---|
+| Pick the skill for this kind of video | `npx genmotion skills search "<request>" --json` | `search_skills` |
+| Read a skill | `npx genmotion skills show <id>` | `get_skill` |
 | What's in the project | `npx genmotion info --json` | `project_overview` |
 | Add a scene (file + manifest entry) | `npx genmotion scene add "Hero" --duration 4s` | `add_scene` |
-| Validate one scene | `npx genmotion check --static --json` | `validate_scene` |
+| Validate scenes without rendering | `npx genmotion check --static --json` | `validate_scene` |
 | Compile + determinism + headless render of every scene | `npx genmotion check --json` | `check_project` |
 | Look at frames | `npx genmotion still --at 1s --at 50%` | `capture_frames` |
-| Copy a remote file into `assets/` | `curl -L -o assets/x.png <url>` | `save_asset` |
 | Add an npm package | `npm install --ignore-scripts <pkg>` | `add_package` |
 | Live preview for the user | `npx genmotion dev --background` | — |
 | Final MP4 | `npx genmotion render --json` | `render_video` |
 
-Don't call a video done until `check` passes and you have looked at stills
-from every scene.
+For a new video, start with the `genmotion` skill (`.claude/skills/genmotion/`): it picks the
+video-type skill, and `VIDEO.md` records the choice. Don't call a video done
+until `check` passes and you have looked at stills from every scene.

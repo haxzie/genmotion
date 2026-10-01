@@ -2,7 +2,8 @@
  * Builds the published CLI: one ESM bundle with every `@genmotion/*`
  * workspace package inlined (none of them need publishing for the CLI to
  * work), the runtime dependencies left as imports, and the browser host
- * bundles the renderer loads next to it in `dist/browser/`.
+ * bundles the renderer loads next to it in `dist/browser/`, and the skill pack
+ * in `dist/skills/`.
  */
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -39,6 +40,10 @@ const hosts = spawnSync(process.execPath, [path.join(root, "..", "render", "scri
   stdio: "inherit",
 });
 if (hosts.status !== 0) process.exit(hosts.status ?? 1);
+
+// The skill pack ships inside the CLI, so `search_skills`, `get_skill` and
+// `skills add` work offline and always match this version's catalog.
+await fs.cp(path.join(root, "..", "skills", "plugin", "skills"), path.join(root, "dist", "skills"), { recursive: true });
 
 const size = (await fs.stat(path.join(root, "dist", "main.js"))).size;
 console.log(`genmotion → dist/main.js (${(size / 1024).toFixed(0)} KB)`);

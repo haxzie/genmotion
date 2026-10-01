@@ -1,0 +1,97 @@
+{
+  "id": "explainer",
+  "title": "Explainer",
+  "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, with or without narration. Covers the one-question test, the four explainer shapes (how it works, why it matters, this vs that, by the numbers), one idea per scene, visual metaphors over bullet points, and pacing narration against motion. Load it for any request to explain, teach, break down or visualise something, rather than to sell or announce it.",
+  "summary": "A concept, process, comparison or number made visual in 30 seconds to 3 minutes.",
+  "kind": "workflow",
+  "category": "Explainer",
+  "tags": [
+    "explainer",
+    "education",
+    "diagram",
+    "data"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1"
+  ],
+  "duration": {
+    "minSeconds": 30,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "web-research",
+      "why": "Facts behind the explanation."
+    },
+    {
+      "kind": "capability",
+      "id": "voiceover",
+      "why": "Narration, when the explainer is narrated."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Each metaphor has to read without the narration."
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-transitions",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-look",
+      "engines": [
+        "three"
+      ]
+    }
+  ],
+  "route": {
+    "deliverable": "A 30 second to 3 minute video that explains one concept, process, comparison or number",
+    "inputs": [
+      "brief",
+      "script",
+      "data"
+    ],
+    "priority": 60,
+    "askFirst": [
+      "What question should the viewer be able to answer afterwards?",
+      "Narrated, or on-screen text only?",
+      "Who is it for, and how much do they already know?"
+    ]
+  },
+  "models": [],
+  "triggers": [
+    "explain how our sync engine works",
+    "make a video explaining this concept",
+    "types of databases in 60 seconds",
+    "visualise this data as a video",
+    "an educational video about how vaccines work",
+    "break down this process step by step"
+  ],
+  "templates": [
+    "types-of-databases"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🧠"
+}

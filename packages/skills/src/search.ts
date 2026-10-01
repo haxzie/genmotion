@@ -165,10 +165,12 @@ export function searchSkills({
   engine,
   limit = 5,
 }: SearchOptions): SkillHit[] {
-  const pool = entries.filter(
-    (e) => (!kind || e.kind === kind) && (!engine || e.engines.includes(engine as never)),
-  );
-  if (pool.length === 0) return [];
+  // Score against every skill for this engine, *then* narrow to the kind:
+  // BM25's term weights depend on the corpus, and scoring only the workflows
+  // would rank them differently from how they rank in the whole pack.
+  const pool = entries.filter((e) => !engine || e.engines.includes(engine as never));
+  const wanted = (e: SkillCatalogEntry) => !kind || e.kind === kind;
+  if (!pool.some(wanted)) return [];
 
   const keyword = bm25Scores(query, pool);
   const semantic = queryVector && embeddings ? semanticScores(queryVector, pool, embeddings) : new Map<string, number>();
@@ -176,11 +178,15 @@ export function searchSkills({
   // Nothing matched either way: a caller asking "what have you got" deserves
   // an answer, so fall back to the catalog's own order rather than nothing.
   if (keyword.size === 0 && semantic.size === 0) {
-    return pool.slice(0, limit).map((entry) => ({ entry, score: 0, from: [] }));
+    return pool.filter(wanted).slice(0, limit).map((entry) => ({ entry, score: 0, from: [] }));
   }
 
   const fused = fuse([keyword, semantic].filter((m) => m.size > 0));
   return [...fused.entries()]
+    .filter(([id]) => {
+      const entry = pool.find((e) => e.id === id);
+      return entry !== undefined && wanted(entry);
+    })
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .flatMap(([id, score]) => {

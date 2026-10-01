@@ -1,0 +1,48 @@
+{
+  "id": "three-look",
+  "title": "Look and lighting (Three.js)",
+  "description": "The look of a Three.js video: lighting setups (product, dramatic, soft, neon), backgrounds and fog, palettes with one accent, materials that read on camera, glow and grain built from planes and shaders, and how to keep the look consistent across scenes. Load it when a Three.js scene looks flat, muddy, dark or cheap, or when setting the visual direction for a new video.",
+  "summary": "Lighting setups, palettes, materials, glow and grain that make a Three.js video look finished.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "lighting",
+    "threejs",
+    "color",
+    "style"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Lighting is judged by looking at frames."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "it looks too dark",
+    "make it look more premium",
+    "the 3D looks flat and cheap",
+    "give it a neon look",
+    "match our brand colours"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "💡"
+}

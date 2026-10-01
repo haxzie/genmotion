@@ -5,10 +5,12 @@ import { readManifest } from "@genmotion/project";
 import { ensureFfmpeg, findChromium, installChromium, launchBrowser } from "@genmotion/render";
 import { runMcpServer } from "../mcp";
 import { wireAgents } from "../agents";
+import { installSkills, installedSkills, listPack, readSkill, searchPack } from "../skills";
+import { SKILL_KINDS, type SkillKind } from "@genmotion/shared";
 import { listTemplates } from "../templates";
 import { resolveProjectDir } from "../project-dir";
 import { CliError, bold, dim, green, red, yellow } from "../output";
-import { str, type Command } from "../command";
+import { num, str, type Command } from "../command";
 import { VERSION } from "../version";
 
 export const mcp: Command = {
@@ -23,9 +25,9 @@ Speaks MCP over stdio. New projects already carry the config (.mcp.json,
   Codex         codex mcp add genmotion -- npx -y genmotion mcp
   Any client    { "command": "npx", "args": ["-y", "genmotion", "mcp"] }
 
-Tools: project_overview, create_project, add_scene, validate_scene,
-check_project, capture_frames, render_video, save_asset, add_package,
-get_guide, list_templates.`,
+Tools: search_skills, get_skill, project_overview, create_project,
+add_scene, validate_scene, check_project, capture_frames, render_video,
+save_asset, add_package, get_guide, list_templates.`,
   options: {},
   async run({ values }) {
     await runMcpServer({ dir: str(values.dir) });
@@ -34,21 +36,96 @@ get_guide, list_templates.`,
 
 export const skills: Command = {
   name: "skills",
-  summary: "Add or refresh agent wiring (AGENTS.md, CLAUDE.md, skills, .mcp.json)",
-  help: `Usage: genmotion skills <add|update> [--json]
+  summary: "Find, read and install video-type skills; wire agent files",
+  help: `Usage: genmotion skills <list|search|show|add|update> [options]
 
-  add      Write any missing agent files into the project
-  update   Rewrite them to this CLI version's copy`,
-  options: {},
+GenMotion's skill pack: one skill per kind of video (launch, feature
+announcement, milestone, explainer, logo sting, app store preview, walkthrough,
+UGC ad formats, freeform) plus craft skills for the engine (camera, type,
+transitions, assets, look).
+
+  list                     Every skill, with its kind and what it delivers
+  search "<request>"       Rank the pack against a request (--kind workflow|style|technique|reference)
+  show <id> [file]         Print a skill's SKILL.md, or one of its reference files
+  add [<id>...]            Install skills (and what they require) into this project
+                           for Claude Code and Codex. With no ids, write the agent
+                           files: CLAUDE.md, .mcp.json, the router and project skill
+  update                   Rewrite the agent files and refresh installed skills
+
+Options
+  --kind <kind>    search/list: only this kind
+  --limit <n>      search: how many (default 5)
+  --json`,
+  options: {
+    kind: { type: "string" },
+    limit: { type: "string" },
+  },
   async run({ values, positionals, out }) {
-    const action = positionals[0] ?? "add";
-    if (action !== "add" && action !== "update") throw new CliError(`Unknown action "${action}"`, { fix: "npx genmotion skills add" });
+    const [action = "add", ...args] = positionals;
+    const kindText = str(values.kind);
+    if (kindText && !(SKILL_KINDS as readonly string[]).includes(kindText)) {
+      throw new CliError(`Unknown kind "${kindText}"`, { fix: `--kind ${SKILL_KINDS.join("|")}` });
+    }
+    const kind = kindText as SkillKind | undefined;
+    const engine = await engineHere(str(values.dir));
+
+    if (action === "list") {
+      const list = listPack("shell", engine).filter((s) => !kind || s.kind === kind);
+      out.result(
+        { engine: engine ?? null, skills: list },
+        list.map((s) => `${bold(s.id.padEnd(22))} ${dim(s.kind.padEnd(9))} ${s.route?.deliverable ?? s.summary}`).join("\n"),
+      );
+      return;
+    }
+    if (action === "search") {
+      const query = args.join(" ").trim();
+      if (!query) throw new CliError("What is the video?", { fix: 'npx genmotion skills search "launch video for my app"' });
+      const results = searchPack({ query, kind, engine, limit: num(values.limit, "limit") ?? 5, surface: "shell" });
+      out.result(
+        { engine: engine ?? null, query, results },
+        results
+          .map((r) => {
+            const missing = r.requires.filter((q) => !q.available && q.kind === "capability").map((q) => q.id);
+            return `${bold(r.id)} ${dim(`${r.kind} · ${r.category}`)}\n  ${r.route?.deliverable ?? r.summary}${
+              missing.length ? `\n  ${yellow("not here:")} ${missing.join(", ")}` : ""
+            }`;
+          })
+          .join("\n") + `\n\n${dim("Read one: npx genmotion skills show <id>")}`,
+      );
+      return;
+    }
+    if (action === "show") {
+      const [id, file] = args;
+      if (!id) throw new CliError("Which skill?", { fix: "npx genmotion skills list" });
+      const skill = await readSkill(id, file);
+      out.result({ ...skill }, `${skill.text}${skill.references.length && !file ? `\n---\n${dim(`references: ${skill.references.join(", ")}`)}` : ""}`);
+      return;
+    }
+    if (action !== "add" && action !== "update") {
+      throw new CliError(`Unknown action "${action}"`, { fix: "npx genmotion skills --help" });
+    }
+
     const projectDir = resolveProjectDir(str(values.dir));
     const manifest = await readManifest(projectDir);
     const written = await wireAgents(projectDir, { engine: manifest.engine, overwrite: action === "update" });
-    out.result({ written }, written.length ? written.map((f) => `${green("✓")} ${f}`).join("\n") : "Already up to date");
+    const wanted = action === "update" ? await installedSkills(projectDir) : args;
+    const installed = wanted.length ? await installSkills(projectDir, wanted, manifest.engine) : [];
+    out.result(
+      { written, installed },
+      [...written.map((f) => `${green("✓")} ${f}`), ...installed.map((id) => `${green("✓")} skill ${bold(id)}`)].join("\n") ||
+        "Already up to date",
+    );
   },
 };
+
+/** The current project's engine, if there is a project here. */
+async function engineHere(dir: string | undefined): Promise<string | undefined> {
+  try {
+    return (await readManifest(resolveProjectDir(dir))).engine;
+  } catch {
+    return undefined;
+  }
+}
 
 export const templates: Command = {
   name: "templates",

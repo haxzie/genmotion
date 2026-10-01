@@ -44,6 +44,28 @@ claude mcp add genmotion -- npx -y genmotion mcp
 codex mcp add genmotion -- npx -y genmotion mcp
 ```
 
+## Skills: one per kind of video
+
+The CLI ships GenMotion's skill pack. Each video type has a skill that owns
+it: `launch-playbook`, `announce-feature`, `announce-milestone`, `explainer`,
+`brand-sting`, `app-store-preview`, `demo-walkthrough`, the UGC ad formats,
+and `freeform-video` as the fallback. Craft skills are loaded alongside them:
+`three-camera`, `three-type`, `three-transitions`, `three-assets` and
+`three-look`. The agent picks one owner per video:
+
+```sh
+npx genmotion skills search "launch video for our AI notes app" --json
+npx genmotion skills show launch-playbook
+npx genmotion skills add launch-playbook   # copies it and what it needs into .claude/skills and .agents/skills
+```
+
+Over MCP these are `search_skills` and `get_skill`. Every result says what
+the skill delivers and which questions it asks first. It also lists what that
+skill needs that this setup lacks, and what to do instead. For example,
+narration is available in the desktop app but not from the CLI. The router
+skill `genmotion-skills` records the choice in `VIDEO.md`, so the next session
+resumes instead of re-deciding.
+
 ## Commands
 
 Every command takes `--json` and prints exactly one JSON object on stdout:
@@ -61,7 +83,7 @@ never prompts unless it's running in a terminal without `--yes`.
 | `genmotion scene add <name>` | Creates the scene file and registers it in `project.json`. `--duration 4s`, `--after <scene>` |
 | `genmotion templates` | The starter catalog |
 | `genmotion mcp` | MCP server over stdio |
-| `genmotion skills add\|update` | Write or refresh the agent files |
+| `genmotion skills list\|search\|show\|add\|update` | Find, read and install video-type skills, and write or refresh the agent files |
 | `genmotion browser install` | Fetch headless Chromium. Also happens automatically on the first render |
 | `genmotion doctor` | Checks Node, ffmpeg, Chromium and WebGL |
 
@@ -70,9 +92,10 @@ if it's installed.
 
 ### MCP tools
 
-`project_overview`, `create_project`, `add_scene`, `validate_scene`,
-`check_project`, `capture_frames` (returns the images), `render_video`,
-`save_asset`, `add_package`, `get_guide`, `list_templates`.
+`search_skills`, `get_skill`, `project_overview`, `create_project`,
+`add_scene`, `validate_scene`, `check_project`, `capture_frames` (returns the
+images), `render_video`, `save_asset`, `add_package`, `get_guide`,
+`list_templates`.
 
 ## A scene
 

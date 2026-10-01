@@ -3,7 +3,8 @@ name: CLI
 # The genmotion CLI, its renderer and the starter repo, on every PR that
 # touches them: typecheck, unit tests, a real headless render (Chromium is
 # downloaded by the renderer itself, exactly as on a user's first run), and a
-# check that examples/three-starter still matches `genmotion init`.
+# check that examples/three-starter still matches `genmotion init` and the
+# Claude Code plugin still matches the skill pack.
 
 on:
   pull_request:
@@ -16,8 +17,11 @@ on:
       - "packages/compiler/**"
       - "packages/ai/**"
       - "packages/create-genmotion/**"
+      - "packages/skills/**"
       - "examples/**"
+      - "plugins/**"
       - "scripts/sync-starter.mjs"
+      - "scripts/sync-plugin.mjs"
       - ".github/workflows/cli.yml"
   push:
     branches: [main]
@@ -30,7 +34,9 @@ on:
       - "packages/compiler/**"
       - "packages/ai/**"
       - "packages/create-genmotion/**"
+      - "packages/skills/**"
       - "examples/**"
+      - "plugins/**"
 
 jobs:
   cli:
@@ -46,10 +52,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
-      - run: pnpm --filter ./packages/render --filter ./packages/cli --filter ./packages/project --filter ./packages/three-engine typecheck
+      - run: pnpm --filter ./packages/render --filter ./packages/cli --filter ./packages/project --filter ./packages/three-engine --filter ./packages/skills typecheck
       - run: node packages/render/node_modules/playwright-core/cli.js install chromium-headless-shell
-      - run: pnpm --filter ./packages/render --filter ./packages/cli --filter ./packages/project --filter ./packages/three-engine test
+      - run: pnpm --filter ./packages/render --filter ./packages/cli --filter ./packages/project --filter ./packages/three-engine --filter ./packages/skills test
       - run: node scripts/sync-starter.mjs --check
+      - run: node scripts/sync-plugin.mjs --check
       - name: Build and pack the CLI
         run: |
           pnpm --filter ./packages/shared --filter ./packages/three-engine --filter ./packages/cli build

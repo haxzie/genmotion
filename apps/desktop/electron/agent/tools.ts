@@ -596,9 +596,13 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
           .filter((r) => r.kind === "skill")
           .map((r) => r.id)
           .join(", ");
+        const route = s.route
+          ? [`   Delivers: ${s.route.deliverable}`, s.route.askFirst.length ? `   Ask first (only if unanswered): ${s.route.askFirst.join(" / ")}` : ""]
+          : [];
         return [
           `${i + 1}. ${s.id} — ${s.title}   [${meta}]`,
           `   ${s.summary}`,
+          ...route,
           `   Read it:  Skill("genmotion-skills:${s.id}")${hit.path ? `   or read ${hit.path}/SKILL.md` : ""}`,
           alongside ? `   Load with: ${alongside}` : "",
           needs ? `   Needs: ${needs}` : "",
@@ -608,7 +612,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       });
 
       return text(
-        `${blocks.join("\n\n")}\n\nRead the top match before you plan. If a requirement says NOT connected and the skill genuinely needs it, call recommend_integration once with that server id, say what you will do without it, and carry on.`,
+        `${blocks.join("\n\n")}\n\nPick ONE workflow or style result as the owner, read it before you plan, and record it in VIDEO.md (see genmotion-skills). If a requirement says NOT connected and the skill genuinely needs it, call recommend_integration once with that server id, say what you will do without it, and carry on.`,
       );
     },
   },
