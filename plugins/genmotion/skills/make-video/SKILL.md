@@ -49,8 +49,9 @@ Skills name what to do as backticked capability ids, never tool names. What each
 | `save-asset` | Copy a remote image, video, font or audio file into `assets/` | `save_asset` |
 | `generate-image` | Generate artwork | not available — ask the user for the image, or build the visual from geometry and type instead |
 | `pick-voice` | Choose a narration voice | not available — ask the user which voice, or skip if there is no narration |
-| `voiceover` | Narration | not available — use an audio file the user provides (put it in `assets/` and add it to `project.json`'s `audio`), or carry the words as on-screen type |
-| `sfx` | Whooshes, clicks, ambience | not available — use sound files the user provides, or leave the moment silent |
+| `voiceover` | Narration | not available — use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type |
+| `sfx` | Whooshes, clicks, ambience | not available — place sound files the user provides with `place-audio`, or leave the moment silent |
+| `place-audio` | Put music, narration or an effect on the timeline (`project.json`'s `audio`) | `add_audio` (then `update_audio` / `remove_audio`) |
 | `search-skills` | Rank the skill pack against a request | `search_skills`, then `get_skill` |
 | `recommend-integration` | Offer the user a connector a skill wants | not available — say in one sentence which service would help and carry on without it |
 | `ffmpeg` | Trims, transcodes, frame extraction | `ffmpeg` in your shell, if you have one |

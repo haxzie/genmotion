@@ -357,8 +357,10 @@ there is no package called `genmotion`, so `npx genmotion` only works after
 | Validate scenes without rendering | `npx @genmotion/cli check --static --json` | `validate_scene` |
 | Compile + determinism + headless render of every scene | `npx @genmotion/cli check --json` | `check_project` |
 | Look at frames | `npx @genmotion/cli still --at 1s --at 50%` | `capture_frames` |
+| Put music, narration or an effect on the timeline | `npx @genmotion/cli audio add assets/music.mp3 --at 0 --fade-out 1s` | `add_audio` |
+| Move, trim, re-level, mute or remove a clip | `npx @genmotion/cli audio set <id> --volume 0.3` · `audio remove <id>` | `update_audio` · `remove_audio` |
 | Add an npm package | `npm install --ignore-scripts <pkg>` | `add_package` |
-| Live preview for the user | `npx @genmotion/cli dev --background` | — |
+| Live preview for the user (picture, timeline and sound) | `npx @genmotion/cli dev --background` | — |
 | Final MP4 | `npx @genmotion/cli render --json` | `render_video` |
 
 For a new video, start with the `genmotion` skill (`.claude/skills/genmotion/`): it picks the

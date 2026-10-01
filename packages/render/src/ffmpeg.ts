@@ -84,6 +84,29 @@ export function runFfmpeg(args: string[], signal?: AbortSignal): Promise<void> {
   });
 }
 
+/**
+ * Seconds of a media file, or null when ffmpeg can't read one.
+ *
+ * Only ffmpeg ships (no ffprobe), but `ffmpeg -i <file>` prints the same
+ * `Duration:` line to stderr before complaining that no output was given.
+ * Same approach as the desktop app's probe.
+ */
+export async function probeMediaDuration(file: string): Promise<number | null> {
+  const bin = await ensureFfmpeg();
+  return new Promise((resolve) => {
+    const proc = spawn(bin, ["-hide_banner", "-i", file]);
+    let stderr = "";
+    proc.stderr.on("data", (d: Buffer) => {
+      stderr = (stderr + d.toString()).slice(-16000);
+    });
+    proc.on("error", () => resolve(null));
+    proc.on("close", () => {
+      const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
+      resolve(match ? Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) : null);
+    });
+  });
+}
+
 function ffmpegSpawnError(err: Error): Error {
   if ((err as NodeJS.ErrnoException).code === "ENOENT") {
     return new FfmpegError("ffmpeg not found. Reinstall @genmotion/cli (it ships ffmpeg-static) or set FFMPEG_PATH.");

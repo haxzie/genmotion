@@ -15,6 +15,7 @@
     "db:generate": "pnpm --filter @genmotion/db db:generate",
     "db:migrate": "pnpm --filter @genmotion/db db:migrate",
     "changeset": "changeset",
+    "version-packages": "changeset version && node scripts/sync-starter.mjs",
     "release": "pnpm --filter ./packages/shared --filter ./packages/three-engine --filter ./packages/cli --filter ./packages/create-genmotion run --if-present build && changeset publish"
   },
   "devDependencies": {

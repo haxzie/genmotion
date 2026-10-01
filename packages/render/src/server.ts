@@ -72,6 +72,74 @@ const MIME: Record<string, string> = {
 /** Folders whose changes never affect the picture. */
 const IGNORED_DIRS = new Set(["node_modules", ".git", INTERNAL_DIR, "exports", "out", "dist"]);
 
+/**
+ * What the studio's timeline draws and plays: timeline clips on their lanes and
+ * scene voiceovers on a lane of their own, each with the URL to fetch it from.
+ * Same timing fields the render's mix reads (`buildRenderAudioSources`), so
+ * what plays in the studio is what the MP4 gets.
+ */
+export interface StudioAudioClip {
+  id: string;
+  label: string;
+  file: string;
+  url: string;
+  /** A timeline lane (0-based), or `"voice"` for a scene's voiceover. */
+  lane: number | "voice";
+  startFrame: number;
+  /** Null for a voiceover: it plays to its own end, which only decoding knows. */
+  durationInFrames: number | null;
+  /** Seconds into the source. */
+  startFrom: number;
+  volume: number;
+  fadeInFrames: number;
+  fadeOutFrames: number;
+  muted: boolean;
+}
+
+function studioAudio(compiled: CompiledComposition): StudioAudioClip[] {
+  const { manifest, fps } = compiled;
+  const url = (file: string) => FILES_PREFIX + file.split("/").map(encodeURIComponent).join("/");
+  const clips: StudioAudioClip[] = [];
+  let start = 0;
+  manifest.scenes.forEach((scene, index) => {
+    if (scene.audio) {
+      const split = scene.startFrom !== undefined;
+      clips.push({
+        id: `voice-${index}`,
+        label: scene.name ?? path.basename(scene.audio),
+        file: scene.audio,
+        url: url(scene.audio),
+        lane: "voice",
+        startFrame: start,
+        durationInFrames: split ? scene.durationInFrames : null,
+        startFrom: split ? scene.startFrom! / fps : 0,
+        volume: scene.audioVolume ?? 1,
+        fadeInFrames: 0,
+        fadeOutFrames: 0,
+        muted: false,
+      });
+    }
+    start += scene.durationInFrames;
+  });
+  for (const clip of manifest.audio) {
+    clips.push({
+      id: clip.id,
+      label: clip.name ?? path.basename(clip.file),
+      file: clip.file,
+      url: url(clip.file),
+      lane: clip.track,
+      startFrame: clip.startFrame,
+      durationInFrames: clip.durationInFrames,
+      startFrom: clip.startFrom,
+      volume: clip.volume,
+      fadeInFrames: clip.fadeInFrames,
+      fadeOutFrames: clip.fadeOutFrames,
+      muted: clip.muted,
+    });
+  }
+  return clips;
+}
+
 export async function serveProject(options: ServeOptions): Promise<ProjectServer> {
   const bundler = createProjectBundler(options.projectDir);
   const projectDir = bundler.projectDir;
@@ -127,7 +195,7 @@ export async function serveProject(options: ServeOptions): Promise<ProjectServer
       if (pathname === "/__gm/composition") {
         try {
           const compiled = await composition();
-          return sendJson(res, 200, { ...compiled, manifest: undefined, revision });
+          return sendJson(res, 200, { ...compiled, manifest: undefined, audio: studioAudio(compiled), revision });
         } catch (err) {
           return sendJson(res, 200, { error: err instanceof Error ? err.message : String(err), revision });
         }

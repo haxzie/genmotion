@@ -90,6 +90,10 @@ jobs:
         id: publish
         uses: changesets/action@v1
         with:
+          # `init` pins the CLI's own minor line, so a version bump changes
+          # what it writes; regenerating the starter here keeps the Version
+          # packages PR from failing its own drift check.
+          version: pnpm version-packages
           publish: pnpm release
           title: "Version packages"
           commit: "Version packages"

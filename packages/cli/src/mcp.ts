@@ -11,6 +11,8 @@ import { createSceneBundler } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { checkProject, launchBrowser, parseDuration, renderProject, renderStills, type Codec } from "@genmotion/render";
 import { projectOverview } from "./commands/project";
+import { downloadAsset } from "./assets";
+import { addAudio, removeAudio, setAudio } from "./audio";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
 import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, renderProjectSkill, wireAgents } from "./agents";
@@ -20,8 +22,6 @@ import { parseSize } from "./commands/init";
 import { CliError } from "./output";
 import { VERSION } from "./version";
 
-const MAX_ASSET_BYTES = 25 * 1024 * 1024;
-const ASSET_TYPES = /^(image|audio|video|font|model)\/|^application\/(octet-stream|json)$/;
 
 /**
  * `genmotion mcp`: the CLI's verbs as MCP tools, over stdio.
@@ -37,7 +37,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     { name: "genmotion", version: VERSION },
     {
       instructions:
-        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), then build: project_overview → add_scene / edit scene files → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
+        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
     },
   );
 
@@ -220,6 +220,40 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     },
   );
 
+  const timing = {
+    at: z.string().optional().describe("Where it starts on the timeline: '2s', '48' (frames), '500ms', '50%'."),
+    duration: z.string().optional().describe("How long it plays: '6s', '144'. On add, defaults to the whole file, cut at the video's end."),
+    from: z.string().optional().describe("How far into the source file playback begins: '1.5s'."),
+    track: z.number().int().min(0).optional().describe("Lane, from 0. Up to 4 lanes; clips never overlap on one lane."),
+    volume: z.number().min(0).max(2).optional().describe("1 is unchanged."),
+    fadeIn: z.string().optional().describe("Fade-in length: '0.5s'."),
+    fadeOut: z.string().optional().describe("Fade-out length: '1s'."),
+    name: z.string().optional().describe("A label; accepted in place of the id later."),
+    muted: z.boolean().optional(),
+  };
+
+  tool(
+    "add_audio",
+    "Put music, a sound effect or a voiceover on the timeline (written to project.json; the render mixes it and the dev studio plays it). `file` is a path inside the project or an http(s) URL, which is saved into assets/ first. Picks a free lane; if the clip runs into the next one on its lane it is shortened and `trimmedFrom` says so.",
+    { ...dirArg, file: z.string().min(1).describe("e.g. 'assets/music.mp3' or a URL."), ...timing },
+    async ({ dir, file, ...args }) => ({ ...(await addAudio(project(dir), file, args)) }),
+  );
+
+  tool(
+    "update_audio",
+    "Move, retime, trim, re-level, fade, rename or mute an audio clip. Only the fields given change. `id` is the clip's id or name from project_overview.",
+    { ...dirArg, id: z.string().min(1), file: z.string().optional().describe("Swap the source file (a path inside the project)."), ...timing },
+    async ({ dir, id, ...args }) => ({ ...(await setAudio(project(dir), id, args)) }),
+  );
+
+  tool(
+    "remove_audio",
+    "Take an audio clip off the timeline. The file stays in assets/.",
+    { ...dirArg, id: z.string().min(1).describe("The clip's id or name.") },
+    async ({ dir, id }) => removeAudio(project(dir), id),
+    { destructiveHint: true },
+  );
+
   tool(
     "save_asset",
     "Download a remote image, audio, video, font or 3D model into the project's assets/ folder (max 25MB) and return the import path. Scenes must never hot-link remote URLs.",
@@ -229,21 +263,8 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       filename: z.string().optional().describe("File name to save as; derived from the URL when omitted."),
     },
     async ({ dir, url, filename }) => {
-      const projectDir = project(dir);
-      const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "genmotion-cli" } });
-      if (!res.ok) throw new Error(`${url} answered ${res.status}`);
-      const type = (res.headers.get("content-type") ?? "application/octet-stream").split(";")[0]!.trim();
-      if (!ASSET_TYPES.test(type)) throw new Error(`${url} is ${type}, not an image, audio, video, font or model`);
-      const declared = Number(res.headers.get("content-length") ?? 0);
-      if (declared > MAX_ASSET_BYTES) throw new Error(`${url} is ${Math.round(declared / 1e6)}MB — the limit is 25MB`);
-      const bytes = Buffer.from(await res.arrayBuffer());
-      if (bytes.byteLength > MAX_ASSET_BYTES) throw new Error(`${url} is over the 25MB limit`);
-      const fromUrl = path.basename(new URL(url).pathname) || "asset";
-      const name = (filename ?? fromUrl).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+/, "") || "asset";
-      const file = path.join(projectDir, "assets", name);
-      await fs.mkdir(path.dirname(file), { recursive: true });
-      await fs.writeFile(file, bytes);
-      return { path: `assets/${name}`, bytes: bytes.byteLength, contentType: type, importAs: `import url from "../assets/${name}";` };
+      const saved = await downloadAsset(project(dir), url, filename);
+      return { ...saved, importAs: `import url from "../${saved.path}";` };
     },
   );
 

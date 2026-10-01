@@ -1,10 +1,10 @@
 ---
 title: CLI commands
 seoTitle: "genmotion CLI reference: every command and flag"
-description: "Reference for every genmotion CLI command: init, dev, check, still, render, info, scene, skills, templates, mcp, doctor and upgrade, with flags and JSON output."
+description: "Reference for every genmotion CLI command: init, dev, check, still, render, info, scene, audio, skills, templates, mcp, doctor and upgrade, with flags and JSON output."
 group: Reference
 order: 1
-keywords: [genmotion CLI reference, genmotion render, genmotion dev, genmotion check, video CLI commands, npx @genmotion/cli]
+keywords: [genmotion CLI reference, genmotion render, genmotion dev, genmotion check, genmotion audio, add music to video CLI, video CLI commands, npx @genmotion/cli]
 updated: 2026-10-01
 ---
 
@@ -35,6 +35,7 @@ Failures say what went wrong and how to fix it, and exit with code 1:
 | `render [out]` | Render the video. See [Rendering](/docs/rendering) |
 | `info` | Size, fps, scenes with start frames, audio, assets |
 | `scene add <name>` | Create a scene and register it in `project.json` |
+| `audio <action>` | Add, move, trim, mute or remove timeline audio |
 | `skills <action>` | List, search, read and install skills |
 | `templates` | List the template catalog |
 | `mcp` | Run the MCP server over stdio |
@@ -57,7 +58,9 @@ npx @genmotion/cli dev --open
 | `--status` | Print the URL of a running background studio |
 | `--stop` | Stop the background studio |
 
-The studio plays, scrubs and steps frames, and jumps between scenes. Saving a file reloads it at the frame you were on.
+The studio plays, scrubs and steps frames under a timeline: a ruler, the scene track, and every audio lane from `project.json` with its waveform. Click or drag anywhere on the timeline to seek, and click a scene to jump to its start. Audio plays in sync with the picture, with each clip's volume, fades and mute applied as the render mixes them; `m` turns the sound off.
+
+Saving a file reloads the studio at the frame you were on, so the timeline updates as your agent adds scenes and audio. Editing happens through the agent or the `audio` command, not by dragging.
 
 ## check
 
@@ -92,6 +95,31 @@ npx @genmotion/cli scene add "Hero reveal" --duration 4s --after intro
 | --- | --- |
 | `--duration <time>` | `4s`, `120` (frames) or `2500ms`. Default 4s |
 | `--after <scene>` | Insert after this scene (file or name). Appends by default |
+
+## audio
+
+```sh
+npx @genmotion/cli audio add assets/music.mp3 --fade-in 0.5s --fade-out 1s --volume 0.3
+npx @genmotion/cli audio add https://example.com/whoosh.mp3 --at 4s
+npx @genmotion/cli audio set music --at 1s --duration 8s
+npx @genmotion/cli audio remove whoosh-3f2a
+npx @genmotion/cli audio list
+```
+
+`add` takes a file inside the project, or a URL, which is saved into `assets/` first. Clips go on up to four lanes, and a clip never overlaps another on its own lane: `add` picks a free lane, and a clip that would run into the next one is shortened (the result says so). `set` and `remove` take a clip's id or its `--name`.
+
+| Flag | What it does |
+| --- | --- |
+| `--at <time>` | Where it starts on the timeline. Default 0 |
+| `--duration <time>` | How long it plays. Default: the whole file, cut at the end of the video |
+| `--from <time>` | How far into the file it starts playing |
+| `--track <n>` | Lane, from 0. A preference on `add`; on `set` the lane must be free |
+| `--volume <0-2>` | Linear gain. 1 is unchanged, 0.5 is about -6 dB |
+| `--fade-in`, `--fade-out <time>` | Fade lengths |
+| `--name <text>` | A label, accepted in place of the id |
+| `--mute`, `--unmute` | Silence a clip and keep its level (`set`) |
+
+Times use the same spellings as everywhere else: `48` (frames), `2s`, `500ms`, and `50%` for `--at`.
 
 ## skills
 
