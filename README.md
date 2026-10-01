@@ -94,10 +94,21 @@ pnpm --filter @genmotion/desktop package     # unsigned, for this machine
 pnpm --filter @genmotion/desktop release:mac # signed + notarized (needs certs)
 ```
 
-Releases are cut by CI — tag `desktop-v<version>` and
-`.github/workflows/desktop-release.yml` builds, signs, notarizes, staples,
-verifies, and drafts a GitHub release. The tag must match the version in
-`apps/desktop/package.json` or the workflow stops.
+Releases are cut by CI and versioned with [Changesets](https://github.com/changesets/changesets):
+
+1. With a change worth shipping, run `pnpm changeset`, pick `@genmotion/desktop`
+   (and any npm package the change touches), choose the bump, and describe it.
+   Commit the generated file with the change.
+2. On main, `.github/workflows/release.yml` opens a "Version packages" PR that
+   bumps `apps/desktop/package.json` and writes `apps/desktop/CHANGELOG.md`.
+3. Merging that PR tags `desktop-v<version>` and runs
+   `.github/workflows/desktop-release.yml`, which builds, signs, notarizes,
+   staples, verifies, and publishes the GitHub release with that version's
+   changelog as its notes, then mirrors it to R2.
+
+The desktop app stays private and is never published to npm. Pushing a
+`desktop-v<version>` tag by hand still works, as long as it matches the
+version in `apps/desktop/package.json`.
 
 ## Running the web app and API
 

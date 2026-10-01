@@ -1,0 +1,109 @@
+name: Release
+
+# Versioning and releases for everything that ships, driven by Changesets.
+#
+# 1. A change that should ship carries a changeset (`pnpm changeset`).
+# 2. A push to main with pending changesets opens (or updates) a "Version
+#    packages" PR that bumps versions and writes the CHANGELOGs.
+# 3. Merging that PR lands on main with no pending changesets, and this run
+#    releases whatever moved:
+#    - the npm packages (`genmotion`, `create-genmotion`,
+#      `@genmotion/three-engine`, `@genmotion/shared`), published with
+#      provenance;
+#    - the desktop app, which stays private (never on npm) but is versioned
+#      here like the rest: when apps/desktop's version has no `desktop-v<version>`
+#      tag yet, this tags it and runs desktop-release.yml — the same signed,
+#      notarized build and GitHub release as a hand-pushed tag.
+#
+# Every other workspace package is private and ignored by Changesets.
+#
+# Secrets: NPM_TOKEN — an npm automation token with publish rights to the
+# `genmotion` and `create-genmotion` names and the `@genmotion` scope; and the
+# desktop signing secrets desktop-release.yml lists.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  changesets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      desktop_tag: ${{ steps.desktop.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+      # Before npm, so a publish problem (a missing NPM_TOKEN, a name clash)
+      # never holds up a desktop release, and only once there is nothing left
+      # to version: a pending changeset means the Version packages PR has not
+      # merged yet, and the version on main is still the old one.
+      - name: Tag a new desktop version
+        id: desktop
+        run: |
+          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l)
+          if [ "$pending" -gt 0 ]; then
+            echo "$pending changeset(s) pending — the Version packages PR decides the next desktop version"
+            exit 0
+          fi
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          tag="desktop-v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "$tag is already released"
+            exit 0
+          fi
+          git tag "$tag"
+          git push origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "tagged $tag"
+
+      - name: Test the published packages
+        run: pnpm --filter ./packages/shared --filter ./packages/three-engine --filter ./packages/render --filter ./packages/cli test
+
+      - name: Version PR or publish
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          title: "Version packages"
+          commit: "Version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+
+  # Called, not triggered by the tag: a tag pushed with GITHUB_TOKEN starts
+  # no workflow runs. `always()` because the npm side may fail after the tag
+  # was pushed, and the desktop release must not be stranded behind it.
+  desktop:
+    needs: changesets
+    if: always() && needs.changesets.outputs.desktop_tag != ''
+    uses: ./.github/workflows/desktop-release.yml
+    with:
+      tag: ${{ needs.changesets.outputs.desktop_tag }}
+    secrets: inherit

@@ -261,7 +261,17 @@ pnpm changeset                        # describe a change to a published package
   match on every machine) and to the `dev` studio. Chromium and ffmpeg download
   on first use, because a project's `.npmrc` has `ignore-scripts`. HyperFrames
   projects aren't rendered by the CLI yet — it says so and points to the app.
-  Versions go through Changesets (`.changeset/`); `npm-publish.yml` publishes.
+  Versions go through Changesets (`.changeset/`); `release.yml` publishes.
+- **Releases** are Changesets-driven for everything that ships: the npm
+  packages (`genmotion`, `create-genmotion`, `@genmotion/three-engine`,
+  `@genmotion/shared`) and the desktop app, which is versioned but stays
+  `private`. Add a changeset (`pnpm changeset`) with any change that should
+  ship. Merging the resulting "Version packages" PR publishes to npm and, when
+  `apps/desktop`'s version moved, tags `desktop-v<version>` and *calls*
+  `desktop-release.yml` (a GITHUB_TOKEN-pushed tag triggers nothing). Every
+  other private package is in `.changeset/config.json`'s `ignore`, so a
+  library change never bumps the API or web app. Don't hand-edit versions or
+  CHANGELOGs.
 - **Free video generators (`/tools`):** the four generators are client-side
   end to end — data comes from cached Next route handlers under
   `apps/web/src/app/api/tools/*`, and the MP4 is rendered and encoded **in the

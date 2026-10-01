@@ -12,9 +12,25 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [],
+  "ignore": [
+    "@genmotion/ai",
+    "@genmotion/api",
+    "@genmotion/compiler",
+    "@genmotion/config",
+    "@genmotion/db",
+    "@genmotion/hyperframes",
+    "@genmotion/motion",
+    "@genmotion/player",
+    "@genmotion/project",
+    "@genmotion/render",
+    "@genmotion/renderer",
+    "@genmotion/skills",
+    "@genmotion/storage",
+    "@genmotion/templates",
+    "@genmotion/web"
+  ],
   "privatePackages": {
-    "version": false,
+    "version": true,
     "tag": false
   }
 }
