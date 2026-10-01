@@ -26,7 +26,7 @@ export async function openDesktop(args: { dir?: string; clone?: string }): Promi
   const app = findDesktopApp();
   if (!app) {
     throw new CliError("The GenMotion desktop app isn't installed.", {
-      fix: "Install it from https://genmotion.dev/download — or stay in the terminal: npx genmotion init my-video",
+      fix: "Install it from https://genmotion.dev/download — or stay in the terminal: npx @genmotion/cli init my-video",
     });
   }
   const flags: string[] = [];

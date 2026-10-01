@@ -183,10 +183,11 @@ say "Installed ${B}$APP${R}"
 
 # ── Install the command ─────────────────────────────────────────────────────
 #
-# The `genmotion` command is the npm package `genmotion`: the terminal workflow
+# The `genmotion` command comes from the npm package `@genmotion/cli`
+# (`genmotion` itself is a name npm refuses, as too close to `emotion`): the terminal workflow
 # (init, dev, render, …) and the app launcher (`genmotion .`, `clone`, a bare
 # `genmotion`) in one. Installers used to write a shell script of their own to
-# /usr/local/bin instead, which then blocked `npm i -g genmotion` there. An old
+# /usr/local/bin instead, which then blocked `npm i -g @genmotion/cli` there. An old
 # script is moved out of npm's way first and put back if npm fails, so nobody
 # ends up with no command; the app's account menu runs the same sequence
 # (apps/desktop/electron/cli-install.ts).
@@ -214,7 +215,7 @@ if [ -n "$npm_bin" ]; then
     $(sudo_for "$prefix/bin") mv -f "$target" "$aside" || moved=no
   fi
   say "Installing the ${B}genmotion${R} command with npm…"
-  if [ "$moved" = yes ] && "$npm_bin" install -g genmotion@latest >"$tmp/npm.log" 2>&1; then
+  if [ "$moved" = yes ] && "$npm_bin" install -g @genmotion/cli@latest >"$tmp/npm.log" 2>&1; then
     cli=yes
     if [ -n "$aside" ]; then
       $(sudo_for "$prefix/bin") rm -f "$aside" || true
@@ -233,12 +234,12 @@ if [ -n "$npm_bin" ]; then
     if [ -s "$tmp/npm.log" ]; then
       say "${DIM}npm: $(grep -v '^\s*$' "$tmp/npm.log" | tail -n 1)${R}"
     fi
-    say "Run ${B}npm install -g genmotion${R} to try again, or install it from the app's account menu."
+    say "Run ${B}npm install -g @genmotion/cli${R} to try again, or install it from the app's account menu."
   fi
 else
   say ""
   say "${DIM}The genmotion command installs with npm. Install Node 22 or newer"
-  say "(nodejs.org), then run: npm install -g genmotion${R}"
+  say "(nodejs.org), then run: npm install -g @genmotion/cli${R}"
 fi
 
 # ── Done ────────────────────────────────────────────────────────────────────

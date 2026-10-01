@@ -23,7 +23,7 @@ export const MCP_SERVER_NAME = "genmotion";
 export const PROJECT_SKILL = "genmotion";
 
 export function renderMcpJson(): string {
-  const config = { mcpServers: { [MCP_SERVER_NAME]: { command: "npx", args: ["-y", "genmotion", "mcp"] } } };
+  const config = { mcpServers: { [MCP_SERVER_NAME]: { command: "npx", args: ["-y", "@genmotion/cli", "mcp"] } } };
   return `${JSON.stringify(config, null, 2)}\n`;
 }
 
@@ -55,7 +55,7 @@ export function renderProjectSkill(options: { name?: string; surfaces?: SkillSur
     ? `## 0. Find or create the project
 
 - A folder with a \`project.json\` is a GenMotion project: work there and read its \`AGENTS.md\` (the scene rules) first.
-- No project yet: create one with \`create_project\` (or \`npx genmotion init <folder> --yes\`; \`--size portrait\` for 9:16). A catalog template is \`list_templates\`, then \`create_project\` with \`template\`.
+- No project yet: create one with \`create_project\` (or \`npx @genmotion/cli init <folder> --yes\`; \`--size portrait\` for 9:16). A catalog template is \`list_templates\`, then \`create_project\` with \`template\`.
 
 `
     : "";
@@ -74,25 +74,25 @@ ${findProject}## 1. Pick the skill that owns this video
 GenMotion ships a skill pack: one skill per kind of video, plus craft skills (camera, type, transitions, look) for the engine.
 
 1. If \`VIDEO.md\` exists, it already names the skill. Load that one and carry on.
-2. Otherwise read the router, \`${ROUTER_SKILL}\`${options.standalone ? "" : " (installed beside this skill)"}, for the rules, then search: ${say("`search_skills` with the user's own words", 'npx genmotion skills search "<request>" --json')}.
+2. Otherwise read the router, \`${ROUTER_SKILL}\`${options.standalone ? "" : " (installed beside this skill)"}, for the rules, then search: ${say("`search_skills` with the user's own words", 'npx @genmotion/cli skills search "<request>" --json')}.
 3. Pick **one** owner (a \`workflow\` or \`style\` result), ask only its missing \`askFirst\` questions, and write \`VIDEO.md\` as the router describes.
-4. Read the owner and the requirements search lists for this engine: ${say("`get_skill`", "npx genmotion skills show <id>")}.${shell ? " `npx genmotion skills add <id>` also copies a skill and its requirements into this folder so later sessions have it." : ""}
+4. Read the owner and the requirements search lists for this engine: ${say("`get_skill`", "npx @genmotion/cli skills show <id>")}.${shell ? " `npx @genmotion/cli skills add <id>` also copies a skill and its requirements into this folder so later sessions have it." : ""}
 
 ## 2. Build
 
-- ${say("`add_scene`", 'npx genmotion scene add "Hero" --duration 4s')} creates a scene file **and** registers it in \`project.json\`. Then write the builder. Delete the starter scene once you have your own.
+- ${say("`add_scene`", 'npx @genmotion/cli scene add "Hero" --duration 4s')} creates a scene file **and** registers it in \`project.json\`. Then write the builder. Delete the starter scene once you have your own.
 - Remote images, fonts, recordings: ${say("`save_asset`", "download into assets/")} first, then import from \`assets/\`.
 
 ## 3. Verify, every time, before you say it's done
 
-1. ${say("`check_project`", "npx genmotion check --json")}: compile, determinism rules, and a real headless render of each scene's first, middle and last frame. Fix every \`error\`, read every \`warning\`.
-2. ${say("`capture_frames`", "npx genmotion still --at 1s --at 50% --json")}: **look at the frames**. A check that passes can still be an ugly frame.
+1. ${say("`check_project`", "npx @genmotion/cli check --json")}: compile, determinism rules, and a real headless render of each scene's first, middle and last frame. Fix every \`error\`, read every \`warning\`.
+2. ${say("`capture_frames`", "npx @genmotion/cli still --at 1s --at 50% --json")}: **look at the frames**. A check that passes can still be an ugly frame.
 3. The owner skill's own checklist.
 
 ## 4. Deliver
 
-- A live preview for the user: \`npx genmotion dev --background\` prints the URL.
-- The MP4, when asked or at the end: ${say("`render_video`", "npx genmotion render --json")} writes \`exports/<name>.mp4\`. Report the path and length.
+- A live preview for the user: \`npx @genmotion/cli dev --background\` prints the URL.
+- The MP4, when asked or at the end: ${say("`render_video`", "npx @genmotion/cli render --json")} writes \`exports/<name>.mp4\`. Report the path and length.
 
 ## Capabilities
 
@@ -117,18 +117,18 @@ export const TERMINAL_SECTION = `
 Everything the GenMotion app does for this folder, the \`genmotion\` CLI does too.
 Every command takes \`--json\` and prints exactly one JSON object.
 
-| Step | Command | MCP tool (\`npx genmotion mcp\`, wired in \`.mcp.json\`) |
+| Step | Command | MCP tool (\`npx @genmotion/cli mcp\`, wired in \`.mcp.json\`) |
 |---|---|---|
-| Pick the skill for this kind of video | \`npx genmotion skills search "<request>" --json\` | \`search_skills\` |
-| Read a skill | \`npx genmotion skills show <id>\` | \`get_skill\` |
-| What's in the project | \`npx genmotion info --json\` | \`project_overview\` |
-| Add a scene (file + manifest entry) | \`npx genmotion scene add "Hero" --duration 4s\` | \`add_scene\` |
-| Validate scenes without rendering | \`npx genmotion check --static --json\` | \`validate_scene\` |
-| Compile + determinism + headless render of every scene | \`npx genmotion check --json\` | \`check_project\` |
-| Look at frames | \`npx genmotion still --at 1s --at 50%\` | \`capture_frames\` |
+| Pick the skill for this kind of video | \`npx @genmotion/cli skills search "<request>" --json\` | \`search_skills\` |
+| Read a skill | \`npx @genmotion/cli skills show <id>\` | \`get_skill\` |
+| What's in the project | \`npx @genmotion/cli info --json\` | \`project_overview\` |
+| Add a scene (file + manifest entry) | \`npx @genmotion/cli scene add "Hero" --duration 4s\` | \`add_scene\` |
+| Validate scenes without rendering | \`npx @genmotion/cli check --static --json\` | \`validate_scene\` |
+| Compile + determinism + headless render of every scene | \`npx @genmotion/cli check --json\` | \`check_project\` |
+| Look at frames | \`npx @genmotion/cli still --at 1s --at 50%\` | \`capture_frames\` |
 | Add an npm package | \`npm install --ignore-scripts <pkg>\` | \`add_package\` |
-| Live preview for the user | \`npx genmotion dev --background\` | — |
-| Final MP4 | \`npx genmotion render --json\` | \`render_video\` |
+| Live preview for the user | \`npx @genmotion/cli dev --background\` | — |
+| Final MP4 | \`npx @genmotion/cli render --json\` | \`render_video\` |
 
 For a new video, start with the \`${PROJECT_SKILL}\` skill (\`.claude/skills/${PROJECT_SKILL}/\`): it picks the
 video-type skill, and \`VIDEO.md\` records the choice. Don't call a video done

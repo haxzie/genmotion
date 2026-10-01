@@ -6,7 +6,8 @@ import type { CliStatus } from "../../electron/shared";
 /**
  * The `genmotion` command: whether it is there, and putting it there.
  *
- * It is npm's `genmotion`, installed with `npm install -g`, so it needs Node;
+ * It is the `genmotion` command from npm's `@genmotion/cli`, installed with
+ * `npm install -g`, so it needs Node;
  * without it the control says so instead of failing. Installed state is shown
  * rather than hidden: a command that is already there is the answer to "did
  * that work?", and a script from an older build is worth replacing, since it

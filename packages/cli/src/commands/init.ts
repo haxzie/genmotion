@@ -1,7 +1,8 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
-import { createProject, projectEngineSchema, type ProjectEngine } from "@genmotion/project";
+import { createProject, DEFAULT_THREE_VERSIONS, projectEngineSchema, type ProjectEngine } from "@genmotion/project";
+import { VERSION } from "../version";
 import { wireAgents, THREE_AUTHORING_GUIDE } from "../agents";
 import { createFromTemplate } from "../templates";
 import { CliError, bold, cyan, dim, green } from "../output";
@@ -47,9 +48,9 @@ Options
   --json                               Machine-readable result
 
 Examples
-  npx genmotion init my-video
-  npx genmotion init reel --size portrait --fps 60
-  npx genmotion init launch --template crypto-launch-video`,
+  npx @genmotion/cli init my-video
+  npx @genmotion/cli init reel --size portrait --fps 60
+  npx @genmotion/cli init launch --template crypto-launch-video`,
   options: {
     engine: { type: "string" },
     template: { type: "string", short: "t" },
@@ -71,7 +72,7 @@ Examples
 
     const entries = await fs.readdir(dir).catch(() => [] as string[]);
     if (entries.some((e) => !e.startsWith("."))) {
-      throw new CliError(`${dir} isn't empty`, { fix: `Pick a new folder: npx genmotion init ${path.basename(dir)}-2` });
+      throw new CliError(`${dir} isn't empty`, { fix: `Pick a new folder: npx @genmotion/cli init ${path.basename(dir)}-2` });
     }
 
     const engineInput = str(values.engine) ?? "three";
@@ -98,6 +99,11 @@ Examples
           width,
           height,
           authoringGuide: engine.data === "three" ? THREE_AUTHORING_GUIDE : undefined,
+          // The project's scripts run the CLI line that made it, not whatever
+          // the scaffold's defaults were when it was last released. The minor
+          // line, not the exact patch, so a patch release doesn't change what
+          // `init` writes (examples/three-starter is checked for drift).
+          threeVersions: { ...DEFAULT_THREE_VERSIONS, cli: `^${VERSION.split(".").slice(0, 2).join(".")}.0` },
         });
     const wired = await wireAgents(dir, { engine: manifest.engine });
 

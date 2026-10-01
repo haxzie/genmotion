@@ -61,7 +61,7 @@ packages/
   render/    headless renderer: loopback project server, Playwright
              capture, chunked parallel ffmpeg encode, audio mix, `check`,
              the `genmotion dev` studio page. Private — bundled into the CLI
-  cli/       the `genmotion` npm package: init/dev/render/still/check/info/
+  cli/       `@genmotion/cli` on npm, the `genmotion` command: init/dev/render/still/check/info/
              scene/mcp/skills/templates/browser/doctor, `--json` everywhere,
              and the stdio MCP server. Published to npm
   create-genmotion/ `npm create genmotion` → `genmotion init`. Published
@@ -110,7 +110,7 @@ pnpm db:push                          # sync schema to DEV only
 # The CLI, from source (no build needed inside the monorepo):
 node packages/cli/bin/genmotion.js init /tmp/v --yes
 node packages/cli/bin/genmotion.js check --dir /tmp/v
-pnpm --filter genmotion build         # the publishable bundle (dist/)
+pnpm --filter @genmotion/cli build         # the publishable bundle (dist/)
 node scripts/sync-starter.mjs         # after changing what `init` writes
 node scripts/sync-plugin.mjs          # after changing a skill or the CLI's skill text
 pnpm --filter @genmotion/skills build-index   # after editing any skill.json
@@ -268,7 +268,7 @@ pnpm changeset                        # describe a change to a published package
   write a second `genmotion` of the app's own.
   Versions go through Changesets (`.changeset/`); `release.yml` publishes.
 - **Releases** are Changesets-driven for everything that ships: the npm
-  packages (`genmotion`, `create-genmotion`, `@genmotion/three-engine`,
+  packages (`@genmotion/cli`, `create-genmotion`, `@genmotion/three-engine`,
   `@genmotion/shared`) and the desktop app, which is versioned but stays
   `private`. Add a changeset (`pnpm changeset`) with any change that should
   ship. Merging the resulting "Version packages" PR publishes to npm and, when

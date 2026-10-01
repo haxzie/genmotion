@@ -86,7 +86,7 @@ export function runFfmpeg(args: string[], signal?: AbortSignal): Promise<void> {
 
 function ffmpegSpawnError(err: Error): Error {
   if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-    return new FfmpegError("ffmpeg not found. Reinstall genmotion (it ships ffmpeg-static) or set FFMPEG_PATH.");
+    return new FfmpegError("ffmpeg not found. Reinstall @genmotion/cli (it ships ffmpeg-static) or set FFMPEG_PATH.");
   }
   return err;
 }

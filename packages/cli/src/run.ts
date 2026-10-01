@@ -43,7 +43,7 @@ ${bold("Every command")}
   --help, -h
 
 ${bold("Start here")}
-  npx genmotion init my-video && cd my-video && npm install && npm run dev
+  npx @genmotion/cli init my-video && cd my-video && npm install && npm run dev
 
 ${dim("Docs: https://genmotion.dev/docs")}`;
 }

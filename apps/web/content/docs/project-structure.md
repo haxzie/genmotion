@@ -42,7 +42,7 @@ my-video/
 }
 ```
 
-Scenes play in array order. `npx genmotion scene add "Hero" --duration 4s` creates the file and adds the entry in one step. `npx genmotion info` prints the timeline with each scene's start frame.
+Scenes play in array order. `npx @genmotion/cli scene add "Hero" --duration 4s` creates the file and adds the entry in one step. `npx @genmotion/cli info` prints the timeline with each scene's start frame.
 
 Audio clips sit on tracks with a `file`, `startFrame`, `durationInFrames`, and optional `volume`, `fadeInFrames` and `fadeOutFrames`. They are mixed into the export.
 
@@ -82,4 +82,4 @@ Every frame is a pure function of time. That is what makes the preview, `check` 
 - No unseeded randomness: use a seeded generator if you need noise.
 - No hot-linked remote URLs: save files into `assets/` and import them.
 
-`npx genmotion check` enforces these and names the line that breaks one.
+`npx @genmotion/cli check` enforces these and names the line that breaks one.

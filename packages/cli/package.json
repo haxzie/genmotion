@@ -1,5 +1,5 @@
 {
-  "name": "genmotion",
+  "name": "@genmotion/cli",
   "version": "0.2.0",
   "description": "Make videos with code and coding agents. Three.js scenes, a live studio, headless MP4 rendering, and an MCP server — one CLI.",
   "license": "Apache-2.0",

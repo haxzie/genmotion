@@ -6,7 +6,7 @@ frames. One CLI does everything: scaffold, preview, check, render. It also runs
 an MCP server that gives your agent the same tools.
 
 ```sh
-npx genmotion init my-video
+npx @genmotion/cli init my-video
 cd my-video && npm install
 npm run dev        # studio at http://localhost:4200, reloads on save
 npm run render     # exports/my-video.mp4
@@ -40,8 +40,8 @@ claude plugin install genmotion@genmotion
 Or add the MCP server by hand:
 
 ```sh
-claude mcp add genmotion -- npx -y genmotion mcp
-codex mcp add genmotion -- npx -y genmotion mcp
+claude mcp add genmotion -- npx -y @genmotion/cli mcp
+codex mcp add genmotion -- npx -y @genmotion/cli mcp
 ```
 
 ## Skills: one per kind of video
@@ -54,9 +54,9 @@ and `freeform-video` as the fallback. Craft skills are loaded alongside them:
 `three-look`. The agent picks one owner per video:
 
 ```sh
-npx genmotion skills search "launch video for our AI notes app" --json
-npx genmotion skills show launch-playbook
-npx genmotion skills add launch-playbook   # copies it and what it needs into .claude/skills and .agents/skills
+npx @genmotion/cli skills search "launch video for our AI notes app" --json
+npx @genmotion/cli skills show launch-playbook
+npx @genmotion/cli skills add launch-playbook   # copies it and what it needs into .claude/skills and .agents/skills
 ```
 
 Over MCP these are `search_skills` and `get_skill`. Every result says what
@@ -88,7 +88,7 @@ never prompts unless it's running in a terminal without `--yes`.
 | `genmotion doctor` | Checks Node, ffmpeg, Chromium and WebGL, the app, and which `genmotion` is on PATH |
 | `genmotion upgrade` | Updates this command, and the GenMotion app when it's installed |
 
-Installed globally (`npm install -g genmotion`), this is also the GenMotion
+Installed globally (`npm install -g @genmotion/cli`), this is also the GenMotion
 desktop app's command: `genmotion .` opens the current folder in the
 [app](https://genmotion.dev) and `genmotion clone <repo>` clones and opens a
 repository. The app and its installer install this package rather than a

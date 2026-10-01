@@ -7,7 +7,7 @@ name: Release
 #    packages" PR that bumps versions and writes the CHANGELOGs.
 # 3. Merging that PR lands on main with no pending changesets, and this run
 #    releases whatever moved:
-#    - the npm packages (`genmotion`, `create-genmotion`,
+#    - the npm packages (`@genmotion/cli`, `create-genmotion`,
 #      `@genmotion/three-engine`, `@genmotion/shared`), published with
 #      provenance;
 #    - the desktop app, which stays private (never on npm) but is versioned
@@ -18,7 +18,8 @@ name: Release
 # Every other workspace package is private and ignored by Changesets.
 #
 # Secrets: NPM_TOKEN — an npm automation token with publish rights to the
-# `genmotion` and `create-genmotion` names and the `@genmotion` scope; and the
+# `create-genmotion` name and the `@genmotion` scope (the CLI is `@genmotion/cli`:
+# npm refuses the bare `genmotion` name as too close to `emotion`); and the
 # desktop signing secrets desktop-release.yml lists.
 
 on:

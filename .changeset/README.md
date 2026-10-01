@@ -2,7 +2,7 @@
 
 Versions and changelogs for everything that ships:
 
-- the npm packages — `genmotion`, `create-genmotion` (always released
+- the npm packages — `@genmotion/cli` (the `genmotion` command), `create-genmotion` (always released
   together), `@genmotion/three-engine` and `@genmotion/shared`;
 - the desktop app, `@genmotion/desktop` — private, never published to npm,
   but versioned here so its release is cut the same way.

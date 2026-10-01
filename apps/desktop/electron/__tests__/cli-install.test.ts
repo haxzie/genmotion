@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { installNpmCli, isLegacyScript, isNpmCli, readCliState, type CliDeps } from "../cli-install";
 
 const LEGACY = "#!/bin/sh\n# GenMotion 0.0.27 — command line launcher.\n# gm-app: /Applications/GenMotion.app\n# gm-cli: 3\n";
-const NPM_BIN = "/usr/local/lib/node_modules/genmotion/bin/genmotion.js";
+const NPM_BIN = "/usr/local/lib/node_modules/@genmotion/cli/bin/genmotion.js";
 
 /**
  * A fake machine: files, symlinks, PATH order, and an npm whose install can be
@@ -78,14 +78,14 @@ describe("recognizing commands", () => {
     expect(isLegacyScript("#!/usr/bin/env node\nrequire('x')")).toBe(false);
     expect(isLegacyScript(null)).toBe(false);
     expect(isNpmCli(NPM_BIN)).toBe(true);
-    expect(isNpmCli("/Users/a/.nvm/versions/node/v22.1.0/lib/node_modules/genmotion/bin/genmotion.js")).toBe(true);
+    expect(isNpmCli("/Users/a/.nvm/versions/node/v22.1.0/lib/node_modules/@genmotion/cli/bin/genmotion.js")).toBe(true);
     expect(isNpmCli("/usr/local/bin/genmotion")).toBe(false);
   });
 
   it("reports what a shell would run first", async () => {
     const { deps } = machine({
       files: { "/usr/local/bin/genmotion": LEGACY },
-      links: { "/opt/homebrew/bin/genmotion": "/opt/homebrew/lib/node_modules/genmotion/bin/genmotion.js" },
+      links: { "/opt/homebrew/bin/genmotion": "/opt/homebrew/lib/node_modules/@genmotion/cli/bin/genmotion.js" },
       path: ["/opt/homebrew/bin/genmotion", "/usr/local/bin/genmotion"],
     });
     const state = await readCliState(deps);
@@ -106,7 +106,7 @@ describe("installNpmCli", () => {
     expect(links.get("/usr/local/bin/genmotion")).toBe(NPM_BIN);
     expect([...files.keys()]).toEqual([]);
     expect(log.indexOf("rename /usr/local/bin/genmotion /usr/local/bin/genmotion.gm-legacy")).toBeLessThan(
-      log.indexOf("/usr/local/bin/npm install -g genmotion@latest"),
+      log.indexOf("/usr/local/bin/npm install -g @genmotion/cli@latest"),
     );
   });
 

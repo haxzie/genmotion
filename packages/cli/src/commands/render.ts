@@ -111,7 +111,7 @@ Options
   --json
 
 Example
-  npx genmotion still --at 0 --at 50% --at 100% --json`,
+  npx @genmotion/cli still --at 0 --at 50% --at 100% --json`,
   options: {
     at: { type: "string", multiple: true },
     out: { type: "string", short: "o" },

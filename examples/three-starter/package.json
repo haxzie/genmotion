@@ -14,7 +14,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
-    "genmotion": "^0.1.0",
+    "@genmotion/cli": "^0.2.0",
     "@types/three": "^0.185.4",
     "typescript": "^5.9.3"
   }

@@ -31,6 +31,6 @@
     "access": "public"
   },
   "dependencies": {
-    "genmotion": "workspace:^"
+    "@genmotion/cli": "workspace:^"
   }
 }

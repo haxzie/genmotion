@@ -65,19 +65,19 @@ describe("genmotion --json", () => {
     }
     const pkg = JSON.parse(await fs.readFile(path.join(dir, "package.json"), "utf8"));
     expect(pkg.scripts).toMatchObject({ dev: "genmotion dev", render: "genmotion render", check: "genmotion check" });
-    expect(pkg.devDependencies.genmotion).toBeDefined();
+    expect(pkg.devDependencies["@genmotion/cli"]).toBeDefined();
     const agents = await fs.readFile(path.join(dir, "AGENTS.md"), "utf8");
     expect(agents).toContain("## Working from the terminal");
     expect(agents).toContain("# What a scene is"); // the authoring guide is embedded
     const mcp = JSON.parse(await fs.readFile(path.join(dir, ".mcp.json"), "utf8"));
-    expect(mcp.mcpServers.genmotion.args).toEqual(["-y", "genmotion", "mcp"]);
+    expect(mcp.mcpServers.genmotion.args).toEqual(["-y", "@genmotion/cli", "mcp"]);
   });
 
   it("refuses a folder that already has files in it", () => {
     const { code, json } = gm(["init", "video", "--yes"]);
     expect(code).toBe(1);
     expect(json.ok).toBe(false);
-    expect(json.error.fix).toContain("genmotion init");
+    expect(json.error.fix).toContain("@genmotion/cli init");
   });
 
   it("scene add writes the file and registers it", async () => {
@@ -169,7 +169,7 @@ describe("genmotion --json", () => {
   it("explains being outside a project", () => {
     const { code, json } = gm(["info"], os.tmpdir());
     expect(code).toBe(1);
-    expect(json.error.fix).toContain("genmotion init");
+    expect(json.error.fix).toContain("@genmotion/cli init");
   });
 });
 

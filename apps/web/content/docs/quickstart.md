@@ -1,10 +1,10 @@
 ---
 title: Quickstart
 seoTitle: "Quickstart: make your first AI video in five minutes"
-description: "Create your first GenMotion video in five minutes. Paste one setup prompt into Claude Code, Codex or Cursor, or run npx genmotion init and render an MP4."
+description: "Create your first GenMotion video in five minutes. Paste one setup prompt into Claude Code, Codex or Cursor, or run npx @genmotion/cli init and render an MP4."
 group: Getting started
 order: 2
-keywords: [GenMotion quickstart, make a video with Claude Code, npx genmotion init, AI video tutorial, render MP4 from code]
+keywords: [GenMotion quickstart, make a video with Claude Code, npx @genmotion/cli init, AI video tutorial, render MP4 from code]
 updated: 2026-10-01
 ---
 
@@ -33,7 +33,7 @@ cd my-video
 npm install
 ```
 
-Add `--size portrait` for a 9:16 video, or `--template <id>` to start from a finished video. `npx genmotion templates` lists them.
+Add `--size portrait` for a 9:16 video, or `--template <id>` to start from a finished video. `npx @genmotion/cli templates` lists them.
 
 ### Start the preview
 

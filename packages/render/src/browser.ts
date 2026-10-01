@@ -19,10 +19,10 @@ export interface LaunchOptions {
 }
 
 export class BrowserNotFoundError extends Error {
-  readonly fix = "npx genmotion browser install";
+  readonly fix = "npx @genmotion/cli browser install";
   constructor(searched: string[]) {
     super(
-      `No Chromium found. Run \`npx genmotion browser install\`, or point GENMOTION_CHROMIUM at a Chrome/Chromium binary.\nSearched:\n${searched.map((p) => `  ${p}`).join("\n")}`,
+      `No Chromium found. Run \`npx @genmotion/cli browser install\`, or point GENMOTION_CHROMIUM at a Chrome/Chromium binary.\nSearched:\n${searched.map((p) => `  ${p}`).join("\n")}`,
     );
   }
 }

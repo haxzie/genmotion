@@ -19,7 +19,7 @@ That installs the app and, if Node 22+ is installed, the `genmotion` command
 from npm: `genmotion .` opens the app with the current folder shared with the
 agent, `genmotion init` starts a video from the terminal, and `genmotion
 upgrade` pulls the next release of both. The app's account menu installs the
-same command. There is one `genmotion`, the npm package; the app no longer
+same command. There is one `genmotion`, from the npm package `@genmotion/cli`; the app no longer
 writes a launcher script of its own.
 
 ### Or skip the app: the CLI
@@ -27,7 +27,7 @@ writes a launcher script of its own.
 The same studio, renderer and agent tools run from any terminal, with any agent:
 
 ```sh
-npx genmotion init my-video && cd my-video && npm install
+npx @genmotion/cli init my-video && cd my-video && npm install
 npm run dev       # live studio
 npm run render    # exports/my-video.mp4
 ```

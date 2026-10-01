@@ -17,7 +17,7 @@ import { installNpmCli, readCliState, type CliDeps } from "./cli-install";
  * command the same thing takes a launch, a project, and a trip through a
  * folder picker.
  *
- * The command is npm's `genmotion` (see cli-install.ts for why there is no
+ * The command comes from npm's `@genmotion/cli` (see cli-install.ts for why there is no
  * longer a script of the app's own). It resolves the shell's working
  * directory, which the app itself has no way to see, and launches the app
  * with the flags below.
@@ -107,7 +107,7 @@ export async function cliStatus(): Promise<CliStatus> {
   };
 }
 
-/** Install (or update) npm's `genmotion`, replacing any script an older build wrote. */
+/** Install (or update) `@genmotion/cli`, replacing any script an older build wrote. */
 export async function installCli(): Promise<CliStatus> {
   const result = await installNpmCli(deps);
   const status = await cliStatus();

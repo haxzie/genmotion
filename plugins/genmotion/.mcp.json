@@ -2,7 +2,7 @@
   "mcpServers": {
     "genmotion": {
       "command": "npx",
-      "args": ["-y", "genmotion", "mcp"]
+      "args": ["-y", "@genmotion/cli", "mcp"]
     }
   }
 }

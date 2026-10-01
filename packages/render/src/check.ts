@@ -72,7 +72,7 @@ export async function checkProject(options: CheckOptions): Promise<CheckResult> 
       rule: "manifest",
       message: err instanceof Error ? err.message : String(err),
       file: "project.json",
-      fix: err instanceof ProjectError && /No project\.json/.test(err.message) ? "npx genmotion init" : undefined,
+      fix: err instanceof ProjectError && /No project\.json/.test(err.message) ? "npx @genmotion/cli init" : undefined,
     });
     return result;
   }
@@ -105,7 +105,7 @@ export async function checkProject(options: CheckOptions): Promise<CheckResult> 
       rule: "manifest",
       message: "project.json lists no scenes, so there is nothing to render.",
       file: "project.json",
-      fix: "npx genmotion scene add intro --duration 4s",
+      fix: "npx @genmotion/cli scene add intro --duration 4s",
     });
     return result;
   }
@@ -146,7 +146,7 @@ export async function checkProject(options: CheckOptions): Promise<CheckResult> 
             rule: "not-rendered",
             file: scene.file,
             message: `${scene.file} compiles and loads; --static doesn't draw it.`,
-            fix: "npx genmotion check (without --static) renders it headlessly",
+            fix: "npx @genmotion/cli check (without --static) renders it headlessly",
           });
           continue;
         }
@@ -175,7 +175,7 @@ export async function checkProject(options: CheckOptions): Promise<CheckResult> 
         level: "error",
         rule: "browser",
         message: err instanceof Error ? err.message : String(err),
-        fix: "npx genmotion browser install",
+        fix: "npx @genmotion/cli browser install",
       });
       return result;
     }

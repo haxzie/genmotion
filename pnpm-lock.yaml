@@ -602,7 +602,7 @@ importers:
 
   packages/create-genmotion:
     dependencies:
-      genmotion:
+      '@genmotion/cli':
         specifier: workspace:^
         version: link:../cli
 

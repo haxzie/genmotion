@@ -30,19 +30,19 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     label: "Check the scenes you just wrote",
     desktop: "`validate_scene` (React, Three) or `validate_composition` (HyperFrames)",
     mcp: "`check_project` (or `validate_scene` for one file)",
-    shell: "`npx genmotion check --json`",
+    shell: "`npx @genmotion/cli check --json`",
   },
   "capture-frames": {
     label: "Render frames and look at them",
     desktop: "`capture_frames`",
     mcp: "`capture_frames`",
-    shell: "`npx genmotion still --at <time> --json`, then open the PNGs",
+    shell: "`npx @genmotion/cli still --at <time> --json`, then open the PNGs",
   },
   "project-overview": {
     label: "The project's scenes, timing, audio and assets",
     desktop: "`project_overview`",
     mcp: "`project_overview`",
-    shell: "`npx genmotion info --json`",
+    shell: "`npx @genmotion/cli info --json`",
   },
   "save-asset": {
     label: "Copy a remote image, video, font or audio file into `assets/`",
@@ -89,7 +89,7 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     label: "Rank the skill pack against a request",
     desktop: "`search_skills`",
     mcp: "`search_skills`, then `get_skill`",
-    shell: "`npx genmotion skills search \"<request>\" --json`, then `npx genmotion skills show <id>`",
+    shell: "`npx @genmotion/cli skills search \"<request>\" --json`, then `npx @genmotion/cli skills show <id>`",
   },
   "recommend-integration": {
     label: "Offer the user a connector a skill wants",
@@ -102,7 +102,7 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     label: "Trims, transcodes, frame extraction",
     desktop: "`ffmpeg` on your shell's PATH",
     mcp: "`ffmpeg` in your shell, if you have one",
-    shell: "`ffmpeg` if installed (`npx genmotion doctor` shows the bundled one)",
+    shell: "`ffmpeg` if installed (`npx @genmotion/cli doctor` shows the bundled one)",
   },
   "web-research": {
     label: "Look things up on the web",

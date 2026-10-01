@@ -4,7 +4,7 @@ import path from "node:path";
  * The `genmotion` command, installed from npm.
  *
  * The app used to write its own shell script to /usr/local/bin/genmotion. The
- * npm package `genmotion` installs a command of the same name that does
+ * npm package `@genmotion/cli` installs a `genmotion` command that does
  * everything the script did (`genmotion .`, `clone`, a bare `genmotion` open
  * this app) plus the whole terminal workflow, and the two collided: `npm i -g
  * genmotion` failed on EEXIST wherever npm's prefix was /usr/local, and which
@@ -24,7 +24,7 @@ export function isLegacyScript(contents: string | null): boolean {
 
 /** A `genmotion` on PATH that resolves into the npm package is the npm CLI. */
 export function isNpmCli(realPath: string): boolean {
-  return realPath.split(path.sep).join("/").includes("/node_modules/genmotion/");
+  return realPath.split(path.sep).join("/").includes("/node_modules/@genmotion/cli/");
 }
 
 export interface CliDeps {
@@ -106,7 +106,7 @@ function npmError(stderr: string, prefix: string): string {
 }
 
 /**
- * `npm install -g genmotion@latest`, with the old script out of its way.
+ * `npm install -g @genmotion/cli@latest`, with the old script out of its way.
  *
  * When npm's bin folder is the one the script lives in (npm's prefix is
  * /usr/local), npm refuses to replace a file it didn't write, so the script is
@@ -145,7 +145,7 @@ export async function installNpmCli(deps: CliDeps): Promise<InstallResult> {
   }
 
   try {
-    await deps.exec(before.npm, ["install", "-g", "genmotion@latest"], { timeout: 5 * 60_000 });
+    await deps.exec(before.npm, ["install", "-g", "@genmotion/cli@latest"], { timeout: 5 * 60_000 });
   } catch (err) {
     if (blocking) {
       await privileged(deps, () => deps.rename(aside, target), `mv -f ${quote(aside)} ${quote(target)}`).catch(() => null);

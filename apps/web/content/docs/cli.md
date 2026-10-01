@@ -4,11 +4,11 @@ seoTitle: "genmotion CLI reference: every command and flag"
 description: "Reference for every genmotion CLI command: init, dev, check, still, render, info, scene, skills, templates, mcp, doctor and upgrade, with flags and JSON output."
 group: Reference
 order: 1
-keywords: [genmotion CLI reference, genmotion render, genmotion dev, genmotion check, video CLI commands, npx genmotion]
+keywords: [genmotion CLI reference, genmotion render, genmotion dev, genmotion check, video CLI commands, npx @genmotion/cli]
 updated: 2026-10-01
 ---
 
-Run any command with `npx genmotion <command>` from anywhere inside a project. `--help` prints a command's options.
+Run any command with `npx @genmotion/cli <command>` from anywhere inside a project. `--help` prints a command's options.
 
 ## JSON output
 
@@ -21,7 +21,7 @@ Every command accepts `--json` and prints exactly one JSON object on stdout. Pro
 Failures say what went wrong and how to fix it, and exit with code 1:
 
 ```json
-{ "ok": false, "error": { "message": "Not inside a GenMotion project (no project.json here or above)", "fix": "npx genmotion init my-video && cd my-video" } }
+{ "ok": false, "error": { "message": "Not inside a GenMotion project (no project.json here or above)", "fix": "npx @genmotion/cli init my-video && cd my-video" } }
 ```
 
 ## Commands
@@ -45,7 +45,7 @@ Failures say what went wrong and how to fix it, and exit with code 1:
 ## dev
 
 ```sh
-npx genmotion dev --open
+npx @genmotion/cli dev --open
 ```
 
 | Flag | What it does |
@@ -72,7 +72,7 @@ Runs, in order: `project.json` parses and every scene exists; every scene compil
 ## still
 
 ```sh
-npx genmotion still --at 0 --at 50% --at 100%
+npx @genmotion/cli still --at 0 --at 50% --at 100%
 ```
 
 | Flag | What it does |
@@ -85,7 +85,7 @@ npx genmotion still --at 0 --at 50% --at 100%
 ## scene add
 
 ```sh
-npx genmotion scene add "Hero reveal" --duration 4s --after intro
+npx @genmotion/cli scene add "Hero reveal" --duration 4s --after intro
 ```
 
 | Flag | What it does |
@@ -108,7 +108,7 @@ See [Skills](/docs/skills).
 ## mcp
 
 ```sh
-npx genmotion mcp [--dir <project>]
+npx @genmotion/cli mcp [--dir <project>]
 ```
 
 Speaks MCP over stdio. Never writes anything else to stdout. See [MCP tools](/docs/mcp-tools).
