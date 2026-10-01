@@ -116,8 +116,11 @@ export async function fetchRemixBundle(templateId: string): Promise<TemplateRemi
   // Electron's `app` at import time, and the path checks below are worth being
   // able to test without a running Electron.
   const { cloudFetch } = await import("./auth");
+  const { app } = await import("electron");
   const res = await cloudFetch(`/api/templates/${encodeURIComponent(templateId)}/files`, {
     signal: AbortSignal.timeout(30_000),
+    // Counted server-side as a remix by the app (`template_remix_fetched`).
+    headers: { "X-GenMotion-Client": `desktop/${app.getVersion()}` },
   }).catch(() => null);
 
   if (!res) throw new RemixError("Can't reach GenMotion.");

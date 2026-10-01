@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { PostHog } from "posthog-node";
 import { env } from "./env";
 
@@ -36,7 +37,11 @@ function getClient(): PostHog | null {
 }
 
 /** The server-side events. Kept small and lifecycle-shaped on purpose. */
-export type ServerAnalyticsEvent = "user_signed_up";
+export type ServerAnalyticsEvent =
+  | "user_signed_up"
+  // A template's files were fetched to be remixed (`/api/templates/:id/files`),
+  // by the desktop app, the CLI, or anything else. Anonymous: the route is.
+  | "template_remix_fetched";
 
 /**
  * Every event a client is allowed to report is published under this prefix.
@@ -148,4 +153,26 @@ export function trackServer(
   } catch (err) {
     console.error(`[analytics] failed to capture ${event}:`, err);
   }
+}
+
+/**
+ * An identity for a request with no session: a hash of the address and user
+ * agent, salted with the day. Repeat fetches from one machine on one day
+ * count as one visitor, nothing joins it to a person or to the next day, and
+ * no address is stored as an id. Pair it with `$process_person_profile: false`
+ * so PostHog doesn't create a profile per hash.
+ */
+export function anonymousDistinctId(headers: Headers, now = new Date()): string {
+  const day = now.toISOString().slice(0, 10);
+  const hash = createHash("sha256")
+    .update(`${clientIp(headers) ?? ""}|${headers.get("user-agent") ?? ""}|${day}`)
+    .digest("hex")
+    .slice(0, 32);
+  return `anon_${hash}`;
+}
+
+/** The caller's address as the proxy in front of the API saw it. */
+export function clientIp(headers: Headers): string | null {
+  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return headers.get("cf-connecting-ip") ?? (forwarded || null) ?? headers.get("x-real-ip");
 }

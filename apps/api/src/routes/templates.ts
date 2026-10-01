@@ -13,6 +13,7 @@ import {
   templatePosterPath,
   toSummary,
 } from "@genmotion/templates";
+import { anonymousDistinctId, clientIp, trackServer } from "../analytics";
 
 /**
  * The starter templates.
@@ -89,8 +90,30 @@ templateRoutes.get("/:id/files", async (c) => {
   const record = await getTemplate(c.req.param("id")).catch(() => null);
   if (!record) return c.json({ error: "Not found" }, 404);
   try {
-    c.header("Cache-Control", JSON_CACHE);
-    return c.json(await buildRemixBundle(record));
+    const bundle = await buildRemixBundle(record);
+    const client = remixClient(c.req.raw.headers);
+    const ip = clientIp(c.req.raw.headers);
+    trackServer("template_remix_fetched", {
+      distinctId: anonymousDistinctId(c.req.raw.headers),
+      properties: {
+        template_id: record.meta.id,
+        template_title: record.meta.title,
+        template_revision: record.revision,
+        engine: record.manifest.engine ?? "react",
+        file_count: bundle.files.length,
+        total_bytes: bundle.totalBytes,
+        client: client.name,
+        ...(client.version ? { client_version: client.version } : {}),
+        // Anonymous by design: no profile per hashed visitor. The address only
+        // feeds PostHog's GeoIP, the same as a browser event's would.
+        $process_person_profile: false,
+        ...(ip ? { $ip: ip } : {}),
+      },
+    });
+    // Short and private, unlike the catalog: a shared cache answering a
+    // remix would also swallow the event that counts it.
+    c.header("Cache-Control", "private, max-age=60");
+    return c.json(bundle);
   } catch (err) {
     // A template that cannot be packaged is a catalog bug, not a bad request —
     // the CI check exists so this never reaches a user, and saying so plainly
@@ -99,6 +122,24 @@ templateRoutes.get("/:id/files", async (c) => {
     throw err;
   }
 });
+
+/**
+ * Who is remixing: the desktop app and the CLI name themselves in
+ * `X-GenMotion-Client` (`desktop/0.0.30`, `cli/0.3.0`); older builds are
+ * recognised by their user agent where they have a telling one.
+ */
+export function remixClient(headers: Headers): { name: string; version?: string } {
+  const declared = headers.get("x-genmotion-client")?.trim();
+  if (declared) {
+    const [name, version] = declared.split("/", 2);
+    const known = name && /^(desktop|cli)$/.test(name) ? name : "other";
+    return { name: known, ...(version ? { version: version.slice(0, 32) } : {}) };
+  }
+  const agent = headers.get("user-agent") ?? "";
+  if (/genmotion-cli/i.test(agent)) return { name: "cli" };
+  if (/Mozilla\//.test(agent)) return { name: "browser" };
+  return { name: "other" };
+}
 
 templateRoutes.get("/:id/poster", async (c) => {
   const id = c.req.param("id");
