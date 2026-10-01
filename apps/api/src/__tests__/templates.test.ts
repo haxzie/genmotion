@@ -1,6 +1,16 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
-import { templateRoutes } from "../routes/templates";
+import { describe, expect, it, vi } from "vitest";
+
+// Analytics is inert without a key; capture the calls instead of sending them.
+const tracked = vi.hoisted(() => [] as { event: string; distinctId: string; properties?: Record<string, unknown> }[]);
+vi.mock("../analytics", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../analytics")>()),
+  trackServer: (event: string, input: { distinctId: string; properties?: Record<string, unknown> }) =>
+    tracked.push({ event, ...input }),
+}));
+
+import { remixClient, templateRoutes } from "../routes/templates";
+import { anonymousDistinctId } from "../analytics";
 
 /**
  * The starter template routes.
@@ -168,6 +178,46 @@ describe("GET /api/templates/:id/files", () => {
     // Every scene the manifest lists has to be in the bundle, or the remixed
     // project opens with holes in its timeline.
     for (const scene of bundle.manifest.scenes) expect(paths).toContain(scene.file);
+  });
+  it("counts the remix, anonymously, with who fetched it", async () => {
+    tracked.length = 0;
+    const id = await firstId();
+    const headers = { "X-GenMotion-Client": "cli/0.3.0", "X-Forwarded-For": "203.0.113.7, 10.0.0.1", "User-Agent": "genmotion-cli/0.3.0" };
+    expect((await get(`/api/templates/${id}/files`, { headers })).status).toBe(200);
+    expect(tracked).toHaveLength(1);
+    expect(tracked[0]).toMatchObject({
+      event: "template_remix_fetched",
+      distinctId: expect.stringMatching(/^anon_[0-9a-f]{32}$/),
+      properties: {
+        template_id: id,
+        client: "cli",
+        client_version: "0.3.0",
+        $process_person_profile: false,
+        $ip: "203.0.113.7",
+        file_count: expect.any(Number),
+        total_bytes: expect.any(Number),
+      },
+    });
+    // Nothing is counted for a template that doesn't exist.
+    await get("/api/templates/no-such-template/files", { headers });
+    expect(tracked).toHaveLength(1);
+  });
+});
+
+describe("remixClient / anonymousDistinctId", () => {
+  it("names the client from its header, then its user agent", () => {
+    expect(remixClient(new Headers({ "x-genmotion-client": "desktop/0.0.30" }))).toEqual({ name: "desktop", version: "0.0.30" });
+    expect(remixClient(new Headers({ "x-genmotion-client": "evil/1" }))).toEqual({ name: "other", version: "1" });
+    expect(remixClient(new Headers({ "user-agent": "genmotion-cli" }))).toEqual({ name: "cli" });
+    expect(remixClient(new Headers({ "user-agent": "Mozilla/5.0" }))).toEqual({ name: "browser" });
+    expect(remixClient(new Headers())).toEqual({ name: "other" });
+  });
+
+  it("is stable within a day and changes the next", () => {
+    const h = new Headers({ "x-forwarded-for": "203.0.113.7", "user-agent": "x" });
+    const day = new Date("2026-10-01T09:00:00Z");
+    expect(anonymousDistinctId(h, day)).toBe(anonymousDistinctId(h, new Date("2026-10-01T23:00:00Z")));
+    expect(anonymousDistinctId(h, day)).not.toBe(anonymousDistinctId(h, new Date("2026-10-02T01:00:00Z")));
   });
 });
 

@@ -10,6 +10,7 @@ import {
   type ProjectManifest,
 } from "@genmotion/project";
 import { CliError } from "./output";
+import { VERSION } from "./version";
 
 /**
  * Starter templates come from the same public, anonymous endpoint the desktop
@@ -61,7 +62,7 @@ export async function listTemplates(): Promise<TemplateSummary[]> {
 async function fetchJson(url: string): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(url, { headers: { "User-Agent": "genmotion-cli" } });
+    res = await fetch(url, { headers: { "User-Agent": `genmotion-cli/${VERSION}`, "X-GenMotion-Client": `cli/${VERSION}` } });
   } catch (err) {
     throw new CliError(`Couldn't reach ${API_URL}: ${err instanceof Error ? err.message : String(err)}`, {
       fix: "Check your connection, or pass a local folder: --template ./path/to/project",

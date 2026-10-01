@@ -53,6 +53,10 @@ export type AnalyticsEvent =
   // Marketing
   | "cta_clicked" // { location, label }
   | "showcase_video_opened" // { slug }
+  // Template remix (/templates/[id]). The fetch that follows is counted
+  // server-side as `template_remix_fetched`, with the client that made it.
+  | "template_remix_opened" // { template_id }
+  | "template_remix_chosen" // { template_id, option: agent_prompt | desktop_app | download | cli_command }
   // Free tools (/tools/*). Separate from the editor's export events: these are
   // anonymous visitors and the video is a fixed 6s template, so mixing them
   // into `export_started` would swamp the product funnel.

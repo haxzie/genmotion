@@ -8,6 +8,9 @@ import { AgentGlyphs } from "@/components/marketing/agent-badges";
 import { CheckIcon, CopyIcon, useCopy } from "@/components/marketing/copy";
 import { InstallCommand } from "@/components/marketing/install-command";
 import { templateRemixCommand, templateRemixPrompt } from "@/lib/marketing/setup";
+import { track } from "@/lib/analytics";
+
+type RemixOption = "agent_prompt" | "desktop_app" | "download" | "cli_command";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -64,6 +67,7 @@ export function TemplateRemixButton({
 }) {
   const [open, setOpen] = useState(false);
   const prompt = useCopy(templateRemixPrompt({ id: templateId, title }));
+  const chose = (option: RemixOption) => track("template_remix_chosen", { template_id: templateId, option });
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,7 +90,10 @@ export function TemplateRemixButton({
     <div ref={rootRef} className={cx("relative inline-block", className)}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open) track("template_remix_opened", { template_id: templateId });
+          setOpen((o) => !o);
+        }}
         aria-expanded={open}
         aria-haspopup="menu"
         className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-cta px-6 text-[1.05rem] font-medium text-background transition-colors duration-150 hover:bg-cta-hover outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -104,7 +111,10 @@ export function TemplateRemixButton({
           <button
             type="button"
             role="menuitem"
-            onClick={prompt.copy}
+            onClick={() => {
+              chose("agent_prompt");
+              void prompt.copy();
+            }}
             className="flex w-full cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-surface-raised"
           >
             {prompt.copied ? (
@@ -130,7 +140,10 @@ export function TemplateRemixButton({
           <a
             href={desktopRemixUrl(templateId)}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              chose("desktop_app");
+              setOpen(false);
+            }}
             className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -147,7 +160,10 @@ export function TemplateRemixButton({
           <a
             href={DOWNLOAD_PAGE}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              chose("download");
+              setOpen(false);
+            }}
             className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-surface-raised"
           >
             <DownloadIcon className="mt-0.5 size-5 shrink-0 text-text-tertiary" />
@@ -162,7 +178,11 @@ export function TemplateRemixButton({
           </a>
           <div className="mt-1 border-t border-border px-3 pb-1.5 pt-3">
             <p className="mb-2 text-[0.8rem] text-text-tertiary">Or in a terminal</p>
-            <InstallCommand command={templateRemixCommand(templateId)} className="w-full" />
+            <InstallCommand
+              command={templateRemixCommand(templateId)}
+              className="w-full"
+              onCopy={() => chose("cli_command")}
+            />
           </div>
         </div>
       )}

@@ -19,16 +19,22 @@ import { CheckIcon, CopyIcon, useCopy } from "@/components/marketing/copy";
 export function InstallCommand({
   command = STUDIO_INSTALL_COMMAND,
   className,
+  onCopy,
 }: {
   command?: string;
   className?: string;
+  /** Called on each copy, e.g. to record which way in someone took. */
+  onCopy?: () => void;
 }) {
   const { copied, copy } = useCopy(command);
 
   return (
     <button
       type="button"
-      onClick={copy}
+      onClick={() => {
+        onCopy?.();
+        void copy();
+      }}
       aria-label={copied ? "Command copied" : `Copy: ${command}`}
       className={[
         "group flex max-w-full cursor-pointer items-center gap-2 rounded-full border border-border bg-surface-raised/70 py-1.5 pl-4 pr-1.5",
