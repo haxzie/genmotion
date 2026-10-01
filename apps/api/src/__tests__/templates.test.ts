@@ -9,7 +9,12 @@ vi.mock("../analytics", async (importOriginal) => ({
     tracked.push({ event, ...input }),
 }));
 
-import { remixClient, templateRoutes } from "../routes/templates";
+const intents = vi.hoisted(() => [] as { templateId: string; option: string; user?: unknown }[]);
+vi.mock("../slack", () => ({
+  notifyRemixIntent: (opts: { templateId: string; option: string; user?: unknown }) => intents.push(opts),
+}));
+
+import { remixClient, resetRemixIntentThrottle, templateRoutes } from "../routes/templates";
 import { anonymousDistinctId } from "../analytics";
 
 /**
@@ -259,5 +264,39 @@ describe("GET /api/templates/:id/assets/*", () => {
 
   it("404s an asset that isn't there", async () => {
     expect((await get(`/api/templates/${await firstId()}/assets/nope.png`)).status).toBe(404);
+  });
+});
+
+describe("POST /api/templates/:id/remix-intent", () => {
+  const post = (id: string, body: unknown, ip = "198.51.100.4") =>
+    get(`/api/templates/${id}/remix-intent`, {
+      method: "POST",
+      body: typeof body === "string" ? body : JSON.stringify(body),
+      headers: { "Content-Type": "text/plain", "X-Forwarded-For": ip },
+    });
+
+  it("posts a known option on a known template to Slack, once per visitor per window", async () => {
+    resetRemixIntentThrottle();
+    intents.length = 0;
+    const id = await firstId();
+    expect((await post(id, { option: "agent_prompt" })).status).toBe(204);
+    expect(intents).toEqual([expect.objectContaining({ templateId: id, option: "agent_prompt", user: null })]);
+    // The same visitor clicking again is the same decision.
+    expect((await post(id, { option: "agent_prompt" })).status).toBe(204);
+    expect(intents).toHaveLength(1);
+    // A different option, or a different visitor, is news.
+    await post(id, { option: "cli_command" });
+    await post(id, { option: "agent_prompt" }, "198.51.100.5");
+    expect(intents).toHaveLength(3);
+  });
+
+  it("refuses anything it can't name: unknown templates, unknown options, junk bodies", async () => {
+    resetRemixIntentThrottle();
+    intents.length = 0;
+    const id = await firstId();
+    expect((await post("no-such-template", { option: "download" })).status).toBe(404);
+    expect((await post(id, { option: "<!channel>" })).status).toBe(400);
+    expect((await post(id, "not json")).status).toBe(400);
+    expect(intents).toHaveLength(0);
   });
 });

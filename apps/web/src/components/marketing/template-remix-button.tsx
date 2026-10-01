@@ -9,6 +9,7 @@ import { CheckIcon, CopyIcon, useCopy } from "@/components/marketing/copy";
 import { InstallCommand } from "@/components/marketing/install-command";
 import { templateRemixCommand, templateRemixPrompt } from "@/lib/marketing/setup";
 import { track } from "@/lib/analytics";
+import { API_URL } from "@/lib/api";
 
 type RemixOption = "agent_prompt" | "desktop_app" | "download" | "cli_command";
 
@@ -67,7 +68,18 @@ export function TemplateRemixButton({
 }) {
   const [open, setOpen] = useState(false);
   const prompt = useCopy(templateRemixPrompt({ id: templateId, title }));
-  const chose = (option: RemixOption) => track("template_remix_chosen", { template_id: templateId, option });
+  const chose = (option: RemixOption) => {
+    track("template_remix_chosen", { template_id: templateId, option });
+    // The team's Slack feed. Plain text so it goes without a CORS preflight,
+    // and keepalive so it survives the download link navigating away.
+    void fetch(`${API_URL}/api/templates/${encodeURIComponent(templateId)}/remix-intent`, {
+      method: "POST",
+      body: JSON.stringify({ option }),
+      headers: { "Content-Type": "text/plain" },
+      credentials: "include",
+      keepalive: true,
+    }).catch(() => {});
+  };
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
