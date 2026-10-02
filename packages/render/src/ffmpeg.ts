@@ -199,7 +199,10 @@ export function openFrameSink(output: string, args: { fps: number; encoder: stri
 export async function concatSegments(segments: string[], output: string, listFile: string): Promise<void> {
   const { writeFile } = await import("node:fs/promises");
   await writeFile(listFile, segments.map((s) => `file '${s.replace(/'/g, "'\\''")}'`).join("\n"), "utf8");
-  await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", output]);
+  // A stream copy rewrites the container, so the segments' faststart is lost unless asked for again —
+  // without it the index sits at the end and a browser downloads the whole file before playing.
+  const faststart = /\.(mp4|mov)$/i.test(output) ? ["-movflags", "+faststart"] : [];
+  await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", ...faststart, output]);
 }
 
 /** A palette-optimised GIF from an encoded intermediate. */
@@ -286,6 +289,7 @@ export async function muxAudio(input: {
     "-c:v", "copy",
     "-c:a", codec === "webm" ? "libopus" : codec === "mov" ? "pcm_s16le" : "aac",
     "-t", durationSec.toFixed(3),
+    ...(codec === "mp4" || codec === "mov" ? ["-movflags", "+faststart"] : []),
     output,
   ]);
   return true;
