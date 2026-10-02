@@ -1,117 +1,134 @@
 ---
 name: ugc-ad-foundations
-description: "The shared ground under every UGC ad: why creator-shot beats polished, the hook / body / CTA anatomy, the three-second rule and the retention numbers behind it, the visual codes that now read as an ad within half a second, platform specs and safe zones for TikTok, Reels, Shorts and Meta feed, the phone-shot frame presets, and the 3x3x3 variant matrix. Load it alongside any ugc-* format skill. Not a format on its own: pick one of those."
+description: "The shared ground under every UGC-style social ad: the codes that read as an ad versus a person, hook / body / CTA anatomy with frame budgets per length, the one safe-zone and caption-position spec for 9:16, 4:5 and 1:1, the shared UGC numbers (change interval, VO budget, bed level, loudness), the four looks, hook variants, and the claims rules every format inherits. Load it with exactly one UGC format owner (screen demo, green screen, unboxing, problem-solution). Not a format on its own."
 ---
 
 # UGC ad foundations
 
-A UGC ad is an ad that does not look like one. Everything below serves that single idea.
+A UGC ad is an ad that does not look like one. Everything below serves that idea, and every number here is the one the four UGC owners (`ugc-screen-demo`, `ugc-green-screen`, `ugc-unboxing`, `ugc-problem-solution`) and the craft skills (`ugc-hooks`, `ugc-scripting`, `ugc-craft`, `ad-qa`) use. Where a number is shared with the rest of the pack it comes from `direction`, `motion-language` or `sound-design`; this skill only states the UGC deviations.
+
+Frames are at 30 fps (at 60 fps double them).
 
 ## When to use
 
-Load this whenever you are making a UGC-style ad, alongside exactly one `ugc-*` format skill. Skip it for a product launch video (`launch-playbook`), a feature announcement (`announce-feature`), or any 16:9 piece meant for a landing page.
+- With exactly one UGC format owner, after `direction` and before building.
+- When a user asks what makes a TikTok, Reels, Shorts or Meta ad work, how long it should be, or where text may go.
+- When a finished ad "looks like an ad".
 
-## Why this format wins
+Not for: a launch film (`launch-playbook`), a feature announcement (`announce-feature`), a 16:9 landing-page piece, or cutting footage the user filmed themselves (`video-editing` owns that, including talking-head and Gen Z edits; this skill's safe zones and claims rules still apply there).
 
-Creator-shot beats polished on the metrics that decide whether an ad is ever seen: on skippable in-stream, UGC-style creative runs roughly a third better on hook rate and click-through than produced video. Not because the content is better, because the *codes* are different. A viewer's first job on a feed is to sort ad from not-ad, and they do it on texture, framing and cadence long before they hear a word.
+## Why the format works, and what it is not
 
-Which means the codes that used to say "professional" now say "skip":
+A viewer's first job on a feed is to sort ad from not-ad, and they do it on texture, framing and cadence long before they hear a word. Practitioners consistently report that creator-style creative out-holds polished spots in the feed; treat that as the working assumption, not a measured fact you can quote to the user.
 
 | Reads as an ad in half a second | Reads as a person |
 | --- | --- |
-| Even key light, clean background | Available light, a real room, a window blowing out |
-| Centred, tripod-steady, rule-of-thirds | Slightly off-centre, hand-held drift, a reframe mid-sentence |
-| A scripted problem stated in a bright voice | The problem said flatly, the way you would say it to a friend |
-| Dissolves and motion-graphic wipes | Hard jump cuts, some of them ugly |
-| Logo in the first second | Logo at the end, if at all |
-| A polished lower third | Burned-in captions in the platform's own default look |
+| Even, directionless key light; seamless background | Available light, a real room, a window blowing out |
+| Centred, tripod-still | Slightly off-centre (3–6% off the axis), a slow drift, a reframe mid-sentence |
+| A bright, performed read | The problem said flatly, the way you would say it to a friend |
+| Crossfades, graphic wipes, a spinning logo | Hard cuts on a word or a sound |
+| Logo in the first second, a watermark throughout | Product in context early; name card only at the end |
+| A designed lower third | Burned-in captions in the platform's own idiom |
 
-Do not read this as "make it bad". Make it *specific*. Imperfection with no intent reads as cheap; imperfection that matches how the thing was plausibly filmed reads as true.
+Do not read this as "make it bad". Make it specific: imperfection that matches how the thing was plausibly filmed reads as true; imperfection with no intent reads as cheap.
 
-## The anatomy
+## The anatomy, in frames
 
-Three parts, always, whatever the format.
+Google's ABCD framing for video ads (Attract, Brand, Connect, Direct) maps onto three parts. Spend the most effort on the first.
 
-**Hook, 0 to 3 seconds.** One job: earn second three. Top-performing hooks hold 65 to 70 percent of viewers to the three-second mark; the average is under 30. That gap is not talent, it is structure, and it is built from three things at once: a **visual** (what is on the first frame), a **verbal** (the first five words), and a **rhythm** (a cut or a movement inside the first second). Two out of three is a weak hook. Full library in `ugc-hooks`.
+- **Hook** (Attract): the first 1.5–3 s. Visual, verbal and rhythm arrive together; the frame at 0.5 s (frame 15) already shows it. `ugc-hooks` owns it.
+- **Body** (Brand + Connect): one benefit, demonstrated. The product or its UI is in frame by 3–4 s in context, never as a logo card (exception: `ugc-problem-solution` holds the product back until its turn, at most 7 s, and says so in the Direction block). `ugc-scripting` owns the words.
+- **CTA** (Direct): the last 3–5 s, said as a recommendation, shown three ways at once (spoken, on-screen text, a visual cue such as a tap or a cursor). The CTA text is legible for at least 60f.
 
-Spend something like 40 percent of your effort here. It is the only part most viewers see.
+| Length | Hook | Body | CTA | VO words at 2.5 w/s | Beats |
+| --- | --- | --- | --- | --- | --- |
+| 6–10 s | 0–60f | 60–240f | last 60f | 13–22 | 3 |
+| 15 s (450f) | 0–75f | 75–360f | 360–450f | ≤35 | 4–6 |
+| 30 s (900f) | 0–90f | 90–780f | 780–900f | ≤73 | 7–10 |
+| 45 s (1350f) | 0–90f | 90–1200f | 1200–1350f | ≤110 | 10–14 |
+| 60 s (1800f) | 0–90f | 90–1650f | 1650–1800f | ≤148 | 13–18 |
 
-**Body, 3 seconds to the last five.** One benefit, demonstrated. Not a feature list. The body's shape is a micro-story with the product as the turn: see `ugc-scripting` for PAS, BAB, AIDA and the rest, and the format skill for which shape that format wants.
+VO budget: the VO starts 5–8f in and ends ≥15f before the last frame, so `words ≤ 2.5 × (seconds − 0.7)`. UGC ads end on a spoken CTA rather than a silent logo hold, which is the one deviation from `direction`'s 1.5 s VO-free tail.
 
-**CTA, the last 3 to 5 seconds.** It has to sound like a recommendation, not a pitch. "Link's in my bio if you want it" outperforms "Shop now and save 20 percent" in UGC because the second one breaks the character the first 25 seconds built. Reinforce it three ways at once: spoken, on-screen text, and a visual cue (a tap, a cursor, a hand).
+## The shared UGC numbers
 
-## Length
+Owners cite these and only state deviations.
 
-| Length | Use it for | Rough shape |
+| Thing | Value | Why |
 | --- | --- | --- |
-| 6 to 10s | One-idea hook tests, a single satisfying moment | Hook 3s, payoff 4s, CTA 2s |
-| 15s | The default social ad | Hook 3s, body 9s, CTA 3s |
-| 30s | The workhorse. Room for a real demonstration | Hook 3s, problem 5s, demo 15s, proof 4s, CTA 3s |
-| 45 to 60s | Story-led, founder, tutorial, comparison | Hook 3s, setup 8s, body 35s, proof 8s, CTA 5s |
+| Readable area, 9:16 (1080×1920) | x 120–840, y 270–1210. Hard limit for every word, logo, face and CTA | The union of TikTok's right rail and bottom band and Reels' top band (`direction` → `references/pacing.md`) |
+| Hook line | y 270–450, ≤7 words, legible by frame 6 | Just under the top UI, where the eye lands first |
+| Captions | One line, centred at y 1160 (60% down), inside y 1110–1210; grows upward to y 1040 if it needs two lines | Above every platform's bottom band, below the face. Full spec in `ugc-craft` |
+| Face | Eyes at y 500–750, face centre about 40% across (x ≈ 430) | Upper third, clear of the right rail |
+| CTA, price, offer | Centre or centre-left, inside the readable area, never bottom-right | Bottom-right is under the action rail |
+| 4:5 (1080×1350) | Margins 54–86 px; key content inside the central 1080×1080 (y 135–1215) | Feed previews may crop to 1:1 |
+| 1:1 (1080×1080) | Margins 54–86 px | |
+| Change interval | Nothing held more than 90f (3 s) without a change; hook shots ≤36f (1.2 s) | Feed viewers leave on stillness; `ugc-craft` has the cadence table |
+| Smallest read text | Captions 70–96 px; UI or source text that must be read ≥34 px; nothing meaningful under 24 px | At 1080 wide on a phone held at arm's length |
+| Music bed under VO | 0.12 (−18.4 dB) | Inside `sound-design`'s 0.1–0.18 UGC range; talk must win |
+| Music with SFX, no VO | 0.5–0.6 (−6 to −4.4 dB); music alone 1.0 | Per `sound-design` |
+| Master | −14 LUFS integrated, ≤ −1 dBTP, frame 1 audible | Per `sound-design`; measure the export |
+| Moves | Jump zoom, punch-in and focus push, defined once in `ugc-craft` | One name per move |
 
-Narration runs at roughly 2.5 words a second. A 30-second ad is about 70 to 75 spoken words. Write to that number; do not write a script and hope.
+**Design for mute.** Feeds autoplay muted. If the first three seconds do not communicate with the sound off, the ad is over. Every spoken line is captioned; sound is the reward for unmuting, never the only carrier of a claim.
 
-## Platform specs
+## Direction defaults for UGC ads
 
-| Platform | Canvas | Keep clear |
-| --- | --- | --- |
-| TikTok | 1080x1920 | Top 12%, bottom 20%, right 14% (the caption block, the action rail) |
-| Reels | 1080x1920 | Top 10%, bottom 22% |
-| Shorts | 1080x1920 | Top 10%, bottom 18% |
-| Meta feed | 1080x1350 (4:5) | Bottom 12% |
-| Meta / X square | 1080x1080 | Bottom 10% |
+When `direction` asks for the Direction block, a UGC ad usually writes:
 
-Everything that carries meaning lives in the middle 60 percent of the height. Captions sit at roughly 60 to 70 percent down the frame, above the platform's own UI, never at the true bottom.
+- **Placement**: feed, 9:16, sound off first. Ask for 4:5 and 1:1 cut-downs only if the user names Meta feed or LinkedIn.
+- **Energy curve**: social ad, front-loaded: hook at 8 by frame 15, a micro-peak every 1–3 s, one bigger peak on the proof or the reveal, CTA calm in the last 3–4 s.
+- **Pacing**: High in the hook (new information every 18–30f), Medium in the demonstration (30–50f).
+- **Transitions**: the workhorse is a **hard cut on a word or a sound transient**. This is a deliberate deviation from the house grammar: in a UGC ad the visible jump cut is the native code. The signature is one motivated move at the turn or payoff (a focus push into the thing that changed, a persisting cursor or hand). No crossfades, ever.
+- **Sound**: VO-led when there is narration, otherwise sound-off-first with SFX carrying the events; bed 0.12 under VO.
+- **Memorable moment**: the frame where the product does the one thing (the result appears, the price lands, the lid comes off, the problem disappears).
 
-**Design for mute.** Most of the audience never hears it. If the first three seconds do not communicate visually, the ad is over. Every spoken line needs a caption.
+## The four looks
 
-## The look
-
-Four looks cover almost every UGC ad. Pick one before you start building; `references/frame-presets.md` has each one's full palette, type and caption spec.
+Pick one look per ad before building; `references/frame-presets.md` has each one's palette, type, caption treatment and how to build it on Three.js. One ad never switches looks.
 
 | Look | For |
 | --- | --- |
-| `ugc-native` | The default. Phone-shot texture, system-sans captions, high contrast, no brand chrome until the end card |
-| `ugc-bold-caption` | Word-by-word captions with a heavy stroke, for a loud, fast, hook-led cut |
-| `ugc-clean-demo` | Screen-recording-led. Device frame, restrained type, the interface is the star |
-| `ugc-camcorder` | Retro handheld: grain, a timestamp overlay, slight chroma bleed |
+| Native | The default. Phone-shot texture, system-sans captions, no brand chrome until the end |
+| Bold caption | Word-by-word captions, heavy stroke, a loud hook-led cut |
+| Clean demo | Screen-led. The interface is the star; type stays out of its way |
+| Camcorder | Retro handheld: grain, a timestamp, soft chroma bleed. Nostalgia or a pattern interrupt |
 
-Carry the chosen look's colours, type and caption treatment the way this project keeps its own design values: a shared design-system file if it has one, otherwise consistent inline values repeated scene to scene. The look is the same regardless of what wrote the scene; only where the tokens live differs by project.
+Keep the look's values in one place (a `components/look.ts` module on Three.js, shared tokens on HyperFrames or React) so every scene reads the same numbers.
 
-## The variant matrix
+## Variants
 
-One brief should produce a family, not a file. Three hooks, three bodies, three CTAs is 27 ads, and the point of it is that you learn which *axis* moved the number rather than which video won.
+One brief should produce a small family, not one file. Vary **hooks first**: they carry the most variance and are the cheapest to swap. Build the full ad once, then make two more hooks from different families, changing nothing else. `ugc-hooks` → "Hook variants" has the build pattern. Bodies and CTAs come second, and only once a hook has been chosen.
 
-In practice: build the full ad once, then use `ugc-variants` to emit the hook permutations as separate compositions. Hooks first, always. They are where the variance is.
+## Claims: the line you do not cross
 
-## Claims, and the line you do not cross
+A UGC ad is a person saying something, which makes a false claim in one worse than a false claim in a banner. These are the rules every UGC owner and `ad-qa` check against:
 
-A UGC ad is a person saying something. That is exactly what makes a false claim in one worse than a false claim in a banner.
+1. Never write words as said by a named real person unless the user supplied the words and the name.
+2. Never state a number, rating, review count, timeframe or result the user has not given you. "Sold out twice" and "4.9 stars" are facts or nothing.
+3. A before-and-after implies a typical result. Do not imply it unless the user says it is typical.
+4. A synthetic presenter is fine; one presented as a specific real customer, employee or expert is not.
+5. A rebuilt or mocked UI shows only features that exist. A mocked page carrying a real company's name shows only what that company actually publishes.
+6. A claim about a competitor needs a source the user gave you; comparing on your own product's facts is fine.
 
-- Never write a testimonial as if a named real person said it unless the user supplied their words.
-- Never state a result, a number, a rating or a timeframe the user has not given you. "Sold out twice" and "4.9 stars from 2,000 reviews" are facts or they are nothing.
-- Before-and-after implies a typical result. If the user has not said it is typical, do not imply it.
-- A synthetic presenter is fine. A synthetic presenter presented as a specific real customer is not.
-
-If the brief asks for a claim you cannot source, put a bracketed placeholder in the script and say so in one line rather than inventing a number.
+If the brief asks for something you cannot source, write a bracketed placeholder ("[N] hours saved") and tell the user in one line. Never resolve it by guessing.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Narration | `pick-voice` then `voiceover` | A silent, caption-led cut. Many of the strongest UGC ads have no voice at all. |
-| A presenter on camera | `ai-presenter` and the fal connector | Go faceless: `ugc-screen-demo`, `ugc-text-story`, `ugc-asmr-product`, `ugc-listicle` all work with no face. |
-| B-roll and stills | `save-asset` for the user's own, `generate-image` for the rest | Typography and screen recordings carry a surprising amount alone. |
-| Sound design | `sfx` | Music-only. Do not ship silence under a cut. |
+| Narration | `pick-voice` then `voiceover` | A caption-led silent cut; many strong UGC ads have no voice at all |
+| A presenter | `ai-presenter` | A faceless format: `ugc-screen-demo`, presenter-free `ugc-green-screen`, hands-only `ugc-unboxing` |
+| Stills and cut-aways | `save-asset` for the user's own, `generate-image` for the rest; `stock-and-broll` | Typography and rebuilt UI carry a surprising amount |
+| Sound | `sfx`, `music` | Per `sound-design`'s ladder; never a silent cut |
+| Looking at the result | `capture-frames` | None |
 
 ## Checks before you finish
 
-Run all five with `capture-frames`, in order:
+Run `ad-qa` in full; it is the single QA pass for UGC ads. Before handing over to it, confirm:
 
-1. **First-frame test.** Capture frame 0. Would it stop you? If it is a logo, a black screen or a title card, the ad has no hook.
-2. **Mute test.** Capture four frames across the ad. Read only what is on screen. Does the pitch survive?
-3. **Safe-zone test.** Nothing that matters is in the top 12 or bottom 20 percent.
-4. **Caption test.** Every spoken line is on screen, legible at arm's length, and off the very bottom.
-5. **Ad test.** Look at the first second again and ask what code says "ad". Remove it.
-
-Then run this project's own check tool (`validate`), and only then say it is done.
+1. The Direction block in `VIDEO.md` names the look, the placement and the transitions line above, and the Beats table sums to the length.
+2. VO words ≤ `2.5 × (seconds − 0.7)` (count them).
+3. `capture-frames` at frame 15 shows the hook; the product or its UI is in frame by frame 120 (or the Direction block says why not).
+4. Every claim in the script traces to something the user supplied, or is a bracketed placeholder you have told them about.
+5. `validate` passes.

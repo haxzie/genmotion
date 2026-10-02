@@ -3,8 +3,8 @@
     {
       "id": "ad-qa",
       "title": "Ad QA",
-      "description": "The pre-ship review gate for a short-form ad: six tests run with frame captures (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished.",
-      "summary": "The six-test gate before an ad ships: first frame, mute, safe zones, captions, ad codes and claims.",
+      "description": "The pre-ship QA pass for a short-form or social ad, run on captured frames and the exported file: the exact frames to capture, eleven tests with pass criteria and fixes (hook frame, brand timing, mute, safe zones with a drawn overlay, captions, text size and contrast, pacing, CTA and ending, audio and loudness, ad codes, claims), then direction's critique rubric as the ship bar and a short report for the user. Every UGC owner ends here. Load it before telling anyone an ad is finished.",
+      "summary": "The pre-ship pass for a social ad: captures, eleven tests with fixes, loudness, claims, direction's rubric, and a short report.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
@@ -12,7 +12,8 @@
         "review",
         "checklist",
         "claims",
-        "safe-zones"
+        "safe-zones",
+        "loudness"
       ],
       "aspects": [
         "9:16",
@@ -32,46 +33,64 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
           "id": "ugc-ad-foundations"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Every one of the six tests is a frame you actually look at."
+          "why": "Every visual test is a frame you actually look at."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Loudness, silences, duration, the safe-zone overlay and the contact sheet."
         },
         {
           "kind": "capability",
           "id": "validate",
-          "why": "Run it first; a failing composition captures nothing useful."
+          "why": "Run it first; a failing scene captures nothing useful."
         },
         {
           "kind": "capability",
           "id": "project-overview",
-          "why": "The scene boundaries the captures are taken at."
+          "why": "Scene boundaries and audio clips the captures and cues are checked against."
         }
       ],
       "models": [],
       "triggers": [
         "check my ad before I post it",
         "is this ad ready to ship",
-        "review this video for problems",
-        "will this work on tiktok",
-        "did I get the safe zones right",
-        "check the claims in this script"
+        "review this social ad for problems",
+        "did I get the TikTok safe zones right",
+        "check the claims in this ad",
+        "is the ad loud enough for Reels",
+        "QA pass on this vertical video ad"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "✅",
       "source": "first-party"
     },
     {
       "id": "ai-presenter",
       "title": "AI presenter",
-      "description": "Getting a person on screen when there is no footage: a generated presenter driven by lipsync, or the user's own clip. Covers the two routes and when each one wins, framing and crop for a vertical canvas, matching a voice to a face, the uncanny-valley failure modes and the edit patterns that dodge them, and the line between a synthetic presenter and a fabricated customer. Load it alongside a face-led ugc-* format, never instead of one.",
-      "summary": "Getting a person on screen with no footage: a generated portrait driven by lipsync, or the user's own clip.",
+      "description": "Putting a person on screen in an ad when there is no footage: the user's own clip first, or a generated portrait driven by a lipsync model. Covers when not to use a face at all, the lipsync input spec (portrait, audio, neutral mouth), framing and headroom for 9:16, one take length (four seconds), lip-sync tolerance in frames, matching voice to face, the uncanny tells and the edit patterns that hide them, the seek-safe build on each engine, and the line between a synthetic presenter and a fabricated customer. Load it alongside a UGC owner, never instead of one.",
+      "summary": "A person on screen with no footage: the user's clip first, else a lipsynced portrait in takes of four seconds, framed for 9:16.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
@@ -79,7 +98,7 @@
         "avatar",
         "lipsync",
         "fal",
-        "faceless-fallback"
+        "ugc"
       ],
       "aspects": [
         "9:16",
@@ -97,6 +116,10 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
           "kind": "mcp",
           "id": "fal",
           "why": "Drives a generated portrait with a lipsync model. The only synthetic route."
@@ -109,13 +132,6 @@
         {
           "kind": "skill",
           "id": "ugc-ad-foundations"
-        },
-        {
-          "kind": "skill",
-          "id": "hyperframes-keyframes",
-          "engines": [
-            "hyperframes"
-          ]
         },
         {
           "kind": "skill",
@@ -143,6 +159,32 @@
           "kind": "capability",
           "id": "save-asset",
           "why": "The user's own clip, which beats every synthetic route."
+        },
+        {
+          "kind": "skill",
+          "id": "screen-capture"
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Trim each take and re-encode it with a keyframe on every frame before placing it."
+        },
+        {
+          "kind": "capability",
+          "id": "place-audio",
+          "why": "The VO clip goes on the timeline at the take's start frame."
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Framing and lip sync on plosives are checked on captured frames."
         }
       ],
       "models": [
@@ -150,7 +192,7 @@
           "purpose": "lipsync",
           "model": "Sync 2 Pro",
           "via": "mcp:fal",
-          "note": "Drives a generated still. Best under six seconds; cut before it runs longer."
+          "note": "Drives a closed-mouth portrait; one take per line, four seconds or less."
         },
         {
           "purpose": "voice",
@@ -162,37 +204,39 @@
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
           "via": "generate-image",
-          "note": "Generate wider than 9:16 so you can reframe between cuts."
+          "note": "Chest up, 3:4 or 4:5, wider than 9:16, mouth closed and neutral."
         }
       ],
       "triggers": [
-        "add a person talking to camera",
+        "add a person talking to camera in this ad",
         "I need a presenter for this ad",
         "make an avatar say my script",
-        "UGC video with a creator in it",
-        "can you generate someone to read this",
-        "talking head for my tiktok ad"
+        "UGC ad with a creator in it",
+        "generate someone to read these lines",
+        "lipsync a generated face to the voiceover"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🧑‍💼",
       "source": "first-party"
     },
     {
       "id": "announce-feature",
       "title": "Announce feature",
-      "description": "The 20 to 45 second changelog video after Linear, Notion and Slack: what changed, why it matters, show it, where to get it. Covers quick-highlights-over-feature-lists, the UI-in-motion patterns that carry the demonstration, why the CTA points at the feature itself rather than a marketing page, and the recuts for an in-app banner, a changelog embed and a social clip. Load it for a single feature or a small feature set, not a whole-product launch.",
-      "summary": "The 20 to 45 second changelog video: what changed, why it matters, show it, where to get it.",
+      "description": "The 15 to 45 second feature announcement or changelog video, in the manner of Linear, Notion and Slack: what changed, why it matters, show it, where to find it. Covers naming the feature in the first six words, frame-budgeted beat sheets for 15, 20, 30 and 45 seconds with VO word budgets, the cursor, before-and-after and focus-push patterns with house timings, the CTA that points at the toggle, sound per interaction, and recuts for an in-app loop, a changelog embed and a vertical social clip. Load it for one feature or a small set, not a whole-product launch.",
+      "summary": "The 15–45 s changelog video: name it in six words, why it matters, show it on the real UI, point at the toggle.",
       "kind": "workflow",
       "category": "Announcement",
       "tags": [
         "announcement",
         "feature",
         "changelog",
-        "product-marketing"
+        "product-marketing",
+        "release",
+        "ui-demo"
       ],
       "aspects": [
         "16:9",
@@ -200,7 +244,7 @@
         "9:16"
       ],
       "duration": {
-        "minSeconds": 20,
+        "minSeconds": 15,
         "maxSeconds": 45
       },
       "engines": [
@@ -211,12 +255,24 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
           "id": "screen-capture"
         },
         {
           "kind": "capability",
           "id": "save-asset",
-          "why": "The real feature footage the whole video is built around."
+          "why": "The real feature footage or screens the whole video is built on."
         },
         {
           "kind": "capability",
@@ -226,12 +282,22 @@
         {
           "kind": "capability",
           "id": "sfx",
-          "why": "A click on the interaction that matters."
+          "why": "One sound on each interaction that matters."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A bed under the VO, or the track for a music-led social cut."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Legibility of the new control is a frame check."
+          "why": "Legibility of the new control and the peak's state change are frame checks."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Loudness of the export and the loop check on the in-app cut."
         },
         {
           "kind": "skill",
@@ -260,10 +326,17 @@
           "engines": [
             "three"
           ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "route": {
-        "deliverable": "A 20–45 second changelog video for one feature or a small set",
+        "deliverable": "A 15–45 second announcement of one shipped feature: what changed, why it matters, the feature working, where to find it",
         "inputs": [
           "brief",
           "screen-recording",
@@ -271,8 +344,9 @@
         ],
         "priority": 30,
         "askFirst": [
-          "Which feature, and what changed for the user?",
-          "Do you have a screen recording of it?"
+          "Which feature, and what can the user do now that they couldn't before?",
+          "Where does it play: changelog embed, in-app, or social?",
+          "Is there a screen recording or screenshots of it?"
         ]
       },
       "models": [
@@ -291,27 +365,30 @@
       "triggers": [
         "make an announcement video for this feature",
         "changelog video for our new release",
-        "short video explaining what we shipped",
+        "short video showing what we shipped",
         "feature reveal video",
         "in-app video for this update",
-        "announce this feature on social"
+        "announce this feature on social",
+        "release notes video for this update",
+        "we just shipped polls, make a clip"
       ],
       "templates": [
+        "polls-in-messages",
         "x-numbers-launch-video",
-        "polls-in-messages"
+        "claude-mcp-launch"
       ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "📣",
       "source": "first-party"
     },
     {
       "id": "announce-milestone",
       "title": "Announce milestone",
-      "description": "Funding rounds, ARR, star counts, user counts, acquisitions: the number-hit choreography (a 1.2 to 1.6 second count-up, then hold, label after value), what actually earns a milestone video, the gratitude beat, and investor or customer logo walls. Load it when the ask is a number going up, with no feature to demonstrate. Not this skill when there is a product to show: use launch-playbook or announce-feature instead.",
-      "summary": "Funding, ARR, star counts, users. The count-up choreography, the gratitude beat, and what actually earns a video.",
+      "description": "Funding rounds, ARR, GitHub stars, user and download counts, acquisitions: one number made to land. Covers what earns a milestone video, the count-up choreography measured from GenMotion's stat templates (a 120 to 210 frame ease-out count, the 1.06 land punch, celebration within two frames, the payoff hold), the digit slot-roll variant, number formatting and honesty, the gratitude beat, logo walls, the tick-riser-impact sound design, and beat sheets for 10, 15, 20 and 30 seconds. Load it when the content is a number going up with no feature to demonstrate.",
+      "summary": "One number made to land: a 120–210f ease-out count, the 1.06 punch, celebration on the land, the gratitude beat.",
       "kind": "workflow",
       "category": "Announcement",
       "tags": [
@@ -319,7 +396,9 @@
         "funding",
         "metrics",
         "count-up",
-        "announcement"
+        "announcement",
+        "github-stars",
+        "celebration"
       ],
       "aspects": [
         "16:9",
@@ -327,7 +406,7 @@
         "9:16"
       ],
       "duration": {
-        "minSeconds": 15,
+        "minSeconds": 8,
         "maxSeconds": 30
       },
       "engines": [
@@ -337,19 +416,51 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
           "kind": "capability",
           "id": "voiceover",
-          "why": "The what-it-means and gratitude lines, when the cut is narrated."
+          "why": "The meaning and gratitude lines, when the cut is narrated."
         },
         {
           "kind": "capability",
           "id": "save-asset",
-          "why": "Real contributor, customer or investor logos."
+          "why": "Real contributor avatars and customer or investor logos."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "Ticks during the count, a riser into the land and an impact on it."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A bright track whose downbeat the land falls on."
+        },
+        {
+          "kind": "capability",
+          "id": "web-research",
+          "why": "Checking a public count before it is shown."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "The count-up hold and digit stability are judged by looking."
+          "why": "The ease, the land frame and digit stability are judged on captured frames."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Measuring the export's loudness."
         },
         {
           "kind": "skill",
@@ -381,15 +492,16 @@
         }
       ],
       "route": {
-        "deliverable": "A 15–30 second celebration of one number: users, stars, revenue, a funding round",
+        "deliverable": "An 8–30 second celebration of one number (stars, users, revenue, a funding round) that lands, then says thank you",
         "inputs": [
           "data",
           "brief"
         ],
         "priority": 25,
         "askFirst": [
-          "What is the number, and when was it hit?",
-          "Who is it thanking?"
+          "What is the exact number, and is it public?",
+          "Who is it thanking?",
+          "Where does it play: X or LinkedIn, a site, or Reels and TikTok?"
         ]
       },
       "models": [
@@ -401,30 +513,32 @@
         }
       ],
       "triggers": [
+        "we hit 10k github stars",
         "we just hit a funding milestone, make a video",
         "celebrate our star count",
         "announce our user count",
         "make a video about our ARR",
         "funding round announcement video",
-        "we got acquired, need a video"
+        "we got acquired, need a video",
+        "one million downloads celebration"
       ],
       "templates": [
-        "lovable-funding-announcement",
         "github-star-announcement",
-        "github-star-count-announcement"
+        "github-star-count-announcement",
+        "lovable-funding-announcement"
       ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "📈",
       "source": "first-party"
     },
     {
       "id": "app-store-preview",
       "title": "App Store preview",
-      "description": "Three 15-second App Store and Play Store preview videos: the store specs and the no-audio-dependency rule (they autoplay muted and Apple rejects previews that need sound), device frame rules per store, the three-video structure covering what it is, the best feature, and the payoff, and what each store rejects. Load it when the ask is specifically a store listing preview, not a general product video.",
-      "summary": "Three 15-second store preview cuts: what it is, the best feature, the payoff. Muted by default, real UI only.",
+      "description": "App Store and Google Play preview videos: up to three 15 to 30 second cuts per locale, each standalone (what it is, the best feature, the payoff). Covers the verified store specs (Apple's 886 x 1920 and 1200 x 1600 sizes, 30 fps cap, H.264 settings, the 5 second poster frame; Play's YouTube link rules), what each store rejects (hands, prices, dates, footage outside the app), muted-first design, native full-screen framing with touch hotspots, frame budgets, export and ffprobe checks. Load it when the ask is a store listing preview, not a general product video.",
+      "summary": "Up to three standalone 15–30 s store previews per locale: verified sizes and encoding, muted-first, native UI, the poster frame.",
       "kind": "workflow",
       "category": "Launch",
       "tags": [
@@ -432,7 +546,8 @@
         "play-store",
         "preview",
         "mobile",
-        "store-listing"
+        "store-listing",
+        "aso"
       ],
       "aspects": [
         "9:16",
@@ -450,6 +565,18 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
           "id": "screen-capture"
         },
         {
@@ -459,13 +586,23 @@
         },
         {
           "kind": "capability",
+          "id": "web-research",
+          "why": "Re-checking the stores' current preview specs before submission."
+        },
+        {
+          "kind": "capability",
           "id": "ffmpeg",
-          "why": "Trimming and cropping the recording into the store's exact aspect."
+          "why": "Encoding to the store's exact spec, adding a stereo track and probing the result."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "An optional licensed track for sound-on viewers."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "A muted-review pass on each of the three cuts."
+          "why": "The frame-15, poster-frame and muted-review checks."
         },
         {
           "kind": "skill",
@@ -504,15 +641,16 @@
         }
       ],
       "route": {
-        "deliverable": "A 15–30 second App Store or Google Play preview built from the app's own screens",
+        "deliverable": "Up to three 15–30 second App Store or Google Play preview videos built from the app's own screens, to the store's exact spec",
         "inputs": [
           "screen-recording",
           "brief"
         ],
         "priority": 20,
         "askFirst": [
-          "Which store, and which device sizes?",
-          "Do you have screen recordings or screenshots of the app?"
+          "Which store, and which devices (iPhone, iPad)?",
+          "Do you have screen recordings of the current build?",
+          "Which languages does the listing need?"
         ]
       },
       "models": [],
@@ -520,22 +658,24 @@
         "make an App Store preview video",
         "I need a Play Store listing video",
         "app store preview for our app",
-        "mobile app trailer for the store listing",
-        "15 second video for our app page"
+        "preview video for our app page",
+        "15 second video for the store listing",
+        "iPhone app preview at 886 by 1920",
+        "google play promo video"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "📱",
       "source": "first-party"
     },
     {
       "id": "brand-sting",
       "title": "Brand sting",
-      "description": "The logo lockup, bumper or brand reveal: 2 to 8 seconds, no narration, no claim, just the mark arriving. Covers the three sting shapes (build, reveal, transform), why a sting is as much a sound design problem as a motion one, how long to hold the final lockup, and the transparent-background variant for use as an overlay elsewhere. Load it for a standalone bumper or when a launch video's own closing shot needs strengthening.",
-      "summary": "The logo bumper: build, reveal or transform, a held final lockup, and the sound that sells the hit.",
+      "description": "The logo sting, bumper, ident or brand reveal: 2 to 8 seconds, no narration, one mark arriving. Covers the three shapes (build, reveal, transform), the sting energy curve with the hit at 40 to 60 percent, frame budgets for 2, 3, 5 and 8 second stings, mark size and clear space, the landing ease and what may move after lock, house devices with timings, the riser-hit-button-tail sonic logo, loop and overlay variants with an honest note on alpha, and frame-exact checks. Load it for a logo animation, intro or outro bumper, or a stronger closing lockup.",
+      "summary": "The 2–8 s logo sting: build, reveal or transform, a hit on the lock frame, a held lockup, and loop and overlay versions.",
       "kind": "style",
       "category": "Brand",
       "tags": [
@@ -543,7 +683,9 @@
         "sting",
         "bumper",
         "brand",
-        "intro"
+        "intro",
+        "ident",
+        "sonic-logo"
       ],
       "aspects": [
         "16:9",
@@ -561,6 +703,18 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
           "kind": "capability",
           "id": "save-asset",
           "why": "The real logo file, never a redrawn one."
@@ -568,12 +722,27 @@
         {
           "kind": "capability",
           "id": "sfx",
-          "why": "The whoosh and the hit that sell the landing."
+          "why": "The riser, the impact on the lock frame and the tail."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A short tonal button, when the sonic logo is musical."
+        },
+        {
+          "kind": "capability",
+          "id": "web-research",
+          "why": "The brand's real colours and clear-space rules."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "The final lockup frame is checked by looking at it exactly."
+          "why": "The lock frame and the held lockup are checked by looking at them exactly."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Keying the overlay version to alpha and checking the hit does not clip."
         },
         {
           "kind": "skill",
@@ -612,7 +781,7 @@
         }
       ],
       "route": {
-        "deliverable": "A 2–8 second logo reveal, bumper, or intro/outro tag with no narration",
+        "deliverable": "A 2–8 second logo sting, bumper or intro/outro tag with no narration: the mark locks on a hit and holds",
         "inputs": [
           "logo",
           "brief"
@@ -620,7 +789,8 @@
         "priority": 10,
         "askFirst": [
           "Do you have the logo file (SVG is best)?",
-          "Opaque background, or transparent to overlay on other footage?"
+          "Where is it used: before or after videos, as a loop, or over other footage?",
+          "Precise and calm, or playful with a little bounce?"
         ]
       },
       "models": [
@@ -628,33 +798,36 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "A rising build into one solid hit, optional short decay."
+          "note": "A riser into one solid hit, a short tonal button and a shimmer tail."
         }
       ],
       "triggers": [
+        "logo animation for our brand",
         "make a logo animation for our brand",
         "I need an intro bumper",
         "animate our logo reveal",
         "outro sting for our videos",
         "transparent logo animation for overlay",
-        "brand intro for our launch video"
+        "channel ident with a sound logo",
+        "looping logo for the event screen"
       ],
       "templates": [
         "genmotion-brand-grid",
-        "nike-brand-guide-video"
+        "nike-brand-guide-video",
+        "google-generative-ai"
       ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "✨",
       "source": "first-party"
     },
     {
       "id": "demo-walkthrough",
       "title": "Demo walkthrough",
-      "description": "The longer product tour, 60 to 180 seconds: chapter structure and signposting, the one-workflow-end-to-end rule over a feature tour, pacing for a viewer who chose to watch rather than one who has to be hooked, and when to break the material into a series instead of one long cut. Load it for onboarding videos, sales-enablement demos, or any tour too long for launch-playbook's 90-second ceiling.",
-      "summary": "The longer product tour, 60 to 180s: one workflow done end to end, chaptered, paced for a viewer who opted in.",
+      "description": "The longer product tour, 60 to 180 seconds, for a viewer who chose to watch: one real workflow done end to end instead of a feature tour, chapter shares and chapter cards, narration at 2.2 to 2.5 words a second that may orient ahead of a step, UI magnified 2 to 2.5 times, cursor and click timing, focus pushes, cutting dead waits, beat sheets for 60, 90, 120 and 180 seconds, the quiet sound plan, and when to split into a series. Load it for onboarding videos, sales or investor demos, and product tours too long for a launch film.",
+      "summary": "The 60–180 s product tour: one workflow end to end, chaptered, magnified until it reads, narrated for a viewer who opted in.",
       "kind": "workflow",
       "category": "Launch",
       "tags": [
@@ -662,7 +835,9 @@
         "onboarding",
         "walkthrough",
         "sales-enablement",
-        "long-form"
+        "long-form",
+        "tutorial",
+        "ui-demo"
       ],
       "aspects": [
         "16:9",
@@ -680,22 +855,54 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
           "id": "screen-capture"
         },
         {
           "kind": "capability",
           "id": "save-asset",
-          "why": "The real, complete workflow footage the tour is built on."
+          "why": "The real recording or screenshots the tour is built on."
         },
         {
           "kind": "capability",
           "id": "voiceover",
-          "why": "Narration that can orient the viewer ahead of a step."
+          "why": "Narration that orients the viewer ahead of each step."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "A click per press, typing texture and a success chime."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "An optional minimal bed under the narration."
         },
         {
           "kind": "capability",
           "id": "project-overview",
-          "why": "Checking chapter share of the runtime against the plan."
+          "why": "Checking each chapter's share of the runtime against the plan."
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Legibility of each acted-on label is a frame check."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Contact sheets to find dead waits, and the loudness check."
         },
         {
           "kind": "skill",
@@ -724,18 +931,26 @@
           "engines": [
             "three"
           ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "route": {
-        "deliverable": "A 1–3 minute guided walkthrough of one product flow, start to finish",
+        "deliverable": "A 1–3 minute narrated walkthrough of one product workflow, start to finish, in chapters",
         "inputs": [
           "screen-recording",
           "url"
         ],
         "priority": 35,
         "askFirst": [
-          "Which flow should it walk through?",
-          "Do you have a screen recording, or should it be built from screenshots?"
+          "Which workflow should it walk through, start to finish?",
+          "Is there a screen recording, or should it be rebuilt from screenshots?",
+          "Who watches it: a new user, a buyer, or an investor?"
         ]
       },
       "models": [
@@ -752,13 +967,18 @@
         "sales demo video for investors",
         "walkthrough video of our workflow",
         "long form product tour",
-        "explain our whole product in a video"
+        "how-to video for setting up our app",
+        "help center tutorial video",
+        "step by step tutorial of our dashboard"
       ],
-      "templates": [],
+      "templates": [
+        "prequel-launch",
+        "claude-mcp-launch"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🎓",
       "source": "first-party"
     },
@@ -833,15 +1053,17 @@
     {
       "id": "explainer",
       "title": "Explainer",
-      "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, with or without narration. Covers the one-question test, the four explainer shapes (how it works, why it matters, this vs that, by the numbers), one idea per scene, visual metaphors over bullet points, and pacing narration against motion. Load it for any request to explain, teach, break down or visualise something, rather than to sell or announce it.",
-      "summary": "A concept, process, comparison or number made visual in 30 seconds to 3 minutes.",
+      "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, narrated or text-led. Covers the one-question test, six shapes (how it works, why it matters, this vs that, by the numbers, listicle, story), a thesis and idea spine, one idea per scene with a named clarity device, reveal on the VO cue, the whiteboard scene grammar and board erase, VO word budgets and VO six frames after each cut, beat sheets for 30, 60, 90 and 180 seconds, and data-viz rules. Load it to explain, teach, break down or visualise something rather than sell it.",
+      "summary": "A concept, process, comparison or number made visual in 30 s to 3 min: one idea per scene, revealed on the VO cue.",
       "kind": "workflow",
       "category": "Explainer",
       "tags": [
         "explainer",
         "education",
         "diagram",
-        "data"
+        "data",
+        "whiteboard",
+        "narrated"
       ],
       "aspects": [
         "16:9",
@@ -859,9 +1081,21 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
           "kind": "capability",
           "id": "web-research",
-          "why": "Facts behind the explanation."
+          "why": "Facts behind the explanation, with a source for every number."
         },
         {
           "kind": "capability",
@@ -870,8 +1104,23 @@
         },
         {
           "kind": "capability",
+          "id": "transcribe",
+          "why": "Word timings of the VO, so each diagram part appears on its spoken cue."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A sparse bed under the VO and a button under the answer."
+        },
+        {
+          "kind": "capability",
           "id": "capture-frames",
-          "why": "Each metaphor has to read without the narration."
+          "why": "Each device has to read without the narration."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Measuring the export's loudness."
         },
         {
           "kind": "skill",
@@ -893,10 +1142,24 @@
           "engines": [
             "three"
           ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "route": {
-        "deliverable": "A 30 second to 3 minute video that explains one concept, process, comparison or number",
+        "deliverable": "A 30 second to 3 minute video that answers one question about a concept, process, comparison or number",
         "inputs": [
           "brief",
           "script",
@@ -916,29 +1179,36 @@
         "types of databases in 60 seconds",
         "visualise this data as a video",
         "an educational video about how vaccines work",
-        "break down this process step by step"
+        "break down this process step by step",
+        "whiteboard explainer with voiceover",
+        "why does this matter, in a short animated video"
       ],
       "templates": [
-        "types-of-databases"
+        "types-of-databases",
+        "gojiberry-launch-video"
       ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🧠",
       "source": "first-party"
     },
     {
       "id": "freeform-video",
       "title": "Freeform video",
-      "description": "The fallback when no other skill owns the request: a custom video of any kind, such as an intro for a talk, a birthday clip, an abstract loop, a music visual, an event countdown or an internal update. Covers turning a vague request into a short plan (purpose, length, aspect, one-line message, three to six beats), picking a visual idea, and the craft rules every video shares. Load it when search finds no clear format match.",
-      "summary": "The fallback for anything without a format: a short plan, one visual idea, built well.",
+      "description": "The fallback when no other skill owns the request: a custom video of any kind, such as a birthday clip, a talk or event intro, an event countdown, an abstract loop, a visual for a song, an invitation, a quote card or an internal update. Covers a three-concept pitch before building, a five-line plan, per-format defaults (length, aspect, style family, energy curve, sound), the timing triad for every element, beat sheets for 10, 20, 30 and 60 seconds, loop and countdown rules, and frame-checked finishing. Load it when search finds no clear format match.",
+      "summary": "The fallback for anything without a format: three concepts, a five-line plan, one idea developed, built and checked well.",
       "kind": "workflow",
       "category": "Craft",
       "tags": [
         "custom",
         "general",
-        "fallback"
+        "fallback",
+        "personal",
+        "loop",
+        "countdown",
+        "intro"
       ],
       "aspects": [
         "16:9",
@@ -948,7 +1218,7 @@
       ],
       "duration": {
         "minSeconds": 5,
-        "maxSeconds": 120
+        "maxSeconds": 180
       },
       "engines": [
         "hyperframes",
@@ -957,14 +1227,41 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
           "kind": "capability",
           "id": "capture-frames",
           "why": "One frame per beat proves the plan made it to screen."
         },
         {
           "kind": "capability",
+          "id": "save-asset",
+          "why": "The user's photos, logos and song."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A track for the piece, legally sourced."
+        },
+        {
+          "kind": "capability",
           "id": "sfx",
-          "why": "A few hits on the key moments instead of silence."
+          "why": "Hits on the key moments instead of silence."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Loudness and the loop-point check."
         },
         {
           "kind": "skill",
@@ -986,33 +1283,55 @@
           "engines": [
             "three"
           ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "route": {
-        "deliverable": "A custom video that fits no named format",
+        "deliverable": "A custom video that fits no named format, built around one developed idea",
         "inputs": [
           "brief"
         ],
         "priority": 100,
         "askFirst": [
           "Where will it play, and how long should it be?",
-          "What should someone feel or do after watching?"
+          "What should someone feel or do after watching?",
+          "What personal material is there: names, photos, a song?"
         ]
       },
       "models": [],
       "triggers": [
-        "make a cool intro for my talk",
         "a birthday video for my friend",
+        "make a cool intro for my talk",
         "an abstract looping visual",
         "countdown video for our event",
-        "a video for this song",
-        "make me a video"
+        "a visual for this song",
+        "make me a video",
+        "animated invitation for our party",
+        "a farewell video for a colleague"
       ],
-      "templates": [],
+      "templates": [
+        "p-doom-music-video",
+        "genmotion-brand-grid",
+        "dont-blink-gpt-6-astra",
+        "nike-brand-guide-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "✨",
       "source": "first-party"
     },
@@ -1064,15 +1383,17 @@
     {
       "id": "launch-playbook",
       "title": "Launch playbook",
-      "description": "The creative layer above your project's own launch build pipeline: five story shapes for a launch (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, 30 / 60 / 90 second beat sheets for each, the muted-playback and first-five-seconds rules, where social proof goes, and cut variants for Product Hunt, X, YouTube and LinkedIn. Load it when the ask is a product, feature or company launch video. It owns the story, not the pipeline: hand off to your project's own build pipeline for capture, asset staging and the build steps.",
-      "summary": "Five launch story shapes, beat sheets for 30/60/90s, the first-five-seconds rule, and cuts per destination.",
+      "description": "The product launch film, 15 to 90 seconds: five story shapes (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, the launch energy curve with the reveal at 25 to 30 percent, frame-budgeted beat sheets for 15, 30, 45 and 60 seconds with VO word budgets, the reveal and hero-shot craft measured from GenMotion's launch templates, the music or VO sound plan, social proof rules and recuts per destination. Load it for a product, app or company launch video.",
+      "summary": "Five launch shapes, the reveal at 25–30%, frame-budgeted beat sheets for 15–60 s, VO budgets, sound plan and recuts per destination.",
       "kind": "workflow",
       "category": "Launch",
       "tags": [
         "launch",
         "product-launch",
         "story-shape",
-        "product-marketing"
+        "product-marketing",
+        "reveal",
+        "promo"
       ],
       "aspects": [
         "16:9",
@@ -1081,7 +1402,7 @@
         "9:16"
       ],
       "duration": {
-        "minSeconds": 30,
+        "minSeconds": 15,
         "maxSeconds": 90
       },
       "engines": [
@@ -1092,22 +1413,50 @@
       "requires": [
         {
           "kind": "skill",
-          "id": "ugc-scripting"
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
         },
         {
           "kind": "capability",
           "id": "voiceover",
-          "why": "Narration for problem-first, demo-first and metric-first shapes."
+          "why": "Narration for VO-led shapes: problem-first, demo-first and metric-first."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A build-and-drop track with the drop on the reveal."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "Hits on the reveal and the mark, clicks on presses."
         },
         {
           "kind": "capability",
           "id": "save-asset",
-          "why": "Real product screenshots and brand assets, never invented."
+          "why": "Real product screenshots, recordings and the logo file, never invented."
+        },
+        {
+          "kind": "capability",
+          "id": "web-research",
+          "why": "The product's real copy, palette and claims from its site."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "The muted-playback and first-five-seconds checks are frame captures."
+          "why": "The first-frame, mute and reveal checks are made on captured frames."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Measuring the export's loudness and building a contact sheet."
         },
         {
           "kind": "skill",
@@ -1146,7 +1495,7 @@
         }
       ],
       "route": {
-        "deliverable": "A 30–90 second product launch film: problem, product, proof, call to action",
+        "deliverable": "A 15–90 second product launch film: hook, the proposition by beat 2, a reveal, proof on the product, and a held end card",
         "inputs": [
           "brief",
           "url",
@@ -1154,8 +1503,9 @@
         ],
         "priority": 40,
         "askFirst": [
-          "What is the product, and the one thing it does better than the alternative?",
-          "Where will it run, and at what aspect ratio?"
+          "What is the product, and the one thing it does that the alternative can't?",
+          "Where does it run first (landing page, Product Hunt, X, LinkedIn, TikTok), and with sound or muted?",
+          "What real material is there: screens or a recording, the logo file, a true number?"
         ]
       },
       "models": [
@@ -1168,30 +1518,35 @@
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
           "via": "generate-image",
-          "note": "Only for a manifesto shape's invented visuals, never a product shot."
+          "note": "Only for a manifesto or category shape's invented visuals, never a product shot."
         }
       ],
       "triggers": [
+        "launch video for my new app",
         "make a launch video for our product",
         "we're launching next week, need a video",
         "promo video for our SaaS launch",
         "product hunt launch video",
         "make a video announcing our company",
-        "video for our funding and product launch",
-        "launch video for my new app"
+        "turn our homepage into a launch film",
+        "apple style product reveal video"
       ],
       "templates": [
-        "notion-launch-video",
         "codex-launch-video",
+        "notion-launch-video",
+        "claude-mcp-launch",
         "gojiberry-launch-video",
+        "prequel-launch",
+        "fintech-app-launch-video",
+        "samsung-pay-fintech-app-launch-video",
         "google-generative-ai",
         "dont-blink-gpt-6-astra",
-        "claude-mcp-launch"
+        "elevenlabs-voice-ai-launch"
       ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🚀",
       "source": "first-party"
     },
@@ -1268,8 +1623,8 @@
     {
       "id": "screen-capture",
       "title": "Screen capture",
-      "description": "Getting real app footage into a composition: what a usable capture looks like, the ffmpeg recipes for trimming, cropping, reframing to vertical, speeding up and extracting frames, how to build a device frame in HTML, and how to rebuild a UI from scratch when there is no recording at all. Load it alongside ugc-screen-demo, announce-feature or demo-walkthrough whenever the video has to show software actually working.",
-      "summary": "Real app footage into a composition: what to record, the ffmpeg recipes, device frames, and rebuilding a UI in HTML.",
+      "description": "Getting real app footage into a video safely: what to ask the user to record, probing a file, the seek-safe master (VP9 WebM at the project fps with a keyframe every 15 frames, because the renderer seeks every frame and the CLI cannot decode H.264), verified ffmpeg recipes for frame-accurate trims, 9:16 and 4:5 crops that output 1080x1920 and 1080x1350, speeding up a dead stretch, blurring private data and pulling stills, then full-bleed versus a device frame built in the scene, and rebuilding a UI when there is no recording. Load it whenever a video shows software working.",
+      "summary": "Real app footage, render-safe: what to record, the all-keyframe constant-rate master, 9:16 and 4:5 crops, scrubbing, device frames, rebuilds.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
@@ -1277,7 +1632,8 @@
         "ffmpeg",
         "device-frame",
         "product-demo",
-        "ui"
+        "ui",
+        "seek-safe"
       ],
       "aspects": [
         "9:16",
@@ -1298,14 +1654,7 @@
         {
           "kind": "capability",
           "id": "ffmpeg",
-          "why": "Trim, crop, reframe to vertical, speed up dead air, pull a still."
-        },
-        {
-          "kind": "skill",
-          "id": "hyperframes-core",
-          "engines": [
-            "hyperframes"
-          ]
+          "why": "Probe, conform to VP9 at the project fps with dense keyframes, trim, crop, speed up, scrub."
         },
         {
           "kind": "skill",
@@ -1316,14 +1665,14 @@
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes",
+          "id": "three-camera",
           "engines": [
-            "hyperframes"
+            "three"
           ]
         },
         {
           "kind": "skill",
-          "id": "three-camera",
+          "id": "three-type",
           "engines": [
             "three"
           ]
@@ -1340,8 +1689,13 @@
         },
         {
           "kind": "capability",
+          "id": "web-research",
+          "why": "The real product's fonts, colours and logo for a rebuilt UI."
+        },
+        {
+          "kind": "capability",
           "id": "capture-frames",
-          "why": "Legibility of interface text is judged by looking at a frame."
+          "why": "Freezes and the legibility of interface text are judged on rendered frames."
         }
       ],
       "models": [
@@ -1353,12 +1707,13 @@
         }
       ],
       "triggers": [
-        "turn my screen recording into a video",
-        "crop this desktop capture to vertical",
-        "how do I record a good demo",
-        "build a phone frame around this video",
-        "I don't have a recording, can you fake the UI",
-        "speed up the boring part of this capture"
+        "turn my screen recording into footage for the video",
+        "crop this desktop capture to 1080x1920",
+        "how should I record a good product demo",
+        "build a phone frame around this clip",
+        "no recording, rebuild the app's UI in the video",
+        "speed up the boring part of this capture",
+        "the recording stutters or freezes in the render"
       ],
       "templates": [
         "prequel-launch",
@@ -1367,7 +1722,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🎬",
       "source": "first-party"
     },
@@ -1475,8 +1830,8 @@
     {
       "id": "stock-and-broll",
       "title": "Stock and b-roll",
-      "description": "Sourcing footage and stills that read as real rather than stock: what makes stock look like stock and the treatments that fix it, the sourcing order from the user's own material through connectors to generated, and how to prompt a video or image model for UGC-grade material (handheld, available light, imperfect framing, a real room). Load it when an ad needs cut-aways, a product shot or a staged still nobody has photographed.",
-      "summary": "Cut-aways that read as real: the sourcing order, the four treatments that fix stock, and how to prompt for UGC-grade footage.",
+      "description": "Sourcing cut-aways, product shots and staged stills that read as real rather than stock: the sourcing order from the user's own material through the brand's assets and stock connectors to generated, the licence and resolution checks before anything is used, the tells of stock and the four treatments that fix them (grade, crop, move, cut short) with ffmpeg and in-scene recipes, prompting image and video models for phone-grade material, and where a cut-away goes against the voice. Load it when an ad needs material nobody has shot.",
+      "summary": "Cut-aways that read as real: sourcing order, licence and resolution checks, grade-crop-move-cut, phone-grade prompts, placement on the word.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
@@ -1484,7 +1839,8 @@
         "stock",
         "footage",
         "prompting",
-        "grading"
+        "grading",
+        "licensing"
       ],
       "aspects": [
         "9:16",
@@ -1503,6 +1859,14 @@
       ],
       "requires": [
         {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "screen-capture"
+        },
+        {
           "kind": "mcp",
           "id": "freepik",
           "why": "Stock stills and short clips for environments and textures."
@@ -1519,23 +1883,9 @@
         },
         {
           "kind": "skill",
-          "id": "media-use",
-          "engines": [
-            "hyperframes"
-          ]
-        },
-        {
-          "kind": "skill",
           "id": "three-assets",
           "engines": [
             "three"
-          ]
-        },
-        {
-          "kind": "skill",
-          "id": "hyperframes-keyframes",
-          "engines": [
-            "hyperframes"
           ]
         },
         {
@@ -1559,6 +1909,16 @@
           "kind": "capability",
           "id": "capture-frames",
           "why": "Whether a shot reads as real is a judgement made by looking."
+        },
+        {
+          "kind": "capability",
+          "id": "web-research",
+          "why": "The brand's own photography and logo, and checking a stock licence."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Grade, trim and re-encode clips before a scene plays them."
         }
       ],
       "models": [
@@ -1585,30 +1945,32 @@
         "find me some b-roll for this ad",
         "this footage looks like stock",
         "generate a shot of someone struggling with this",
-        "what should I cut away to",
-        "make the generated footage look more real",
-        "I need a product shot"
+        "what should I cut away to during the voiceover",
+        "make the generated footage look like a phone shot",
+        "can I use this stock clip in an ad",
+        "I need a product shot nobody has taken"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🎞️",
       "source": "first-party"
     },
     {
       "id": "three-assets",
       "title": "Assets (Three.js)",
-      "description": "Bringing real material into Three.js scenes: logos (SVG drawn into a texture, or extruded from path data), product screenshots and photos on planes and device frames, screen recordings as video textures seeked per frame, and the audio that goes on the timeline instead of in a scene. Covers loading everything through the frame barrier so no frame ships untextured. Load it when a scene uses a logo, screenshot, photo, recording or any file from assets/.",
-      "summary": "Logos, screenshots, photos and screen recordings in Three.js scenes, loaded so no frame ships blank.",
+      "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played, copied through a canvas so it captures), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/.",
+      "summary": "Logos, screenshots, device frames, seeked footage and fonts in Three.js scenes, loaded so no frame ships blank.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
         "assets",
         "threejs",
         "logos",
-        "screenshots"
+        "screenshots",
+        "footage"
       ],
       "aspects": [
         "16:9",
@@ -1627,12 +1989,12 @@
         {
           "kind": "capability",
           "id": "save-asset",
-          "why": "Remote files come into assets/ before a scene uses them."
+          "why": "Remote files and fonts come into assets/ before a scene uses them."
         },
         {
           "kind": "capability",
           "id": "ffmpeg",
-          "why": "Trim a screen recording to the moment that matters."
+          "why": "Footage is trimmed and transcoded to WebM, and its audio extracted."
         },
         {
           "kind": "capability",
@@ -1642,7 +2004,7 @@
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "A blank or stretched texture only shows in a frame."
+          "why": "A blank, black or stretched texture only shows in a frame."
         }
       ],
       "models": [],
@@ -1651,27 +2013,39 @@
         "show this screenshot on a phone",
         "use my screen recording",
         "the image shows up blank",
+        "the video is black in the export",
+        "make our logo 3D",
         "add background music"
       ],
-      "templates": [],
+      "templates": [
+        "samsung-pay-fintech-app-launch-video",
+        "fintech-app-launch-video",
+        "p-doom-music-video",
+        "notchbrowser-app-launch-video",
+        "crypto-launch-video",
+        "moonlight-app-launch-video",
+        "types-of-databases",
+        "x-numbers-launch-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🖼️",
       "source": "first-party"
     },
     {
       "id": "three-camera",
-      "title": "Camera moves (Three.js)",
-      "description": "Camera language for Three.js scenes: push-ins, pull-backs, orbits, dolly-and-track, parallax layers, rack-focus by depth, path moves along a curve, and punch-in emphasis, each written as a pure function of the frame. Also how to frame a subject exactly for any aspect ratio and how to hand a camera move across a cut. Load it when a Three.js scene needs the camera to do something, or when a format skill asks for a punch-in, a zoom or a reframe.",
-      "summary": "Push-ins, orbits, path moves and punch-ins for Three.js scenes, framed exactly for any aspect.",
+      "title": "Camera (Three.js)",
+      "description": "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly.",
+      "summary": "Exact framing in px, house curves and spline, and push, punch, orbit, keyed paths and matched cuts on a real camera.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
         "camera",
         "threejs",
-        "motion"
+        "motion",
+        "framing"
       ],
       "aspects": [
         "16:9",
@@ -1691,6 +2065,13 @@
           "kind": "capability",
           "id": "capture-frames",
           "why": "A camera move is only checked by looking at its start, middle and end."
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "models": [],
@@ -1700,27 +2081,38 @@
         "fly the camera through the scene",
         "punch in on the key line",
         "the subject is too small in vertical",
-        "camera glides over the dashboard"
+        "the camera stops at every keyframe",
+        "zoom into the screen and cut to the app"
       ],
-      "templates": [],
+      "templates": [
+        "samsung-pay-fintech-app-launch-video",
+        "fintech-app-launch-video",
+        "p-doom-music-video",
+        "notchbrowser-app-launch-video",
+        "crypto-launch-video",
+        "moonlight-app-launch-video",
+        "types-of-databases",
+        "x-numbers-launch-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🎥",
       "source": "first-party"
     },
     {
       "id": "three-look",
       "title": "Look and lighting (Three.js)",
-      "description": "The look of a Three.js video: lighting setups (product, dramatic, soft, neon), backgrounds and fog, palettes with one accent, materials that read on camera, glow and grain built from planes and shaders, and how to keep the look consistent across scenes. Load it when a Three.js scene looks flat, muddy, dark or cheap, or when setting the visual direction for a new video.",
-      "summary": "Lighting setups, palettes, materials, glow and grain that make a Three.js video look finished.",
+      "description": "Building the look of a Three.js video: the colour pipeline (output colour space, which tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment built from core three so metal and gloss read, lighting setups with intensities (product, neon, dramatic, soft, flat), materials that read on camera, a clip-space backdrop with radial lift, grain and vignette, glows, fog, banding, and line art that draws on and erases. Load it when setting a film's look, or when a Three.js frame looks flat, muddy, washed out, banded or cheap.",
+      "summary": "Colour pipeline, studio environment, lights, materials, backdrops, glow, grain and line art that make a Three.js frame look finished.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
         "lighting",
         "threejs",
         "color",
+        "materials",
         "style"
       ],
       "aspects": [
@@ -1740,7 +2132,7 @@
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Lighting is judged by looking at frames."
+          "why": "Lighting and colour are judged by looking at frames."
         }
       ],
       "models": [],
@@ -1748,28 +2140,40 @@
         "it looks too dark",
         "make it look more premium",
         "the 3D looks flat and cheap",
+        "our brand colour looks washed out",
         "give it a neon look",
-        "match our brand colours"
+        "the metal looks black",
+        "make it look like a whiteboard drawing"
       ],
-      "templates": [],
+      "templates": [
+        "samsung-pay-fintech-app-launch-video",
+        "fintech-app-launch-video",
+        "p-doom-music-video",
+        "notchbrowser-app-launch-video",
+        "crypto-launch-video",
+        "moonlight-app-launch-video",
+        "types-of-databases",
+        "x-numbers-launch-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "💡",
       "source": "first-party"
     },
     {
       "id": "three-transitions",
       "title": "Transitions (Three.js)",
-      "description": "Getting from one Three.js scene to the next without a fade to black: handoff objects, match-cuts on shape and colour, camera carries, fill-the-frame wipes, iris and shutter masks built from planes, and shader dissolves with ShaderMaterial. Covers the timing contract on both sides of the cut and the transitions to avoid. Load it when a Three.js video has more than one scene, or when cuts feel abrupt.",
-      "summary": "Cut between Three.js scenes without fading to black: handoffs, wipes, match-cuts, dissolves.",
+      "description": "Building scene handoffs on Three.js, where nothing survives a cut and the renderer never cross-dissolves: one camera-locked cover layer for floods that become objects, irises, directional and bottom-up wipes, block wipes and flash-to-white; persisting elements re-created at the identical transform from shared constants; match-push and carries at speed; continuous loops on film time; rush into the lens; whips with real motion blur by sub-frame sampling. Covers the timing contract on both sides of a cut and how to check it. Load it when a Three.js video has more than one scene.",
+      "summary": "Flood, iris, wipe, block wipe, flash, persisting elements, match-push and motion-blurred whips between Three.js scenes.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
         "transitions",
         "threejs",
-        "editing"
+        "editing",
+        "handoff"
       ],
       "aspects": [
         "16:9",
@@ -1789,6 +2193,20 @@
           "kind": "capability",
           "id": "capture-frames",
           "why": "Each cut is checked on the frames either side of it."
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "models": [],
@@ -1796,28 +2214,41 @@
         "make the scenes flow into each other",
         "the cuts feel abrupt",
         "add a wipe between scenes",
+        "flood the screen with our colour into the next scene",
         "seamless transition between scenes",
-        "one continuous take feel"
+        "one continuous take feel",
+        "the colour flickers at the cut"
       ],
-      "templates": [],
+      "templates": [
+        "samsung-pay-fintech-app-launch-video",
+        "fintech-app-launch-video",
+        "p-doom-music-video",
+        "notchbrowser-app-launch-video",
+        "crypto-launch-video",
+        "moonlight-app-launch-video",
+        "types-of-databases",
+        "x-numbers-launch-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🔀",
       "source": "first-party"
     },
     {
       "id": "three-type",
       "title": "Type (Three.js)",
-      "description": "Typography in Three.js scenes: a shared label component, sizes that stay readable in every aspect ratio, word-by-word and line-by-line reveals, counters that tick to a number, highlight sweeps, captions, and a headline that survives a camera move. Load it whenever a Three.js scene puts words on screen: titles, taglines, stats, captions, calls to action.",
-      "summary": "Readable, consistent type in Three.js scenes: reveals, counters, highlights and captions.",
+      "description": "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a tabular rolling counter. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen.",
+      "summary": "Crisp canvas-texture type with real fonts, blur, tint and masks, plus every kinetic-type recipe, counters and captions.",
       "kind": "technique",
       "category": "Craft",
       "tags": [
         "typography",
         "threejs",
-        "text"
+        "text",
+        "kinetic-type",
+        "captions"
       ],
       "aspects": [
         "16:9",
@@ -1836,7 +2267,19 @@
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Legibility is a frame check."
+          "why": "Legibility and the right font are frame checks."
+        },
+        {
+          "kind": "capability",
+          "id": "save-asset",
+          "why": "Font files come into assets/ so the export draws the real face."
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language",
+          "engines": [
+            "three"
+          ]
         }
       ],
       "models": [],
@@ -1844,31 +2287,42 @@
         "animate the headline word by word",
         "count up to 10,000 users",
         "the text is blurry",
+        "the font is wrong in the export",
         "add captions to the video",
         "highlight the key word",
         "the title is too small on mobile"
       ],
-      "templates": [],
+      "templates": [
+        "samsung-pay-fintech-app-launch-video",
+        "fintech-app-launch-video",
+        "p-doom-music-video",
+        "notchbrowser-app-launch-video",
+        "crypto-launch-video",
+        "moonlight-app-launch-video",
+        "types-of-databases",
+        "x-numbers-launch-video"
+      ],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🔤",
       "source": "first-party"
     },
     {
       "id": "ugc-ad-foundations",
       "title": "UGC ad foundations",
-      "description": "The shared ground under every UGC ad: why creator-shot beats polished, the hook / body / CTA anatomy, the three-second rule and the retention numbers behind it, the visual codes that now read as an ad within half a second, platform specs and safe zones for TikTok, Reels, Shorts and Meta feed, the phone-shot frame presets, and the 3x3x3 variant matrix. Load it alongside any ugc-* format skill. Not a format on its own: pick one of those.",
-      "summary": "Hook, body, CTA. The three-second rule, platform safe zones, the phone-shot look, and the rules every UGC format inherits.",
+      "description": "The shared ground under every UGC-style social ad: the codes that read as an ad versus a person, hook / body / CTA anatomy with frame budgets per length, the one safe-zone and caption-position spec for 9:16, 4:5 and 1:1, the shared UGC numbers (change interval, VO budget, bed level, loudness), the four looks, hook variants, and the claims rules every format inherits. Load it with exactly one UGC format owner (screen demo, green screen, unboxing, problem-solution). Not a format on its own.",
+      "summary": "Shared ground for UGC ads: ad codes, hook/body/CTA in frames, one safe-zone spec, shared levels, looks, variants and claims.",
       "kind": "reference",
       "category": "UGC ads",
       "tags": [
         "ugc",
         "foundations",
-        "hook",
-        "retention",
-        "platform-specs"
+        "safe-zones",
+        "platform-specs",
+        "claims",
+        "social-ads"
       ],
       "aspects": [
         "9:16",
@@ -1887,6 +2341,18 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
           "id": "ugc-hooks"
         },
         {
@@ -1894,32 +2360,41 @@
           "id": "ugc-scripting"
         },
         {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "ad-qa"
+        },
+        {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "The five QA checks are all frame captures."
+          "why": "The hook frame and the safe zones are judged on captured frames."
         }
       ],
       "models": [],
       "triggers": [
-        "how do I make a UGC ad",
-        "what makes a TikTok ad work",
-        "what are the safe zones for reels",
-        "how long should my social ad be",
-        "why do my ads look like ads"
+        "what makes a TikTok ad not look like an ad",
+        "where can text go on a Reels or TikTok video",
+        "how long should a social ad be",
+        "UGC ad structure: hook, body, call to action",
+        "make our ads feel creator-made instead of polished",
+        "which claims can a UGC ad make"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "📐",
       "source": "first-party"
     },
     {
       "id": "ugc-craft",
       "title": "UGC craft",
-      "description": "The edit language of a short-form ad: jump-cut cadence and the breath trim, the b-roll cut-in rule, caption styles per platform and how to build them word by word, zoom punches on emphasis, the sound-design beats that hold retention, music choice and why trend audio does not survive an export, and the never-three-seconds-without-a-change rule. Load it when you are cutting and dressing an ad rather than planning one.",
-      "summary": "The edit language: cut cadence, the breath trim, captions, punch-ins, sound beats, and the three-second rule.",
+      "description": "The edit language of a short-form UGC ad, with one number for each move: the cadence table and the three-second rule, the breath trim and J/L cuts, the three named zoom moves (jump zoom, punch-in, focus push) and the one creep for stills, the canonical caption spec (grouping, size, stroke, position, timing, platform variants), the sound map with levels, music beds and trend audio, and the texture pass. Load it when cutting and dressing a UGC ad, or when one drags, feels flat or looks AI-made.",
+      "summary": "UGC edit language with one number per move: cadence, jump zoom, punch-in, focus push, the caption spec, cue levels and music.",
       "kind": "reference",
       "category": "UGC ads",
       "tags": [
@@ -1927,7 +2402,8 @@
         "editing",
         "captions",
         "sound-design",
-        "pacing"
+        "pacing",
+        "zoom"
       ],
       "aspects": [
         "9:16",
@@ -1949,14 +2425,46 @@
           "id": "ugc-ad-foundations"
         },
         {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
+        },
+        {
           "kind": "capability",
           "id": "sfx",
-          "why": "Every cut, click and caption card wants a sound."
+          "why": "Cuts, taps and the result each get one cue at a stated level."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A licensed or generated bed that sits at 0.12 under the voice."
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Trimming VO air and measuring the export's loudness."
         },
         {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Shot length and caption legibility are judged by looking."
+          "why": "Shot length, caption position and zoom targets are judged on frames."
         }
       ],
       "models": [
@@ -1964,36 +2472,37 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "Whoosh, click, tick, confirmation tone."
+          "note": "Swish, tap, soft pop, one confirmation tone."
         },
         {
           "purpose": "music",
-          "model": "Lyria",
-          "via": "mcp:replicate",
-          "note": "A bed, not a soundtrack. Cut to its transients."
+          "model": "ElevenLabs Music",
+          "via": "music",
+          "note": "Instrumental bed at a whole-frame tempo (100 or 120 BPM at 30 fps)."
         }
       ],
       "triggers": [
-        "this ad feels slow",
-        "add captions to my ad",
-        "how fast should I be cutting",
-        "the edit looks flat",
-        "what sound effects does this need",
-        "make it feel less AI generated"
+        "this ad drags, tighten the edit",
+        "add word-by-word captions to this ad",
+        "how big and where should the captions be",
+        "when should I zoom in on the speaker",
+        "the ad feels flat and looks AI-made",
+        "what sound effects should this ad have",
+        "how loud should the music be under the voice"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "✂️",
       "source": "first-party"
     },
     {
       "id": "ugc-green-screen",
       "title": "UGC green screen",
-      "description": "The commentary ad: a presenter cut out over a full-bleed source (a screenshot, an article, a tweet, a competitor's pricing page, a search result) reacting to it line by line. Covers the cutout layout and how much frame it may take, what makes a source worth reacting to, the annotation beat that turns a reaction into an argument, and how to build the whole thing with no real cutout at all, either a generated presenter with a background-removal treatment or presenter-free with a cursor and drawn marks carrying it. Load with ugc-ad-foundations.",
-      "summary": "Presenter cut out over a screenshot, article or competitor page, reacting to it line by line with drawn marks.",
+      "description": "The commentary ad: a presenter cut out over a full-bleed source (a competitor's pricing page, a review, a thread, a search result, a chart) reacting line by line, with drawn marks turning the reaction into an argument. Covers what makes a source worth reacting to, the layout inside the safe zone, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, mark timings to the word, the three presenter routes (the user's clip, a keyed generated still, or presenter-free with a cursor), the sound plan, and building it on Three.js.",
+      "summary": "Commentary ad: a presenter or cursor reacting to a readable source, one mark per claim on the word, the turn to your page.",
       "kind": "style",
       "category": "UGC ads",
       "tags": [
@@ -2019,7 +2528,34 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "ad-qa"
+        },
+        {
+          "kind": "skill",
           "id": "ugc-ad-foundations"
+        },
+        {
+          "kind": "skill",
+          "id": "three-camera",
+          "engines": [
+            "three"
+          ]
         },
         {
           "kind": "skill",
@@ -2072,10 +2608,20 @@
           "engines": [
             "three"
           ]
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Trims and keys a presenter clip or still into a cutout with alpha."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "A pop on each mark's landing frame and a swish on the turn."
         }
       ],
       "route": {
-        "deliverable": "A 10–45 second vertical ad with a presenter talking over a page, post or screenshot",
+        "deliverable": "A 10–45 second vertical ad reacting to a page, post or screenshot, with marks landing on the words",
         "inputs": [
           "url",
           "brief"
@@ -2091,48 +2637,57 @@
           "purpose": "lipsync",
           "model": "Sync 2 Pro",
           "via": "mcp:fal",
-          "note": "Drives a generated portrait. Shoot chest-up so the cutout crops cleanly."
+          "note": "Drives a keyed generated portrait in takes of four seconds or less."
         },
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
-          "via": "voiceover"
+          "via": "voiceover",
+          "note": "Conversational, mid-pace, no announcer lift."
         },
         {
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
           "via": "generate-image",
-          "note": "For the presenter still and any stand-in source."
+          "note": "Presenter on flat #00B140 green for keying, or a generic stand-in source."
+        },
+        {
+          "purpose": "sfx",
+          "model": "ElevenLabs SFX",
+          "via": "sfx",
+          "note": "Soft pop on each mark, one swish on the turn."
         }
       ],
       "triggers": [
         "react to this screenshot in an ad",
-        "green screen video over an article",
-        "make a video roasting a competitor's pricing page",
-        "commentary ad over a tweet",
-        "duet style reaction to this page"
+        "roast a competitor's pricing page in a video",
+        "commentary ad over a tweet or thread",
+        "green screen style video over an article",
+        "presenter pointing at a review in a TikTok ad",
+        "circle the price and react to it"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🟩",
       "source": "first-party"
     },
     {
       "id": "ugc-hooks",
       "title": "UGC hooks",
-      "description": "The hook library: the first three seconds of a UGC ad, where most of the outcome is decided. Carries the visual plus verbal plus rhythm triple, eight hook families with the audience temperature each one fits, how to realise a hook as frame zero in a composition, and a reference library of sixty-plus hook lines with their paired visuals. Load it whenever you are choosing or rewriting an opening. Not a format: pick one of the ugc-* style skills for that.",
-      "summary": "The first three seconds. Eight hook families, the visual plus verbal plus rhythm triple, and sixty-plus usable lines.",
+      "description": "The first 1.5 to 3 seconds of a UGC or social ad: the visual plus verbal plus rhythm triple, frame-zero rules with frame timings, eight hook families matched to audience temperature, how each family is built as the opening scene on any engine, hook variants (three openings on one body, built as swappable scenes), and a library of sixty-plus hook lines with their paired visuals. Load it whenever you write, choose or rewrite an opening, or the user says an ad starts slow.",
+      "summary": "The first 1.5–3 seconds: the visual, verbal and rhythm triple, eight families by temperature, swappable hook variants, sixty-plus lines.",
       "kind": "reference",
       "category": "UGC ads",
       "tags": [
         "ugc",
         "hooks",
-        "retention",
         "first-frame",
-        "copywriting"
+        "copywriting",
+        "variants",
+        "social-ads"
       ],
       "aspects": [
         "9:16",
@@ -2154,9 +2709,20 @@
           "id": "ugc-ad-foundations"
         },
         {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
           "kind": "capability",
           "id": "capture-frames",
-          "why": "Frame zero is judged by looking at it, not by reading the markup."
+          "why": "Frame 0, frame 6 and frame 15 are judged by looking at them."
         },
         {
           "kind": "capability",
@@ -2186,25 +2752,25 @@
       ],
       "triggers": [
         "my ad starts too slow",
-        "write me a hook for this ad",
-        "how do I stop the scroll",
+        "write a scroll-stopping hook for this ad",
         "give me three different openings to test",
         "the first three seconds are weak",
-        "best hooks for tiktok ads"
+        "what should the first frame of my TikTok be",
+        "make hook variants of this ad"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🪝",
       "source": "first-party"
     },
     {
       "id": "ugc-problem-solution",
       "title": "UGC problem and solution",
-      "description": "The PAS demo: open on the failure state with the product absent, agitate for no more than five seconds, turn, then demonstrate honestly and land on relief. The most reliable starting point for ecommerce and SaaS, and the format to default to when the brief does not name one. Covers the failure-state opening, how long agitation may run, the turn, the demonstration that has to be truthful, and the relief shot. Load with ugc-ad-foundations.",
-      "summary": "The PAS demo. Open on the failure state, agitate briefly, turn, demonstrate honestly, land on relief.",
+      "description": "The PAS ad and the default when a brief names a pain but no format: open on the failure state with the product absent, agitate one consequence for at most five seconds, turn on a hard cut with the sound dropping out, demonstrate honestly, and land on a relief shot that rhymes with frame zero. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds and the turn frame for each, hook options, the honest-demo rules, the sound plan, and building matched failure and relief frames on Three.js.",
+      "summary": "The PAS ad and the default: failure first with the product absent, one consequence, a hard turn by 7 s, an honest demo, a rhyming relief.",
       "kind": "style",
       "category": "UGC ads",
       "tags": [
@@ -2230,18 +2796,31 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "ad-qa"
+        },
+        {
+          "kind": "skill",
           "id": "ugc-ad-foundations"
         },
         {
           "kind": "skill",
           "id": "ugc-scripting"
-        },
-        {
-          "kind": "skill",
-          "id": "hyperframes-keyframes",
-          "engines": [
-            "hyperframes"
-          ]
         },
         {
           "kind": "skill",
@@ -2298,7 +2877,7 @@
         }
       ],
       "route": {
-        "deliverable": "A 10–45 second vertical ad: the pain, the product, the payoff",
+        "deliverable": "A 10–45 second vertical ad: the pain on screen, a hard turn, an honest demo, the relief",
         "inputs": [
           "brief"
         ],
@@ -2313,27 +2892,28 @@
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
           "via": "generate-image",
-          "note": "Prompt the pair together so geometry matches."
+          "note": "Prompt the failure and relief as a pair so framing and light match."
         },
         {
           "purpose": "voice",
           "model": "ElevenLabs v3",
           "via": "voiceover",
-          "note": "Tired, not performative, through the agitation."
+          "note": "Tired, not performative, through the problem; a small lift on the turn."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
-          "via": "sfx"
+          "via": "sfx",
+          "note": "The problem's own small sound, a swish, one resolving tone."
         }
       ],
       "triggers": [
-        "ad that shows the problem then my product",
-        "before and after style ad for my app",
-        "make an ad about the pain point we solve",
-        "standard tiktok ad for my product",
+        "ad that shows the pain point and then my product",
+        "make an ad about the problem we solve",
+        "standard TikTok ad for my product",
         "I don't know what format, just make me an ad",
-        "PAS script video"
+        "PAS script video for our product",
+        "problem, agitate, solve ad"
       ],
       "templates": [
         "gojiberry-launch-video"
@@ -2341,15 +2921,15 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🔁",
       "source": "first-party"
     },
     {
       "id": "ugc-screen-demo",
       "title": "UGC screen demo",
-      "description": "The faceless screen-recording ad: an app or website doing one satisfying thing, narrated over the top. The highest-converting UGC format for software, because for software the interface is the ad. Covers the one-satisfying-thing rule, device frame versus full-bleed, cursor choreography, punch-ins on the moment of value, how to get real footage when there is none, on-screen text reading speed, and the result-before-steps ordering. Load with ugc-ad-foundations.",
-      "summary": "Faceless app demo with voiceover. One satisfying action, result first, a cursor that acts, punch-ins on the payoff.",
+      "description": "The faceless screen-recording ad for software: an app or website doing one satisfying thing, result first, a cursor that acts, narrated flatly and cut tight for a vertical feed. Covers the one-thing rule, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, full-bleed versus device frame and how far to magnify the UI, cursor choreography in frames, focus pushes on the moment of value, UI reading times, the sound plan, and how to build it on Three.js from a recording or a rebuilt UI.",
+      "summary": "Faceless app ad: one satisfying action, result first, a cursor that acts, focus pushes on the payoff, beat sheets at 15/30/45 s.",
       "kind": "style",
       "category": "UGC ads",
       "tags": [
@@ -2377,18 +2957,31 @@
       "requires": [
         {
           "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "ad-qa"
+        },
+        {
+          "kind": "skill",
           "id": "ugc-ad-foundations"
         },
         {
           "kind": "skill",
           "id": "screen-capture"
-        },
-        {
-          "kind": "skill",
-          "id": "hyperframes-keyframes",
-          "engines": [
-            "hyperframes"
-          ]
         },
         {
           "kind": "skill",
@@ -2452,7 +3045,7 @@
         }
       ],
       "route": {
-        "deliverable": "An 8–45 second vertical ad where a creator demos the app on screen",
+        "deliverable": "An 8–45 second vertical ad of an app doing one thing, from a screen recording or a rebuilt UI",
         "inputs": [
           "screen-recording",
           "brief"
@@ -2468,13 +3061,19 @@
           "purpose": "voice",
           "model": "ElevenLabs v3",
           "via": "voiceover",
-          "note": "Pick a conversational voice, not a narrator."
+          "note": "A conversational voice, not a narrator; flat read."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "UI click, soft whoosh, confirmation tone."
+          "note": "UI click, typing ticks, soft swish, one success tone."
+        },
+        {
+          "purpose": "music",
+          "model": "ElevenLabs Music",
+          "via": "music",
+          "note": "Minimal instrumental bed at 100 or 120 BPM, sits at 0.12 under VO."
         },
         {
           "purpose": "image",
@@ -2484,12 +3083,12 @@
         }
       ],
       "triggers": [
-        "make an ad from a screen recording of my app",
-        "vertical demo video for my SaaS",
-        "show my product actually working in 15 seconds",
-        "faceless tiktok ad for a web app",
-        "turn this screencast into a tiktok",
-        "app demo with a voiceover, no face"
+        "turn my screen recording into a TikTok ad",
+        "vertical demo ad for my SaaS",
+        "show my app actually working in 15 seconds",
+        "faceless ad for a web app with a voiceover",
+        "make a Reels ad from this screencast",
+        "app demo ad with a cursor, no face"
       ],
       "templates": [
         "prequel-launch",
@@ -2498,23 +3097,23 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "🖥️",
       "source": "first-party"
     },
     {
       "id": "ugc-scripting",
       "title": "UGC scripting",
-      "description": "Writing the body and the CTA of a short-form ad: six script frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the shape and the audience each one fits, the word-count math that makes a script fit its runtime, CTA construction that reads as a recommendation rather than a pitch, and how to structure the narration as labeled, timed lines. Load it when you are writing the middle of an ad. The opening belongs to ugc-hooks.",
-      "summary": "Six script frameworks, the word-count math that makes a script fit, and CTAs that sound like a recommendation.",
+      "description": "Writing the body and CTA of a short-form ad: the word budget per runtime and per section, six frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the audience each fits, the body's rules, CTAs that read as a recommendation, writing for text-to-speech (numbers, acronyms and names as spoken), and narration written as timed, cue-segmented lines the picture can cut against. Load it when writing or fixing the middle and end of an ad; the opening belongs to ugc-hooks.",
+      "summary": "Body and CTA for short ads: word budgets, six frameworks, recommendation-shaped CTAs, TTS-ready wording and cue-timed lines.",
       "kind": "reference",
       "category": "UGC ads",
       "tags": [
         "ugc",
         "scripting",
         "copywriting",
+        "voiceover",
         "pas",
-        "aida",
         "cta"
       ],
       "aspects": [
@@ -2542,6 +3141,10 @@
           "id": "ugc-hooks"
         },
         {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
           "kind": "capability",
           "id": "pick-voice",
           "why": "One voice per project, chosen before the first line is generated."
@@ -2549,12 +3152,17 @@
         {
           "kind": "capability",
           "id": "voiceover",
-          "why": "Turns the written script into the narration track."
+          "why": "Turns the cue-segmented lines into narration clips with word timings."
+        },
+        {
+          "kind": "capability",
+          "id": "place-audio",
+          "why": "Each line goes on the VO track at its beat's start plus a few frames."
         },
         {
           "kind": "capability",
           "id": "project-overview",
-          "why": "Check the script's beats against where the picture actually cuts."
+          "why": "Check each line's length against where the picture actually cuts."
         }
       ],
       "models": [
@@ -2568,10 +3176,11 @@
       "triggers": [
         "write the script for this ad",
         "my script is too long for 30 seconds",
-        "what CTA should I use",
+        "what call to action should the ad end on",
         "turn this into a PAS script",
-        "how many words fit in a 15 second video",
-        "rewrite this so it sounds less like an ad"
+        "how many words fit in a 15 second ad",
+        "rewrite this so it sounds less like an ad",
+        "the voiceover mispronounces our numbers"
       ],
       "templates": [
         "gojiberry-launch-video"
@@ -2579,22 +3188,22 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "2.0.0",
       "icon": "✍️",
       "source": "first-party"
     },
     {
       "id": "ugc-unboxing",
       "title": "UGC unboxing",
-      "description": "The first-impression ad: a box opened on camera, hands in frame, the product revealed in stages. Covers the reveal choreography beat by beat, why the hands carry the shot and the face is optional, scale and packaging as the actual subject, the ASMR-adjacent sound design that holds retention, and what to do when there is no physical product (a software unboxing is the onboarding, and the script has to say so). Load with ugc-ad-foundations.",
-      "summary": "Hands, a box, a staged reveal. Scale and packaging as the subject, with sound doing most of the work.",
+      "description": "The first-impression ad: a box, hands in frame, the product revealed one layer per beat, with foley carrying the retention. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, the one-layer-per-beat rule, why hands beat a face, scale and packaging as the subject, a foley plan with levels and cuts on transients, the software version (an unboxing is the onboarding, and the script says so), and building the reveal from matched stills and camera moves on Three.js.",
+      "summary": "Hands, a box, one layer per beat, a breath before the reveal, foley cut on transients. Software unboxes as its onboarding.",
       "kind": "style",
       "category": "UGC ads",
       "tags": [
         "ugc",
         "unboxing",
         "reveal",
-        "asmr",
+        "foley",
         "first-impression"
       ],
       "aspects": [
@@ -2603,7 +3212,7 @@
       ],
       "duration": {
         "minSeconds": 8,
-        "maxSeconds": 40
+        "maxSeconds": 45
       },
       "engines": [
         "hyperframes",
@@ -2613,14 +3222,27 @@
       "requires": [
         {
           "kind": "skill",
-          "id": "ugc-ad-foundations"
+          "id": "direction"
         },
         {
           "kind": "skill",
-          "id": "hyperframes-keyframes",
-          "engines": [
-            "hyperframes"
-          ]
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-craft"
+        },
+        {
+          "kind": "skill",
+          "id": "ad-qa"
+        },
+        {
+          "kind": "skill",
+          "id": "ugc-ad-foundations"
         },
         {
           "kind": "skill",
@@ -2679,7 +3301,7 @@
         }
       ],
       "route": {
-        "deliverable": "An 8–40 second vertical ad that reveals a physical product stage by stage",
+        "deliverable": "An 8–45 second vertical ad that reveals a product one layer per beat, hands in frame",
         "inputs": [
           "brief"
         ],
@@ -2694,36 +3316,194 @@
           "purpose": "image",
           "model": "Gemini 2.5 Flash Image",
           "via": "generate-image",
-          "note": "Available light, a real surface, hands in frame."
+          "note": "Three matched stages: same surface, light and hand in every prompt."
         },
         {
           "purpose": "video",
           "model": "Veo 3.1",
           "via": "mcp:fal",
-          "note": "Short handheld clips of the reveal, if a connector is there."
+          "note": "Two-to-four-second handheld clips of the seal or the lift, if connected."
         },
         {
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "Tape peel, cardboard flex, paper rustle, a soft set-down."
+          "note": "Tape tear, cardboard slide, tissue crinkle, a soft set-down."
         }
       ],
       "triggers": [
         "unboxing video for my product",
-        "first impressions ad",
-        "show the packaging arriving",
-        "asmr unboxing tiktok",
-        "make an onboarding video that feels like an unboxing"
+        "first impressions ad with hands opening the box",
+        "what's in the box reveal for TikTok",
+        "packaging reveal video with satisfying sounds",
+        "make our onboarding feel like an unboxing"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "2.0.0",
+      "icon": "📦",
+      "source": "first-party"
+    },
+    {
+      "id": "video-editing",
+      "title": "Video editing: the user's own footage",
+      "description": "Editing footage the user supplies into a finished video: a podcast episode or clips from it, a talking-head video for YouTube, Shorts, TikTok, Reels or LinkedIn, a trailer or teaser cut from existing shots, a founder-and-product launch cut, or a fast Gen Z social edit. ffmpeg does the editorial (probe, transcript, paper edit, cut list, reframe, audio cleanup, conform), the project layers captions, titles, b-roll, zooms and the end card on top, and every cut, caption and loudness figure is measured before delivery.",
+      "summary": "Footage in, finished edit out: transcript, paper edit, ffmpeg cut and conform, captions and graphics on top, measured loudness.",
+      "kind": "workflow",
+      "category": "Editing",
+      "tags": [
+        "video-editing",
+        "footage",
+        "podcast",
+        "talking-head",
+        "trailer",
+        "captions",
+        "social-clips",
+        "ffmpeg"
+      ],
+      "aspects": [
+        "9:16",
+        "1:1",
+        "4:5",
+        "16:9"
+      ],
+      "duration": {
+        "minSeconds": 6,
+        "maxSeconds": 3600
+      },
+      "engines": [
+        "three",
+        "hyperframes",
+        "react"
+      ],
+      "requires": [
+        {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "stock-and-broll"
+        },
+        {
+          "kind": "skill",
+          "id": "three-type",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-assets",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "skill",
+          "id": "three-transitions",
+          "engines": [
+            "three"
+          ]
+        },
+        {
+          "kind": "capability",
+          "id": "ffmpeg",
+          "why": "Probe, cut, reframe, clean the audio, conform the edit and measure the export. The editorial lives here."
+        },
+        {
+          "kind": "capability",
+          "id": "transcribe",
+          "why": "Word timestamps drive the paper edit, filler removal and word-timed captions."
+        },
+        {
+          "kind": "capability",
+          "id": "save-asset",
+          "why": "Bring the user's footage, music and b-roll into assets/."
+        },
+        {
+          "kind": "capability",
+          "id": "place-audio",
+          "why": "The edit's dialogue, the music bed and every sound effect go on the timeline."
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "Check footage frames, caption placement and safe zones at every cut."
+        },
+        {
+          "kind": "capability",
+          "id": "validate",
+          "why": "Every scene that layers graphics over the footage must load."
+        },
+        {
+          "kind": "capability",
+          "id": "music",
+          "why": "A bed for clips, trailers and launch cuts, legally sourced."
+        },
+        {
+          "kind": "capability",
+          "id": "sfx",
+          "why": "Whooshes, pops and hits on cuts, captions and title cards."
+        }
+      ],
+      "route": {
+        "deliverable": "A finished edit of footage the user supplies: podcast episode or clips, talking-head video, trailer, launch cut or social edit",
+        "inputs": [
+          "footage",
+          "audio"
+        ],
+        "priority": 15,
+        "askFirst": [
+          "Where will it be posted (YouTube, TikTok/Reels/Shorts, LinkedIn, a podcast feed), so I know the aspect and length?",
+          "How long should the finished edit be, or how many clips do you want from it?",
+          "Which style: clean and professional, or fast and native to TikTok?"
+        ]
+      },
+      "models": [
+        {
+          "purpose": "music",
+          "model": "ElevenLabs Music",
+          "via": "mcp:elevenlabs",
+          "note": "Instrumental bed at an exact length; ask for a whole-frame BPM if you will cut to it."
+        },
+        {
+          "purpose": "sfx",
+          "model": "ElevenLabs SFX",
+          "via": "sfx",
+          "note": "Whoosh, pop, hit, riser. Describe the sound, not the picture."
+        }
+      ],
+      "triggers": [
+        "edit my podcast into clips",
+        "cut a trailer from this footage",
+        "turn my talking head video into a tiktok",
+        "edit my raw footage into a youtube video",
+        "remove the ums and long pauses from my video",
+        "make vertical shorts with captions from my long video",
+        "add word by word captions to my clip",
+        "cut our founder interview and product clips into one film",
+        "fast gen z style edit with zoom punches and sound effects",
+        "clean up and edit my interview footage"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
       "version": "1.0.0",
-      "icon": "📦",
+      "icon": "✂️",
       "source": "first-party"
     }
   ],
-  "revision": "0ef19d4f"
+  "revision": "75161423"
 }

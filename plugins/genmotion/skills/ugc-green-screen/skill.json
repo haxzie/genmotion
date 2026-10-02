@@ -1,8 +1,8 @@
 {
   "id": "ugc-green-screen",
   "title": "UGC green screen",
-  "description": "The commentary ad: a presenter cut out over a full-bleed source (a screenshot, an article, a tweet, a competitor's pricing page, a search result) reacting to it line by line. Covers the cutout layout and how much frame it may take, what makes a source worth reacting to, the annotation beat that turns a reaction into an argument, and how to build the whole thing with no real cutout at all, either a generated presenter with a background-removal treatment or presenter-free with a cursor and drawn marks carrying it. Load with ugc-ad-foundations.",
-  "summary": "Presenter cut out over a screenshot, article or competitor page, reacting to it line by line with drawn marks.",
+  "description": "The commentary ad: a presenter cut out over a full-bleed source (a competitor's pricing page, a review, a thread, a search result, a chart) reacting line by line, with drawn marks turning the reaction into an argument. Covers what makes a source worth reacting to, the layout inside the safe zone, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, mark timings to the word, the three presenter routes (the user's clip, a keyed generated still, or presenter-free with a cursor), the sound plan, and building it on Three.js.",
+  "summary": "Commentary ad: a presenter or cursor reacting to a readable source, one mark per claim on the word, the turn to your page.",
   "kind": "style",
   "category": "UGC ads",
   "tags": [
@@ -28,7 +28,34 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "ad-qa"
+    },
+    {
+      "kind": "skill",
       "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
     },
     {
       "kind": "skill",
@@ -81,10 +108,20 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trims and keys a presenter clip or still into a cutout with alpha."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "A pop on each mark's landing frame and a swish on the turn."
     }
   ],
   "route": {
-    "deliverable": "A 10–45 second vertical ad with a presenter talking over a page, post or screenshot",
+    "deliverable": "A 10–45 second vertical ad reacting to a page, post or screenshot, with marks landing on the words",
     "inputs": [
       "url",
       "brief"
@@ -100,31 +137,39 @@
       "purpose": "lipsync",
       "model": "Sync 2 Pro",
       "via": "mcp:fal",
-      "note": "Drives a generated portrait. Shoot chest-up so the cutout crops cleanly."
+      "note": "Drives a keyed generated portrait in takes of four seconds or less."
     },
     {
       "purpose": "voice",
       "model": "ElevenLabs v3",
-      "via": "voiceover"
+      "via": "voiceover",
+      "note": "Conversational, mid-pace, no announcer lift."
     },
     {
       "purpose": "image",
       "model": "Gemini 2.5 Flash Image",
       "via": "generate-image",
-      "note": "For the presenter still and any stand-in source."
+      "note": "Presenter on flat #00B140 green for keying, or a generic stand-in source."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "sfx",
+      "note": "Soft pop on each mark, one swish on the turn."
     }
   ],
   "triggers": [
     "react to this screenshot in an ad",
-    "green screen video over an article",
-    "make a video roasting a competitor's pricing page",
-    "commentary ad over a tweet",
-    "duet style reaction to this page"
+    "roast a competitor's pricing page in a video",
+    "commentary ad over a tweet or thread",
+    "green screen style video over an article",
+    "presenter pointing at a review in a TikTok ad",
+    "circle the price and react to it"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🟩"
 }

@@ -1,8 +1,8 @@
 {
   "id": "ad-qa",
   "title": "Ad QA",
-  "description": "The pre-ship review gate for a short-form ad: six tests run with frame captures (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished.",
-  "summary": "The six-test gate before an ad ships: first frame, mute, safe zones, captions, ad codes and claims.",
+  "description": "The pre-ship QA pass for a short-form or social ad, run on captured frames and the exported file: the exact frames to capture, eleven tests with pass criteria and fixes (hook frame, brand timing, mute, safe zones with a drawn overlay, captions, text size and contrast, pacing, CTA and ending, audio and loudness, ad codes, claims), then direction's critique rubric as the ship bar and a short report for the user. Every UGC owner ends here. Load it before telling anyone an ad is finished.",
+  "summary": "The pre-ship pass for a social ad: captures, eleven tests with fixes, loudness, claims, direction's rubric, and a short report.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
@@ -10,7 +10,8 @@
     "review",
     "checklist",
     "claims",
-    "safe-zones"
+    "safe-zones",
+    "loudness"
   ],
   "aspects": [
     "9:16",
@@ -30,37 +31,55 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
       "id": "ugc-ad-foundations"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Every one of the six tests is a frame you actually look at."
+      "why": "Every visual test is a frame you actually look at."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Loudness, silences, duration, the safe-zone overlay and the contact sheet."
     },
     {
       "kind": "capability",
       "id": "validate",
-      "why": "Run it first; a failing composition captures nothing useful."
+      "why": "Run it first; a failing scene captures nothing useful."
     },
     {
       "kind": "capability",
       "id": "project-overview",
-      "why": "The scene boundaries the captures are taken at."
+      "why": "Scene boundaries and audio clips the captures and cues are checked against."
     }
   ],
   "models": [],
   "triggers": [
     "check my ad before I post it",
     "is this ad ready to ship",
-    "review this video for problems",
-    "will this work on tiktok",
-    "did I get the safe zones right",
-    "check the claims in this script"
+    "review this social ad for problems",
+    "did I get the TikTok safe zones right",
+    "check the claims in this ad",
+    "is the ad loud enough for Reels",
+    "QA pass on this vertical video ad"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "✅"
 }

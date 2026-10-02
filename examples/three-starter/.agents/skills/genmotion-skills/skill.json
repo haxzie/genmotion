@@ -1,7 +1,7 @@
 {
   "id": "genmotion-skills",
   "title": "The GenMotion pack",
-  "description": "The router for GenMotion's creative pack: start here for any new video request. It picks the one skill that owns the video type (launch, feature announcement, milestone, explainer, brand sting, app store preview, walkthrough, UGC ad formats, or a freeform fallback), loads what that skill needs for this project's engine, and records the choice in VIDEO.md so later sessions resume instead of re-deciding. Creative direction for every engine; your project's own authoring rules still own how a scene gets built.",
+  "description": "The router for GenMotion's creative pack: start here for any new video request. It sends you through creative direction first, then picks the one skill that owns the video type (launch, feature announcement, milestone, explainer, brand sting, app store preview, walkthrough, UGC ad formats, editing the user's own footage, or a freeform fallback), loads what that skill needs for this project's engine, and records the choice in VIDEO.md so later sessions resume instead of re-deciding. Creative direction for every engine; your project's own authoring rules still own how a scene gets built.",
   "summary": "The router: picks the one skill that owns the video, loads what it needs, records the choice.",
   "kind": "reference",
   "category": "Craft",
@@ -39,6 +39,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icon": "🗺️"
 }

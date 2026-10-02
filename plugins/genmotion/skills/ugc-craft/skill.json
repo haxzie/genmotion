@@ -1,8 +1,8 @@
 {
   "id": "ugc-craft",
   "title": "UGC craft",
-  "description": "The edit language of a short-form ad: jump-cut cadence and the breath trim, the b-roll cut-in rule, caption styles per platform and how to build them word by word, zoom punches on emphasis, the sound-design beats that hold retention, music choice and why trend audio does not survive an export, and the never-three-seconds-without-a-change rule. Load it when you are cutting and dressing an ad rather than planning one.",
-  "summary": "The edit language: cut cadence, the breath trim, captions, punch-ins, sound beats, and the three-second rule.",
+  "description": "The edit language of a short-form UGC ad, with one number for each move: the cadence table and the three-second rule, the breath trim and J/L cuts, the three named zoom moves (jump zoom, punch-in, focus push) and the one creep for stills, the canonical caption spec (grouping, size, stroke, position, timing, platform variants), the sound map with levels, music beds and trend audio, and the texture pass. Load it when cutting and dressing a UGC ad, or when one drags, feels flat or looks AI-made.",
+  "summary": "UGC edit language with one number per move: cadence, jump zoom, punch-in, focus push, the caption spec, cue levels and music.",
   "kind": "reference",
   "category": "UGC ads",
   "tags": [
@@ -10,7 +10,8 @@
     "editing",
     "captions",
     "sound-design",
-    "pacing"
+    "pacing",
+    "zoom"
   ],
   "aspects": [
     "9:16",
@@ -32,14 +33,46 @@
       "id": "ugc-ad-foundations"
     },
     {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    },
+    {
       "kind": "capability",
       "id": "sfx",
-      "why": "Every cut, click and caption card wants a sound."
+      "why": "Cuts, taps and the result each get one cue at a stated level."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A licensed or generated bed that sits at 0.12 under the voice."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trimming VO air and measuring the export's loudness."
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Shot length and caption legibility are judged by looking."
+      "why": "Shot length, caption position and zoom targets are judged on frames."
     }
   ],
   "models": [
@@ -47,27 +80,28 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "Whoosh, click, tick, confirmation tone."
+      "note": "Swish, tap, soft pop, one confirmation tone."
     },
     {
       "purpose": "music",
-      "model": "Lyria",
-      "via": "mcp:replicate",
-      "note": "A bed, not a soundtrack. Cut to its transients."
+      "model": "ElevenLabs Music",
+      "via": "music",
+      "note": "Instrumental bed at a whole-frame tempo (100 or 120 BPM at 30 fps)."
     }
   ],
   "triggers": [
-    "this ad feels slow",
-    "add captions to my ad",
-    "how fast should I be cutting",
-    "the edit looks flat",
-    "what sound effects does this need",
-    "make it feel less AI generated"
+    "this ad drags, tighten the edit",
+    "add word-by-word captions to this ad",
+    "how big and where should the captions be",
+    "when should I zoom in on the speaker",
+    "the ad feels flat and looks AI-made",
+    "what sound effects should this ad have",
+    "how loud should the music be under the voice"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "✂️"
 }

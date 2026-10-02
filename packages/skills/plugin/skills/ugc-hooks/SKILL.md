@@ -77,7 +77,7 @@ Each UGC owner lists the families that suit its format; prefer those.
 
 The hook is its own scene, 45–90f (1.5–3 s), with nothing else in the film depending on its internals. That is what makes it swappable.
 
-- **Three.js** (default): the plate is a textured plane sized from real pixels or a video texture seeked per frame (`three-assets`); the hook line is canvas-texture planes per word in a camera-parented overlay so the punch-in moves the plate, not the text (`three-type`); the movement is a camera move (`three-camera`). Start the plate's creep at a non-zero progress so frame 0 is already moving.
+- **Three.js** (default): the plate is a textured plane sized from real pixels or a video texture seeked per frame (`three-assets`); the hook line is canvas-texture planes per word on the camera-locked overlay while the punch-in scales the plate, so the text never moves (`three-type`); the movement is a camera move (`three-camera`). Start the plate's creep at a non-zero progress so frame 0 is already moving.
 - **HyperFrames**: the hook is the first slot in the timeline; the plate is an `<img>` or `<video>` element, the line a timed element with a 4f tween, all on the seekable timeline.
 - **React**: `<TextAnimation>` with a hard effect for the line; the plate scaled with an `interpolate` on the frame.
 

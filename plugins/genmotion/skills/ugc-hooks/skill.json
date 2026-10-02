@@ -1,16 +1,17 @@
 {
   "id": "ugc-hooks",
   "title": "UGC hooks",
-  "description": "The hook library: the first three seconds of a UGC ad, where most of the outcome is decided. Carries the visual plus verbal plus rhythm triple, eight hook families with the audience temperature each one fits, how to realise a hook as frame zero in a composition, and a reference library of sixty-plus hook lines with their paired visuals. Load it whenever you are choosing or rewriting an opening. Not a format: pick one of the ugc-* style skills for that.",
-  "summary": "The first three seconds. Eight hook families, the visual plus verbal plus rhythm triple, and sixty-plus usable lines.",
+  "description": "The first 1.5 to 3 seconds of a UGC or social ad: the visual plus verbal plus rhythm triple, frame-zero rules with frame timings, eight hook families matched to audience temperature, how each family is built as the opening scene on any engine, hook variants (three openings on one body, built as swappable scenes), and a library of sixty-plus hook lines with their paired visuals. Load it whenever you write, choose or rewrite an opening, or the user says an ad starts slow.",
+  "summary": "The first 1.5–3 seconds: the visual, verbal and rhythm triple, eight families by temperature, swappable hook variants, sixty-plus lines.",
   "kind": "reference",
   "category": "UGC ads",
   "tags": [
     "ugc",
     "hooks",
-    "retention",
     "first-frame",
-    "copywriting"
+    "copywriting",
+    "variants",
+    "social-ads"
   ],
   "aspects": [
     "9:16",
@@ -32,9 +33,20 @@
       "id": "ugc-ad-foundations"
     },
     {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Frame zero is judged by looking at it, not by reading the markup."
+      "why": "Frame 0, frame 6 and frame 15 are judged by looking at them."
     },
     {
       "kind": "capability",
@@ -64,16 +76,16 @@
   ],
   "triggers": [
     "my ad starts too slow",
-    "write me a hook for this ad",
-    "how do I stop the scroll",
+    "write a scroll-stopping hook for this ad",
     "give me three different openings to test",
     "the first three seconds are weak",
-    "best hooks for tiktok ads"
+    "what should the first frame of my TikTok be",
+    "make hook variants of this ad"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🪝"
 }

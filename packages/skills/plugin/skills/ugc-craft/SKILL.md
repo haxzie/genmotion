@@ -47,7 +47,7 @@ Five skills used to define "punch-in" five ways. These are the only four moves a
 | **Focus push** | Push-in over **30f inOutCubic** to the zoom that puts the target's text at ≥34 px (typically 1.4–2.5×); hold while it is read; release over 24f or cut on the result | Moving the viewer to a UI element, a line in a source, a detail on the product | One per beat; the cursor and marks stay still while the camera moves |
 | **Creep** | +3% scale over the shot, inOutSine, plus an optional 4–7 px drift at 0.2–0.3 Hz | Keeping any still alive: a generated photo, a presenter cutout, a stock frame | One ambient behaviour per shot (`motion-language`) |
 
-Zoom interpolates in log space (`motion-language` → `references/easing.md`), centred on the target, not the frame centre. On Three.js every move is a camera dolly or an orthographic zoom on the shot's camera (`three-camera`), not a scale on the content; captions live in a camera-parented overlay so zooms never move them.
+Zoom interpolates in log space (`motion-language` → `references/easing.md`), centred on the target, not the frame centre. On Three.js a zoom on designed content is a camera dolly (`three-camera`); a zoom on a footage or screenshot plate scales the plate around the target (tested in `video-editing`'s `references/footage-in-scene.md`). Captions live on `three-camera`'s camera-locked overlay, re-fitted after any fov change, so zooms never move them. Never zoom an orthographic camera under captions: its zoom is part of the projection and scales the overlay with it.
 
 ## Captions: the one spec
 

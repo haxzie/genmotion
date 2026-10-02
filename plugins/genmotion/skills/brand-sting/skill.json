@@ -1,8 +1,8 @@
 {
   "id": "brand-sting",
   "title": "Brand sting",
-  "description": "The logo lockup, bumper or brand reveal: 2 to 8 seconds, no narration, no claim, just the mark arriving. Covers the three sting shapes (build, reveal, transform), why a sting is as much a sound design problem as a motion one, how long to hold the final lockup, and the transparent-background variant for use as an overlay elsewhere. Load it for a standalone bumper or when a launch video's own closing shot needs strengthening.",
-  "summary": "The logo bumper: build, reveal or transform, a held final lockup, and the sound that sells the hit.",
+  "description": "The logo sting, bumper, ident or brand reveal: 2 to 8 seconds, no narration, one mark arriving. Covers the three shapes (build, reveal, transform), the sting energy curve with the hit at 40 to 60 percent, frame budgets for 2, 3, 5 and 8 second stings, mark size and clear space, the landing ease and what may move after lock, house devices with timings, the riser-hit-button-tail sonic logo, loop and overlay variants with an honest note on alpha, and frame-exact checks. Load it for a logo animation, intro or outro bumper, or a stronger closing lockup.",
+  "summary": "The 2–8 s logo sting: build, reveal or transform, a hit on the lock frame, a held lockup, and loop and overlay versions.",
   "kind": "style",
   "category": "Brand",
   "tags": [
@@ -10,7 +10,9 @@
     "sting",
     "bumper",
     "brand",
-    "intro"
+    "intro",
+    "ident",
+    "sonic-logo"
   ],
   "aspects": [
     "16:9",
@@ -28,6 +30,18 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
       "kind": "capability",
       "id": "save-asset",
       "why": "The real logo file, never a redrawn one."
@@ -35,12 +49,27 @@
     {
       "kind": "capability",
       "id": "sfx",
-      "why": "The whoosh and the hit that sell the landing."
+      "why": "The riser, the impact on the lock frame and the tail."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A short tonal button, when the sonic logo is musical."
+    },
+    {
+      "kind": "capability",
+      "id": "web-research",
+      "why": "The brand's real colours and clear-space rules."
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "The final lockup frame is checked by looking at it exactly."
+      "why": "The lock frame and the held lockup are checked by looking at them exactly."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Keying the overlay version to alpha and checking the hit does not clip."
     },
     {
       "kind": "skill",
@@ -79,7 +108,7 @@
     }
   ],
   "route": {
-    "deliverable": "A 2–8 second logo reveal, bumper, or intro/outro tag with no narration",
+    "deliverable": "A 2–8 second logo sting, bumper or intro/outro tag with no narration: the mark locks on a hit and holds",
     "inputs": [
       "logo",
       "brief"
@@ -87,7 +116,8 @@
     "priority": 10,
     "askFirst": [
       "Do you have the logo file (SVG is best)?",
-      "Opaque background, or transparent to overlay on other footage?"
+      "Where is it used: before or after videos, as a loop, or over other footage?",
+      "Precise and calm, or playful with a little bounce?"
     ]
   },
   "models": [
@@ -95,24 +125,27 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "A rising build into one solid hit, optional short decay."
+      "note": "A riser into one solid hit, a short tonal button and a shimmer tail."
     }
   ],
   "triggers": [
+    "logo animation for our brand",
     "make a logo animation for our brand",
     "I need an intro bumper",
     "animate our logo reveal",
     "outro sting for our videos",
     "transparent logo animation for overlay",
-    "brand intro for our launch video"
+    "channel ident with a sound logo",
+    "looping logo for the event screen"
   ],
   "templates": [
     "genmotion-brand-grid",
-    "nike-brand-guide-video"
+    "nike-brand-guide-video",
+    "google-generative-ai"
   ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "✨"
 }

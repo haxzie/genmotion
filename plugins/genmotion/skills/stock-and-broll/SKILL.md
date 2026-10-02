@@ -1,87 +1,129 @@
 ---
 name: stock-and-broll
-description: "Sourcing footage and stills that read as real rather than stock: what makes stock look like stock and the treatments that fix it, the sourcing order from the user's own material through connectors to generated, and how to prompt a video or image model for UGC-grade material (handheld, available light, imperfect framing, a real room). Load it when an ad needs cut-aways, a product shot or a staged still nobody has photographed."
+description: "Sourcing cut-aways, product shots and staged stills that read as real rather than stock: the sourcing order from the user's own material through the brand's assets and stock connectors to generated, the licence and resolution checks before anything is used, the tells of stock and the four treatments that fix them (grade, crop, move, cut short) with ffmpeg and in-scene recipes, prompting image and video models for phone-grade material, and where a cut-away goes against the voice. Load it when an ad needs material nobody has shot."
 ---
 
 # Stock and b-roll
 
-The wrong cut-away is worse than no cut-away. A stock shot in a UGC ad is a code that says "ad" as loudly as a logo does.
+The wrong cut-away is worse than none. A stock shot in a UGC ad says "ad" as loudly as a logo does.
+
+Frames at 30 fps; positions on 1080×1920. Moves (creep, jump zoom) are defined in `ugc-craft`; clip preparation in `screen-capture`.
 
 ## When to use
 
-Load this when an ad needs material nobody has: cut-aways behind narration, a staged failure state, a product shot, an environment. Also when a user says finished footage "looks generic" or "looks like stock".
+- An ad or video needs material nobody has: cut-aways behind narration, a staged failure state, a product shot, an environment, a texture.
+- A user says footage "looks generic" or "looks like stock".
+- An owner's build notes say "generate the stills" (`ugc-problem-solution`, `ugc-unboxing`).
+
+Not for: the user's own long footage to be cut into a story (`video-editing`), real software on screen (`screen-capture`), a presenter (`ai-presenter`).
 
 ## The sourcing order
 
-Work down this list and stop at the first one that yields something usable.
+Work down the list and stop at the first one that yields something usable.
 
-1. **The user's own.** Always. A badly lit phone photo of the real thing beats a beautiful render of an imaginary one. Ask for it explicitly; people do not volunteer it. In with `save-asset`.
-2. **The real brand's own assets.** For a product ad, the product's own site has photography, and it is already on-brand. Research with `WebSearch` and `WebFetch`, pull with `save-asset`. Never redraw a logo; always fetch the real one.
-3. **A stock connector.** Freepik for stills and short clips. Good for environments and textures, bad for people.
-4. **Generated.** `generate-image` for stills, a video model through the fal or replicate connector for clips. Best for the staged, specific shots stock never has: a particular failure state, a particular desk, a particular moment.
+1. **The user's own.** A badly lit phone photo of the real thing beats a beautiful render of an imaginary one. Ask explicitly; people do not volunteer it. In with `save-asset`.
+2. **The brand's own assets.** The product's site and press kit have photography that is already on-brand. Find them with `web-research`, fetch with `save-asset`. Never redraw a logo; fetch the real one.
+3. **A stock connector** (`freepik`): good for environments and textures, weak for people.
+4. **Generated**: `generate-image` for stills; a video model through `fal` or `replicate` for 2–4 s clips. Best for the specific, staged shots stock never has: a particular failure, a particular desk, a particular moment.
+
+## Before anything is used: licence and resolution
+
+| Check | Pass | Why |
+| --- | --- | --- |
+| Licence | Commercial and advertising use allowed; not editorial-only; not NC; attribution text recorded if required | An ad is commercial use; editorial stock cannot sell anything |
+| Releases | Recognisable people and private property carry model/property releases (stock), or are generated | A face in an ad implies endorsement |
+| Marks | No third-party logo, readable sign, screen or packaging you cannot account for | A stray brand in frame is a claim you did not mean to make |
+| Resolution | After the crop to the canvas, the region kept is ≥1080 px wide for 9:16 (upscale ≤1.25×) | Upscaled stock goes soft on a phone, and soft reads as cheap |
+| Credit | A line in `VIDEO.md` for every non-user, non-generated file: source URL, creator, licence, attribution text | Same rule `sound-design` uses for audio |
+
+Video clips are trimmed and re-encoded per `screen-capture` (VP9 WebM at the project fps, a keyframe every 15 frames, a 0.5 s tail) before a scene plays them.
 
 ## What makes stock look like stock
 
-Every item here is a fix, not a complaint.
-
 | The tell | The fix |
 | --- | --- |
-| Even, soft, directionless light | Grade it: lift the contrast, cool or warm one end, let something clip |
-| Everything in frame, nothing cropped | Crop in hard. Cut off a corner, a hand, the top of a head |
-| A person smiling at a laptop | Do not use it. There is no fix. Cut to the screen instead |
-| Perfectly steady | Add a slow drift, 2 to 4 percent over the shot |
-| Held for four seconds | Hold it for one. Most stock survives a short cut and dies in a long one |
-| Clean, empty surfaces | Pick or generate a shot with clutter in it. Real desks have things on them |
-| The same colour temperature as the shot before | Let them mismatch slightly. Real footage does |
+| Even, soft, directionless light | Grade it: contrast up, one end warmer or cooler, let a highlight clip |
+| Everything in frame, nothing cropped | Crop hard: cut off a corner, a hand, the top of a head |
+| A person smiling at a laptop | Do not use it; there is no fix. Cut to the screen instead |
+| Perfectly steady | The creep: +3% scale over the shot plus a 4–7 px drift (`ugc-craft`) |
+| Held for four seconds | Hold it 30–60f. Stock survives a short cut and dies in a long one |
+| Clean, empty surfaces | Pick or generate a shot with clutter; real desks have things on them |
+| The same colour temperature as the shot before | Let it differ slightly; real footage does |
 
-The pattern: **grade it, crop it, move it, cut it short.** Any stock shot treated all four ways passes; any shot treated none of them does not.
+The pattern: **grade it, crop it, move it, cut it short.** A shot treated all four ways passes; a shot treated none of them does not.
 
-Photographic treatments, grades and LUTs are their own craft; check for this project's own grading guidance before hand-rolling a CSS filter.
+**Grading** with `ffmpeg`, in the same encode as the seek-safe master (a warm, slightly crushed phone look, light grain baked in):
 
-## Prompting for UGC-grade material
+```
+ffmpeg -t 3 -i assets/broll.mp4 -vf "fps=30,colortemperature=temperature=5200,eq=contrast=1.08:saturation=0.9:gamma=0.97,vignette=PI/5,noise=alls=6:allf=t,format=yuv420p,tpad=stop_mode=clone:stop_duration=0.5" -c:v libvpx-vp9 -b:v 0 -crf 28 -g 15 -keyint_min 15 -row-mt 1 -deadline good -cpu-used 4 -an assets/broll-graded.webm
+```
 
-Generated footage defaults to cinematic, which is exactly wrong here. You have to prompt against the model's instinct.
+Or in the scene: on Three.js a grade in the plane's material (a shader multiplying a warm tint and a contrast curve) or the film's look pass (`three-look`); on HyperFrames or React a filter on the clip's wrapper. Grain in-scene comes from a seeded noise texture per frame, never randomness.
 
-**For a video model** (Veo 3.1 or Kling v3 through the fal or replicate connector), the elements that matter, in order:
+## Prompting for phone-grade material
 
-- **The camera**: "handheld phone video", "slight camera shake", "vertical", "shot on an iPhone". Say it first; it sets everything else.
-- **The light**: "available light", "window light from the left", "overhead kitchen light", "slightly underexposed". Never "cinematic lighting", never "golden hour".
-- **The framing**: "off-centre", "the subject slightly cropped", "casual framing". Never "perfectly composed".
-- **The room**: name a real messy place. "A cluttered home desk with a cold coffee and cables". Specificity is what stops it generating a stock image.
-- **The action**: one thing, already in progress. "Hands already mid-gesture", not "a person begins to".
-- **What to avoid**: "no text, no logos, no watermark, not cinematic, no lens flare, no slow motion".
+Generated footage defaults to cinematic, which is exactly wrong here. Prompt against the model's instinct, in this order:
 
-A worked example:
+1. **The camera**: "handheld vertical phone video, slight camera shake" (for a still: "phone photo"). It sets everything else.
+2. **The light**: "available light", "window light from the left", "overhead kitchen light, slightly underexposed". Never "cinematic lighting" or "golden hour".
+3. **The framing**: "off-centre", "the subject slightly cropped", "casual framing".
+4. **The room**: a real, specific, untidy place: "a cluttered home desk with a cold coffee and cables".
+5. **The action**: one thing already in progress: "hands mid-gesture", never "a person begins to".
+6. **Exclusions**: "no text, no logos, no watermark, not cinematic, no lens flare, no slow motion".
 
-> Handheld vertical phone video, slight shake. A cluttered home desk under overhead light, slightly underexposed. Hands mid-gesture over a laptop trackpad, the laptop screen bright and off-centre in frame, a cold mug and a tangle of cables beside it. Casual framing, the top of the laptop cropped. Not cinematic, no lens flare, no slow motion, no text, no logos.
+> Handheld vertical phone video, slight shake. A cluttered home desk under overhead light, slightly underexposed. Hands mid-gesture over a laptop trackpad, the screen bright and off-centre, a cold mug and a tangle of cables beside it. Casual framing, the top of the laptop cropped. Not cinematic, no lens flare, no slow motion, no text, no logos.
 
-**For a still** through `generate-image`, the same list applies with the camera line becoming "phone photo, available light". Add the composition and palette; leave out anything that implies a studio.
+- **A matched set** (failure and relief, three unboxing stages): the same surface, light direction, hand and camera height in every prompt, and the same seed when the model takes one.
+- **A product shot** is the exception: a clean shot of the product itself is expected. The phone-grade codes apply to the environment around it.
+- **Clips**: ask for 4–5 s and use 1–2; the first and last second of a generated clip are often the weakest.
 
-**For a product shot**, the exception: a clean shot of the product itself is fine and expected. The UGC codes apply to the environment around it, not to the object.
+## Placement against the voice
 
-## Length and placement
+- **30–60f (1–2 s).** A cut-away is a break in the picture, not a scene.
+- **On a stressed word**: the cut-away lands 3–6f after the word that names it starts (the voice motivates the cut), never in a pause, which reads as running out of footage.
+- **Back before the sentence ends**: the voice continues over the cut-away and returns to the main shot on its own words (an L cut, `ugc-craft`).
+- **Often enough**: in a talking or presenter-led ad, at least one cut-away per 15–20 s of continuous speech, inside `ugc-craft`'s three-second rule for a change on screen.
 
-- **One to two seconds.** A cut-away is a break in the visual, not a scene.
-- **On a stressed word**, not between sentences. Cutting away on emphasis reads as deliberate; cutting away on a pause reads as running out of footage.
-- **Back to the main shot before the sentence ends.** The cut-away must not become the shot.
-- **One cut-away per 15 to 20 seconds of speech**, minimum. `ugc-craft` has the cadence.
+## Cut-aways that usually work
+
+In order of preference, for a line in the VO:
+
+| The VO says | Cut away to |
+| --- | --- |
+| A thing (a product, a feature, a place) | That thing, literally: the product in a hand, the UI element, the place |
+| A consequence ("I missed the flight") | The evidence of it: the departures board, the empty gate |
+| A number the user supplied | The number as type, full frame, on the word |
+| A feeling ("finally") | Hands doing the relieved action, never a face acting relief |
+| Time passing | The same frame later: the mug empty, the light changed |
+
+## Building it
+
+- **Three.js** (default): stills and clips are planes sized from their real pixels (`three-assets`), clips seeked per frame and never played; the creep is a camera dolly (`three-camera`); crops are the camera's framing or UV offsets on the plane.
+- **HyperFrames / React**: `<img>` or `<video>` in a wrapper the timeline scales; crops as the wrapper's bounds.
+
+## Good and bad
+
+- **Bad**: a smiling team around a laptop, held 4 s. **Good**: a 45f graded close-up of hands on a trackpad, cropped through the laptop lid, cut on "late".
+- **Bad**: a generated "cinematic office, golden hour" frame. **Good**: "phone photo, overhead light, a cluttered desk, slightly underexposed".
+- **Bad**: an editorial-only stock clip in a paid ad. **Good**: a commercial-licence clip, credited in `VIDEO.md`, or a generated one.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| The user's own material | `save-asset` | Ask for it before generating anything. It is usually there. |
-| Stock stills and clips | The `freepik` connector | Generate instead, which for staged shots is better anyway. |
-| Generated video clips | The `fal` or `replicate` connector | Generated stills with a slow move on them. At one to two seconds a moving still is indistinguishable from a clip. |
-| Generated stills | `generate-image` | Typography cut-aways. A full-frame line of text is legitimate b-roll. |
-| Brand imagery and logos | `WebSearch`, `WebFetch`, `save-asset` | Ask. Never redraw a logo, never guess a brand colour. |
-| Grades and treatments | This project's own grading guidance, if it has one | A restrained CSS filter on the clip's wrapper. |
+| The user's material | `save-asset` | Ask before generating anything |
+| Brand imagery and logos | `web-research`, `save-asset` | Ask. Never redraw a logo or guess a brand colour |
+| Stock | The `freepik` connector | Generate instead; for staged shots it is better anyway |
+| Generated clips | A video model through `fal` or `replicate` | Generated stills with a creep: at 1–2 s a moving still reads as a clip |
+| Generated stills | `generate-image` | Typography cut-aways: a full-frame line of text is legitimate b-roll |
+| Grading, trimming, re-encoding | `ffmpeg` | Grade in the scene's material or wrapper |
 
 ## Checks before you finish
 
-1. `capture-frames` on every cut-away. Would you believe a person shot it on a phone?
-2. Check each one for a logo, a watermark, a readable sign or a face you cannot account for.
-3. Count the cut-away durations. Anything over two seconds is a shot, not a cut-away. Justify it or trim it.
-4. Compare a cut-away against the shot before it. If they match perfectly in colour and light, break the match.
-5. No generated person is presented as a real customer, employee or expert.
-6. This project's own check tool (`validate`).
+1. Every cut-away has a credit line or is the user's or generated; no licence is editorial-only or NC.
+2. `capture-frames` on every cut-away: no stray logo, readable sign, watermark or unaccounted-for face; it would pass for a phone shot.
+3. Every cut-away lasts 30–60f (longer only with a reason written in `VIDEO.md`) and lands 3–6f after its word starts.
+4. The region kept after the crop is ≥1080 px wide (probe the source with `ffprobe` and do the crop arithmetic).
+5. Compare each cut-away with the shot before it: not a perfect match in colour and light.
+6. No generated person is presented as a real customer, employee or expert.
+7. `validate` passes.

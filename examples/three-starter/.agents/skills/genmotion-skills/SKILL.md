@@ -1,11 +1,11 @@
 ---
 name: genmotion-skills
-description: "The router for GenMotion's creative pack: start here for any new video request. It picks the one skill that owns the video type (launch, feature announcement, milestone, explainer, brand sting, app store preview, walkthrough, UGC ad formats, or a freeform fallback), loads what that skill needs for this project's engine, and records the choice in VIDEO.md so later sessions resume instead of re-deciding. Creative direction for every engine; your project's own authoring rules still own how a scene gets built."
+description: "The router for GenMotion's creative pack: start here for any new video request. It sends you through creative direction first, then picks the one skill that owns the video type (launch, feature announcement, milestone, explainer, brand sting, app store preview, walkthrough, UGC ad formats, editing the user's own footage, or a freeform fallback), loads what that skill needs for this project's engine, and records the choice in VIDEO.md so later sessions resume instead of re-deciding. Creative direction for every engine; your project's own authoring rules still own how a scene gets built."
 ---
 
-# The GenMotion pack: pick one skill, then build
+# The GenMotion pack: direct, pick one skill, then build
 
-This pack says **what the video should be**: the format, the beat sheet, the hook, the shot list. Your project's own authoring rules (its AGENTS.md) say how a scene is built. This skill is the router between the two.
+This pack says **what the video should be**: the idea, the format, the beat sheet, the motion and the sound. Your project's own authoring rules (its AGENTS.md) say how a scene is built. This skill is the router between the two.
 
 ## When to use
 
@@ -17,18 +17,22 @@ Skip it for a small edit to an existing video ("make the logo bigger"). Just do 
 
 ## Step 0: is there already a decision?
 
-If the project has a `VIDEO.md`, read it. Its `skill:` line is the decision: load that skill and continue where the file says. Do not re-route an existing video unless the user asks for a different kind of video.
+If the project has a `VIDEO.md`, read it. Its `skill:` line is the decision and its `## Direction` block is the brief: load that skill and continue where the file says. Do not re-route or re-direct an existing video unless the user asks for a different kind of video.
 
-## Step 1: search
+## Step 1: read `direction`
+
+Read `direction` before choosing anything. Its Part A turns the request into a proposition, an audience and placement, and an idea, and asks only the few questions that change them; that is what makes the owner choice below a real decision. After you pick the owner, its Part B writes the `## Direction` block and the timed beat table into `VIDEO.md`.
+
+## Step 2: search
 
 Run `search-skills` with the user's own words. Each result shows its kind, its **deliverable** (what the user ends up with), the questions it asks first, and which of its needs this setup has.
 
-## Step 2: pick exactly one owner
+## Step 3: pick exactly one owner
 
 Only `workflow` and `style` skills own a video. Pick one:
 
 1. **Match the deliverable, not a word in passing.** "A launch video with a logo sting at the end" is a launch (`launch-playbook`), not a sting. "A TikTok ad for our app" is a UGC format, not an app store preview.
-2. **Inputs break ties.** A screen recording points toward `ugc-screen-demo`, `app-store-preview` or `demo-walkthrough`; a single number toward `announce-milestone`; a concept to explain toward `explainer`.
+2. **Inputs break ties.** Footage the user shot (a podcast, a talking head, a clip to cut into a trailer or social edit) points to `video-editing`; a screen recording toward `ugc-screen-demo`, `app-store-preview` or `demo-walkthrough`; a single number toward `announce-milestone`; a concept to explain toward `explainer`.
 3. **Still tied? Lower `priority` wins.** It ranks the more specific format above the more general one.
 4. **Nothing fits?** `freeform-video`. Never stitch two owners together; borrow a shot list from a second skill by name if you must.
 
@@ -42,42 +46,45 @@ Only `workflow` and `style` skills own a video. Pick one:
 | `launch-playbook` | A product launch film |
 | `ugc-screen-demo`, `ugc-green-screen`, `ugc-unboxing`, `ugc-problem-solution` | Vertical social ad formats |
 | `explainer` | A concept, process, comparison or number, explained |
+| `video-editing` | The user's own footage edited: podcast clip, talking head, trailer, social cut |
 | `freeform-video` | Anything else |
 
-## Step 3: ask only what's missing
+## Step 4: ask only what's missing
 
-Each owner lists up to three `askFirst` questions. Ask only the ones the request hasn't answered, all in one message. If the user said "just make it", choose sensible defaults and say what you chose.
+Each owner lists up to three `askFirst` questions; `direction` may already have asked some. Ask only what neither the request nor an earlier answer settled, all in one message. If the user said "just make it", choose sensible defaults and say what you chose, keeping what they told you apart from what you assumed.
 
-## Step 4: record the decision
+## Step 5: record the decision
 
-Write `VIDEO.md` at the project root:
+Write `VIDEO.md` at the project root, then let `direction` fill in its blocks:
 
 ```markdown
 ---
 skill: launch-playbook
 aspect: "16:9"
-length: 45s
+length: 30s
 ---
-# Message
-One sentence the video says.
+## Direction
+SMP: One sentence the video says.
+...
 
-# Beats
-1. ...
+## Beats
+| # | Frames | Job | Focal point | On screen | VO | Energy | Out | Sound cue |
 ```
 
-It is short on purpose: the owner skill's own plan (shot list, script) goes in the body as you build. A later session reads this file in Step 0.
+The owner skill's own plan (shot list, script, cue sheet) goes in the body as you build. A later session reads this file in Step 0.
 
-## Step 5: load what the owner needs
+## Step 6: load what the owner needs
 
 Read the owner skill fully. Then load its `requires` that apply to this project's engine:
 
+- **Always**: `motion-language` (entrances, exits, easing, camera, handoffs) before the first scene, and `sound-design` (music, effects, VO mix, loudness) before placing any audio.
 - **Foundations** for ads: `ugc-ad-foundations`, then `ugc-hooks`, `ugc-scripting` or `ugc-craft` when the owner says so.
 - **Techniques**, cross-cutting: `screen-capture`, `ai-presenter`, `stock-and-broll`, `ad-qa`.
 - **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them.
 
 ## Capabilities, not tools
 
-Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `search-skills`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.
+Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `music`, `place-audio`, `transcribe`, `search-skills`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.
 
 ## Requirements
 
@@ -85,7 +92,7 @@ Nothing. This skill is the map.
 
 ## Checks before you finish
 
-- `VIDEO.md` names the owner skill, and the video matches its length and aspect.
+- `VIDEO.md` names the owner skill, has a `## Direction` block and a beat table, and the video matches its length and aspect.
 - `validate` passes.
 - `capture-frames` on the first frame and on each scene you touched, and you looked at them.
-- The owner skill's own checklist ran, not just this one.
+- The owner skill's own checklist ran, and so did the self-critique in `direction`.

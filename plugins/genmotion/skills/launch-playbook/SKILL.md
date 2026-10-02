@@ -1,117 +1,163 @@
 ---
 name: launch-playbook
-description: "The creative layer above your project's own launch build pipeline: five story shapes for a launch (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, 30 / 60 / 90 second beat sheets for each, the muted-playback and first-five-seconds rules, where social proof goes, and cut variants for Product Hunt, X, YouTube and LinkedIn. Load it when the ask is a product, feature or company launch video. It owns the story, not the pipeline: hand off to your project's own build pipeline for capture, asset staging and the build steps."
+description: "The product launch film, 15 to 90 seconds: five story shapes (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, the launch energy curve with the reveal at 25 to 30 percent, frame-budgeted beat sheets for 15, 30, 45 and 60 seconds with VO word budgets, the reveal and hero-shot craft measured from GenMotion's launch templates, the music or VO sound plan, social proof rules and recuts per destination. Load it for a product, app or company launch video."
 ---
 
 # Launch playbook
 
-A launch video has one job: make the thing look inevitable in under ninety seconds. This is the creative direction for that. Your project's own build pipeline, whatever it is for this engine, still owns capture, asset staging and the render; read this first to decide what the video says, then hand off to it.
+A launch film has one job: make the product look inevitable. The viewer should know what it is by the second beat, see it working by the third, and remember one moment from it. This skill is the format's structure; `direction` decides the film's proposition, idea and style family first, `motion-language` supplies every move's timing, and `sound-design` the mix. Frames are at 30 fps.
 
 ## When to use
 
-Load this for a product, feature-set or company launch, a funding announcement's bigger sibling, or a "make our homepage into a video" ask where the intent is promotional rather than a plain site tour.
+- A product, app, feature-set or company launch: "launch video for my new app", "Product Hunt video", "promo for our SaaS launch", "turn our homepage into a launch film".
+- A funding announcement that is mostly about the product (if it is mostly about the number, use `announce-milestone`).
 
-Not this skill: a single feature drop (`announce-feature`), a number going up (`announce-milestone`), a logo on its own (`brand-sting`), a store preview (`app-store-preview`), or a long-form tour (`demo-walkthrough`).
+Another owner fits better when:
 
-## The five shapes
+| The ask is really | Owner |
+| --- | --- |
+| One feature shipped to existing users | `announce-feature` |
+| A number going up, no product to demo | `announce-milestone` |
+| Only the logo, 2–8 s | `brand-sting` |
+| A store listing preview | `app-store-preview` |
+| A 1–3 minute tour of one workflow | `demo-walkthrough` |
+| Cutting the user's own footage (founder on camera, event clips) | `video-editing` |
+| A vertical paid social ad | the `ugc-*` owners |
 
-Pick one. Do not blend two; a launch video that tries to be a manifesto and a demo reel loses both.
+## Ask first (only what changes the film)
 
-| Shape | Opens on | Wins when | Exemplar |
+1. **What is the product, and the one thing it does that the alternative can't?** This becomes the proposition. Offer your best guess from their site.
+2. **Where does it run first, and with sound?** Landing page or keynote (16:9, sound on) and feed (muted, 1:1, 4:5 or 9:16) are different films, not recrops.
+3. **What real material is there?** Screens or a recording, a logo file, a true number. It decides the style family and whether metric-first is possible.
+
+Everything else (length, music, voice, palette) you choose and state under "I assumed".
+
+## Pick the shape
+
+Pick one. A film that is half manifesto, half demo reel loses both.
+
+| Shape | Opens on | Wins when | House exemplar |
 | --- | --- | --- | --- |
-| **Problem-first** | The failure state, no product in sight | The problem is universal and the audience feels it immediately | `gojiberry-launch-video`: the cold DM nobody answers |
-| **Demo-first** | The product already working | The product is the pitch; watching it is more convincing than being told about it | `notion-launch-video`, `codex-launch-video` |
-| **Manifesto** | A claim about how things should be | The category is crowded and the differentiation is a point of view, not a feature | `dont-blink-gpt-6-astra`: kinetic type, no UI at all until late |
-| **Metric-first** | A number that should surprise the viewer | You have a genuinely startling number and it is true | `github-star-announcement`, `lovable-funding-announcement` |
-| **Category-creation** | A reframe of what kind of product this even is | Nobody has a name for the thing yet, so the video has to give them one | `google-generative-ai`: a ring of tiles becomes a headline before any product shot |
+| **Problem-first** | The failure state, no product in sight | The pain is universal and instantly felt | Gojiberry launch (the cold DM nobody answers), ElevenLabs voice-AI launch (phones ringing, no one picks up) |
+| **Demo-first** | The product already working | Watching it is more convincing than any claim | Codex launch (speak → it builds), Notion dock, Claude MCP launch, Prequel launch |
+| **Manifesto** | The sharpest line of a point of view | A crowded category where the difference is a stance | "Don't Blink" GPT-6 film: kinetic type, no UI |
+| **Metric-first** | A true, surprising number already moving | The number is real, recent and the strongest asset | Lovable funding (idea → apps → wall → "$400M") |
+| **Category-creation** | A reframe: what kind of thing this even is | Nobody has a word for it yet | Google generative AI (a ring of tiles becomes the headline) |
 
-Selection rule: if the product's demo is visually strong on its own, demo-first. If the problem is more relatable than the product is impressive, problem-first. If there is a real number worth leading with, metric-first beats both. Manifesto and category-creation are higher-risk, higher-ceiling: use them only when the brief explicitly wants a point of view over a walkthrough.
+Rule: if the demo is visually strong on its own, demo-first. If the problem is more relatable than the product is impressive, problem-first. A real, startling number beats both. Manifesto and category-creation are high-risk, high-ceiling; use them when the user asks for a point of view or there is no UI to show. `references/shapes.md` has each shape's beat-by-beat adaptation and the 90-second structure.
 
-## The first five seconds
+## Direction defaults for a launch
 
-Every shape shares this. Lead with the most impressive moment the material has, not a wind-up.
+Write these into the Direction block in `VIDEO.md` (`direction` Step 4–9) unless the material says otherwise.
 
-**Never open with:** a logo animation, "Hi, I'm ___ and today I want to show you...", a black screen with text, a mission statement, a feature list.
-
-**Always open with:** the product already doing something, a transformation already mid-way (split screen, before state already visible), a number already moving, or the sharpest line of the manifesto, said or shown immediately.
-
-Design for mute. Product Hunt and most feed placements autoplay muted; if the first five seconds do not communicate value with the sound off, the video has already lost most of its viewers.
+- **Style family**: B (soft-light SaaS) for app or web UI; C (3D product hero) for consumer, fintech or physical-feeling products and when the project should look like Three.js; A (beat-cut kinetic type) for manifesto and when there is only copy and a logo; D (one-shot camera film) for a desktop or phone journey; I as a closing borrow for a brand-led company launch.
+- **Energy curve**: quiet tease (3) → build (5) → **reveal (9) at 25–30% of the length** → feature cascade (6–8, a micro-peak per feature) → hero + name (8) → end card (3). A 10–30f breath before the reveal: stillness, a music dropout, or black.
+- **Pacing**: Medium (new information every 30–50f) for VO-led films; High (18–30f) in the feature cascade and for music-led films; Hyper (8–14f) only for an A-family montage passage.
+- **Transitions**: signature from the reveal device (flood becomes object, iris from the clicked button, rush into the lens, match-push into the UI); workhorse persisting element (B, C) or exit-then-cut (VO-led). Hard cuts only on the beat. One direction of travel, left to right.
+- **Sound**: music-led (track at 1.0, or 0.5–0.6 under SFX) when there is no VO; VO-led with a bed at 0.18 (−15 dB) otherwise. 110–128 BPM build-and-drop with the drop on the reveal; ask for 120 BPM (15f per beat, 60f per bar) so the grid sits on frames. Sonic logo on the mark.
+- **Memorable moment**: the reveal, built from the idea: the send button floods the frame and contracts into the product; the camera pushes through the phone into the UI; "Introducing" deletes itself and types the name; the headline slams out of the lens.
 
 ## Beat sheets
 
-Narration runs at roughly 2.5 words a second (see `ugc-scripting` for the full math), so these word counts are load-bearing, not decorative.
+Frames at 30 fps, laid on a 120 BPM grid (bar = 60f); snap boundaries to your track's bars. VO budgets use the house 2.3 words/s over the VO window (VO starts 6f in, last 60f VO-free). "Words" is the on-screen line; its hold must meet `max(30, 9 × words + 15)` frames from the frame it is legible.
 
-**30 seconds** (roughly 72 words). Tight version, for a feed placement.
+### 15 s (450f), feed teaser or homepage loop
 
-| Beat | Time | Job |
+| # | Frames | Job | Content | Typical motion | Sound |
+| - | - | - | - | - | - |
+| 1 | 0–60 | Hook | Product mid-action or the problem state, line ≤4 words | Already moving at frame 0; blurUp by word 12f, stagger 3–4f | Frame-1 transient or downbeat |
+| 2 | 60–150 | Reveal (peak at ~120) | Product + name land | Flood or rush-into-lens 10–24f, name slam 14f | Dropout 1 beat before, hit on the land |
+| 3 | 150–360 | Proof | 1–2 runs of input → response → result | Cursor 16–26f, click 4f/6f + ring, push 24–48f | Click 0.8–1.0 per press |
+| 4 | 360–450 | End card | Mark + URL | Mark on gentle spring 14–20f, holds ≥75f | Track's button on the mark |
+
+VO: ≤30 words, or none. Music-led is the default at this length.
+
+### 30 s (900f), the default
+
+| # | Frames | Job | Content | Typical motion | Sound |
+| - | - | - | - | - | - |
+| 1 | 0–60 | Hook | Shape's opening move, ≤4 words | In motion at frame 0 | Transient on frame 1 |
+| 2 | 60–240 | Setup + claim | The problem or the claim; **the proposition is said or shown by frame 240** | Exit-then-cut or persisting element; breath 225–240 | Sparse; music dropout 225–240 |
+| 3 | 240–330 | **Reveal** | The product arrives through the idea's device | Signature handoff, camera push 24–48f | Riser ends on 240, hit + drop on 240 |
+| 4 | 330–720 | Feature cascade | 3 features × 120–150f, each a run on the same surface: input → response → result | UI magnified 2–2.5×, cursor-driven, persisting element between features | A swish or click per feature, on the bar |
+| 5 | 720–810 | Hero | Product at its most iconic + one line | Slow orbit or pull-back 45–52f | Full track |
+| 6 | 810–900 | End card | Mark, URL or CTA | Mark lands by 825, holds 75f | Button on the mark, tail rings out |
+
+VO: ≤64 words. Directed example (beats, cues and shots) in `direction`'s `references/planning.md`.
+
+### 45 s (1350f)
+
+Hook 0–90 · setup + claim 90–330 (proposition by 330, breath 310–330) · **reveal 330–420** (25–31%) · cascade 420–1080 (4 features × 165f) · proof 1080–1170 (a number or logos, only if real) · hero 1170–1260 · end card 1260–1350. VO ≤98 words.
+
+### 60 s (1800f)
+
+Hook 0–90 · problem or claim 90–450 (2–3 beats of 120f, proposition by 450, breath 430–450) · **reveal 450–540** (25–30%) · demonstration 540–1380 (3–4 runs of 210–280f, each input → response → result → benefit) · proof 1380–1530 · hero 1530–1680 · end card 1680–1800. VO ≤134 words. Past 90 s without a second story, the material belongs in `demo-walkthrough`.
+
+## Script and VO
+
+- Hook in **outcome language**, never inventory: "Invoices that chase themselves", not "12 new features". If the first line starts "Introducing" or "Welcome to", rewrite it (the typewriter-delete device is the exception: the word exists to be deleted).
+- One idea per line, written as cues ("You ask — it searches — it answers") so each visual can land as the voice names it.
+- VO starts 6f after the film starts and 3–8f after each cut (house median +6f); a line may pre-roll up to 45f to bridge a cut. Write numbers as spoken; the picture shows the exact figure.
+- Over budget: cut words, never speed up the read. Word counts within 10% of the beat sheet.
+- Music-led (no VO): on-screen lines carry the story at ≤7 words per frame, one line per beat.
+
+## Launch craft (numbers from the house templates)
+
+- **First frame**: the product doing something, a transformation already half-way, a number already moving, or the manifesto's sharpest line. Never a logo, a black card, a mission statement or a person about to speak.
+- **UI**: rebuild the real screens at true proportions and magnify the part that matters 2–2.5×; never paste a full screenshot flat. Camera pushes 1.7–3.8× onto the control that matters, 24–48f inOutCubic. Typing 2–3 frames per character with a solid caret. Click: press 4f in, 6f out, scale −8 to −15%, ring 8–14f.
+- **One demo is a run**: three or more beats on the same surface (input → response → result → benefit) joined by persisting elements. Single-shot features with a new layout each time read as a slideshow.
+- **The reveal**: build the 10–30f before it calmer. Device timings (`motion-language`): flood 6–13f ease-in then contract 10–13f; iris 16–34f; rush into the lens 10–24f; slam z 6 → 0 with scale 0.7 → 1.04 → 1 over 14f; typewriter "Introducing" at 2.4 f/char, delete at 2.1, name at 2 f/char.
+- **Hero type**: 96–220 px at −0.025 to −0.04em on 16:9; feed headlines ≥90 px, body ≥32 px. One accent colour, on the focal element and CTA only.
+- **End card**: mark lands on a gentle spring (no overshoot) 14–20f, holds 75–120f (2.5–4 s); a URL or CTA holds ≥60f and its text formula. Calmer than everything before it.
+- **Social proof**: only if real and strong. Numbers before names. Logos 60–90f in a row, never long enough to read one by one, never before the demonstration, never a relationship the user hasn't confirmed. No invented numbers or quotes; leave a bracketed placeholder and say so.
+
+## Destination recuts
+
+Build the master for the first destination; the others are recuts of the same beats, re-laid-out per ratio rather than cropped.
+
+| Destination | Aspect, length | What changes |
 | --- | --- | --- |
-| Cold open | 0 to 5s | The shape's opening move, already in motion |
-| Turn | 5 to 10s | The product enters, or the claim lands |
-| Proof | 10 to 22s | One or two concrete moments, demonstrated not described |
-| Close | 22 to 30s | The wordmark, held, with a single line |
+| Landing page, keynote | 16:9, 20–60 s | The master. Sound on, the reveal can breathe |
+| Product Hunt | 16:9, ≤60 s | Muted-first: every claim on screen, hook by frame 15 |
+| X, LinkedIn | 1:1 or 4:5, 15–45 s | Captions carry it; headline ≥90 px; 4:5 keeps content in the central 1080 × 1080 |
+| Reels, TikTok, Shorts | 9:16, 15–30 s | Re-lay type 2–4 words per line; everything readable inside x 120–840, y 270–1210; Hyper/High pacing |
+| YouTube | 16:9, up to 90 s | The longest cut; sound on is common, the hook still lands before 5 s |
 
-**60 seconds** (roughly 140 words). The default.
+## Building it
 
-| Beat | Time | Job |
-| --- | --- | --- |
-| Cold open | 0 to 5s | Same rule, longer runway does not excuse a slow start |
-| Problem or claim | 5 to 15s | Whichever the shape needs |
-| Demonstration | 15 to 42s | Two to four concrete moments, each with its own beat |
-| Social proof | 42 to 50s | See below, only if it earns its place |
-| Close | 50 to 60s | Wordmark, held |
+- **Three.js (default)**: `three-look` before the first scene (stage, light, tone mapping), `three-type` for canvas-texture headlines and per-word planes, `three-assets` for screenshots, the logo and video textures, `three-camera` for pushes, orbits and the push through a screen, `three-transitions` for floods, irises and flashes as camera-parented planes. Rebuild UI as planes with canvas-drawn content; an orthographic camera (or a fixed-distance perspective one) keeps pixel sizes exact for family B. Put shared handoff poses in `components/` so both scenes import them.
+- **HyperFrames**: one sub-composition per beat in `scenes/`, the timeline slots in `index.html`; the same numbers, as timeline tweens and `<audio>` elements.
+- **React**: one scene per beat, `@genmotion/motion` eases and `<TextAnimation>` for headlines.
 
-**90 seconds** (roughly 210 words). Only when the material genuinely needs the room: several distinct workflows, or a two-part story (before this launch, after it).
+## Good and bad
 
-| Beat | Time | Job |
-| --- | --- | --- |
-| Cold open | 0 to 5s | |
-| Setup | 5 to 20s | |
-| Demonstration, part one | 20 to 45s | |
-| Turn or escalation | 45 to 55s | The moment the video earns the extra thirty seconds |
-| Demonstration, part two | 55 to 78s | |
-| Close | 78 to 90s | |
-
-Stretching past 90s without a structural reason is a sign the video should route to `demo-walkthrough` instead.
-
-## Social proof
-
-Only include it if it is real and it is strong. A weak proof point (a vague "loved by teams everywhere") costs more attention than it earns. When it is real:
-
-- **Numbers before names.** A user count, a growth rate, a rating, placed as their own beat, not a caption crawling under something else.
-- **Logos in a row, briefly.** Two to three seconds, never held long enough to be read individually.
-- **Never before the demonstration.** Proof supports a claim the viewer has already seen; it does not open the video.
-- **Never invented.** If the user has not given you the number, do not write a placeholder into the final cut. Ask, or leave a bracketed note and say so.
-
-## Destination cuts
-
-One story, several exports. Build the 60-second version first; the rest are recuts, not new scripts.
-
-| Destination | Aspect | What changes |
-| --- | --- | --- |
-| Product Hunt | 16:9, under 60s | Muted-first is non-negotiable; no talking-head opening |
-| X / LinkedIn feed | 1:1 or 4:5 | Recrop, not rebuild; captions become load-bearing since autoplay is muted by default |
-| YouTube | 16:9, up to 90s | Can run the longest cut; the only destination where a slower open survives |
-| Shorts / TikTok / Reels | 9:16 | Recrop to vertical, safe zones from `ugc-ad-foundations` apply, and the pacing usually wants tightening even at the same runtime |
-
-Recropping is a composition-level concern: keep the subject inside the region every aspect shares, or maintain separate scenes per aspect when the framing genuinely diverges. Read your project's own authoring guidance for the mechanics.
-
-## Handoff to your build pipeline
-
-Once the shape, beat sheet and destination are decided, they become the input to your project's own build pipeline, whatever it is for this engine: capture, design, planning, frames, render, however those steps are actually named here. This skill supplies the *angle* and *message*; do not re-run its capture or build steps here.
+- Bad: logo fade-in, "Introducing Acme", a feature list with icons, a stock-music swell, a logo for 1 s. Good: the cursor is already typing a request at frame 0, the answer builds, the send button floods the frame and contracts into the product name on the drop.
+- Bad: three features, each a new screenshot with a different transition. Good: one surface, three runs, the same card persisting and morphing between them.
+- Bad: "Loved by teams everywhere" over a logo wall at second 3. Good: the real "4.9 ★ from 2,100 reviews" as its own beat after the demo.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| The product's real brand, copy and screenshots | `WebSearch`, `WebFetch`, `save-asset` | Ask the user directly rather than inventing a palette or a claim |
-| Narration | `pick-voice` then `voiceover` | A silent cut carried by kinetic type and captions, which the manifesto shape tolerates well |
-| Product shots with no real capture | `screen-capture` for a rebuilt UI, `generate-image` for anything else | State plainly that it is a mockup if it is one |
-| The demonstration's motion: punch-ins, camera moves, transitions | Read your project's own authoring guidance for the exact motion API | |
+| Brand, copy, screenshots | `web-research` on the product's site, `save-asset` for real files | Ask the user; never invent a palette, claim or number |
+| Narration | `pick-voice`, then `voiceover` | Music-led cut carried by on-screen lines |
+| Music | `music` | Per `sound-design`'s ladder; with nothing licensed, an SFX-led film |
+| Effects | `sfx` | Credited CC0 sounds, or the music's own transients |
+| Placing audio | `place-audio` | Edit the project's audio list by hand |
+| Seeing it | `capture-frames` | None: do not report quality you have not seen |
+| Mix and loudness check | `ffmpeg` | None: an unmeasured export is not finished |
+| Direction, moves, mix | `direction`, `motion-language`, `sound-design` | — |
 
 ## Checks before you finish
 
-1. `capture-frames` at 0s. Not a logo, not a title card, not a person about to speak.
-2. Mute it. The claim survives on captions and visuals alone.
-3. Word count against the beat sheet, within 10 percent.
-4. Any proof point traces to something the user actually gave you.
-5. Your project's own check tool (`validate`).
+1. `VIDEO.md` has the Direction block and a Beats table whose frames sum to the length; the shape is named.
+2. `capture-frames` at frame 0 and frame 15: not a logo, not black, not a title card; the hook is readable by frame 15.
+3. The proposition is on screen or in the VO by the end of beat 2 (frame 240 at 30 s, 450 at 60 s).
+4. The reveal sits at 25–30% of the length; the 10–30f before it are visibly calmer (capture both) and the music drops out or thins there.
+5. Mute check: on captured frames alone (no audio), a stranger can say what the product does.
+6. VO words ≤ the budget for the length; the last 60f are VO-free; spot-check two cuts that VO starts 3–8f after them.
+7. Every on-screen line meets its hold formula (capture its first legible frame and its exit's first frame).
+8. The end card's mark holds ≥75f with at most one ambient behaviour, and the music's button lands on it within 1 frame.
+9. Every number, logo and quote traces to something the user gave you.
+10. `ffmpeg` `ebur128` on the export: −14 LUFS ±1 integrated, true peak ≤ −1 dBTP.
+11. The `direction` self-critique passes (swap test fails for a competitor; rubric average ≥4, no axis below 3), and `validate` passes.

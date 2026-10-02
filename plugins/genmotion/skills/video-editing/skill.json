@@ -1,0 +1,157 @@
+{
+  "id": "video-editing",
+  "title": "Video editing: the user's own footage",
+  "description": "Editing footage the user supplies into a finished video: a podcast episode or clips from it, a talking-head video for YouTube, Shorts, TikTok, Reels or LinkedIn, a trailer or teaser cut from existing shots, a founder-and-product launch cut, or a fast Gen Z social edit. ffmpeg does the editorial (probe, transcript, paper edit, cut list, reframe, audio cleanup, conform), the project layers captions, titles, b-roll, zooms and the end card on top, and every cut, caption and loudness figure is measured before delivery.",
+  "summary": "Footage in, finished edit out: transcript, paper edit, ffmpeg cut and conform, captions and graphics on top, measured loudness.",
+  "kind": "workflow",
+  "category": "Editing",
+  "tags": [
+    "video-editing",
+    "footage",
+    "podcast",
+    "talking-head",
+    "trailer",
+    "captions",
+    "social-clips",
+    "ffmpeg"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 6,
+    "maxSeconds": 3600
+  },
+  "engines": [
+    "three",
+    "hyperframes",
+    "react"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "stock-and-broll"
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-assets",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-transitions",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Probe, cut, reframe, clean the audio, conform the edit and measure the export. The editorial lives here."
+    },
+    {
+      "kind": "capability",
+      "id": "transcribe",
+      "why": "Word timestamps drive the paper edit, filler removal and word-timed captions."
+    },
+    {
+      "kind": "capability",
+      "id": "save-asset",
+      "why": "Bring the user's footage, music and b-roll into assets/."
+    },
+    {
+      "kind": "capability",
+      "id": "place-audio",
+      "why": "The edit's dialogue, the music bed and every sound effect go on the timeline."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Check footage frames, caption placement and safe zones at every cut."
+    },
+    {
+      "kind": "capability",
+      "id": "validate",
+      "why": "Every scene that layers graphics over the footage must load."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A bed for clips, trailers and launch cuts, legally sourced."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "Whooshes, pops and hits on cuts, captions and title cards."
+    }
+  ],
+  "route": {
+    "deliverable": "A finished edit of footage the user supplies: podcast episode or clips, talking-head video, trailer, launch cut or social edit",
+    "inputs": [
+      "footage",
+      "audio"
+    ],
+    "priority": 15,
+    "askFirst": [
+      "Where will it be posted (YouTube, TikTok/Reels/Shorts, LinkedIn, a podcast feed), so I know the aspect and length?",
+      "How long should the finished edit be, or how many clips do you want from it?",
+      "Which style: clean and professional, or fast and native to TikTok?"
+    ]
+  },
+  "models": [
+    {
+      "purpose": "music",
+      "model": "ElevenLabs Music",
+      "via": "mcp:elevenlabs",
+      "note": "Instrumental bed at an exact length; ask for a whole-frame BPM if you will cut to it."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "sfx",
+      "note": "Whoosh, pop, hit, riser. Describe the sound, not the picture."
+    }
+  ],
+  "triggers": [
+    "edit my podcast into clips",
+    "cut a trailer from this footage",
+    "turn my talking head video into a tiktok",
+    "edit my raw footage into a youtube video",
+    "remove the ums and long pauses from my video",
+    "make vertical shorts with captions from my long video",
+    "add word by word captions to my clip",
+    "cut our founder interview and product clips into one film",
+    "fast gen z style edit with zoom punches and sound effects",
+    "clean up and edit my interview footage"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "✂️"
+}

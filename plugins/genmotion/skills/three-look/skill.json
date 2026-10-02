@@ -1,14 +1,15 @@
 {
   "id": "three-look",
   "title": "Look and lighting (Three.js)",
-  "description": "The look of a Three.js video: lighting setups (product, dramatic, soft, neon), backgrounds and fog, palettes with one accent, materials that read on camera, glow and grain built from planes and shaders, and how to keep the look consistent across scenes. Load it when a Three.js scene looks flat, muddy, dark or cheap, or when setting the visual direction for a new video.",
-  "summary": "Lighting setups, palettes, materials, glow and grain that make a Three.js video look finished.",
+  "description": "Building the look of a Three.js video: the colour pipeline (output colour space, which tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment built from core three so metal and gloss read, lighting setups with intensities (product, neon, dramatic, soft, flat), materials that read on camera, a clip-space backdrop with radial lift, grain and vignette, glows, fog, banding, and line art that draws on and erases. Load it when setting a film's look, or when a Three.js frame looks flat, muddy, washed out, banded or cheap.",
+  "summary": "Colour pipeline, studio environment, lights, materials, backdrops, glow, grain and line art that make a Three.js frame look finished.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
     "lighting",
     "threejs",
     "color",
+    "materials",
     "style"
   ],
   "aspects": [
@@ -28,7 +29,7 @@
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Lighting is judged by looking at frames."
+      "why": "Lighting and colour are judged by looking at frames."
     }
   ],
   "models": [],
@@ -36,13 +37,24 @@
     "it looks too dark",
     "make it look more premium",
     "the 3D looks flat and cheap",
+    "our brand colour looks washed out",
     "give it a neon look",
-    "match our brand colours"
+    "the metal looks black",
+    "make it look like a whiteboard drawing"
   ],
-  "templates": [],
+  "templates": [
+    "samsung-pay-fintech-app-launch-video",
+    "fintech-app-launch-video",
+    "p-doom-music-video",
+    "notchbrowser-app-launch-video",
+    "crypto-launch-video",
+    "moonlight-app-launch-video",
+    "types-of-databases",
+    "x-numbers-launch-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "💡"
 }

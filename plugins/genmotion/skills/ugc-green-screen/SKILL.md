@@ -1,213 +1,151 @@
 ---
 name: ugc-green-screen
-description: "The commentary ad: a presenter cut out over a full-bleed source (a screenshot, an article, a tweet, a competitor's pricing page, a search result) reacting to it line by line. Covers the cutout layout and how much frame it may take, what makes a source worth reacting to, the annotation beat that turns a reaction into an argument, and how to build the whole thing with no real cutout at all, either a generated presenter with a background-removal treatment or presenter-free with a cursor and drawn marks carrying it. Load with ugc-ad-foundations."
+description: "The commentary ad: a presenter cut out over a full-bleed source (a competitor's pricing page, a review, a thread, a search result, a chart) reacting line by line, with drawn marks turning the reaction into an argument. Covers what makes a source worth reacting to, the layout inside the safe zone, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, mark timings to the word, the three presenter routes (the user's clip, a keyed generated still, or presenter-free with a cursor), the sound plan, and building it on Three.js."
 ---
 
 # UGC green screen
 
-A presenter stands in front of something the viewer can read and argues with it. The source does the persuading; the presenter only points.
+A presenter stands in front of something the viewer can read and argues with it. The source does the persuading; the presenter points.
+
+Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-craft` (moves, captions) and `ai-presenter` when a face is generated. Frames at 30 fps; positions on 1080×1920.
 
 ## When to use
 
-Pick this when the brief hands you a **thing on a screen that carries the claim**: a review, a competitor's pricing page, a thread, a Reddit answer, a search result, a chart, a support reply. The signal in the request is usually "react to this", "I saw this post", "here is what our competitor charges", "someone said X about us".
+- The brief hands you a **thing on a screen that carries the claim**: a competitor's pricing page, a one-star review, a thread asking exactly the user's question, a search result full of bad answers, a chart going the wrong way, a support reply.
+- The request says "react to this", "roast this page", "I saw this post", "here's what our competitor charges", "someone said X about us".
 
-Not this format when:
+Not this when:
 
-- The screen *is* the product and you are showing it working. That is `ugc-screen-demo`.
-- You are answering one specific comment on your own video. That is `ugc-reply-to-comment`, which has a different opening frame.
-- You are putting two products next to each other. That is `ugc-comparison`.
-- There is no source, only the founder talking. That is `ugc-founder-story`.
+- The screen is the product working: `ugc-screen-demo`.
+- A felt pain with no source, product demonstrated: `ugc-problem-solution`.
+- The user brings their own **filmed** reaction or talking-head footage to be cut and captioned: `video-editing` (it keys and cuts real footage). This skill builds the ad around a source, with or without a short presenter clip.
 
-## The layout
+## Ask first (only what the request does not answer)
 
-The source is full-bleed behind. The presenter is a cutout, never a box.
+1. What page or post is the presenter reacting to? (A URL or a screenshot; I will not invent one.)
+2. Is there a real presenter clip, or should I go presenter-free with a cursor (my default) or generate one?
 
-| Slot | Where | Size |
-| --- | --- | --- |
-| Source | Fills the canvas, scaled so the line you will read is legible at phone size | 100% |
-| Presenter cutout | Bottom-left or bottom-right corner, feet cropped, or a left-third standing figure | 25 to 35% of frame height |
-| Caption | 62% down the frame, above the platform UI | Full width minus 8% gutters |
-| Annotation | On the source, never on the presenter | One at a time |
+## What makes a source worth reacting to
 
-Three rules that decide whether it reads as native:
-
-1. **The cutout never covers the line being read.** If the source's key line sits bottom-right, the presenter goes bottom-left. Reframe the source, not the presenter.
-2. **The source is never fully covered.** At every frame the viewer can see they are looking at a real page. The moment it becomes a background texture, the argument loses its evidence.
-3. **The source is readable at arm's length.** Scale it so the sentence you are reacting to is at least 34 px tall on a 1080-wide canvas. If that means you only show a quarter of the page, show a quarter of the page.
-
-## What makes a good source
-
-The best source is **something the viewer already half-believes**. You are not introducing a claim, you are confirming a suspicion they arrived with.
+The best source is something the viewer already half-believes: the ad confirms a suspicion rather than introducing a claim.
 
 | Strong source | Why it works |
 | --- | --- |
-| A competitor's pricing page with the annual toggle on | The viewer already suspects it is expensive |
-| A one-star review that says the thing everyone thinks | Confirms, does not argue |
+| A competitor's pricing page, annual toggle on | The viewer already suspects it is expensive |
+| A one-star review saying what everyone thinks | It confirms; it does not argue |
 | A search result page full of bad answers | Frames the problem before you name it |
-| A thread where someone asks exactly the user's question | Makes the ad a reply, not a pitch |
-| A chart that goes the wrong way | Needs no setup |
+| A thread asking exactly the user's question | The ad becomes a reply, not a pitch |
+| A chart going the wrong way | Needs no setup |
 
-Weak sources: a press release, your own landing page, anything the viewer has to be told to care about, anything that needs two sentences of context before the reaction makes sense.
+Weak: a press release, your own landing page, anything needing two sentences of context. Refuse: a named person's post used as an endorsement, a fabricated screenshot attributed to a real company, an invented review. If the user cannot supply the source, mock a **generic** one (an unbranded pricing table, an anonymous review card) and say so in one line. A real third-party page shows only what it actually publishes, captured on a date you write into `VIDEO.md`.
 
-Refuse outright: a named person's post used as if they endorsed the product, a fabricated screenshot attributed to a real company, an invented review. Read the claims section of `ugc-ad-foundations`. If the brief asks for a source you cannot source, mock a *generic* version (an unbranded pricing table, an anonymous review card) and say so in one line.
+## Layout
 
-## The annotation beat
-
-A reaction without a mark is a person talking over a picture. The mark is what turns it into an argument.
-
-Place exactly one annotation per claim, landing on the word as it is spoken, and clear it before the next one:
-
-| Mark | Use it for | Motion |
+| Slot | Where | Size |
 | --- | --- | --- |
-| Hand-drawn circle | A number, a price, a single word | Draws on over 0.4s, uneven stroke, slight overshoot on the close |
-| Underline | A full sentence you just read aloud | Wipes left to right over 0.3s |
-| Punch-in | The line is small and the argument is on it | Scale the source 1.0 to 1.6 over 0.6s, hold, release |
-| Strike-through | A claim you are rejecting | Draws on after the word, not before |
-| Arrow | Pointing off to a second element | Only when a circle cannot reach |
+| Source | Full-bleed behind everything, positioned so the line being read sits in y 300–800 | Scaled so that line's text is ≥34 px tall |
+| Presenter cutout | Bottom-left (or bottom-right when the line is left), cropped at the chest by the frame's bottom edge; face inside x 120–480, y 760–1100 | ≤40% of the frame width |
+| Caption | The caption line, y 1160 (`ugc-craft` spec) | One line |
+| Mark | On the source only, never on the presenter | One at a time |
 
-Never two marks at once, and never a mark before the voice reaches the word. The mark is a beat, not decoration.
+1. **The cutout never covers the line being read.** Move the presenter between corners per beat, not the source.
+2. **The source is never fully covered.** At every frame the viewer can tell it is a real page; the moment it becomes texture, the argument loses its evidence.
+3. **Readable at arm's length.** If ≥34 px means showing a quarter of the page, show a quarter of the page.
+4. **One colour temperature.** Grade the cutout toward the source (a warm face on a cold white page reads as pasted), and give it a soft shadow: 24 px blur, 25% black, 8 px down.
 
-## Building it with no real cutout
+## Direction defaults
 
-Most briefs have no presenter footage. Both substitutes work:
+| Line | Default |
+| --- | --- |
+| Style family | B (Soft-light SaaS) for a page or UI source; E (Chat-UI social) for a thread, post or comment. Look: Native |
+| Energy curve | Social ad: the read-aloud line is the hook at 8; micro-peaks on each mark; the **peak** on the turn (the cut to the user's own page); calm ask |
+| Pacing | High (a mark, push or cut every 45–90f); never 90f without a change |
+| Transitions | Workhorse: hard cut. Signature: the turn is a hard cut to the user's page in **identical framing and scale**, so only the content changes; focus pushes carry the eye to each line |
+| Sound | VO-led, bed 0.12; a pop on each mark landing; a swish on the turn |
+| Memorable moment | The turn frame: their number, then ours, in the same place |
 
-**Generated presenter.** Make one still with `generate-image`: a person from the waist up, plain background, lit from one side, phone-camera framing, looking slightly off-lens. Give it a background-removal treatment so it sits on the source as a cutout with a soft 2 px edge, not a rectangle. Animate it with a 2 to 3 percent idle drift (a slow x/y float and a 1.5 percent scale breath) so it is not a dead sticker. If the fal connector is available, drive the still with a lipsync model instead of leaving it as a static cutout; a short lipsynced clip is better than a still and should be preferred when it exists.
+## Beat sheets
 
-**Presenter-free.** Drop the human entirely and let the cursor plus the annotations carry it. A cursor that moves to the price, hovers, then the circle draws, then the caption lands, reads as a person doing a screen share. This version is cheaper, safer with claims, and in a lot of tests it performs the same. Default to it when there is no avatar connector.
+**30 s (900f), reacting to a competitor's pricing page**
 
-Either way the composite has to share a colour temperature. A warm presenter on a cold white page reads as pasted. Grade the cutout toward the source, not the other way.
-
-## Shot list, 22 seconds, 9:16
-
-| # | t | shot | on screen | said |
+| # | Frames | Job | On screen | VO (words) |
 | --- | --- | --- | --- | --- |
-| 1 | 0.0 to 2.5 | Source already full-bleed, presenter slides up from the bottom edge over 0.3s | The pricing page, annual toggle on, the number centred | "Four hundred dollars. A year. For this." |
-| 2 | 2.5 to 5.0 | Hold. Circle draws on the number | Circle lands on 0:03.1 | "And that's the cheap tier." |
-| 3 | 5.0 to 9.0 | Punch-in 1.0 to 1.5 onto the feature row | Feature list, two items greyed out | "Half of what you're paying for is greyed out until you upgrade again." |
-| 4 | 9.0 to 12.0 | Release the punch, cut the source to the user's own page | New page, same framing, same scale | "So we just put all of it in one price." |
-| 5 | 12.0 to 16.0 | Underline wipes across the price line | Underline, then the price, large | "Nineteen a month. Everything on." |
-| 6 | 16.0 to 19.0 | Cut to the product doing one thing, presenter still corner-locked | Short interface moment | "Same job, done in about a minute." |
-| 7 | 19.0 to 22.0 | Presenter fills more of frame, source dims 20% | Caption only, no logo until 21.5 | "Link's down there if you want to look." |
+| 1 | 0–75 | Hook | Source full-bleed at frame 0, the price in y 300–500; presenter already in, or rising from the bottom edge over 9f outCubic | "Four hundred dollars. A year. For this." (7) |
+| 2 | 75–165 | Mark | Circle draws on the price over 12f, completing on "cheap" | "And that's the cheap tier." (5) |
+| 3 | 165–300 | Reaction | Focus push 30f onto the feature row; strike-through on the greyed items after the word | "Half of it is greyed out until you upgrade." (9) |
+| 4 | 300–390 | Turn (peak) | Hard cut to the user's own page, identical framing; swish on the cut | "So we put all of it in one price." (9) |
+| 5 | 390–540 | Proof | Underline wipes under the price over 9f, completing on the number | "[Price] a month. Everything on." (6) |
+| 6 | 540–720 | Demo | Cut to the product doing one thing; presenter corner-locked | "Same job, in about [time]." (6) |
+| 7 | 720–900 | Ask | Presenter steps up to 1.2 (jump zoom), source dims 20%; CTA text ≥60f | "Link's in my bio if you want to look." (9) |
 
-Stretching it: at 30s, add a second source (a review that agrees with you) between shots 3 and 4, with its own single annotation. At 12s, cut shots 3 and 6 and go straight from the circle to the price. Never add a third source; two is the ceiling before it stops being a reaction and becomes a deck.
+Bracketed values come from the user or stay bracketed. 51 words of a 73 budget: the marks need the air.
 
-## Script scaffold
+**15 s (450f)**: 0–60 hook (read the line) · 60–150 mark · 150–240 turn to the user's page · 240–360 proof with an underline · 360–450 ask. ≤35 words.
 
-```markdown
-# Script: <ad name>
+**45 s (1350f)**: 0–75 hook · 75–165 mark · 165–300 reaction push · 300–480 a second source that agrees (a review), one mark · 480–570 turn · 570–720 proof · 720–1080 demo in two beats · 1080–1170 objection ("Is it worse? No.") · 1170–1350 ask. Two sources is the ceiling; a third turns it into a deck.
 
-- format: ugc-green-screen
-- length: 22s
-- source: <what is on screen behind, and where it came from>
-- presenter: <generated still | avatar clip | none, cursor-led>
+## Hook options
 
-## Hook (0 to 3s)
-Read the source out loud, flatly. No setup, no greeting.
-> <the number, the claim, the sentence, said the way you would say it to a friend>
+The source's own line, read aloud flatly, is the default hook: **Pain** ("Four hundred dollars. A year."), **Contrarian** (strike through a common claim: "This advice is wrong."), **Social proof** (a real thread: "Everyone's asking the same thing."), **Curiosity gap** (the line half-cropped, revealed by the push). `ugc-hooks` has the frame-0 builds.
 
-## Reaction (3 to 9s)
-One consequence of the thing you just read. Annotation lands here.
-> <so what this actually means for you>
+## Marks
 
-## Turn (9 to 12s)
-Cut the source. Same framing, your page.
-> <so we did it differently>
+A reaction without a mark is a person talking over a picture. One mark per claim, completing on the stressed word, cleared before the next.
 
-## Proof (12 to 19s)
-One demonstrated difference. Not a list.
-> <the one thing, with the one number>
+| Mark | Use it for | Draw | Lands |
+| --- | --- | --- | --- |
+| Hand-drawn circle | A number, a price, a single word | 12f, outCubic on the path progress, slightly uneven, overshooting the close by 8° | Completes on the word's first frame ±2f |
+| Underline | A sentence just read aloud | 9f wipe left to right, outQuart | Completes on the last stressed word ±2f |
+| Strike-through | A claim being rejected | 8f, after the word, never before | Starts 2f after the word ends |
+| Arrow | A second element a circle cannot reach | 10f, shaft then head | With the word naming the element |
+| Focus push | The line is small and the argument is on it | `ugc-craft` focus push: 30f inOutCubic to ≥34 px text | Starts on the word naming the line |
 
-## Ask (19 to 22s)
-An offer to look, not a command to buy.
-> <where it is>
-```
+Marks are one colour (the ad's accent, or a marker red #FF3B30), 10–12 px stroke at 1080 wide. Each fades over 6f, finishing before the next mark or cut. Never two marks at once. Build the VO first, read its word timings, then place every mark: marks placed before the audio exists always land late.
 
-## What you actually build
+## The presenter: three routes
 
-| Layer | How |
-| --- | --- |
-| Source | A still. The user's own via `save-asset`, or a mock you build as a scene and screenshot with `capture-frames`, or `generate-image` for a generic page. Never a live embed. |
-| Source moves | Seek-safe scale and position keyframes on the still's wrapper, anchored on the line. Punch-in is a scale change centred on the line, never a looping animation. |
-| Cutout | An image on its own layer with a soft edge mask. Idle drift is a short keyframed float that returns to its start pose. |
-| Annotations | Inline vector paths with a draw-on animation driven by the timeline. Check your project's own component or asset library for circle and underline marks before hand-drawing one. |
-| Cursor | A pointer sprite with eased position keyframes plus a 0.9 scale dip on click. |
-| Captions | Burned-in, platform-default look, one line at a time. See `ugc-craft`. |
-| Voice | `pick-voice` once, then `voiceover`. Conversational, mid-pace, no announcer lift. |
+1. **The user's clip** (best). A green-screen or plain-wall clip, trimmed and re-encoded per `screen-capture` (VP9 WebM at the project fps, a keyframe every 15 frames, a 0.5 s tail). Key it in the scene (Three.js: a chroma-key shader on the video plane, similarity 0.08–0.12, 1–2 px soft edge, green spill pulled toward grey) or pre-key it with `ffmpeg` (`chromakey=0x00B140:0.12:0.08,despill=type=green`) into a VP9 WebM with alpha (`-pix_fmt yuva420p`, same keyframe interval) for HyperFrames or React.
+2. **A keyed generated still** (`ai-presenter`): `generate-image` a chest-up person on a flat pure green (#00B140), lit from one side, phone framing, looking slightly off-lens; key it with the same `ffmpeg` filter into a PNG with alpha. Drive it with a lipsync model through the `fal` connector if connected, in takes ≤4 s (`ai-presenter`); otherwise a still cutout with the `ugc-craft` creep, used for ≤1/3 of the ad.
+3. **Presenter-free** (default when there is no clip and no lipsync connector). A cursor moves to the price, hesitates 8f, the circle draws, the caption lands: it reads as a person screen-sharing. Cheaper, and safer with claims.
 
-Timing discipline: build the voiceover first, read its word timings, then place every annotation on the word. Annotations placed before the audio exists always land late.
+There is no background-removal capability: a cutout comes from a key colour, the user, or not at all.
 
-## Failure modes
+## Sound plan
 
-| It goes wrong like this | Fix |
-| --- | --- |
-| The cutout sits over the line being read | Move the presenter, not the source. Corner is a choice per shot, not per ad. |
-| The source is unreadable on a phone | Crop harder and scale up. A quarter of a page at full size beats a whole page at a tenth. |
-| Three marks on screen at once | One per claim, cleared before the next. If you need three, you have three ads. |
-| A mocked screenshot carries a real company's name and a number you invented | Genericise it or put a bracketed placeholder in the script and say so. |
-| Presenter and source are different colour temperatures | Grade the cutout toward the source. Add a 4% drop shadow so it sits in the page rather than on it. |
-| The presenter is a motionless sticker | 2 to 3% idle drift, or drop the presenter and go cursor-led. |
+Per `sound-design` and `ugc-craft`: frame 1 is the first word of the read; bed 0.12, instrumental, low energy (90–110 BPM) so the voice owns it; a soft pop 0.45 on each mark's completion frame (a marker squeak at 0.3 under the draw is optional); a swish 0.5 on the turn and on no other cut, or on every hard cut; room tone 0.03 under a still presenter. Master −14 LUFS, ≤ −1 dBTP.
 
-## Plan skeleton
+## Building it
 
-A scratch outline for the shot list above, in whatever form your project's own planning artifact takes:
+- **Source**: a still. The user's screenshot via `save-asset`; a page you build as a scene and capture with `capture-frames`; or `generate-image` for a generic page. Never a live embed. Positions and pushes are anchored on the line being read.
+- **Three.js** (default): the source is a plane sized from the image's real pixels (`three-assets`), with mipmaps on so a zoomed-out page does not shimmer. Focus pushes scale the source plate in log space around the line (or dolly the camera, `three-camera`). The cutout is a plane in front of the source with the key shader or an alpha texture; its shadow a blurred dark plane behind it. Marks are canvas-texture planes redrawn per frame to their progress (an arc stroked from 0 to `p × 2π`, the wobble from a seeded hash of the mark index, never randomness), or a tube geometry revealed with a draw range. Captions in a camera-parented overlay (`three-type`).
+- **HyperFrames**: the source an `<img>` in a wrapper the timeline scales; marks as inline vector paths whose stroke is drawn on by a timeline tween; the presenter a `<video>` or `<img>` with alpha.
+- **React**: the same with `interpolate` on the frame; marks as SVG paths with an animated dash offset.
 
-```markdown
----
-format: ugc-green-screen
-duration: 22
-message: <the one sentence the viewer should leave with>
-arc: react to the source, land the consequence, cut to ours, ask
-audience: <who already half-believes the source>
-source: <what is behind the presenter, and where it came from>
-presenter: generated-still | avatar-clip | none
----
+Voice: `pick-voice` once, then `voiceover`; conversational, mid-pace, no announcer lift.
 
-## Frame 1: The source, read aloud
-- duration: 2.5
-- scene: Source full-bleed, presenter slides up from the bottom edge over 0.3s
-- voiceover: <the claim, read flatly>
-- annotation: none
+## Good and bad
 
-## Frame 2: The mark
-- duration: 2.5
-- scene: Hold on the source, circle draws on the number
-- voiceover: <the consequence>
-- annotation: circle on <element>, lands at 0:03.1
-
-## Frame 3: The punch-in
-- duration: 4
-- scene: Scale 1.0 to 1.5 onto <line>, hold, release
-- voiceover: <what it actually costs them>
-- annotation: underline on <line>
-
-## Frame 4: The turn
-- duration: 3
-- scene: Hard cut to our page, identical framing and scale
-- voiceover: <so we did it differently>
-- annotation: none
-
-## Frame 5: The ask
-- duration: 3
-- scene: Presenter grows, source dims 20%, caption only
-- voiceover: <where to look>
-- annotation: none
-```
+- **Bad**: the cutout covers the price while the VO reads it. **Good**: the presenter moves to the other corner for that beat.
+- **Bad**: the whole pricing page at 1080 wide, nothing readable. **Good**: the price row only, at 48 px, with the circle on it.
+- **Bad**: three circles on screen at once. **Good**: circle on "cheap", cleared, then a strike on the greyed items.
+- **Bad**: a mocked page with a real competitor's logo and an invented price. **Good**: their real published price, dated in `VIDEO.md`, or an unbranded table and a one-line note.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| The source image | `save-asset` for the user's own screenshot | Build the page as HTML, capture it with `capture-frames`, or `generate-image` a generic version |
-| A presenter | `ai-presenter` plus the fal connector | A generated still with a cutout treatment, or drop the presenter and go cursor-led |
-| Narration | `pick-voice` then `voiceover` | Caption-led silent cut. The annotations still carry the argument |
-| Annotation marks | Your project's own component or asset library | Hand-authored draw-on paths |
+| The source | `save-asset` for the user's screenshot or URL capture | Build a generic page as a scene and capture it, or `generate-image` a generic version |
+| A presenter | The user's clip, or `ai-presenter` with the `fal` connector | Presenter-free with a cursor |
+| Keying, trims | `ffmpeg` | The in-scene key shader on Three.js; or go presenter-free |
+| Narration | `pick-voice` then `voiceover` | A caption-led silent cut; the marks still carry the argument |
+| Mark and turn sounds | `sfx` | Credited CC0 pops via `web-research` + `save-asset` |
 
 ## Checks before you finish
 
-1. `capture-frames` at frame 0. Is the source legible, and is the presenter already in frame or arriving within 0.3s? A frame of empty page has no hook.
-2. Capture the frame of every annotation. Is exactly one mark visible, and is it on the word the voice is saying?
-3. Capture four frames across the ad with the sound off. Does the argument survive on the source plus captions alone?
-4. Check the cutout against every shot: it never overlaps the line being read, and it never exceeds 35% of frame height.
-5. Safe zones: nothing that matters in the top 12% or bottom 20%.
-6. Read every claim on the source back against what the user actually gave you. Any number you invented comes out.
-7. Your project's own check tool (`validate`).
+1. `capture-frames` at frame 0: the source is legible and the line being read is ≥34 px; at frame 15 the presenter (or cursor) is in frame.
+2. Capture each mark's completion frame: exactly one mark visible, and it completes within ±2f of its word's start (compare with the VO's word timings).
+3. On every captured frame, the cutout does not overlap the line being read, its face is inside x 120–480, y 760–1100, and it is ≤40% of the width.
+4. Capture the frames either side of the turn: identical framing and scale, only the content changed.
+5. Four captures with the sound off: the argument survives on the source, marks and captions alone.
+6. Every number on the source and in the VO traces to the user's material or a dated capture; mocked pages are generic.
+7. `validate` passes; then run `ad-qa` in full.

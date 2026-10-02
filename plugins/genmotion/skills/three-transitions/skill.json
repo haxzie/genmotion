@@ -1,14 +1,15 @@
 {
   "id": "three-transitions",
   "title": "Transitions (Three.js)",
-  "description": "Getting from one Three.js scene to the next without a fade to black: handoff objects, match-cuts on shape and colour, camera carries, fill-the-frame wipes, iris and shutter masks built from planes, and shader dissolves with ShaderMaterial. Covers the timing contract on both sides of the cut and the transitions to avoid. Load it when a Three.js video has more than one scene, or when cuts feel abrupt.",
-  "summary": "Cut between Three.js scenes without fading to black: handoffs, wipes, match-cuts, dissolves.",
+  "description": "Building scene handoffs on Three.js, where nothing survives a cut and the renderer never cross-dissolves: one camera-locked cover layer for floods that become objects, irises, directional and bottom-up wipes, block wipes and flash-to-white; persisting elements re-created at the identical transform from shared constants; match-push and carries at speed; continuous loops on film time; rush into the lens; whips with real motion blur by sub-frame sampling. Covers the timing contract on both sides of a cut and how to check it. Load it when a Three.js video has more than one scene.",
+  "summary": "Flood, iris, wipe, block wipe, flash, persisting elements, match-push and motion-blurred whips between Three.js scenes.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
     "transitions",
     "threejs",
-    "editing"
+    "editing",
+    "handoff"
   ],
   "aspects": [
     "16:9",
@@ -28,6 +29,20 @@
       "kind": "capability",
       "id": "capture-frames",
       "why": "Each cut is checked on the frames either side of it."
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "models": [],
@@ -35,13 +50,24 @@
     "make the scenes flow into each other",
     "the cuts feel abrupt",
     "add a wipe between scenes",
+    "flood the screen with our colour into the next scene",
     "seamless transition between scenes",
-    "one continuous take feel"
+    "one continuous take feel",
+    "the colour flickers at the cut"
   ],
-  "templates": [],
+  "templates": [
+    "samsung-pay-fintech-app-launch-video",
+    "fintech-app-launch-video",
+    "p-doom-music-video",
+    "notchbrowser-app-launch-video",
+    "crypto-launch-video",
+    "moonlight-app-launch-video",
+    "types-of-databases",
+    "x-numbers-launch-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🔀"
 }

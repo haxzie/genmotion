@@ -1,16 +1,16 @@
 {
   "id": "ugc-scripting",
   "title": "UGC scripting",
-  "description": "Writing the body and the CTA of a short-form ad: six script frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the shape and the audience each one fits, the word-count math that makes a script fit its runtime, CTA construction that reads as a recommendation rather than a pitch, and how to structure the narration as labeled, timed lines. Load it when you are writing the middle of an ad. The opening belongs to ugc-hooks.",
-  "summary": "Six script frameworks, the word-count math that makes a script fit, and CTAs that sound like a recommendation.",
+  "description": "Writing the body and CTA of a short-form ad: the word budget per runtime and per section, six frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the audience each fits, the body's rules, CTAs that read as a recommendation, writing for text-to-speech (numbers, acronyms and names as spoken), and narration written as timed, cue-segmented lines the picture can cut against. Load it when writing or fixing the middle and end of an ad; the opening belongs to ugc-hooks.",
+  "summary": "Body and CTA for short ads: word budgets, six frameworks, recommendation-shaped CTAs, TTS-ready wording and cue-timed lines.",
   "kind": "reference",
   "category": "UGC ads",
   "tags": [
     "ugc",
     "scripting",
     "copywriting",
+    "voiceover",
     "pas",
-    "aida",
     "cta"
   ],
   "aspects": [
@@ -38,6 +38,10 @@
       "id": "ugc-hooks"
     },
     {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
       "kind": "capability",
       "id": "pick-voice",
       "why": "One voice per project, chosen before the first line is generated."
@@ -45,12 +49,17 @@
     {
       "kind": "capability",
       "id": "voiceover",
-      "why": "Turns the written script into the narration track."
+      "why": "Turns the cue-segmented lines into narration clips with word timings."
+    },
+    {
+      "kind": "capability",
+      "id": "place-audio",
+      "why": "Each line goes on the VO track at its beat's start plus a few frames."
     },
     {
       "kind": "capability",
       "id": "project-overview",
-      "why": "Check the script's beats against where the picture actually cuts."
+      "why": "Check each line's length against where the picture actually cuts."
     }
   ],
   "models": [
@@ -64,10 +73,11 @@
   "triggers": [
     "write the script for this ad",
     "my script is too long for 30 seconds",
-    "what CTA should I use",
+    "what call to action should the ad end on",
     "turn this into a PAS script",
-    "how many words fit in a 15 second video",
-    "rewrite this so it sounds less like an ad"
+    "how many words fit in a 15 second ad",
+    "rewrite this so it sounds less like an ad",
+    "the voiceover mispronounces our numbers"
   ],
   "templates": [
     "gojiberry-launch-video"
@@ -75,6 +85,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "✍️"
 }

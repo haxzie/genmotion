@@ -1,15 +1,16 @@
 {
   "id": "three-assets",
   "title": "Assets (Three.js)",
-  "description": "Bringing real material into Three.js scenes: logos (SVG drawn into a texture, or extruded from path data), product screenshots and photos on planes and device frames, screen recordings as video textures seeked per frame, and the audio that goes on the timeline instead of in a scene. Covers loading everything through the frame barrier so no frame ships untextured. Load it when a scene uses a logo, screenshot, photo, recording or any file from assets/.",
-  "summary": "Logos, screenshots, photos and screen recordings in Three.js scenes, loaded so no frame ships blank.",
+  "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played, copied through a canvas so it captures), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/.",
+  "summary": "Logos, screenshots, device frames, seeked footage and fonts in Three.js scenes, loaded so no frame ships blank.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
     "assets",
     "threejs",
     "logos",
-    "screenshots"
+    "screenshots",
+    "footage"
   ],
   "aspects": [
     "16:9",
@@ -28,12 +29,12 @@
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "Remote files come into assets/ before a scene uses them."
+      "why": "Remote files and fonts come into assets/ before a scene uses them."
     },
     {
       "kind": "capability",
       "id": "ffmpeg",
-      "why": "Trim a screen recording to the moment that matters."
+      "why": "Footage is trimmed and transcoded to WebM, and its audio extracted."
     },
     {
       "kind": "capability",
@@ -43,7 +44,7 @@
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "A blank or stretched texture only shows in a frame."
+      "why": "A blank, black or stretched texture only shows in a frame."
     }
   ],
   "models": [],
@@ -52,12 +53,23 @@
     "show this screenshot on a phone",
     "use my screen recording",
     "the image shows up blank",
+    "the video is black in the export",
+    "make our logo 3D",
     "add background music"
   ],
-  "templates": [],
+  "templates": [
+    "samsung-pay-fintech-app-launch-video",
+    "fintech-app-launch-video",
+    "p-doom-music-video",
+    "notchbrowser-app-launch-video",
+    "crypto-launch-video",
+    "moonlight-app-launch-video",
+    "types-of-databases",
+    "x-numbers-launch-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🖼️"
 }

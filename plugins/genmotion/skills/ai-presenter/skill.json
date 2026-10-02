@@ -1,8 +1,8 @@
 {
   "id": "ai-presenter",
   "title": "AI presenter",
-  "description": "Getting a person on screen when there is no footage: a generated presenter driven by lipsync, or the user's own clip. Covers the two routes and when each one wins, framing and crop for a vertical canvas, matching a voice to a face, the uncanny-valley failure modes and the edit patterns that dodge them, and the line between a synthetic presenter and a fabricated customer. Load it alongside a face-led ugc-* format, never instead of one.",
-  "summary": "Getting a person on screen with no footage: a generated portrait driven by lipsync, or the user's own clip.",
+  "description": "Putting a person on screen in an ad when there is no footage: the user's own clip first, or a generated portrait driven by a lipsync model. Covers when not to use a face at all, the lipsync input spec (portrait, audio, neutral mouth), framing and headroom for 9:16, one take length (four seconds), lip-sync tolerance in frames, matching voice to face, the uncanny tells and the edit patterns that hide them, the seek-safe build on each engine, and the line between a synthetic presenter and a fabricated customer. Load it alongside a UGC owner, never instead of one.",
+  "summary": "A person on screen with no footage: the user's clip first, else a lipsynced portrait in takes of four seconds, framed for 9:16.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
@@ -10,7 +10,7 @@
     "avatar",
     "lipsync",
     "fal",
-    "faceless-fallback"
+    "ugc"
   ],
   "aspects": [
     "9:16",
@@ -28,6 +28,10 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
       "kind": "mcp",
       "id": "fal",
       "why": "Drives a generated portrait with a lipsync model. The only synthetic route."
@@ -40,13 +44,6 @@
     {
       "kind": "skill",
       "id": "ugc-ad-foundations"
-    },
-    {
-      "kind": "skill",
-      "id": "hyperframes-keyframes",
-      "engines": [
-        "hyperframes"
-      ]
     },
     {
       "kind": "skill",
@@ -74,6 +71,32 @@
       "kind": "capability",
       "id": "save-asset",
       "why": "The user's own clip, which beats every synthetic route."
+    },
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "skill",
+      "id": "three-assets",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Trim each take and re-encode it with a keyframe on every frame before placing it."
+    },
+    {
+      "kind": "capability",
+      "id": "place-audio",
+      "why": "The VO clip goes on the timeline at the take's start frame."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Framing and lip sync on plosives are checked on captured frames."
     }
   ],
   "models": [
@@ -81,7 +104,7 @@
       "purpose": "lipsync",
       "model": "Sync 2 Pro",
       "via": "mcp:fal",
-      "note": "Drives a generated still. Best under six seconds; cut before it runs longer."
+      "note": "Drives a closed-mouth portrait; one take per line, four seconds or less."
     },
     {
       "purpose": "voice",
@@ -93,21 +116,21 @@
       "purpose": "image",
       "model": "Gemini 2.5 Flash Image",
       "via": "generate-image",
-      "note": "Generate wider than 9:16 so you can reframe between cuts."
+      "note": "Chest up, 3:4 or 4:5, wider than 9:16, mouth closed and neutral."
     }
   ],
   "triggers": [
-    "add a person talking to camera",
+    "add a person talking to camera in this ad",
     "I need a presenter for this ad",
     "make an avatar say my script",
-    "UGC video with a creator in it",
-    "can you generate someone to read this",
-    "talking head for my tiktok ad"
+    "UGC ad with a creator in it",
+    "generate someone to read these lines",
+    "lipsync a generated face to the voiceover"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🧑‍💼"
 }

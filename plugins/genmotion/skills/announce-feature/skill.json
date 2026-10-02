@@ -1,15 +1,17 @@
 {
   "id": "announce-feature",
   "title": "Announce feature",
-  "description": "The 20 to 45 second changelog video after Linear, Notion and Slack: what changed, why it matters, show it, where to get it. Covers quick-highlights-over-feature-lists, the UI-in-motion patterns that carry the demonstration, why the CTA points at the feature itself rather than a marketing page, and the recuts for an in-app banner, a changelog embed and a social clip. Load it for a single feature or a small feature set, not a whole-product launch.",
-  "summary": "The 20 to 45 second changelog video: what changed, why it matters, show it, where to get it.",
+  "description": "The 15 to 45 second feature announcement or changelog video, in the manner of Linear, Notion and Slack: what changed, why it matters, show it, where to find it. Covers naming the feature in the first six words, frame-budgeted beat sheets for 15, 20, 30 and 45 seconds with VO word budgets, the cursor, before-and-after and focus-push patterns with house timings, the CTA that points at the toggle, sound per interaction, and recuts for an in-app loop, a changelog embed and a vertical social clip. Load it for one feature or a small set, not a whole-product launch.",
+  "summary": "The 15–45 s changelog video: name it in six words, why it matters, show it on the real UI, point at the toggle.",
   "kind": "workflow",
   "category": "Announcement",
   "tags": [
     "announcement",
     "feature",
     "changelog",
-    "product-marketing"
+    "product-marketing",
+    "release",
+    "ui-demo"
   ],
   "aspects": [
     "16:9",
@@ -17,7 +19,7 @@
     "9:16"
   ],
   "duration": {
-    "minSeconds": 20,
+    "minSeconds": 15,
     "maxSeconds": 45
   },
   "engines": [
@@ -28,12 +30,24 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
       "id": "screen-capture"
     },
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "The real feature footage the whole video is built around."
+      "why": "The real feature footage or screens the whole video is built on."
     },
     {
       "kind": "capability",
@@ -43,12 +57,22 @@
     {
       "kind": "capability",
       "id": "sfx",
-      "why": "A click on the interaction that matters."
+      "why": "One sound on each interaction that matters."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A bed under the VO, or the track for a music-led social cut."
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Legibility of the new control is a frame check."
+      "why": "Legibility of the new control and the peak's state change are frame checks."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Loudness of the export and the loop check on the in-app cut."
     },
     {
       "kind": "skill",
@@ -77,10 +101,17 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "route": {
-    "deliverable": "A 20–45 second changelog video for one feature or a small set",
+    "deliverable": "A 15–45 second announcement of one shipped feature: what changed, why it matters, the feature working, where to find it",
     "inputs": [
       "brief",
       "screen-recording",
@@ -88,8 +119,9 @@
     ],
     "priority": 30,
     "askFirst": [
-      "Which feature, and what changed for the user?",
-      "Do you have a screen recording of it?"
+      "Which feature, and what can the user do now that they couldn't before?",
+      "Where does it play: changelog embed, in-app, or social?",
+      "Is there a screen recording or screenshots of it?"
     ]
   },
   "models": [
@@ -108,18 +140,21 @@
   "triggers": [
     "make an announcement video for this feature",
     "changelog video for our new release",
-    "short video explaining what we shipped",
+    "short video showing what we shipped",
     "feature reveal video",
     "in-app video for this update",
-    "announce this feature on social"
+    "announce this feature on social",
+    "release notes video for this update",
+    "we just shipped polls, make a clip"
   ],
   "templates": [
+    "polls-in-messages",
     "x-numbers-launch-video",
-    "polls-in-messages"
+    "claude-mcp-launch"
   ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "📣"
 }

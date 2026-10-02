@@ -1,14 +1,16 @@
 {
   "id": "three-type",
   "title": "Type (Three.js)",
-  "description": "Typography in Three.js scenes: a shared label component, sizes that stay readable in every aspect ratio, word-by-word and line-by-line reveals, counters that tick to a number, highlight sweeps, captions, and a headline that survives a camera move. Load it whenever a Three.js scene puts words on screen: titles, taglines, stats, captions, calls to action.",
-  "summary": "Readable, consistent type in Three.js scenes: reveals, counters, highlights and captions.",
+  "description": "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a tabular rolling counter. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen.",
+  "summary": "Crisp canvas-texture type with real fonts, blur, tint and masks, plus every kinetic-type recipe, counters and captions.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
     "typography",
     "threejs",
-    "text"
+    "text",
+    "kinetic-type",
+    "captions"
   ],
   "aspects": [
     "16:9",
@@ -27,7 +29,19 @@
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "Legibility is a frame check."
+      "why": "Legibility and the right font are frame checks."
+    },
+    {
+      "kind": "capability",
+      "id": "save-asset",
+      "why": "Font files come into assets/ so the export draws the real face."
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "models": [],
@@ -35,14 +49,24 @@
     "animate the headline word by word",
     "count up to 10,000 users",
     "the text is blurry",
+    "the font is wrong in the export",
     "add captions to the video",
     "highlight the key word",
     "the title is too small on mobile"
   ],
-  "templates": [],
+  "templates": [
+    "samsung-pay-fintech-app-launch-video",
+    "fintech-app-launch-video",
+    "p-doom-music-video",
+    "notchbrowser-app-launch-video",
+    "crypto-launch-video",
+    "moonlight-app-launch-video",
+    "types-of-databases",
+    "x-numbers-launch-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🔤"
 }

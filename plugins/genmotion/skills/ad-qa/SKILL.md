@@ -1,129 +1,155 @@
 ---
 name: ad-qa
-description: "The pre-ship review gate for a short-form ad: six tests run with frame captures (first frame, mute, safe zone, caption, ad-code and claims), the exact timestamps to capture at, what a failure looks like for each one and the fix, and the short report to hand the user at the end. Every ugc-* format skill's final checklist points here. Load it before telling anyone an ad is finished."
+description: "The pre-ship QA pass for a short-form or social ad, run on captured frames and the exported file: the exact frames to capture, eleven tests with pass criteria and fixes (hook frame, brand timing, mute, safe zones with a drawn overlay, captions, text size and contrast, pacing, CTA and ending, audio and loudness, ad codes, claims), then direction's critique rubric as the ship bar and a short report for the user. Every UGC owner ends here. Load it before telling anyone an ad is finished."
 ---
 
 # Ad QA
 
-An ad that lints clean can still be unwatchable. This is the pass between "it renders" and "it is done".
+An ad that validates can still be unwatchable. This is the pass between "it renders" and "it is done", run on pixels and on the exported file, never on the code.
+
+It extends `direction`'s critique (→ `references/critique.md`: the checklist and the 8-axis rubric) with the checks only an ad needs. Numbers come from `ugc-ad-foundations` (safe zones, levels), `ugc-craft` (captions, moves) and `sound-design` (loudness). Frames at 30 fps.
 
 ## When to use
 
-Load this at the end of any short-form ad, before you tell the user it is finished. Every `ugc-*` format skill's checklist ends by pointing here.
+- At the end of every UGC or social ad, before telling the user it is finished. Every UGC owner's checks end by pointing here.
+- When a user asks "is this ready to post", "will this work on TikTok", "did I get the safe zones right", or "check the claims".
+- On a user's existing ad, to review it (report only; change nothing they did not ask you to).
 
-Run it in order. Test 1 fails most often and is cheapest to fix; test 6 is the one that matters most if it fails.
+For a launch film, explainer or sting, run `direction`'s critique alone; the ad-specific tests below assume a feed placement.
 
-## The captures to take
+## Severity
 
-Before testing anything, take this set. For an ad of duration D:
+**Blocker**: do not ship. **Fix**: fix unless the Direction block in `VIDEO.md` says it is deliberate. **Polish**: fix if time allows.
 
-| At | Why |
+## Step 1: capture
+
+Export first (an unexported ad has no audio to measure), then take one `capture-frames` pass at:
+
+| Frame | Why |
 | --- | --- |
-| `0` | Frame zero, the thumbnail and the autoplay still |
-| `0.5s` | Has anything moved yet |
-| `1.5s` | Is the hook line settled and legible |
-| The midpoint of each scene | The mute and safe-zone tests |
-| Two caption cards, mid-word | The caption test |
-| `D - 2s` | The CTA, held |
+| 0, 6, 15 | The thumbnail, the hook line legible, the first movement |
+| 45, 90, 120 | The hook settling, the 3 s mark, brand-in-context by 4 s |
+| Every scene's first, middle and last frame | Mute, safe-zone and pacing tests; each cut is judged as a pair |
+| Two caption groups at their first frame | Caption test |
+| The peak / memorable-moment frame from the Direction block | Craft score |
+| The CTA's first legible frame and D − 2 s | CTA hold |
+| The last frame | Ending, loop |
 
-Capture them all in one `capture-frames` pass: `0`, `0.5s`, `1.5s`, each scene's midpoint, and `D - 2s`. A capture of a whole scene with no time given lands 60 percent in, which is usually the moment the scene is doing its job.
+Then build a contact sheet with `ffmpeg` (`-vf "fps=1,scale=180:-2,tile=8x4" -frames:v 1 sheet.png`) so rhythm, repeated layouts and stills that hold too long are visible at once.
 
-## Test 1: the first frame
+## Step 2: the tests
 
-**Look at the frame-zero capture. Cover the text with your attention and ask whether the image alone would stop you.**
+### 1. Hook frame
+- [Blocker] Frame 0 is not a logo, a wordmark, a brand-colour field, a black frame, or a person about to speak.
+- [Blocker] Frame 15 shows the hook: the line is legible and something has moved since frame 0.
+- [Fix] The hook line is the largest text on screen, ≤7 words, legible by frame 6.
+- Fix: trim the clip head so frame 0 is mid-motion; move the strongest image to frame 0; cut the first beat.
 
-| Fails when | Fix |
-| --- | --- |
-| It is a logo, a wordmark or a brand colour field | Replace the scene's plate entirely. The brand belongs on the end card. |
-| It is a title card: text on a flat field with nothing else | Put something behind the text. A plate, a screen, a hand. |
-| It is black, or nearly black | The first scene starts mid-shot. Trim the clip so frame one is already in motion. |
-| The person is about to speak but has not | Trim into the middle of the first word. |
-| The largest element on screen is not the hook | Resize. The hook line is the biggest thing in the frame. |
+### 2. Brand and product timing
+- [Fix] The product or its UI is in frame, in context, by frame 120 (4 s); the logo card, if any, only at the end. Exception: a problem-solution ad whose Direction block holds the product until its turn (≤7 s).
 
-## Test 2: mute
+### 3. Mute
+- [Blocker] Reading only the scene captures with no sound, someone can say what the product does and what to do next.
+- Fix: put the beat's meaning on screen (caption, state change, mark); give the turn a visual (hard cut, state change); make the CTA text and visual cue appear with the spoken CTA.
 
-**Read only what is on screen across the scene captures. Does the pitch survive?**
+### 4. Safe zones
+Draw the readable area on each captured 9:16 frame and look:
 
-Most of the audience never turns the sound on, so a mute failure is a failure for the majority of viewers.
+```
+ffmpeg -i frame.png -vf "drawbox=x=120:y=270:w=720:h=940:color=red@0.8:t=4,drawbox=x=0:y=1110:w=iw:h=100:color=yellow@0.5:t=2" frame-safe.png
+```
 
-| Fails when | Fix |
-| --- | --- |
-| A beat's meaning is only in the narration | Add the line as a caption or an on-screen element at that beat. |
-| The turn is audible but not visible | Give the turn a visual: a cut, a state change, a mark landing. |
-| The CTA is spoken only | On-screen text and a visual cue, both, in the same two seconds. |
+- [Blocker] Every word, logo, face and CTA that must be read sits inside the red box (x 120–840, y 270–1210).
+- [Fix] Captions sit in the yellow band (y 1110–1210), never over the mouth or the line being read.
+- [Fix] 4:5 deliveries keep key content inside the central 1080×1080 (y 135–1215); 1:1 and 4:5 keep 54–86 px margins.
+- Fix: re-lay-out, don't shrink: break a headline into 2–4 words per line; move the CTA centre or centre-left; offset the crop so a face clears the right rail.
 
-## Test 3: safe zones
+### 5. Captions (spec in `ugc-craft`)
+- [Blocker] Every spoken line is captioned.
+- [Fix] 1–3 words per group, one line, 76–96 px, 8 px stroke, one highlight colour; only one group visible at a time; each group gone by the next group's start frame.
+- [Fix] Captions trim filler but never change the meaning of what is said.
 
-**Check every capture against the platform's reserved areas.**
+### 6. Text size and contrast
+- [Blocker] Text that must be read is ≥34 px at 1080 wide (UI text, source text, prices); nothing meaningful under 24 px.
+- [Blocker] Contrast ≥ 4.5:1 against what is behind it (stroke or box counts); the bright accent never carries small text.
+- Fix: crop tighter or focus-push; rebuild the UI magnified; add the stroke or a 60% box.
 
-For a 1080x1920 canvas: nothing that carries meaning above y 230 or below y 1540, and nothing important in the right 14 percent where the action rail sits.
+### 7. Pacing
+- [Fix] No two captures 90f (3 s) apart look the same (use the contact sheet); hook shots ≤36f.
+- [Blocker] Every on-screen message line holds ≥ `max(30, 9 × words + 15)` frames from the frame it is legible, and ≤15 characters per second.
+- [Fix] Eased punch-ins ≤4 per 30 s; no crossfades anywhere.
 
-| Fails when | Fix |
-| --- | --- |
-| A caption sits in the bottom fifth | Move it to 60 to 70 percent down. |
-| A headline runs under the top chrome | Move it into the middle 60 percent. |
-| The subject's face is behind the action rail | Reframe. Offset the crop left. |
+### 8. CTA and ending
+- [Blocker] The CTA is in the last 3–5 s, said, written (legible ≥60f) and shown with a visual cue.
+- [Fix] No fade to black over the last seconds; no new information after the CTA; the last frame is the CTA or a frame that loops into frame 0.
+- [Fix] The export's duration matches the Beats table (`ffprobe -v error -show_entries format=duration -of csv=p=0 out.mp4`).
 
-## Test 4: captions
+### 9. Audio
+Measure the export:
 
-| Fails when | Fix |
-| --- | --- |
-| A spoken line has no caption | Caption every spoken line. No exceptions. |
-| It is unreadable against a busy frame | Add a 6 to 10px stroke, or a solid block behind. A drop shadow is not enough. |
-| More than three words land at once, in a word-by-word style | Re-split the timing. |
-| The caption is the script verbatim, filler and all | Trim the filler out of the caption even when it is spoken. |
-| It is legible on a laptop but not at arm's length | Increase the size. This is the actual viewing distance. |
+```
+ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af ebur128=peak=true -f null -
+ffmpeg -hide_banner -nostats -i out.mp4 -vn -af silencedetect=noise=-50dB:d=0.3 -f null -
+ffmpeg -hide_banner -nostats -t 0.1 -i out.mp4 -vn -af astats=metadata=0 -f null -
+```
 
-## Test 5: the ad code
+- [Blocker] Integrated −14 LUFS ±1, true peak ≤ −1 dBTP, no clipping. Report both numbers.
+- [Blocker] VO intelligible at the loudest music section; the bed is 0.12 under VO (`sound-design` ladder).
+- [Fix] Frame 1 is audible (the first 0.1 s RMS is not near −inf); no unintended silences ≥0.3 s inside the ad (room tone under VO gaps).
+- [Fix] SFX sit on their visual frames (tap on the press frame, impact ±2f, whoosh leading its cut); every hard cut gets a swish or none does.
+- Fix: scale clip volumes by the loudness difference, or re-master per `sound-design` → `references/mix-and-loudness.md`.
 
-**Look at the first second again and name the thing that says "advertisement".** There is almost always one.
+### 10. Ad codes
+Look at the first second again and name the thing that says "advertisement". There is usually one.
 
 | The code | The fix |
 | --- | --- |
-| Even, directionless light | Grade it. Let one end clip. |
-| Dead-centre composition | Offset the subject a few percent. |
-| A dissolve or a graphic wipe | Hard cut. |
-| A logo bug or watermark running throughout | Remove it. The brand lands on the end card. |
-| A lower third with a name and title | Remove it or make it a caption. |
-| Every shot the same length | Vary them. Hook shots under 1.2s, body 1.5 to 2.5s. |
-| Narration performed rather than spoken | Regenerate with a flatter delivery direction. |
+| Even, directionless light | Grade it; let one end clip |
+| Dead-centre composition | Offset the subject 3–6% of the width |
+| A crossfade or a graphic wipe | Hard cut on a word or a sound |
+| A logo bug or watermark throughout | Remove it; the brand lands at the end |
+| A designed lower third with a name and title | Remove it or make it a caption |
+| Every shot the same length | Vary them per `ugc-craft`'s cadence table |
+| A performed, bright read | Regenerate with a flatter delivery note |
 
-## Test 6: claims
-
-**Read every line of the script and every piece of on-screen text, and ask where each fact came from.**
-
-This is the one that matters. A UGC ad is a person saying something, which is exactly what makes a false claim in one worse than a false claim in a banner.
+### 11. Claims
+Read every spoken line and every piece of on-screen text, including text inside rebuilt UI and mocked sources, and ask where each fact came from. Test against the six rules in `ugc-ad-foundations` → "Claims".
 
 | Fails when | Fix |
 | --- | --- |
-| A number, rating, timeframe or user count nobody supplied | Remove it, or replace it with a bracketed placeholder and tell the user. |
-| A testimonial attributed to a named person who did not say it | Remove the name, or remove the line. |
-| A synthetic presenter implied to be a real customer, employee or expert | Rewrite the line so it does not claim an identity. |
-| A before-and-after implying a typical result the user has not claimed | Remove the implication, or ask the user to confirm. |
-| A rebuilt UI showing a feature that does not exist | Rebuild what exists. |
-| A competitor named alongside a claim about them nobody sourced | Remove the claim. Comparing on your own product's facts is fine. |
+| A number, rating, timeframe or user count nobody supplied | Remove it, or bracket it and tell the user |
+| Words attributed to a named person who did not say them | Remove the name or the line |
+| A synthetic presenter implied to be a customer, employee or expert | Rewrite so it claims no identity |
+| A before-and-after implying a typical result | Remove the implication or ask the user to confirm |
+| A rebuilt UI or mocked page showing something that does not exist | Rebuild what exists; genericise a mocked third-party page |
+| A competitor claim with no source | Remove it; compare on your own facts |
 
-Never resolve a claims failure by guessing. Ask, or leave the placeholder in and say so in one line.
+Never resolve a claims failure by guessing.
 
-## The report
+## Step 3: the craft score
 
-After the six tests, give the user one short paragraph, not a checklist:
+Score the ad on `direction`'s rubric (Idea, Hook, Frame, Type, Motion, Transitions, Pacing / energy, Sound), one sentence of evidence each, from the captures. Read Transitions with the UGC deviation: hard cuts on words or sounds are the intended workhorse, so the question is whether one motivated signature move exists at the turn or payoff. **Ship bar**: no Blocker open, no axis below 3, average ≥4. Fix the lowest axis first, re-capture, re-score.
 
-> Ran the six checks. Frame zero is the failure-state shot with the hook line over it, which reads at thumbnail size. It plays muted: every spoken line is captioned and the turn is a hard cut, so the pitch survives with no sound. Captions sit at 63 percent down, clear of the action rail. Two things for you: the "eleven minutes" figure is a placeholder because I did not have a real number, and the presenter is generated, so the script does not claim they are a customer.
+## Step 4: the report
 
-Name what you changed, and name what only they can answer. Do not list the tests that passed.
+Give the user one short paragraph, not a checklist. Name what you changed and what only they can answer; do not list tests that passed. Append the scores to `VIDEO.md` in `direction`'s critique format.
+
+> Checked the ad on captured frames and the export. Frame 0 is the render bar already crawling, and the hook line is legible by frame 6. It plays muted: every line is captioned in the 1110–1210 band and the turn is a hard cut with a brightness step. I moved the price out of the right rail and raised the bed's fade so frame 1 has the swish. Export measures −14.2 LUFS, −1.6 dBTP. Two things for you: "eleven minutes" is a placeholder until you give me the real figure, and the presenter is generated, so the script does not claim they are a customer. Scores: Idea 4 · Hook 5 · Frame 4 · Type 4 · Motion 4 · Transitions 4 · Pacing 4 · Sound 4.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Every test | `capture-frames` | There is no fallback. An ad nobody looked at is not finished. |
-| The composition or scene compiling at all | Your project's own check tool (`validate`) | None. Run it first; a failing composition or scene captures nothing useful. |
-| The timeline as the editor sees it | `project-overview` | Read the scene timing by hand. |
+| Every visual test | `capture-frames` | None. An ad nobody looked at is not finished |
+| Loudness, silences, duration, overlays, contact sheet | `ffmpeg` | None for loudness; say the export is unmeasured |
+| Scene boundaries and audio clips | `project-overview` | Read `project.json` and the Beats table |
+| The project compiling at all | `validate` | None: run it first; a failing scene captures nothing useful |
 
 ## Checks before you finish
 
-1. All six tests above, in order, with the captures actually taken.
-2. This project's own check tool (`validate`) passes with no findings.
-3. The report is written and includes anything only the user can resolve.
-4. Nothing is described to the user as verified that was not looked at.
+1. `validate` passed before any capture was taken.
+2. Every capture in Step 1 was actually taken and looked at; the safe-zone overlay was drawn on at least frame 15, one mid-body frame and the CTA frame.
+3. All eleven tests were run; no Blocker is open.
+4. The export was measured: integrated loudness and true peak are in the report.
+5. The rubric scores are written with evidence, average ≥4, none below 3.
+6. The report names every placeholder and every claim only the user can confirm, and nothing is described as checked that was not looked at.

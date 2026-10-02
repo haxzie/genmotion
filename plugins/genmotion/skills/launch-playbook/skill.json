@@ -1,15 +1,17 @@
 {
   "id": "launch-playbook",
   "title": "Launch playbook",
-  "description": "The creative layer above your project's own launch build pipeline: five story shapes for a launch (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, 30 / 60 / 90 second beat sheets for each, the muted-playback and first-five-seconds rules, where social proof goes, and cut variants for Product Hunt, X, YouTube and LinkedIn. Load it when the ask is a product, feature or company launch video. It owns the story, not the pipeline: hand off to your project's own build pipeline for capture, asset staging and the build steps.",
-  "summary": "Five launch story shapes, beat sheets for 30/60/90s, the first-five-seconds rule, and cuts per destination.",
+  "description": "The product launch film, 15 to 90 seconds: five story shapes (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, the launch energy curve with the reveal at 25 to 30 percent, frame-budgeted beat sheets for 15, 30, 45 and 60 seconds with VO word budgets, the reveal and hero-shot craft measured from GenMotion's launch templates, the music or VO sound plan, social proof rules and recuts per destination. Load it for a product, app or company launch video.",
+  "summary": "Five launch shapes, the reveal at 25–30%, frame-budgeted beat sheets for 15–60 s, VO budgets, sound plan and recuts per destination.",
   "kind": "workflow",
   "category": "Launch",
   "tags": [
     "launch",
     "product-launch",
     "story-shape",
-    "product-marketing"
+    "product-marketing",
+    "reveal",
+    "promo"
   ],
   "aspects": [
     "16:9",
@@ -18,7 +20,7 @@
     "9:16"
   ],
   "duration": {
-    "minSeconds": 30,
+    "minSeconds": 15,
     "maxSeconds": 90
   },
   "engines": [
@@ -29,22 +31,50 @@
   "requires": [
     {
       "kind": "skill",
-      "id": "ugc-scripting"
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
     },
     {
       "kind": "capability",
       "id": "voiceover",
-      "why": "Narration for problem-first, demo-first and metric-first shapes."
+      "why": "Narration for VO-led shapes: problem-first, demo-first and metric-first."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A build-and-drop track with the drop on the reveal."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "Hits on the reveal and the mark, clicks on presses."
     },
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "Real product screenshots and brand assets, never invented."
+      "why": "Real product screenshots, recordings and the logo file, never invented."
+    },
+    {
+      "kind": "capability",
+      "id": "web-research",
+      "why": "The product's real copy, palette and claims from its site."
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "The muted-playback and first-five-seconds checks are frame captures."
+      "why": "The first-frame, mute and reveal checks are made on captured frames."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Measuring the export's loudness and building a contact sheet."
     },
     {
       "kind": "skill",
@@ -83,7 +113,7 @@
     }
   ],
   "route": {
-    "deliverable": "A 30–90 second product launch film: problem, product, proof, call to action",
+    "deliverable": "A 15–90 second product launch film: hook, the proposition by beat 2, a reveal, proof on the product, and a held end card",
     "inputs": [
       "brief",
       "url",
@@ -91,8 +121,9 @@
     ],
     "priority": 40,
     "askFirst": [
-      "What is the product, and the one thing it does better than the alternative?",
-      "Where will it run, and at what aspect ratio?"
+      "What is the product, and the one thing it does that the alternative can't?",
+      "Where does it run first (landing page, Product Hunt, X, LinkedIn, TikTok), and with sound or muted?",
+      "What real material is there: screens or a recording, the logo file, a true number?"
     ]
   },
   "models": [
@@ -105,29 +136,34 @@
       "purpose": "image",
       "model": "Gemini 2.5 Flash Image",
       "via": "generate-image",
-      "note": "Only for a manifesto shape's invented visuals, never a product shot."
+      "note": "Only for a manifesto or category shape's invented visuals, never a product shot."
     }
   ],
   "triggers": [
+    "launch video for my new app",
     "make a launch video for our product",
     "we're launching next week, need a video",
     "promo video for our SaaS launch",
     "product hunt launch video",
     "make a video announcing our company",
-    "video for our funding and product launch",
-    "launch video for my new app"
+    "turn our homepage into a launch film",
+    "apple style product reveal video"
   ],
   "templates": [
-    "notion-launch-video",
     "codex-launch-video",
+    "notion-launch-video",
+    "claude-mcp-launch",
     "gojiberry-launch-video",
+    "prequel-launch",
+    "fintech-app-launch-video",
+    "samsung-pay-fintech-app-launch-video",
     "google-generative-ai",
     "dont-blink-gpt-6-astra",
-    "claude-mcp-launch"
+    "elevenlabs-voice-ai-launch"
   ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🚀"
 }

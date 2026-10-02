@@ -1,8 +1,8 @@
 {
   "id": "stock-and-broll",
   "title": "Stock and b-roll",
-  "description": "Sourcing footage and stills that read as real rather than stock: what makes stock look like stock and the treatments that fix it, the sourcing order from the user's own material through connectors to generated, and how to prompt a video or image model for UGC-grade material (handheld, available light, imperfect framing, a real room). Load it when an ad needs cut-aways, a product shot or a staged still nobody has photographed.",
-  "summary": "Cut-aways that read as real: the sourcing order, the four treatments that fix stock, and how to prompt for UGC-grade footage.",
+  "description": "Sourcing cut-aways, product shots and staged stills that read as real rather than stock: the sourcing order from the user's own material through the brand's assets and stock connectors to generated, the licence and resolution checks before anything is used, the tells of stock and the four treatments that fix them (grade, crop, move, cut short) with ffmpeg and in-scene recipes, prompting image and video models for phone-grade material, and where a cut-away goes against the voice. Load it when an ad needs material nobody has shot.",
+  "summary": "Cut-aways that read as real: sourcing order, licence and resolution checks, grade-crop-move-cut, phone-grade prompts, placement on the word.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
@@ -10,7 +10,8 @@
     "stock",
     "footage",
     "prompting",
-    "grading"
+    "grading",
+    "licensing"
   ],
   "aspects": [
     "9:16",
@@ -29,6 +30,14 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
       "kind": "mcp",
       "id": "freepik",
       "why": "Stock stills and short clips for environments and textures."
@@ -45,23 +54,9 @@
     },
     {
       "kind": "skill",
-      "id": "media-use",
-      "engines": [
-        "hyperframes"
-      ]
-    },
-    {
-      "kind": "skill",
       "id": "three-assets",
       "engines": [
         "three"
-      ]
-    },
-    {
-      "kind": "skill",
-      "id": "hyperframes-keyframes",
-      "engines": [
-        "hyperframes"
       ]
     },
     {
@@ -85,6 +80,16 @@
       "kind": "capability",
       "id": "capture-frames",
       "why": "Whether a shot reads as real is a judgement made by looking."
+    },
+    {
+      "kind": "capability",
+      "id": "web-research",
+      "why": "The brand's own photography and logo, and checking a stock licence."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Grade, trim and re-encode clips before a scene plays them."
     }
   ],
   "models": [
@@ -111,14 +116,15 @@
     "find me some b-roll for this ad",
     "this footage looks like stock",
     "generate a shot of someone struggling with this",
-    "what should I cut away to",
-    "make the generated footage look more real",
-    "I need a product shot"
+    "what should I cut away to during the voiceover",
+    "make the generated footage look like a phone shot",
+    "can I use this stock clip in an ad",
+    "I need a product shot nobody has taken"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🎞️"
 }
