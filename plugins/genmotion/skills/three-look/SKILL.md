@@ -60,7 +60,7 @@ The renderer is shared by every scene in the film, so **every scene** calls `col
 - `studioEnvironment()` builds a grey room with four softbox panels and prefilters it with PMREM, once, in the builder: **metal and gloss without an environment render black or plastic.** This is the single biggest upgrade for any 3D object.
 - A rim light from behind separates a subject from a dark ground; add it before brightening anything.
 - Same light direction in every scene of the film.
-- A "product" that is flat printed matter (receipts, cards, paper) gains nothing from product lights: use the `flat` pipeline with a baked soft shadow plane under each piece, so its paper hex stays exact.
+- A "product" that is flat printed matter (tickets, cards, paper) gains nothing from product lights: use the `flat` pipeline with a baked soft shadow plane under each piece, so its paper hex stays exact.
 
 ## Materials
 

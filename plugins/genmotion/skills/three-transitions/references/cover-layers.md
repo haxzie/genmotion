@@ -198,11 +198,11 @@ panel.position.x = lerp(0, width, prog(frame, 0, 8, inOutCubic));
 content.position.x = lerp(-46, 0, prog(frame, 0, 16, outCubic)) * PX;
 ```
 
-`panel` is a `PlaneGeometry(width + 4, height + 4)` with `MeshBasicMaterial({ color, toneMapped: false, depthTest: false })`, `renderOrder` 950, on the overlay group.
+`panel` is a `PlaneGeometry(width + 4, height + 4)` with `MeshBasicMaterial({ color, transparent: true, toneMapped: false, depthTest: false })`, `renderOrder` 950, on the overlay group. `transparent: true` even though it is opaque: three.js draws every opaque object before every transparent one, and the kit's type is transparent, so an opaque panel is drawn *under* any `onTop()` label whatever its order.
 
 ## 8. Rules for every cover
 
-- On the overlay, so camera moves never uncover an edge; `renderOrder` 950+, `depthTest: false`, `userData.pickable = false`.
+- On the overlay, so camera moves never uncover an edge; `renderOrder` 950+, `depthTest: false`, `userData.pickable = false`. The mesh's 950 only ranks it *inside* its group: three.js sorts by the nearest ancestor Group's `renderOrder` first, so the cover beats type wrapped in `onTop()` only because `overlay()` sets its group to 900 (`three-camera` `rig.md`). Every cover material is `transparent: true` (opaque objects are drawn before all transparent ones, so an opaque cover loses to transparent type). Add the cover as a direct child of the overlay group, never inside a nested Group at 0; if an older `stage.ts` lacks the line, set `hud.group.renderOrder = 900` after `overlay()`.
 - Not tone mapped, and its colour is **exactly** the next scene's background or carrier (one constant in `components/handoff.ts`, imported by both).
 - Covers complete 2–5f before the cut and hold; the next scene's first frame is the same picture.
 - A frame checker that flags single-colour frames as blank will flag a flood or flash cut; that is expected. Confirm the colour is the carrier's, not an empty scene.

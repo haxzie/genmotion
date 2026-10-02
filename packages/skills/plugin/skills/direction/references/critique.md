@@ -14,6 +14,7 @@ Contents: 1 What to capture · 2 The checklist · 3 The rubric (8 axes × 1–5)
 - the fully built frame and the last frame of every scene;
 - the first frame of every following scene (each cut is judged as a pair);
 - the 10–30f breath and the peak frame named in the Direction block;
+- for a loop (a landing-page hero, an event screen): the last frame and frame 0, side by side;
 - the moment each on-screen line becomes legible and the last frame before it starts to leave (to measure the hold);
 - the final frame.
 
@@ -31,18 +32,32 @@ Use `fps=2` for a feed piece under 20 s. For sound, measure the export with `ffm
 Two measurements on the export, every time:
 
 ```sh
-# dead holds: a blur hides grain, so only real stillness counts
+# dead holds (a screen, not a verdict: it misses small moving parts; see below)
 ffmpeg -i export.mp4 -vf "scale=320:-2,gblur=sigma=2,freezedetect=n=0.003:d=1.0" -map 0:v -f null - 2>&1 | grep -o "freeze_[a-z]*: [0-9.]*"
 # delivery: bitrate (bit/s) and size; then faststart (moov must be listed before mdat)
 ffprobe -v error -show_entries format=bit_rate,size -of default=nw=1 export.mp4
 ffprobe -v trace export.mp4 2>&1 | grep -o "type:'\(moov\|mdat\)'" | head -2
 ```
 
-A flagged range is a dead hold only if a strip of every 4th frame across it confirms nothing visible changes: a thin mark moving on a flat field (a sting's needle, a small cursor) can sit under the threshold while clearly moving. For stings and anything with a small subject on a flat ground, measure on a **crop around the subject** (`crop=w:h:x:y` before `freezedetect`, or neighbour PSNR on the crop): whole-frame numbers stay near-still when a small mark moves over a large flat field. Freezes that touch (one's end is the next one's start) are one hold: add them up.
+**Every flagged range must be confirmed before it counts**, in any format (a sting, a diagram explainer, a UI demo, a launch hero): at 320 px wide a 150 × 60 px chip crossing the frame, a counter ticking or a thin stroke moving changes too few pixels to clear the threshold, so the meter reports "frozen" while the picture moves. Confirm each range in this order:
+
+1. Re-run `freezedetect` on a **crop around the part that should be moving** (`crop=w:h:x:y,` before `scale`), or compare neighbour PSNR on that crop.
+2. If the shot has a camera drift or creep, the crop never reads frozen (a ±4 px drift alone defeats it), so the crop proves nothing either way: confirm on a **4 fps strip** of the range instead (`fps=4,scale=480:-2,tile=8x1`) and look for the moving part.
+3. A range is a dead hold only if the strip shows nothing visible changing. Small but real motion clears the meter's flag; it does not clear the viewer's sense of a stall, so a strip of 1.5–2 s where only a 60 px chip moves is still worth a larger move (Motion).
+
+Freezes that touch (one's end is the next one's start) are one hold: add them up. Adding a creep only to quiet the meter is not a fix; adding a move the viewer can see is.
+
+**Loop seam** (anything that plays as a loop): the last frame and frame 0 must be no more different than two consecutive frames inside a hold. Measure on a 320 px scale: PSNR ≥ 30 dB between them, or the cut is one of the film's designed matched cuts (the owner skill says how to build the seam):
+
+```sh
+ffmpeg -v error -sseof -0.04 -i export.mp4 -frames:v 1 -vf scale=320:-2 last.png
+ffmpeg -v error -i export.mp4 -frames:v 1 -vf scale=320:-2 first.png
+ffmpeg -i last.png -i first.png -lavfi psnr -f null - 2>&1 | grep -o "average:[0-9.inf]*"
+```
 
 ## 2. The checklist
 
-Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block says it is deliberate. **Polish** = fix if time allows.
+Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block says it is deliberate. **Polish** = fix if time allows. "Left as deliberate" clears a Fix or a Polish item, **never a Blocker**: a deliberate Blocker is still a Blocker. If the brief itself forces one (a loop that must also end on an end card), change the build (the owner's recipe), not the label.
 
 ### Idea and story
 - [Blocker] The SMP is visible: someone who watches muted (feed) or listens without looking (VO explainer) can say it back.
@@ -53,13 +68,14 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 
 ### Hook and first frame
 - [Blocker] Feed placements: the frame at 0.5 s already shows the hook. No fade from black, no empty frame, no logo-first card.
+- [Fix] YouTube, click-to-play and feeds: the **tension** (the problem, the danger, the question, the thing half-way through changing) is on screen by 1 s, and frame 0 is already in motion. An empty diagram, an empty stage or a headline typing over two idle boxes is setup, not a hook.
 - Stings, channel intros and end cards are logo-first by definition: judge their hook on whether motion has started by frame 15 (not an empty field with a speck in it) and the mark or name is legible by the lock frame.
 - [Fix] Brand is present by 3–4 s in feed ads (a product shot, the UI or the mark in context), not only at the end.
 
 ### Frame
 - [Blocker] Every word, logo and face that must be read is inside the safe zone for each aspect it ships in (9:16: inside x 120–840, y 270–1210).
 - [Fix] One focal point per frame; the eye knows where to go within 15f of each cut.
-- [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame.
+- [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame. One **semantic state colour** (error or threat red, for an attacker, a failure, a warning) may share frames with the accent if it is always paired with a shape or a label and never colours a message line.
 - [Fix] Hero and end-card frames leave negative space (content fills 40–60% of the frame).
 - [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal or it is brand identity (a sting or end card on the exact brand hex).
 
@@ -67,7 +83,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible, and never more than 15 characters per second.
 - [Blocker] Contrast ≥ 4.5:1 for read text under 60 px (≥ 3:1 at 60 px and above), measured against what is actually behind it. A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; a high-contrast accent eyebrow (yellow on near-black, about 13:1) passes.
 - [Fix] ≤ 2 type families; a size ratio ≥ 1.5× between levels; display tracking tightened (−0.02 to −0.045em).
-- [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers.
+- [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers. The count is of message lines (headlines, captions, the line being said); a diagram's labels are capped separately (≤ 5 labelled parts, each label on its part, `explainer`).
 - [Polish] No widows (a single word alone on the last line of a headline).
 
 ### Motion
@@ -89,13 +105,13 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 
 ### Pacing and energy
 - [Blocker] The beat table's frame ranges sum to the video's length, and the export's duration matches.
-- [Fix] There is a breath before the peak and the peak is the most contrasting moment in the film.
+- [Fix] There is a breath before the peak (10–30f of picture, even when the music's dropout under it runs longer) and the peak is the most contrasting moment in the film.
 - [Fix] The beat interval matches the energy chosen (Hyper 8–14f, High 18–30f, Medium 30–50f, Calm 45–70f) and varies along the curve.
 - [Fix] No dead holds: on the `freezedetect` pass above, any freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, is exempt). A line held more than 2× its formula with nothing else changing is the same fault.
 - [Fix] The logo holds 75–120f (10–30f only in beat-cut styles), with nothing new after the CTA.
 
 ### Delivery
-- [Blocker] The file fits its destination. Landing-page hero: H.264, ≤ 5 Mb/s at 1080p (≤ 3 Mb/s at 720p), ≤ 15 MB, `+faststart` (moov at the front), plays muted and loops cleanly (last frame cuts back to frame 0 without a jump). Platform uploads (YouTube, feeds) re-encode, so anything under about 20 Mb/s is fine; store previews follow `app-store-preview`'s specs. A file over budget is re-encoded (`-c:v libx264 -crf 23 -maxrate 5M -bufsize 10M -movflags +faststart`); if it still is, the grain or noise in the picture is the cause (`three-look`).
+- [Blocker] The file fits its destination. Landing-page hero: H.264, ≤ 5 Mb/s at 1080p (≤ 3 Mb/s at 720p), ≤ 15 MB, `+faststart` (moov at the front), plays muted and loops cleanly (last frame cuts back to frame 0 without a jump). Platform uploads (YouTube, feeds) re-encode, so anything under about 20 Mb/s is fine; store previews follow `app-store-preview`'s specs. A loop's seam passes the loop-seam measurement in §1. A file over budget is re-encoded (`-c:v libx264 -crf 23 -maxrate 5M -bufsize 10M -movflags +faststart`); if it still is, the grain or noise in the picture is the cause (`three-look`).
 
 ### Sound (when the film has any)
 - [Blocker] VO is intelligible over the bed; no clipping in the export.
@@ -148,7 +164,7 @@ Re-capture the same frames after fixing and re-score. Never report a score for f
 Scores: Idea 4 · Hook 5 · Frame 4 · Type 3 · Motion 4 · Transitions 4 · Pacing 4 · Sound 4 → avg 4.0
 Blockers: none
 Fixed this pass: beat 5 headline held 36f → 60f; drift stopped before the 540 cut
-Left as deliberate: hard cut at 660 (on the drop)
+Left as deliberate: hard cut at 660 (on the drop)   ← Fix or Polish items only; never a Blocker
 Frames checked: 0, 15, 75, 76, 180, 200, 262, 300, …, 899
 ```
 

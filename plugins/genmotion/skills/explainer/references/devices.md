@@ -16,7 +16,7 @@ Pick one per concept and keep it for the whole film. The metaphor must survive t
 | Caching | A shelf beside the road: the second trip stops at the shelf and comes back in a third of the time (show the time) |
 | Encryption (symmetric, session traffic) | A packet sealed in a box that **both ends open with the same key**; the key itself never travelled; the box is visibly opaque in transit |
 | Key exchange (Diffie–Hellman) | Paint mixing: each side mixes its private colour into the other's public mix and both arrive at the same colour; an eavesdropper holding both public mixes cannot unmix them. Call them "public shares", **never "halves" of a key** |
-| Public-key signatures, certificates | **Show the attack it stops first** (an impostor in the middle swapping in their own key), then the check that stops it: the certificate signed by an authority **and** the server proving it holds the matching private key |
+| Public-key signatures, certificates | **Show the attack it stops first** (an impostor in the middle swapping in its own key share), then the check that stops it: the server **signs the handshake, including the key shares it saw**, with the private key that its authority-signed certificate names. Label what is signed (`sig(shares)`, not a bare "sig ✓"). If the impostor relays that signature, the client's check **fails**, because the share the client received is not the share that was signed: ✗ at the client, connection closed. The impostor cannot sign its own share without the private key. Never show a ✓ while a swapped share is in place, and never let the keys "heal" without a fresh exchange: show a clean rerun with no impostor, and only then the ✓ and the agreed key |
 | Sync, replication | Two (or three) identical boards; a stroke drawn on one appears on the others with a visible delay |
 | Queues, backpressure | Items lining up at a narrow gate; the line grows when arrivals outpace the gate |
 | Load balancing | One stream splitting across N lanes; one lane fails and its items re-route |
@@ -54,5 +54,8 @@ The first 2–4 s (60–120f) earn the rest. Options, in order of how often they
 2. **A surprising number**: "Every Google search uses this much energy." (Then show it.)
 3. **A wrong intuition**: "Most people think a database is a spreadsheet. It isn't."
 4. **The end state first**: the finished diagram for 30f, then erase and build it properly.
+5. **The danger, happening**: the failure or attack the film defends against, already in motion at frame 0 (a leak spreading across a dependency graph, a stampede of requests hitting one database, a forged message being accepted), with the question or the cost on screen by 1 s. Best for security and reliability topics, where the threat is the reason to watch.
+
+For YouTube as much as feeds: the tension is on screen by 1 s (30f) and frame 0 is already moving; a headline typing in over an empty diagram is setup, not a hook.
 
 Never open on "In this video we will…", a logo or an agenda slide.

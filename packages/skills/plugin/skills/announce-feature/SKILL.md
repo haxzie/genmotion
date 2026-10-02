@@ -111,7 +111,7 @@ Memorable moment: 180–240 — the poll grows into the thread and five votes ti
 
 ## Building it
 
-- **Three.js (default)**: UI rebuilt as planes with canvas-drawn content (`three-assets` for screenshots and video textures, `three-type` for crisp UI and headline text), an orthographic or fixed-distance camera so pixel sizes stay exact, focus pushes via `three-camera`, and the cursor as a small textured plane with its own pose module so the next scene can start from it. Floods and wipes from `three-transitions`.
+- **Three.js (default)**: UI rebuilt as planes with canvas-drawn content (`three-assets`' `references/drawn-ui.md` has tested panel, field, chip and button helpers; `three-assets` also for screenshots and video textures, `three-type` for crisp UI and headline text), an orthographic or fixed-distance camera so pixel sizes stay exact, focus pushes via `three-camera`, and the cursor as a small textured plane with its own pose module so the next scene can start from it. Floods and wipes from `three-transitions`.
 - **HyperFrames**: the UI as markup inside each scene's sub-composition; the cursor and ring as timeline tweens; clicks as `<audio>` elements at the press time.
 - **React**: one scene per beat; `@genmotion/motion` eases; `<TextAnimation>` for the name.
 
@@ -143,5 +143,5 @@ Memorable moment: 180–240 — the poll grows into the thread and five votes ti
 6. Every click sound sits on its press frame (capture the cue frame and the frame before).
 7. VO words ≤ the budget; VO starts 3–8f after each cut.
 8. The CTA frame names a path, command or default, and holds ≥ its text formula.
-9. In-app loop cut: the first and last frames are identical (compare the two captures); no audio.
+9. In-app loop cut: the first and last frames are identical (compare the two captures; on the export, PSNR ≥ 30 dB at 320 px per `direction`'s critique §1); no audio.
 10. `ffmpeg` `ebur128`: −14 LUFS ±1, true peak ≤ −1 dBTP (cuts with sound). The `direction` self-critique passes; `validate` passes.

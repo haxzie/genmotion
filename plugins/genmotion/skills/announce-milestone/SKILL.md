@@ -105,7 +105,7 @@ Investors or notable customers: 60–90f, a simple grid or a slow drift, never h
 
 ## Building it
 
-- **Three.js (default)**: digits from `three-type`: one canvas-texture atlas of 0–9 at a fixed advance (tabular), one plane per digit column, updated each frame from the eased value; the punch is a scale on the group; confetti is seeded instanced quads with gravity as a pure function of frames since the land (`three-assets` for avatar and logo textures, `three-look` for the paper stage). A ring is a `RingGeometry` whose `thetaLength` follows the same eased progress.
+- **Three.js (default)**: digits from `three-type`'s `counter()`: one canvas-texture atlas of 0–9 at a fixed advance (tabular), one plane per digit column, updated each frame from the eased value, leading zeros hidden so a count from 0 never reads "0,042"; the punch is a scale on the group; confetti is seeded instanced quads with gravity as a pure function of frames since the land (`three-assets` for avatar and logo textures, `three-look` for the paper stage). A ring is a `RingGeometry` whose `thetaLength` follows the same eased progress.
 - **HyperFrames**: tween a proxy value on the timeline and write the formatted string on each update; tabular figures in the font settings; confetti as seeded elements.
 - **React**: `<CountText>` from `@genmotion/motion` for the count, a spring or `interpolate` for the punch.
 

@@ -44,7 +44,7 @@ Not for: what the film should say or look like (`direction`), levels and mixing 
 
 Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px travel with a 5f word stagger. Long text arrives by line or word, never by character: `references/text-motion.md` has the kinetic-type recipes and the reading-time rules every one of them obeys.
 
-**Order of arrival is order of importance.** The first thing to move after a cut is the focal point. Offset the first entrance 3–6f from the cut so the cut itself reads.
+**Order of arrival is order of importance.** The first thing to move after a cut is the focal point. Offset the first entrance 3–6f from the cut so the cut itself reads. Exception: a card or title that **lands on a hit** (a trailer card, a beat card, a word on a music hit) is fully legible on the hit frame: pre-roll its entrance so it completes on the hit, or put it on hard; a blur still clearing on the hit frame misses the hit.
 
 ## Exits
 
@@ -81,9 +81,18 @@ The peak sits at about 60% of the duration. Springs, measured from the templates
 
 "Gentle over 16f" means the gentle shape time-scaled to settle in exactly 16f; write springs that way on every engine (closed-form code in `references/easing.md` §6).
 
-**Damped swings** (a compass needle, a pendulum, a hanging sign, a wobbling card): `θ(t) = A · e^(−ζω0·t) · cos(ωd·t)`. The eye reads the motion as over at its **last visible swing**, not at the formula's end, so plan the settle frame as the frame where the amplitude envelope `A · e^(−ζω0·t)` drops under **1°** (or 1 px for a translation): `t_settle = ln(A / 1°) / (ζω0)`. Then capture a strip of every 2nd frame around it and confirm; a swing planned to settle at f44 that is visibly still from f32 leaves a 12f dead beat. If the next move must start at the settle, start it on the measured frame.
+**Damped swings** (a pendulum, a hanging sign, a gauge pointer, a wobbling card): `θ(t) = A · e^(−ζω0·t) · cos(ωd·t)`. The eye reads the motion as over at its **last visible swing**, not at the formula's end, so plan the settle frame as the frame where the amplitude envelope `A · e^(−ζω0·t)` drops under **1°** (or 1 px for a translation): `t_settle = ln(A / 1°) / (ζω0)`. Then capture a strip of every 2nd frame around it and confirm; a swing planned to settle at f44 that is visibly still from f32 leaves a 12f dead beat. If the next move must start at the settle, start it on the measured frame.
 
-**Searching swings** (anticipation that builds into a snap, the opposite of a damped settle): amplitude shrinks while the rate rises, so energy climbs into the trigger. With `p = t / T` over the anticipation of length `T`: `θ(t) = A0 · (1 − 0.8p) · sin(2π · (f0·t + (f1 − f0) · t² / (2T)))`, for example `A0` 35°, `f0` 1.2 Hz, `f1` 3.5 Hz over 36f. Choose `T` so the phase lands on a zero crossing at `t = T`, then snap to rest in 3–4f with outCubic on that frame (a tick and a glint on it). Never let a damped swing stand in for this: a damped swing slows and calms, which drains the build.
+**Searching swings** (anticipation that builds into a snap, the opposite of a damped settle): amplitude shrinks while the rate rises, so energy climbs into the trigger. It has two parts: a chirped swing over `[0, T]` that ends **on an extreme** (velocity 0), then a **snap** from that extreme to rest over 3f outCubic that lands on the trigger frame `T + 3` (the tick and the glint go there). Ending on an extreme is what makes the snap a move: a swing that ends on a zero crossing is already at rest position, moving at full speed, and has nothing left to snap.
+
+- Swing, with `p = t / T` and a phase offset `φ0` so frame 0 is already mid-swing: `θ(t) = A0 · (1 − 0.6p) · sin(2π · φ(t))`, `φ(t) = φ0 + f0·t + (f1 − f0) · t² / (2T)`. Defaults: `A0` 35°, `φ0` 0.125 (frame 0 at 0.71 × A0 and moving), `f0` 1.2 Hz.
+- Solve `f1` so `φ(T)` is an odd quarter (an extreme): compute `φ(T)` with a trial `f1` of 3.5 Hz (`φ(T) = φ0 + T·(f0 + f1)/2`), round it to the nearest `n + 0.25` or `n + 0.75`, then `f1 = 2·(φ_end − φ0) / T − f0`.
+- Snap: `θ = θ(T) · (1 − outCubic((t − T) / 3f))`, ending at 0 on `T + 3`. Its first frame must move ≥ 0.8 × the last swing's peak per-frame speed, or it reads as a settle: if it does not, shorten it to 2f or decay the amplitude less (`1 − 0.5p`).
+- North passes (zero crossings, where a tick is motivated) are where `φ(t) = k/2`: `t = (−f0 + √(f0² + 2a·(k/2 − φ0))) / a`, with `a = (f1 − f0) / T`.
+- Worked example (tested numerically, 30 fps, trigger on f36): `T` = 33f = 1.1 s, `φ(T)` with 3.5 Hz = 2.71 → 2.75, so `f1` = 3.573 Hz. Frame 0 = +24.8°; the swing peaks at 11.7°/frame, the last extreme is −14.0° on f33; the snap moves 9.9°, 3.6°, 0.5° per frame and rests on f36. North passes at f7.6, 15.1, 21.1, 26.2, 30.9 (ticks on f8, 15, 21, 26, 31, the snap tick on 36).
+- Check a strip: no two consecutive anticipation frames identical (an extreme falling exactly between two frames duplicates them; nudge `φ0` by 0.02).
+
+Never let a damped swing stand in for this, and never decay the amplitude to zero before the trigger: the motion reads as over once the envelope drops under 1°, which leaves a dead beat before the snap.
 
 ## Holds that breathe
 
@@ -149,7 +158,7 @@ Choose one signature and one workhorse per film (`direction` Step 7). House usag
 | Iris | 16–34f inOutCubic | Circle from the clicked control to the farthest corner; iris-in shrinks to an object | End of a demo, ending on a mark | Click 0.9 (−0.9) on the press; swell 0.6 (−4.4) from iris start |
 | Match-push | 24–48f readable, 6–10f aggressive | Camera ends at an exact crop; next scene laid out at that scale; drift stopped | Into a UI element | Whoosh 0.5–0.75 (−6 to −2.5), 2–4f before the cut |
 | Push through screen | 45f in, 52f back out | Zoom = frame width / screen width | Device → UI → device | Soft whoosh 0.5 (−6) or none |
-| Flash-to-white | ramp 4–8f ease-in, decay 6–9f | White layer straddles the cut; ≥ 50% luma contrast with the frames either side | Music cuts, impacts; once or twice per film elsewhere | Impact 0.7–0.85 (−3.1 to −1.4) on the cut ±2f |
+| Flash-to-white | ramp 4–8f ease-in, decay 6–9f | White layer straddles the cut; ≥ 50% luma contrast with the frames either side, measured within the flashing area; letterboxed picture: flash the picture area only; never into an already bright plate | Music cuts, impacts; once or twice per film elsewhere | Impact 0.7–0.85 (−3.1 to −1.4) on the cut ±2f |
 | Block wipe | 18–24f | 12 × 7 cells by sweep + clump + jitter, growing out of an on-screen object of the wipe's colour; incoming beat already 12f into its entrances | Textured, editorial films | Wipe sound 0.5 (−6) on the wipe's first frame |
 | Colour-field push / panel wipe | 8–23f inOutCubic | Field owns the last frame; next scene carries momentum (46 px → 0 over 16f) | Chapters, palette changes | Whoosh 0.5–0.7 (−6 to −3.1) from push start |
 | Card morph | 18–28f inOutCubic | Card lerps to an overscanned full frame; labels fade 2.4× faster | Opening an example into its scene | Soft whoosh 0.5 (−6) or none |

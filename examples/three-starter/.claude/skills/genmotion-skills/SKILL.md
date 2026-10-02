@@ -80,7 +80,8 @@ Read the owner skill fully. Then load its `requires` that apply to this project'
 - **Always**: `motion-language` (entrances, exits, easing, camera, handoffs) before the first scene, and `sound-design` (music, effects, VO mix, loudness) before placing any audio.
 - **Foundations** for ads: `ugc-ad-foundations`, then `ugc-hooks`, `ugc-scripting` or `ugc-craft` when the owner says so.
 - **Techniques**, cross-cutting: `screen-capture`, `ai-presenter`, `stock-and-broll`, `ad-qa`.
-- **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them.
+- **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them: a locked single-scene piece (most stings) skips `three-camera` unless the camera moves and `three-transitions` unless there is a handoff, a flash or an iris.
+- **When two skills disagree, the owner wins for its own format**: a sting's sound rules (anticipation ticks, where the first sound sits) over `sound-design`'s general density, a trailer's card typography over the house sentence case, an owner's beat sheet over a style family's tempo. A general rule an owner does not mention still applies.
 
 ## Opening a skill's reference files
 

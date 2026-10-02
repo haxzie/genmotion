@@ -2,7 +2,7 @@
 
 The kinetic-type recipes from `motion-language` (`references/text-motion.md` has the numbers and the reading-time rules), written as frame-callback code over `components/type.ts` (`references/type-kit.md`) and `components/ease.ts` (`three-camera`). `D` is `durationInFrames`; `ink`, `accent`, `grey` are `THREE.Color`s built once; `tmp` is one scratch `THREE.Color`. `TYPE` is the table in SKILL.md plus the roles a recipe names: `wordmark` (the brand's face, sized by the lockup), `number` (the image-word, above 130 px), `caption` (28–48 px by spec) and `ui` (≥ 28 px where seen), all weight ≤ 500. Every `// builder` line runs inside the scene's `withFonts(ctx, [{ family: "Inter", url: interUrl }], () => { … })` builder (SKILL.md, A complete scene), so no texture is drawn in a fallback face; type that shares the frame with 3D objects is wrapped in `onTop()`. Every recipe was compiled and captured.
 
-Contents: 1 blurUp by word · 2 riseMask and mask push-up · 3 Per-character title with colour sweep · 4 Wordmark landing · 5 Two-pass ink and L→R sweep · 6 Typewriter · 7 Word-slot flip · 8 Scatter pops and beat cards · 9 Highlight and underline · 10 Count-up · 11 Captions and karaoke · 12 Exits
+Contents: 1 blurUp by word · 2 riseMask and mask push-up · 3 Per-character title with colour sweep · 4 Wordmark landing (mask rise, wipe-written) · 5 Two-pass ink and L→R sweep · 6 Typewriter · 7 Word-slot flip · 8 Scatter pops and beat cards · 9 Highlight and underline · 10 Count-up · 11 Captions and karaoke · 12 Exits
 
 ## 1. blurUp by word (the house default)
 
@@ -51,15 +51,49 @@ Per character is for 2–3 key words in the whole film (a title, the product nam
 
 ## 4. Wordmark landing
 
+Two tested versions; both land the last letter **on** the lock frame, and neither ever shows a grey, half-opaque capital (a flat per-letter opacity ramp does, and reads as loading).
+
+**a. Rise through a caps mask, tracking close anchored at the symbol.**
+
 ```ts
-const mark = letters("GENMOTION", TYPE.wordmark);
-// tracking +0.32em -> +0.12em over 15f outCubic (an uppercase wordmark settles at +0.08 to +0.16em;
-// a sentence-case one at -0.01 to -0.03em); letters 1.5f apart, 4f each
-mark.track(lerp(0.32, 0.12, prog(frame, 16, 15, outCubic)));
-mark.letters.forEach((l, i) => setLabel(l, { opacity: prog(frame, 16 + i * 1.5, 4, outSmooth) }));
+const outQuad = (t: number) => 1 - (1 - t) ** 2;
+const mark = letters("GENMOTION", TYPE.wordmark);                // builder
+mark.group.position.set(NAME_X, NAME_Y, 0);                      // NAME_X = the edge beside the symbol
+const CAP_MASK = NAME_Y - TYPE.wordmark.size * 0.36 * PX;        // just under the caps (no descenders)
+// frame: tracking +0.32em -> +0.12em over 15f outQuad, ending ON the lock (an uppercase wordmark settles
+// at +0.08 to +0.16em; sentence case at -0.01 to -0.03em). outQuad, not outCubic: a 15f outCubic has
+// 0.8% of its travel left for the last 3f, which reads as stopped; outQuad keeps 4%.
+mark.track(lerp(0.32, 0.12, prog(frame, LOCK - 15, 15, outQuad)), "left");
+// each letter rises through the mask, 1.5f apart, 4f each, blur 6 -> 0; the last one lands on LOCK
+mark.letters.forEach((l, i) => {
+  const p = prog(frame, LOCK - 16 + i * 1.5, 4, outCubic);
+  l.position.y = (1 - p) * -0.8 * TYPE.wordmark.size * PX;
+  setLabel(l, { opacity: p > 0 ? 1 : 0, blur: (1 - p) * 6, maskY: CAP_MASK });
+});
 ```
 
-Each letter is placed where it sits in the kerned word, so tracking animates with no reflow. Slide the mark in beside it 8–9f later; if the mark travels, move mark and wordmark as one group so the mark never crosses a visible letter.
+Check the close's travel: the far letter of a 9-letter word at 96 px moves `0.2em × 96 × 8 ≈ 154 px`; outQuad leaves `154 × (3/15)² ≈ 6 px` for the last 3f (≥ 2 px is visible; outCubic leaves 1.2 px). For a shorter close or a smaller word, recompute: `travel × (3 / dur)^k ≥ 2 px`, k = 2 for outQuad, 3 for outCubic.
+
+**b. Written in by the element that became the mark** (a Transform sting: an arm, a stroke, a light line runs from the symbol along the baseline and the name exists only behind it):
+
+```ts
+// builder: the word at its final tracking; a thin bar whose origin is its left end
+const name = letters("GENMOTION", { ...TYPE.wordmark, tracking: 0.12 });
+name.group.position.set(NAME_X, NAME_Y, 0);
+const nameW = name.track(0.12, "left");
+const arm = new THREE.Mesh(new THREE.PlaneGeometry(1, 6 * PX),
+  new THREE.MeshBasicMaterial({ color: LOOK.accent, transparent: true, toneMapped: false }));
+arm.geometry.translate(0.5, 0, 0);
+arm.position.set(NAME_X - 40 * PX, NAME_Y - TYPE.wordmark.size * 0.36 * PX, 0);
+// frame: the edge travels at constant speed and passes the last letter ON the lock (no ease-out:
+// a decelerating edge arrives early by eye); the bar then fades over 8f
+const edge = lerp(NAME_X - 20 * PX, NAME_X + nameW + 10 * PX, prog(frame, LOCK - 18, 18));
+arm.scale.x = Math.max(1e-4, edge - arm.position.x);
+arm.material.opacity = 1 - prog(frame, LOCK, 8, outCubic);
+name.letters.forEach((l) => setLabel(l, { opacity: 1, maskX: edge, maskSoft: 0.15 * TYPE.wordmark.size * PX }));
+```
+
+Each letter is placed where it sits in the kerned word, so tracking animates with no reflow. `maskY`/`maskX` are world values: if the group sits inside a moving lockup group, read `getWorldPosition` each frame. Slide the mark in beside it 8–9f later; if the mark travels, move mark and wordmark as one group so the mark never crosses a visible letter.
 
 ## 5. Two-pass ink and L→R sweep
 

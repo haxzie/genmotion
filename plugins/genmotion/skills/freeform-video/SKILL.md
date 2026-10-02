@@ -38,7 +38,7 @@ Write three one-line concepts as "We show X as Y" (`direction` Step 3), each dow
 
 1. **The subject's own world**: built from their nouns. A friend who climbs: the birthday message climbs a wall hold by hold.
 2. **The feeling**: a calm farewell as a slow sunset that the names drift through.
-3. **An unexpected format**: a countdown, a front page, a chat thread, a boarding pass, a game's loading screen, a receipt.
+3. **An unexpected format**: a countdown, a front page, a chat thread, a boarding pass, a game's loading screen, a weather report.
 
 Pick the least obvious one that still serves the purpose. If two have the same silhouette (centred title, image underneath), replace one. Tell the user the three and which you chose; for a personal piece, let them pick.
 
@@ -98,7 +98,7 @@ The peak sits at 60–75% for most freeform pieces (later than a launch, because
 
 ## Special rules
 
-- **Loops**: the last frame equals the first; every ambient cycle divides the loop length exactly (a 300f loop takes sines with periods of 300, 150, 100, 75 or 60f); no fade to black; any sound is an ambient bed whose end crossfades into its start.
+- **Loops**: the last frame equals the first (on the export, last frame vs frame 0 at 320 px measures PSNR ≥ 30 dB, `direction`'s critique §1); every ambient cycle divides the loop length exactly (a 300f loop takes sines with periods of 300, 150, 100, 75 or 60f); no fade to black; any sound is an ambient bed whose end crossfades into its start.
 - **Countdowns**: one digit per second (30f) or per beat; each digit cut on the second, held still, with a tick at 0.45–0.55 on its first frame; a hit at 0.8–0.9 on zero, then the title.
 - **Visual for a song**: the music clock drives everything; scenes start on bar lines, cuts on beats, big changes on phrase starts (`sound-design` has the beat grid). Lyrics, if any, arrive about 0.15 s before the sung word.
 - **Personal pieces**: names spelled exactly as given, photos from the user only (`save-asset`), no generated faces of real people, nothing private on a piece meant for a group chat unless the user said so.

@@ -52,10 +52,14 @@ export function fitBlock(width: number, height: number, wPx: number, hPx: number
 /**
  * A layer glued to the camera, 1 unit = 1 composition px, for flashes, floods, wipes,
  * grain and captions that must never move with the shot. Call `fit()` after any fov change.
+ * renderOrder 900 on the GROUP: three.js sorts by the nearest ancestor Group's order first,
+ * so this is what puts a cover layer above type the world wrapped in onTop() (`three-type`).
+ * A Group nested inside it starts again at its own order (0): give it 900 too.
  */
 export function overlay(scene: THREE.Scene, camera: THREE.PerspectiveCamera, height: number, dist = 1) {
   const group = new THREE.Group();
   group.name = "overlay";
+  group.renderOrder = 900;
   group.userData.pickable = false;
   group.position.z = -dist;
   camera.add(group);

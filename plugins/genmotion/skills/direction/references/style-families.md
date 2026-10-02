@@ -9,6 +9,8 @@ Two rules sit above every row:
 - **Type follows the house size table** in `three-type` (the design standards every project carries): hero 72–130 px, supporting 34–48, labels 28–34, uppercase eyebrows 28, nothing under 28 px, headline weight ≤ 500. Some templates were measured heavier or smaller; the rows below are already adjusted, and where anything here seems to differ, the table wins. The only type above 130 px is a single word or number that *is* the image (A's bleed punch word, J's hero number, a brand's wordmark lockup).
 - **The owner's pacing wins**: a family gives the look (palette, type, texture, transitions, sound colour); the owner skill's beat sheet and scene lengths decide the tempo.
 - **Levels in the Sound rows are what the templates measured**; the mix itself follows `sound-design` (one bed row: 0.1–0.2 under any voice, −14 LUFS master).
+- **Brand colours override a family's stage.** On a brand ground keep the family's UI treatment, motion, type and transitions; the brand hex replaces the stage, with any vignette within ±8 L so the hex still reads at the corners (and so a loop's last and first frames sit on the same ground).
+- **Edited footage has no family**: the footage is the look; titles and cards follow `video-editing`'s format references.
 
 Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D One-shot camera film · E Chat-UI social · F Whiteboard explainer · G Textured tactile · H Music video · I Brand guide / identity loop · J Milestone / stat · Mixing families · Engine notes
 
@@ -49,6 +51,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Logo hold | 75–120f |
 
 **Goes wrong when**: the UI is a screenshot pasted flat (rebuild and magnify the part that matters), the cursor teleports, or the drift is still running at a matched cut.
+
+**On a brand-colour ground** (a deep green, a navy): keep B's rebuilt UI, magnification, cursor and motion; the brand hex replaces the white stage, and the UI panels stay light so they read as screens.
 
 ## C. 3D product hero
 
@@ -121,6 +125,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Logo hold | 60–90f |
 
 **Goes wrong when**: the camera drift doesn't return to rest at both ends (the cut onto blank paper jumps), or the whole diagram appears before the VO names its parts.
+
+**Text-led (no VO)**: F's timings are VO-timed. Without a voice keep F's look (strokes on paper, or a dark variant: strokes in #ededef on #0b0b0c) and use the text-led clock from `explainer` instead (parts appear with the words that name them, lines held by the hold formula).
 
 ## G. Textured tactile
 

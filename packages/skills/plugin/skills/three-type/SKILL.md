@@ -25,12 +25,12 @@ Copy `references/type-kit.md` into `components/type.ts` (it imports `PX`/`RES` f
 | Call | What |
 | --- | --- |
 | `label(text, style)` | One plane, drawn once at 2×, unlit, named after its words |
-| `line(text, style)` | One plane per word, laid out with measured widths; each keeps `restX` |
-| `letters(word, style)` | One plane per character; `track(em)` re-spaces them with no redraw |
-| `setLabel(m, { opacity, blur, color, maskY })` | The per-frame look: blur in px, tint, clip below a line |
-| `counter("#,###", style)` | Tabular digits rolling on a strip texture |
+| `line(text, style, align?)` | One plane per word, laid out with measured widths; each keeps `restX`; `align` "left" / "center" / "right" (a left column is "left") |
+| `letters(word, style)` | One plane per character; `track(em, anchor?)` re-spaces them with no redraw, holding the `anchor` edge ("left" for a wordmark right of its symbol) still |
+| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | The per-frame look: blur in px, tint, clip below a line, clip right of a line (a wipe that writes the word in) |
+| `counter("#,###", style)` | Tabular digits rolling on a strip texture; leading zeros hidden ("$42", not "$0,042") |
 | `withFonts(ctx, files, build)` | Builds the scene only once the font files have loaded, inside the frame barrier |
-| `onTop(obj, order?)` | Keeps type in front of 3D objects: depth test off, drawn after them |
+| `onTop(obj, order?)` | Keeps type in front of 3D objects: depth test off, drawn after them (orders meshes, never groups) |
 
 Rules it encodes, and why:
 
@@ -40,7 +40,8 @@ Rules it encodes, and why:
 - **Draw white, tint per frame.** Colour sweeps, inking and the punch word are one plane whose tint changes; two crossfaded copies let the background through and read pale.
 - **Text is never tone mapped and never lit.** The kit's shader ignores `renderer.toneMapping`, so `#ededef` stays `#ededef` under any look.
 - **Text is never hidden by the 3D world.** The planes write no depth but still test it, so anything nearer the camera covers them. Wrap every headline, label and caption that shares a frame with 3D objects in `onTop()` (depth test off, drawn last); check a frame where an object passes in front.
-- **Kerned per character.** `letters()` places each glyph where it sits inside the kerned word, so "Tally", "AV" and "To" set per character match the same word set whole.
+- **Kerned per character.** `letters()` places each glyph where it sits inside the kerned word, so "WAVY", "AV" and "To" set per character match the same word set whole.
+- **Draw order is by Group first.** three.js sorts transparent objects by the nearest ancestor Group's `renderOrder` before the mesh's own, and a nested Group at 0 resets its subtree to 0. So never put `renderOrder` on a Group to lift type (it outranks everything in other groups, cover layers included); `onTop()` orders meshes only, and `three-camera`'s `overlay()` sets its group to 900 so floods and flashes cover onTop type. Covers and panels must be `transparent: true`: opaque objects all draw before transparent ones. Details in `references/type-kit.md` §4.
 - **Name every plane after its words** (the kit does): the editor's click on a word arrives as `#ship-the-whole-film`.
 
 ## One type system per film
@@ -68,9 +69,11 @@ export const TYPE = {
 - **28 px is the floor** for anything, anywhere (≈2.6% of the frame's short side at other sizes). The house guide's eyebrow range is 22–28, so with the floor an eyebrow is 28. If a layout only works smaller, cut words or zoom in.
 - **Weight**: hierarchy comes from size and colour, not weight; headlines 400–500. A brand that specifies a heavier face for its wordmark overrides this for the wordmark only. Word-timed social captions over footage are the one sanctioned exception: they follow `ugc-craft`'s caption spec.
 - **Only the image-word goes above 130 px**: one word or number that is a picture in itself, never a sentence.
-- Sentence case everywhere except eyebrows and a brand's uppercase wordmark. Uppercase at display size needs *positive* tracking: caps set tight read cramped.
+- Sentence case everywhere except eyebrows, a brand's uppercase wordmark, and trailer cards (`video-editing`'s trailer format sets those in caps or small caps at +0.1 to +0.2em, fully legible on their hit frame). Uppercase at display size needs *positive* tracking: caps set tight read cramped.
 - **Light on dark reads heavier**: under 60 px, light type on a dark ground uses 400–500, never lighter than 400.
-- **Printed matter on a prop** (receipt line items, a document's body, a phone's status bar) is drawn as grey bars or lines, not as glyphs under 28 px: text that cannot be read should not look like text.
+- **Printed matter on a prop** (an invoice's line items, a document's body, a ticket's fine print) is drawn as grey bars or lines, not as glyphs under 28 px: text that cannot be read should not look like text. `three-assets`' `references/drawn-ui.md` has `textBars()`.
+- **Cap height**: Inter's capitals are 0.727 em, so caps 96 px tall are set at `96 / 0.727 ≈ 132` px; on a centred label they sit 0.03 × size above the plane's centre (shift down by that to centre caps optically on a symbol).
+- **Uppercase display type never fades up on flat opacity.** A per-letter opacity ramp shows mid-grey, half-there capitals that read as loading, not as a reveal. Reveal caps through a mask (rise through a mask just under the caps, `maskY = y − 0.36 × size`), a wipe (`maskX` behind a moving edge or line), or blur 6 → 0 with opacity stepped on in ≤ 2f; `references/reveals.md` §4.
 - Hierarchy ratio ≥1.5–2× between levels; contrast ≥4.5:1 under 60 px, ≥3:1 above (`three-look` has the colour pairs that pass). One size pair per scene, three sizes at most.
 - 1 world unit = 100 px at z = 0, so `size` is the on-screen size there. Type at another depth scales by `D0 / (D0 − z)` (`three-camera`); work it out, then confirm on a frame.
 
@@ -91,7 +94,7 @@ All in `references/reveals.md`, compiled and captured:
 | blurUp by word: 12f outCubic, 3f stagger, blur 10 → 0 | `line()`, `setLabel({ opacity, blur })`, y offset |
 | riseMask: 13f outQuart, stagger 4f | `setLabel({ maskY })` just under the descenders |
 | Per-character title with colour sweep | `letters()`, tint lands 1.6× slower than the move |
-| Wordmark: tracking +0.32 → +0.01em over 15f (uppercase: → +0.08 to +0.16em) | `letters().track(em)` per frame |
+| Wordmark: tracking +0.32 → +0.01em over 15f outQuad (uppercase: → +0.08 to +0.16em), letters rising through a caps mask; or written in by a wipe | `letters().track(em, "left")` per frame, `setLabel({ maskY })` or `setLabel({ maskX, maskSoft })` |
 | L→R sweep, two-pass ink | tint per word, 2f apart; grey → ink 5f later |
 | Typewriter: 2–2.4 f/char, caret solid while typing | `letters()` visibility by index + a caret plane |
 | Word-slot flip: −96° out, +92° in, slot morphs 14f | pivot on the baseline, `rotation.x`, measured slot widths |
@@ -181,7 +184,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 ## Checks before you finish
 
 1. `capture-frames` on every held line: the face is the brand font (not a fallback sans), edges crisp, nothing under 28 px, no headline heavier than 500.
-2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter).
+2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter). Mid-reveal frames of uppercase display type show no grey, half-opaque capitals. A counter mid-count shows no leading zeros.
 3. A frame where a 3D object passes the type: the type stays in front.
 4. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down.
 5. Mid-reveal frame of each recipe: blur and colour sweep visible, no word clipped by its plane edge.

@@ -102,7 +102,7 @@ under.mesh.visible = under.u.uReveal.value > 0 && under.u.uErase.value < 1;
 
 - A shape made of several pen moves (a box, an arrow and its head) is one ribbon whose sub-paths take consecutive slices of `t` (0–0.7 for the shaft, 0.7–1 for the head), so it draws in pen order.
 - Duration by length: strokes 8–20f; text written by hand `clamp(widthPx / 45, 8, 18)` frames.
-- Rings and gauges: `stroke(arcPoints(cx, cy, r, a0, a1), ...)`; a gauge needle and its arc share the same eased progress so both land on the same frame.
+- Rings and gauges: `stroke(arcPoints(cx, cy, r, a0, a1), ...)`; a gauge pointer and its arc share the same eased progress so both land on the same frame.
 - Fills (hatching, a highlight swatch) fade or wipe in after their outline, never before.
 
 ## 3. Hand-drawn wobble

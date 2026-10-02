@@ -41,11 +41,11 @@ export function measure(text: string, s: TypeStyle): number {
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
-varying float vWorldY;
+varying vec2 vWorld;
 void main() {
   vUv = uv;
   vec4 world = modelMatrix * vec4(position, 1.0);
-  vWorldY = world.y;
+  vWorld = world.xy;
   gl_Position = projectionMatrix * viewMatrix * world;
 }`;
 const FRAG = /* glsl */ `
@@ -54,10 +54,14 @@ uniform vec3 uColor;
 uniform float uOpacity;
 uniform vec2 uBlur; // blur radius in uv units (x, y)
 uniform float uMaskY; // world y below which nothing draws (riseMask, push-up)
+uniform float uMaskX; // world x right of which nothing draws (a left-to-right wipe)
+uniform float uMaskSoft; // feather of the x wipe, world units (0 = hard edge)
 varying vec2 vUv;
-varying float vWorldY;
+varying vec2 vWorld;
 void main() {
-  if (vWorldY < uMaskY) discard;
+  if (vWorld.y < uMaskY) discard;
+  float keepX = uMaskSoft > 0.0 ? clamp((uMaskX - vWorld.x) / uMaskSoft, 0.0, 1.0) : step(vWorld.x, uMaskX);
+  if (keepX <= 0.0) discard;
   vec4 c = vec4(0.0);
   if (uBlur.x + uBlur.y < 1e-5) {
     c = texture2D(uMap, vUv);
@@ -68,7 +72,7 @@ void main() {
     }
     c /= 49.0;
   }
-  gl_FragColor = vec4(c.rgb * uColor, c.a * uOpacity);
+  gl_FragColor = vec4(c.rgb * uColor, c.a * uOpacity * keepX);
   #include <colorspace_fragment>
 }`;
 
@@ -102,6 +106,8 @@ export function label(text: string, s: TypeStyle, align: "left" | "center" = "ce
       uOpacity: { value: 1 },
       uBlur: { value: new THREE.Vector2(0, 0) },
       uMaskY: { value: -1e9 },
+      uMaskX: { value: 1e9 },
+      uMaskSoft: { value: 0 },
     },
     vertexShader: VERT,
     fragmentShader: FRAG,
@@ -114,10 +120,15 @@ export function label(text: string, s: TypeStyle, align: "left" | "center" = "ce
   return mesh;
 }
 
-/** Per-frame look of a label: opacity, blur in composition px, tint. */
-export function setLabel(m: Label, o: { opacity?: number; blur?: number; color?: THREE.Color; maskY?: number }) {
+/** Per-frame look of a label: opacity, blur in composition px, tint, masks in world units. */
+export function setLabel(
+  m: Label,
+  o: { opacity?: number; blur?: number; color?: THREE.Color; maskY?: number; maskX?: number; maskSoft?: number },
+) {
   const u = m.material.uniforms;
   if (o.maskY !== undefined) u.uMaskY!.value = o.maskY;
+  if (o.maskX !== undefined) u.uMaskX!.value = o.maskX;
+  if (o.maskSoft !== undefined) u.uMaskSoft!.value = o.maskSoft;
   if (o.opacity !== undefined) {
     u.uOpacity!.value = o.opacity;
     m.visible = o.opacity > 0.001;
@@ -128,15 +139,20 @@ export function setLabel(m: Label, o: { opacity?: number; blur?: number; color?:
 
 export const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "text";
 
-/** A line as separately animatable words, centred on the group origin. Each word keeps userData.restX. */
-export function line(text: string, s: TypeStyle) {
+export type Align = "left" | "center" | "right";
+
+/**
+ * A line as separately animatable words. `align` puts the group origin at the line's left edge,
+ * centre or right edge (a left column uses "left"). Each word keeps userData.restX.
+ */
+export function line(text: string, s: TypeStyle, align: Align = "center") {
   const group = new THREE.Group();
   group.name = slug(text);
   const parts = text.split(" ");
   const space = measure(" ", s);
   const widths = parts.map((p) => measure(p, s));
   const total = widths.reduce((a, b) => a + b, 0) + space * (parts.length - 1);
-  let x = -total / 2;
+  let x = align === "left" ? 0 : align === "right" ? -total : -total / 2;
   const words = parts.map((p, i) => {
     const m = label(p, s, "left");
     m.position.x = x * PX;
@@ -159,8 +175,8 @@ export function letters(word: string, s: TypeStyle) {
   const flat: TypeStyle = { ...s, tracking: 0 };
   const chars = [...word];
   // Glyph i starts where it starts inside the whole word: the kerned advance of chars 0..i minus
-  // its own advance. (The advance of chars 0..i-1 alone misses the pair kern (i-1, i): in "Tally"
-  // the a would sit too far right and both l's would overlap it.)
+  // its own advance. (The advance of chars 0..i-1 alone misses the pair kern (i-1, i): in "Today"
+  // the o would sit too far right of the T and every later glyph would drift with it.)
   const prefix = chars.map((ch, i) => measure(chars.slice(0, i + 1).join(""), flat) - measure(ch, flat));
   const full = measure(word, flat);
   const meshes = chars.map((ch, i) => {
@@ -169,10 +185,16 @@ export function letters(word: string, s: TypeStyle) {
     group.add(m);
     return m;
   });
-  /** Lay the letters out at a tracking (em), centred. */
-  const track = (em: number) => {
+  /**
+   * Lay the letters out at a tracking (em). `anchor` is the edge that stays put while tracking
+   * animates: "left" for a wordmark to the right of its symbol (the letters never travel into
+   * the gap), "right" for one to its left, "center" otherwise. The group origin is that edge.
+   */
+  const track = (em: number, anchor: Align = "center") => {
     const total = full + em * s.size * (chars.length - 1);
-    meshes.forEach((m, i) => (m.position.x = (prefix[i]! + em * s.size * i - total / 2) * PX));
+    const x0 = anchor === "left" ? 0 : anchor === "right" ? -total : -total / 2;
+    meshes.forEach((m, i) => (m.position.x = (prefix[i]! + em * s.size * i + x0) * PX));
+    return total * PX;
   };
   track(s.tracking ?? trackingFor(s.size));
   return { group, letters: meshes, track };
@@ -183,14 +205,18 @@ export function letters(word: string, s: TypeStyle) {
 /**
  * Keep type (or any overlay) in front of the 3D world. The kit's planes write no depth but
  * still TEST it, so a mesh nearer the camera than the type (a card flying in at z = +2, a
- * receipt at z = 0.6) hides it. onTop turns the test off and draws the object after the
+ * phone at z = 0.6) hides it. onTop turns the test off and draws the object after the
  * scene's other transparent objects; a higher `order` draws later (captions above headlines).
+ * It sets renderOrder on MESHES only, never on a Group: three.js sorts by the nearest
+ * ancestor Group's renderOrder first (its "groupOrder"), so an ordered Group would outrank
+ * every mesh in every other group, the overlay's cover layer included.
  */
 export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
   obj.traverse((o) => {
-    o.renderOrder = order;
     const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
-    if (m) for (const mat of Array.isArray(m) ? m : [m]) mat.depthTest = false;
+    if (!m) return;
+    o.renderOrder = order;
+    for (const mat of Array.isArray(m) ? m : [m]) mat.depthTest = false;
   });
   return obj;
 }
@@ -263,7 +289,7 @@ export function counter(pattern: string, s: TypeStyle) {
   const slots: THREE.Texture[] = [];
   const materials: THREE.MeshBasicMaterial[] = [];
   const symbols: Label[] = [];
-  const parts: { mesh: THREE.Object3D; w: number }[] = [];
+  const parts: { mesh: THREE.Object3D; w: number; digit: boolean; x: number }[] = [];
   for (const ch of pattern) {
     if (ch === "#") {
       const tex = strip.clone();
@@ -273,37 +299,56 @@ export function counter(pattern: string, s: TypeStyle) {
       materials.push(mat);
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(digitW * PX, cell * PX), mat);
       mesh.name = `counter-digit-${slots.length}`;
-      parts.push({ mesh, w: digitW });
+      parts.push({ mesh, w: digitW, digit: true, x: 0 });
     } else {
       const m = label(ch, flat, "center", 0);
       m.name = "counter-symbol";
       symbols.push(m);
-      parts.push({ mesh: m, w: measure(ch, flat) });
+      parts.push({ mesh: m, w: measure(ch, flat), digit: false, x: 0 });
     }
   }
   const total = parts.reduce((a, p) => a + p.w, 0);
   let x = -total / 2;
   for (const p of parts) {
-    p.mesh.position.x = (x + p.w / 2) * PX;
+    p.x = (x + p.w / 2) * PX;
+    p.mesh.position.x = p.x;
     x += p.w;
     group.add(p.mesh);
   }
-  /** Show `value`; fractional values roll the last digit (and carry) smoothly. */
+  /**
+   * Show `value`; fractional values roll the last digit (and carry) smoothly. Leading zeros and
+   * the separators before them are hidden ("$#,###" at 42 reads "$42", not "$0,042"); the digits
+   * stay right-anchored in their tabular slots, and a prefix ("$") moves to sit beside the first
+   * visible digit. Give the pattern as many # as the final value has digits.
+   */
   const set = (value: number) => {
     const n = slots.length;
-    slots.forEach((tex, i) => {
-      const place = 10 ** (n - 1 - i);
-      const whole = Math.floor(value / place) % 10;
-      // a slot rolls to its next digit while everything below it passes from 9...9 to 0...0
-      const roll = Math.min(1, Math.max(0, (value % place) - (place - 1)));
-      const pos = whole + roll;
-      tex.offset.y = 1 - (pos + 1) / 11;
+    let d = 0;
+    let lead = true;
+    let first: (typeof parts)[number] | undefined;
+    parts.forEach((p, k) => {
+      if (p.digit) {
+        const place = 10 ** (n - 1 - d);
+        const tex = slots[d++]!;
+        const whole = Math.floor(value / place) % 10;
+        // a slot rolls to its next digit while everything below it passes from 9...9 to 0...0
+        const roll = Math.min(1, Math.max(0, (value % place) - (place - 1)));
+        tex.offset.y = 1 - (whole + roll + 1) / 11;
+        if (place === 1 || value > place - 1) lead = false; // shown once it is (or is rolling to) non-zero
+        p.mesh.visible = !lead;
+      } else {
+        p.mesh.visible = k === 0 || !lead; // a separator shows only after a visible digit
+      }
+      if (k > 0 && p.mesh.visible && !first) first = p;
     });
+    const pre = parts[0];
+    if (pre && !pre.digit && first) pre.mesh.position.x = first.x - ((first.w + pre.w) / 2) * PX;
   };
   set(0);
+  /** Fades the whole counter; never re-shows a hidden leading slot. */
   const setOpacity = (o: number) => {
     materials.forEach((m) => (m.opacity = o));
-    symbols.forEach((m) => setLabel(m, { opacity: o }));
+    symbols.forEach((m) => (m.material.uniforms.uOpacity!.value = o));
     group.visible = o > 0.001;
   };
   return { group, set, setOpacity, width: total * PX };
@@ -315,13 +360,13 @@ export function counter(pattern: string, s: TypeStyle) {
 | Call | Returns | Use |
 | --- | --- | --- |
 | `label(text, style, align?)` | one plane (`Label`) | A line that moves as one; a single word; a caption |
-| `line(text, style)` | `{ group, words[], width }` | Word-by-word reveals; each word keeps `userData.restX` |
-| `letters(word, style)` | `{ group, letters[], track(em) }` | Per-character titles; a wordmark whose tracking tightens |
-| `setLabel(m, { opacity, blur, color, maskY })` | — | Per-frame look: blur in px, tint (draw white, tint per frame), clip below a world y |
+| `line(text, style, align?)` | `{ group, words[], width }` | Word-by-word reveals; `align` "left" / "center" / "right" puts the group origin at that edge (a left column uses "left"); each word keeps `userData.restX` |
+| `letters(word, style)` | `{ group, letters[], track(em, anchor?) }` | Per-character titles; a wordmark whose tracking tightens. `anchor` "left" / "center" / "right" is the edge that stays put; `track` returns the word's width |
+| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | — | Per-frame look: blur in px, tint (draw white, tint per frame), clip below a world y, clip right of a world x (a wipe, feathered by `maskSoft` world units) |
 | `measure(text, style)` | px | Layout maths: slot widths, wrapping by hand |
-| `counter("$#,###", style)` | `{ group, set(value), setOpacity(o), width }` | Tabular count-ups; fractional values roll |
+| `counter("$#,###", style)` | `{ group, set(value), setOpacity(o), width }` | Tabular count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit |
 | `withFonts(ctx, files, build)` | the scene's update | Wrap the whole builder so no texture is drawn in a fallback face |
-| `onTop(obj, order?)` | the same object | Type over 3D: no depth test, drawn last; call it on every label or group that must never be hidden |
+| `onTop(obj, order?)` | the same object | Type over 3D: no depth test, drawn last; call it on every label or group that must never be hidden (it orders the meshes, never the groups) |
 
 Styles: `{ size (px), weight (400–500), color, tracking (em), font }`. Keep one `TYPE` table of named styles in `components/` and use only those.
 
@@ -354,5 +399,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Draw white, tint per frame**: a colour sweep or two-pass ink is `color.lerpColors(a, b, t)` on one plane, never two crossfaded copies (which let the background show through and read pale).
 - **A `ShaderMaterial`, not `MeshBasicMaterial`**: it gives blur and the mask, and it is never tone mapped, so text keeps its exact hex under any `renderer.toneMapping` (`three-look`).
 - **Blur room**: each canvas is padded by 16 px so a 10–16 px blur spreads instead of being clipped at the plane edge. For heavier display blur (18–34 px) pass a larger `blurRoom`.
-- **The mask is a world y**: `maskY` discards everything below a horizontal line, which is all `riseMask` and mask push-up need. Put the line just under the descenders: `baselineY - size * 0.75 * PX` for a centred label.
+- **The masks are world coordinates**: `maskY` discards everything below a horizontal line, which is all `riseMask` and mask push-up need. Put the line just under the descenders: `baselineY - size * 0.75 * PX` for a centred label; for an all-caps word (no descenders) just under the caps, `y - size * 0.36 * PX` for a centred label (measured: Inter caps on a label centred at `y` run from 0.39 × size above it to 0.33 × size below, so caps sit 0.03 × size above the plane's centre; shift an all-caps wordmark down by that to centre it optically on a symbol). `maskX` discards everything right of a vertical line, so a light line or an arm travelling left to right can *write* a word in; `maskSoft` (world units, about 0.15 × size × PX) feathers that edge. Both are world values: if the type's group moves or sits inside a moved parent, convert with `getWorldPosition` first.
+- **Cap height**: Inter's capitals are 0.727 em tall, so a wordmark whose caps must be 96 px is set at `96 / 0.727 ≈ 132` px. Other faces: measure a capital H on a still once.
+- **Draw order, and the Group trap**: three.js sorts transparent objects by **groupOrder first** (the `renderOrder` of the nearest ancestor `THREE.Group`, 0 when that group's is 0, and a nested Group at 0 resets its subtree to 0), then by the mesh's own `renderOrder`, then by depth. So a `renderOrder` set on a Group outranks every mesh in every other group, however high their own order: that is why `onTop()` orders meshes only, and why `three-camera`'s `overlay()` sets its group to 900, so a cover layer on it beats every `onTop` label in the world. A label or caption group nested inside the overlay is its own Group at 0: give it `renderOrder = 900` too if it must draw above the world's onTop type. Layered flat shapes (a stand-in mark built from overlapping facets) follow the same rule: order them as meshes inside one group, or give each layer its own Group with the order on the Group.
 - **Picking**: every plane is named after its words (`slug`), so a click in the editor arrives as `#ship-the-whole-film`.

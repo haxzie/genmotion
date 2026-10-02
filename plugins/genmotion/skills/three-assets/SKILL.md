@@ -9,7 +9,7 @@ A scene may import only `three` and `@genmotion/three-engine`, so there are no a
 
 The recipes were built against the real host and debugged by rendering. The thing you would not guess: the CLI's Chromium cannot decode **H.264 MP4** at all, so footage must be VP9 WebM, seeked through `ctx.manager`. `video-editing`'s `references/footage-in-scene.md` is the pack's one tested footage helper; `references/footage-and-audio.md` here has an equivalent for short inserts.
 
-Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio).
+Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/drawn-ui.md` (`components/ui.ts`: app UI rebuilt as canvas-drawn planes when there are no screenshots), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio).
 
 ## When to use
 
@@ -34,6 +34,10 @@ Not for: finding or generating material (`stock-and-broll`, `screen-capture`), e
 - Shown much smaller than its pixels: keep mipmaps and anisotropy 8, or it shimmers as it moves. Shown larger than its pixels: it goes soft; crop and zoom from a bigger source instead.
 - A screenshot that fills the frame needs ≥ 1920 px wide (16:9) or ≥ 1080 px (9:16) after crop. Text inside it must clear 28 px where it is shown: zoom into the part that matters rather than shrinking the whole screen.
 
+## Drawn UI (no screenshots)
+
+A product with no screens to show is rebuilt as flat canvas-drawn planes: `references/drawn-ui.md` has `components/ui.ts` (tested) with `screenPanel`, `statusBar`, `field`, `chip`, `button`, `listRow`, `textBars` and `softShadow`, all drawn once at 2× inside `withFonts`, unlit and never tone mapped. Every glyph that is seen clears **28 px on screen** (a panel shown at scale `s` draws its text at ≥ `28 / s`); copy that cannot is grey bars. Anything that moves on its own (a chip that flies out, a field that fills) is its own plane in the panel's group. Generic chrome in the brand's colours, recorded in `VIDEO.md` as illustrative UI.
+
 ## Logos
 
 | Need | Build | Notes |
@@ -41,6 +45,7 @@ Not for: finding or generating material (`stock-and-broll`, `screen-capture`), e
 | Flat mark, any size | `logoPlane(ctx, svgUrl, widthPx, aspect, name)` | The SVG is rasterised at 2× the shown size: crisp at any size |
 | 3D mark | `extrudedMark(d, widthPx, depthPx, material, name)` | From the file's path `d` copied verbatim into `components/brand.ts`; bevel 1.2% of width catches the light |
 | Mark with gradient fill | Draw the path into a canvas with `Path2D(d)` and the gradient, or extrude and use a face material per tone | The Samsung Pay template draws its marks with `Path2D` |
+| Flat mark built from layered facets (a stand-in) | One mesh per facet in one group, `renderOrder` on the meshes; or one Group per layer with the order on the Group | three.js sorts by the parent Group's `renderOrder` before the mesh's, so an order set on a Group outranks every mesh in other groups (`three-type` `type-kit.md` §4) |
 | Lockup (mark + wordmark) | Mark plane + a `three-type` label in the brand font, in one group; gap ≈ 0.25 × the symbol's height (0.75–1 × the cap height), cap height 0.3–0.4 × the symbol | Or the official lockup file as one plane. Move and centre it as one group |
 
 The path parser handles M L H V C S Q T Z, absolute and relative. Arcs throw an error: flatten them in the SVG first, or use the flat plane. Light extruded marks with `three-look`'s product setup and `brand` tone mapping so the brand colour holds.
@@ -119,7 +124,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 1. List every file the film needs (marks, screenshots, recordings, fonts, music, VO) in VIDEO.md, with where each comes from.
 2. `save-asset` every remote file into `assets/`; note pixel sizes, durations and the mark's viewBox.
 3. Transcode footage to WebM at the project fps and trim it; extract its audio if it has any.
-4. Add `components/assets.d.ts`, `components/media.ts`, `components/logo.ts`, and the brand path data in `components/brand.ts`.
+4. Add `components/assets.d.ts`, `components/media.ts`, `components/logo.ts`, `components/ui.ts` if the UI is drawn, and the brand path data in `components/brand.ts`.
 5. Build; capture the first frame each asset appears.
 
 ## Anti-patterns
@@ -147,6 +152,6 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 1. `capture-frames` on the first frame each asset appears, and on the first frame of each scene: no blank, black or stretched planes; footage shows the right moment (compare a timecode or a recognisable frame).
 2. Every loader takes `ctx.manager`; every video is seeked (no `play()`), is WebM, and is seeked once per frame.
 3. No `http` URL in any scene or component file; every mark comes from an official file in `assets/`, or is the name set as a wordmark, or is a stand-in flagged in `VIDEO.md`.
-4. Logos and screenshots are crisp at their largest on-screen size; text inside screenshots clears 28 px.
+4. Logos, screenshots and drawn UI are crisp at their largest on-screen size; text inside screenshots and drawn UI clears 28 px on screen in the widest shot that shows it.
 5. Every sound is on the timeline in `project.json`, none in scene code.
 6. No randomness or wall-clock timing; `validate` passes.

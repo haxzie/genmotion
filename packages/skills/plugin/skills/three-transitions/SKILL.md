@@ -45,7 +45,7 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 | 3 wipe | Behind an edge travelling along `uDir` | Panel wipe, white wipe-up from the bottom, diagonal wipe |
 | 4 blocks | 12 × 7 cells by sweep 0.62 + clump 0.24 + jitter 0.14 | Block wipe (textured families) |
 
-- It lives on the camera, so camera moves, punches and shakes never uncover an edge; `renderOrder` 950, no depth test, never picked.
+- It lives on the camera, so camera moves, punches and shakes never uncover an edge; `renderOrder` 950 as a direct child of the overlay group (whose own order, 900, is what ranks it above `onTop()` type: three.js sorts by the parent Group's order first), no depth test, never picked.
 - It is never tone mapped, and its colour is the next scene's background or carrier **exactly**: tested to the pixel across a cut.
 - `screenPx(object, cam, width, height)` gives the on-screen point a flood should start from (the pressed button), and `coverRadius()` the radius that reaches the farthest corner × 1.05.
 
@@ -53,7 +53,7 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 
 | Handoff | Scene N | Scene N+1 | Where |
 | --- | --- | --- | --- |
-| Flood becomes object | Disc from the button, 10f inCubic, complete 3f early | Opens in that colour; disc contracts onto the object 13f, then fades as the real object takes over | cover-layers §2 |
+| Flood becomes object | Disc from the button, 10f inCubic, complete 3f early | Opens in that colour; disc contracts onto the object 13f, then fades as the real object takes over; the object is the **only moving thing for 6f** after it lands, at ≥ 6% of frame width | cover-layers §2 |
 | Iris-in to an object | — | Hole shrinks from the frame to the object's radius over 30f | cover-layers §3 |
 | White wipe-up | Wipe, last 8f, ease-in, 40 px feather | Opens white | cover-layers §4 |
 | Block wipe | Cells grow out of an on-screen object of the wipe's colour, 18–24f | Starts covered, clears with the same cells; entrance clocks offset +12f (`prog(frame + 12, …)`) | cover-layers §5 |
@@ -70,8 +70,9 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 ## Picking the build for a film
 
 - The signature handoff goes on chapter turns and the peak; the workhorse (usually exit-then-cut or a persisting element) on the rest. At most two transition styles besides plain cuts.
-- Floods, irises and block wipes want a carrier on screen to motivate them: a button that is pressed, a mark, a dot, a packet in the wipe's colour. A flood or a wipe from nowhere is decoration.
-- Flash-to-white on every cut only in a music film, with the cut on the hit.
+- Floods, irises and block wipes want a carrier on screen to motivate them: a button that is pressed, a mark, a dot, a chip in the wipe's colour. A flood or a wipe from nowhere is decoration.
+- **The object a flood contracts into is the only moving thing for 6f after it lands**, and at least 6% of the frame's width; anything else arriving in those frames (new elements, a camera move, traffic crossing it) hides the "it became this" read. Its label is drawn above the disc, or fades 2f before the disc reaches it, so the disc never tears the label.
+- Flash-to-white on every cut only in a music film, with the cut on the hit. A flash contrasts ≥ 50% in mean luma with the frames either side, **measured within the flashing area** (crop to it), never into an already bright plate (there it reads as a bloom: flash out of the bright shot onto a darker one, or use the punch alone). On a letterboxed picture the flash plane covers the picture area only (a `PlaneGeometry(width, pictureHeight)` on the overlay); full-frame white over the black bars composites to grey bars.
 - Motion blur is for the 8–10f around a whip, never a whole film: it multiplies render time by the sample count and the editor can't point at objects inside it.
 - Fade to black only on the final frame or a chapter break of a long piece.
 
@@ -148,8 +149,9 @@ Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, 
 
 1. For every cut, `capture-frames` on the last frame of N and the first of N+1: the carrier matches in position, size, rotation and colour (sample a pixel of floods; the values are identical).
 2. The frame 3f before each exit-then-cut shows background only; every cover completes 2–5f before its cut; every block wipe's first cells touch an on-screen object of their colour.
-3. Parked carriers (an object waiting in a node, a certificate set aside) sit in a reserved slot that clears every label on the first and last frame of each scene; one larger than its parking spot is hidden while parked.
+3. Parked carriers (an object waiting in a node, a card set aside) sit in a reserved slot that clears every label on the first and last frame of each scene; one larger than its parking spot is hidden while parked.
 4. Every handoff number exists once, in `components/handoff.ts`, imported by both scenes; continuous loops run on film frame and the scene-start table matches `project.json`.
 5. Cover planes are on the camera overlay, `toneMapped: false`, `pickable = false`.
 6. A frame checker flagging single-colour frames at flood or flash cuts shows the carrier colour, not an empty scene.
-7. No randomness or wall-clock timing in any transition; block wipes use a fixed seed; `validate` passes.
+7. Each flash: crop the export to the flashing area and compare mean luma (`signalstats` YAVG) on the flash's peak frame and the frames either side: ≥ 50% of range apart. Each flood that contracts into an object: a strip of the 6f after it lands shows nothing else moving.
+8. No randomness or wall-clock timing in any transition; block wipes use a fixed seed; `validate` passes.

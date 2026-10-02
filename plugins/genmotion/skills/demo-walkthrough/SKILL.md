@@ -102,7 +102,7 @@ If "the one workflow" honestly has three answers, build three walkthroughs of 60
 
 ## Building it
 
-- **Three.js (default)**: the app window as planes with canvas-drawn UI or a video texture from the recording (`three-assets`), an orthographic or fixed-distance camera so pixels stay exact, focus pushes and pull-backs from `three-camera`, labels and chapter cards from `three-type`, chapter-turn pushes from `three-transitions`; the cursor is a small textured plane whose pose module the next scene imports.
+- **Three.js (default)**: the app window as planes with canvas-drawn UI (`three-assets`' `references/drawn-ui.md`) or a video texture from the recording (`three-assets`), an orthographic or fixed-distance camera so pixels stay exact, focus pushes and pull-backs from `three-camera`, labels and chapter cards from `three-type`, chapter-turn pushes from `three-transitions`; the cursor is a small textured plane whose pose module the next scene imports.
 - **HyperFrames**: one sub-composition per chapter; the recording as a `<video>` element; pushes as transforms on a wrapper; clicks as `<audio>` elements at the press time.
 - **React**: one scene per chapter; `@genmotion/motion` eases; the recording through the project's video component.
 - Recording prep (crop to the app window, scale, frame-accurate trims, removing the OS cursor): `screen-capture`.

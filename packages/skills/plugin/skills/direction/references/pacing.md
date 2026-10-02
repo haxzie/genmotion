@@ -29,15 +29,19 @@ Contents: 1 Beat interval by energy · 2 On-screen text · 3 Voiceover · 4 Cut 
 ```
 hold_frames = max(30, 9 × words + 15)          // 0.3 s per word + 0.5 s, minimum 1 s
 hold_frames ≥ characters × 2                   // never faster than 15 characters per second
+// any fps: hold_seconds = max(1, 0.3 × words + 0.5) and ≥ characters / 15; frames = seconds × fps
+// at 24 fps: max(24, 7.2 × words + 12), and ≥ characters × 1.6
 ```
 
-| Words | Minimum hold |
-| --- | --- |
-| 1–2 | 30f (1.0 s) |
-| 3 | 42f |
-| 5 | 60f (2.0 s) |
-| 8 | 87f |
-| 12 | 123f (4.1 s) |
+| Words | Minimum hold at 30 fps | at 24 fps (film, trailers) | at 60 fps |
+| --- | --- | --- | --- |
+| 1–2 | 30f (1.0 s) | 24f | 60f |
+| 3 | 42f | 34f | 84f |
+| 5 | 60f (2.0 s) | 48f | 120f |
+| 8 | 87f | 70f | 174f |
+| 12 | 123f (4.1 s) | 99f | 246f |
+
+Every other frame count in the pack is at 30 fps too: entrances, staggers, beats, holds that end a film. A 24 fps project (footage shot at 24 is kept at 24) multiplies each by 0.8 and rounds to the nearest whole frame, never below 1 (a 3f stagger is 2f, a 12f blurUp is 10f, a 75–120f logo hold is 60–96f).
 
 - **Exceptions**: a 1–3 word line inside a rapid sequence may drop to 18f (0.6 s) — the house minimum before an exit starts — because the eye reads one or two words almost instantly. Cards in the beat-cut style hold 5–15f because they are rhythm, not reading. Anything shorter than its formula is texture: it may not carry the message.
 - **Subtitle standard** for comparison: 17 characters per second for adults, 13 for children, minimum 20f (0.83 s) per caption. Designed motion type competes with imagery, so it gets the more generous house formula.

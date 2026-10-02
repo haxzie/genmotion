@@ -1,7 +1,7 @@
 {
   "id": "explainer",
   "title": "Explainer",
-  "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, narrated or text-led. Covers the one-question test, six shapes (how it works, why it matters, this vs that, by the numbers, listicle, story), a thesis and idea spine, one idea per scene with a named clarity device, reveal on the VO cue, the whiteboard scene grammar and board erase, VO word budgets and VO six frames after each cut, beat sheets for 30, 60, 90 and 180 seconds, and data-viz rules. Load it to explain, teach, break down or visualise something rather than sell it.",
+  "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, narrated or text-led. Covers the one-question test, six shapes (how it works, why it matters, this vs that, by the numbers, listicle, story), a thesis and idea spine, one idea per scene with a named clarity device, reveal on the VO cue, the whiteboard scene grammar and board erase, VO word budgets and VO six frames after each cut, beat sheets for 30, 45, 60, 90 and 180 seconds, and data-viz rules. Load it to explain, teach, break down or visualise something rather than sell it.",
   "summary": "A concept, process, comparison or number made visual in 30 s to 3 min: one idea per scene, revealed on the VO cue.",
   "kind": "workflow",
   "category": "Explainer",
@@ -138,6 +138,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.0",
+  "version": "2.2.0",
   "icon": "🧠"
 }

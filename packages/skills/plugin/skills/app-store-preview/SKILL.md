@@ -78,19 +78,19 @@ Ship one if that is all there is material for; the first cut is the one that mat
 | **30 s** (900f) | Core loop 0–300 (poster at 150) · best feature 300–630 · payoff 630–810 · end frame 810–900 |
 
 - **The poster frame (5 s, frame 150)** is the still most people see when autoplay is off: make frame 150 a fully built, legible, attractive state with its caption on screen, never a transition. Or pick another frame in App Store Connect and say which.
-- **Captions**: ≤5 words, one per step, 64–132 px at 886 or 1080 wide, held `max(30, 9 × words + 15)` frames, placed where the UI is empty (usually the top 12–20% of the frame), on a solid band if the UI behind is busy. Plain words that age well: "Scan any receipt", not "New in 2026!".
+- **Captions**: ≤5 words, one per step, 64–132 px at 886 or 1080 wide, held `max(30, 9 × words + 15)` frames, placed where the UI is empty (usually the top 12–20% of the frame), on a solid band if the UI behind is busy. Plain words that age well: "Name any plant", not "New in 2026!".
 - **End frame**: the app name and icon, 60–90f; no price, no "Download now" badge artwork (the store already shows the button).
 
 ### Directed example: cut 1, 20 s, iPhone 886 × 1920
 
 | # | Frames | Job | On screen | Caption (words → hold f) | Sound (if unmuted) |
 | - | - | - | - | - | - |
-| 1 | 0–60 | Hook | Camera view already open on a crumpled receipt | "Scan any receipt" (3 → 42f) | Track downbeat on frame 1 |
-| 2 | 60–125 | Core loop | Hotspot on the shutter at 66; edges lock on in 20f; totals fill line by line 6f apart | — | Shutter sound from the app |
-| 3 | 125–300 | Poster state | The parsed receipt, fully built by 125; its caption legible by 140 and on screen at 150 | "Every line, read for you" (5 → 60f) | — |
-| 4 | 300–420 | Organise | Swipe trail moves it into "Travel"; the folder count ticks 12 → 13 | "Sorted automatically" (2 → 30f) | Soft tick |
-| 5 | 420–520 | Result | The monthly report, totals by category | "Expenses done in seconds" (4 → 51f) | Track's lift |
-| 6 | 520–600 | End frame | App icon and name | "Subscription required for export" (4 → 51f) | Track's button |
+| 1 | 0–60 | Hook | Camera view already open on a houseplant | "Name any plant" (3 → 42f) | Track downbeat on frame 1 |
+| 2 | 60–125 | Core loop | Hotspot on the shutter at 66; the leaf outline locks on in 20f; name and care fields fill line by line 6f apart | — | Shutter sound from the app |
+| 3 | 125–300 | Poster state | The plant card, fully built by 125; its caption legible by 140 and on screen at 150 | "Care tips, written for you" (5 → 60f) | — |
+| 4 | 300–420 | Organise | Swipe trail moves it into "Living room"; the room's count ticks 12 → 13 | "Sorted by room" (3 → 42f) | Soft tick |
+| 5 | 420–520 | Result | The week's watering calendar, every plant on its day | "Never miss a watering" (4 → 51f) | Track's lift |
+| 6 | 520–600 | End frame | App icon and name | "Subscription required for reminders" (4 → 51f) | Track's button |
 
 ## Craft
 
@@ -110,7 +110,7 @@ Ship one if that is all there is material for; the first cut is the one that mat
 ## Good and bad
 
 - Bad: an iPhone mockup on a gradient with a hand tapping it. Good: the app full screen, a ring blooming on each tap.
-- Bad: frame 150 is mid-dissolve between two screens. Good: frame 150 is the scanned receipt, totals filled in, caption "Scan any receipt".
+- Bad: frame 150 is mid-dissolve between two screens. Good: frame 150 is the identified plant's card, care fields filled in, caption "Care tips, written for you".
 - Bad: "Only $4.99 — Spring sale!". Good: "Unlimited scans with Pro" with "Subscription required" on the end frame.
 - Bad: three chapters of one story. Good: three cuts, each complete on its own.
 
