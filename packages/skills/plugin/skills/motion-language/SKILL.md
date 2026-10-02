@@ -33,7 +33,9 @@ Not for: what the film should say or look like (`direction`), levels and mixing 
 
 | Role | Duration | Ease | Travel | Blur | Stagger |
 | --- | --- | --- | --- | --- | --- |
-| Headline word (blurUp) | **12f** (12–14) | outCubic | y +0.5em (10–50 px) | 10 → 0 px | **3–4f** per word |
+| Headline word, energetic (blurUp) | **12f** (12–14) | outCubic | y +0.5em (10–50 px) | 10 → 0 px | **3–4f** per word |
+| Headline word, calm (rise + fade) | 14–16f | outCubic | y +0.3em (10–30 px) | **0** | 3–4f per word, or by line |
+| Evidence line (a fact, a number, a run's label) | 8–10f, or a hard cut on | outQuart | mask rise, or none | 0 | by line |
 | Sub line, eyebrow | 10–12f | outCubic | y 10–20 px | 0–6 px | 2f per word, or by line 4f |
 | Display title, by character | 8–16f | outSmooth | y 20–46 px | 10–14 px | **1–2f** per character (1.2–1.6 for display) |
 | Card, panel, UI element | **14–16f** | outSmooth | 20–60 px, or scale 0.94 → 1 | 0–10 px | 2–5f; grids centre-out at 2–2.5f per ring |
@@ -44,7 +46,7 @@ Not for: what the film should say or look like (`direction`), levels and mixing 
 | Chat bubble | 16f | spring m0.8 k165 c17 | scale 0.8 → 1 from the tail corner | 0–9 px | slot opens 12f before |
 | Headline slam (3D) | 14f | keys z 6 → 0, scale 0.7 → 1.04 → 1 | out of the lens | — | — |
 
-Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px travel with a 5f word stagger. Long text arrives by line or word, never by character: `references/text-motion.md` has the kinetic-type recipes and the reading-time rules every one of them obeys.
+**Which headline entrance**: blurUp is the default only for energetic families and personalities (A, B, C, confident premium, playful). Calm-trust films (finance, health, enterprise, luxury, calm C) rise and fade with no blur. Give evidence lines a second, plainer entrance than message lines, so the film has two entrance roles; never the same blur in and blur out on every line (a template tell). Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px travel with a 5f word stagger. Long text arrives by line or word, never by character: `references/text-motion.md` has the kinetic-type recipes and the reading-time rules every one of them obeys.
 
 **Order of arrival is order of importance.** The first thing to move after a cut is the focal point. Offset the first entrance 3–6f from the cut so the cut itself reads. Exception: a card or title that **lands on a hit** (a trailer card, a beat card, a word on a music hit) is fully legible on the hit frame: pre-roll its entrance so it completes on the hit, or put it on hard; a blur still clearing on the hit frame misses the hit.
 
@@ -52,7 +54,7 @@ Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px tra
 
 | Role | Duration | Ease | Motion |
 | --- | --- | --- | --- |
-| Text line | **6–9f** | inCubic | up 10–26 px + blur 10 + fade |
+| Text line | **6–9f** | inCubic | up 10–26 px + fade; blur 10 only when it entered with blurUp |
 | Card or block | 8–10f | inCubic | drop or slide along its arrival axis, or fade up −18 px |
 | Hero element | 12f | inOutCubic | up 60 px + blur 12 |
 | Logo leaving frame | 12f | accelerating `bezier(0.4, 0, 1, 1)` | slides off |

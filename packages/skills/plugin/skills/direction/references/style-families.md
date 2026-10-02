@@ -72,6 +72,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Sound | Music at −5 dB (0.55). Whoosh (−3 dB) 3f before each flood starts; impact (−3 to −1.4 dB) on slams and the logo; click on taps; coin or pop clusters on bursts |
 | Logo hold | 28–90f |
 
+**Calm C** (health, luxury, finance, hardware sold on trust): drop the pop, slam, burst and colour-flood numbers above; keep one material, one light and one slow move, headlines rise and fade with no blur (`motion-language`), and the ground changes once, at the peak, after the object has completed its move.
+
 **Goes wrong when**: the brand colour lands on small text, two colours punch in one frame, or 3D is used as decoration around flat content.
 
 ## D. One-shot camera film

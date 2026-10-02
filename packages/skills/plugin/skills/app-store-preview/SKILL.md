@@ -18,6 +18,7 @@ Another owner fits better when:
 | The ask is really | Owner |
 | --- | --- |
 | A product film for a site or social | `launch-playbook` |
+| A launch video that will also sit on the store page, at a non-store size | `launch-playbook` |
 | A vertical ad that will run as paid social | `ugc-screen-demo` |
 | A long tour of the app | `demo-walkthrough` |
 | One shipped feature for existing users | `announce-feature` |

@@ -39,6 +39,8 @@ Make these in order; each narrows the next. Write the answers into `VIDEO.md` (s
 
 From the proposition, pick which the viewer leaves with. **Understand** ("it turns a URL into a spec") points to proof: the product working, a visible before and after. **Feel** ("your work follows you", "this is serious engineering", "you did a lot this year") points to a small story, an object, or a world. Both is a list; pick the lead and let the other ride along.
 
+**Feel-led films need a someone.** A trace of the person the feeling belongs to (a hand, a name in their own writing, their desk, their street) or of the outcome object (the thing saved for, the trip booked, the shelf finally stocked) is on screen by the second beat, because a feeling with nobody in the frame reads as a gauge.
+
 Then write the still-image test in one line: "As a still, this would lose ___." If the blank is empty, go to step 2 before anything else.
 
 ### 2. The concept device
@@ -62,7 +64,13 @@ Pick the device before the look. These patterns recur in films that work; `refer
 | Fixed silhouette, changing skin | Versatility |
 | Ranked countdown | Several results of different weight |
 
-Sketch three (from the product's own visual world, from the feeling, from an unexpected format) and keep the least obvious one that passes direction's swap test. A device that needs the voiceover to explain it is the wrong device.
+Sketch three (from the product's own visual world, from the feeling, from an unexpected format) and keep the least obvious one that passes direction's swap test. A device that needs the voiceover (or a caption) to explain it is the wrong device.
+
+Three rules every device obeys:
+
+- **When the product's noun is the category's stock image** (a shield or padlock for security, a rocket for "launch", a cloud for storage, a waveform for audio or voice, a sparkle or magic wand for AI, a chat bubble for messaging or assistants, a glowing brain for "intelligence"), the noun alone fails the swap test: lead with the product-specific noun (the doc you owed, the shipment that was stuck) rather than the category's, and at the device's completion pair it with the person or the outcome only this product's user gets.
+- **The device persists through every proof beat, and does something in each.** After the reveal the proof is built *from* the device, not beside it, and the device acts in every run (fills, refuses, converts, counts), never sits as a static frame (a held headline beside a static UI is a still); a contrast device (two worlds, before and after, a refused crossing) keeps both sides in frame while the product works, the antagonist inert or empty. "Many" means many of the device's own event, never a wall of generic cards, tiles or dashboard panels.
+- **Each run says something new.** A run's line adds one fact the brief supports (what goes in, where it runs, what comes back, how long it takes); a paraphrase of the proposition is padding, and a run with nothing new to say carries no line.
 
 ### 3. The style family
 
@@ -110,23 +118,29 @@ Name what leads (`sound-design` decides levels and sources):
 Write these four lines; they are what makes the film look decided:
 
 1. **One accent**, and what it means (the moving part, the active state, the payoff word, the CTA). Nothing else gets it.
-2. **One rule broken, at the climax**: the one physical shot in a flat film, the one serif word in a sans film, the one time the whole ground takes a hue, the one brightest frame. Spend it once.
+2. **One rule broken, at the climax**: the one physical shot in a flat film, the one serif word in a sans film, the one time the whole ground takes a hue, the one brightest frame. Spend it once. A colour field may *follow* the device's completion, never replace it (step 7). If the broken rule is the camera (the film's only move), every other beat, the hero beat included, moves the subject instead of the camera.
 3. **One transition grammar**: a signature carried by something in the frame, a workhorse, hard cuts only on the music (direction Step 7).
 4. **One silence**: where sound drops away on purpose (before the reveal, under the payoff, after the hero number).
 
 ### 7. Peak placement
 
-Put the single peak where the film's kind says, and build it from the device, never from a transition:
+This table is the one place peak placement is decided; `launch-playbook`, `direction` and the other owners defer to it. Put the peak where the film's kind says, and build it from the device, never from a transition:
 
 | Kind of film | Peak | Why |
 | --- | --- | --- |
-| Reveal-led launch, milestone | 25–35% | The reveal early; everything after is evidence and resolve |
-| Feature story with a turn | 65–75% | A story needs its setup before the turn |
+| Reveal-led launch, milestone (the name or the product *is* the news) | 25–33% | The reveal early; everything after is evidence and resolve |
+| Accumulation or outcome (a count, a fill, a build that completes; a story with a turn) | 60–75% | The device needs its units, or the story its setup, before it can complete |
 | The product's sound or output is the payoff | 85–95% | The picture calms while the product takes over |
 | Sting | entrance in the first 10%, lock at 40–60% | Grab the first second, land the mark, decay |
 | Hype / instrument teaser | 70–100%, with the picture simplifying as the sound climbs | Contrast between dense sound and calm picture makes the lock inevitable |
 
-Before the peak, a calmer breath (direction's 10–30f). After it, slow down so the result has weight. Repeats that build toward it should tighten (for example swaps of 6, then 4, then 2 frames) with slight irregularity; identical spacing reads as a timer.
+**The two-peak shape** (an accumulation or outcome film that must still name itself early, as most launches must): the name reveal at 25–33% is a *secondary* peak (energy ≤ 7, no breath needed, no flood), and it names what the viewer has already been watching; the device's completion at 60–75% is the one 10, with the breath before it. Write both frames in the Energy curve line, and say which is the 10. Never two 10s.
+
+Every peak, whichever kind:
+
+- **No peak on a flat flood.** Neither the name reveal nor the payoff line lands on a bare colour field: the device completes on screen and holds ≥ 30f before any flood, and the line sits on or beside the completed device. A word on a flat colour could close any competitor's film.
+- **It reads with sound off.** The biggest picture change in the film lands on the hit frame, and the words change on it too (a word swapped, a counter snapping to its new state), so a muted viewer sees the turn without the cue.
+- **Repeats tighten.** Before the peak, a calmer breath (direction's 10–30f); after it, slow down so the result has weight. Repeats that build toward it tighten (for example swaps of 6, then 4, then 2 frames) with slight irregularity; identical spacing reads as a timer. A count device puts the thing being counted against (the battery, the deadline, the budget) on screen from frame 0 and keeps the first unit ≤ 2.5 s (75f); slowness belongs to the last unit before the peak, not the first.
 
 ## Write it down
 
@@ -140,6 +154,7 @@ Style family: <house letter + name> (taste: <taste family>) — because <device 
 Motion personality: <calm trust|confident premium|playful|technical>; moves: <what may move>
 Restraint: accent = <meaning> · broken rule = <what, at frame> · silence = <where>
 Sound lead: <music|product|voice|picture>; payoff treatment: <cut music|bed out|hit + tail>
+Peak: <kind from step 7> — 10 at <frame> (<%>)[; name reveal (≤7) at <frame>]
 ```
 
 ## Building it
@@ -160,9 +175,9 @@ Ask of the cut, on captured frames; any "no" is a note. The full anti-pattern li
 
 1. Can I say the one sentence after one muted view?
 2. Would it lose its meaning as a still?
-3. Is the device made of this product's own material, and would it break with a competitor's name on it?
+3. Is the device made of this product's own material, would it break with a competitor's name on it, and is it visible in every proof beat?
 4. Is frame 0 in motion, with the tension on screen by 1 s?
-5. One peak, built from the idea, with a calmer breath before it?
+5. One peak (or the two-peak shape), built from the idea, with a calmer breath before it, readable with the sound off?
 6. One accent used only for meaning, one broken rule at the climax, one transition grammar?
 7. Does rhythm follow the story (busy fast, resolve slow, the hero beat longer)?
 8. Is each sound on or just after its event, as long as its motion, pointing the right way?
@@ -182,13 +197,14 @@ Ask of the cut, on captured frames; any "no" is a note. The full anti-pattern li
 
 ## Checks before you finish
 
-1. `VIDEO.md` has the seven lines from "Write it down", and the device line names this product's own noun, unit, glyph or output.
+1. `VIDEO.md` has the eight lines from "Write it down", and the device line names this product's own noun, unit, glyph or output.
 2. `capture-frames` at frame 0 and frame 15: something is moving and the frame is not black or empty; on a dark ground the focal point is bright (not a near-black frame on a phone).
-3. The peak frame named in the Direction block is inside the band for this kind of film (step 7), it shows the device, and a capture 15–30f before it is visibly calmer.
-4. The accent appears only on what the Restraint line says it means (check three frames from different beats).
-5. The broken rule happens once: a contact sheet (`direction`'s critique §1) shows it in one beat only.
-6. Beat lengths are not uniform (films with four or more content beats): the hero beat is the longest content beat, and no four consecutive beats are all within 10% of each other in length.
-7. Where the product's sound or the payoff leads, the bed's 0.5 s RMS there sits at least 10 dB below its level either side (`ffmpeg` `astats` on the music stem), and every UI cue there starts on or up to 2 frames after its first changed frame, never before (the sound being sold is exposed, so it must read as caused).
-8. The last 1.5 s has a tail or a button (the music is not at full level on the last frame), and the end card holds with one ambient behaviour.
-9. Nothing from `references/anti-patterns.md` §Template tells is on screen.
-10. The owner's checks and direction's self-critique pass.
+3. The peak frame named in the Direction block is inside the band for this kind of film (step 7; for the two-peak shape, both frames are in their bands and only one is the 10), it shows the device, and a capture 15–30f before it is visibly calmer. Neither peak frame is a line on a flat flood: the completed device is on screen for ≥ 30f before any flood (capture the completion frame and 30f later).
+4. The device is visible and acting in every proof beat: capture one frame per run and point to the device and what it is doing in each; a contrast device shows both sides. No beat is a grid of generic cards, tiles or dashboard panels.
+5. The accent appears only on what the Restraint line says it means (check three frames from different beats).
+6. The broken rule happens once: a contact sheet (`direction`'s critique §1) shows it in one beat only.
+7. Beat lengths are not uniform (films with four or more content beats): the hero beat is the longest content beat, and no four consecutive beats are all within 10% of each other in length.
+8. Where the product's sound or the payoff leads, the bed's 0.5 s RMS there sits at least 10 dB below its level either side (`ffmpeg` `astats` on the music stem), and every UI cue there starts on or up to 2 frames after its first changed frame, never before (the sound being sold is exposed, so it must read as caused).
+9. The last 1.5 s has a tail or a button (the music is not at full level on the last frame), and the end card holds with one ambient behaviour.
+10. Nothing from `references/anti-patterns.md` §Template tells is on screen.
+11. The owner's checks and direction's self-critique pass.
