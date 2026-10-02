@@ -1,7 +1,7 @@
 {
   "id": "three-assets",
   "title": "Assets (Three.js)",
-  "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/.",
+  "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, a tested confetti burst, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font, confetti or any file from assets/.",
   "summary": "Logos, screenshots, device frames, seeked footage and fonts in Three.js scenes, loaded so no frame ships blank.",
   "kind": "technique",
   "category": "Craft",
@@ -10,7 +10,8 @@
     "threejs",
     "logos",
     "screenshots",
-    "footage"
+    "footage",
+    "confetti"
   ],
   "aspects": [
     "16:9",
@@ -55,7 +56,8 @@
     "the image shows up blank",
     "the video is black in the export",
     "make our logo 3D",
-    "add background music"
+    "add background music",
+    "add confetti when the number lands"
   ],
   "templates": [
     "samsung-pay-fintech-app-launch-video",
@@ -70,6 +72,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.2.0",
+  "version": "2.3.0",
   "icon": "🖼️"
 }

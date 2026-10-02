@@ -5,7 +5,7 @@ description: "Editing footage the user supplies into a finished video: a podcast
 
 # Video editing: the user's own footage
 
-The user brings footage; you bring the editor's judgement. The work splits in two on purpose: **ffmpeg does the editorial** (what is kept, in what order, at what size, sounding how) and produces one conformed picture file plus one clean dialogue file; **the project does the motion layer** (captions, titles, lower thirds, b-roll, punch-ins, transitions, end card) on top of it. Then you render and measure. Every number below is at 30 fps unless it says otherwise.
+The user brings footage; you bring the editor's judgement. The work splits in two on purpose: **ffmpeg does the editorial** (what is kept, in what order, at what size, sounding how) and produces one conformed picture file plus one clean dialogue file; **the project does the motion layer** (captions, titles, lower thirds, b-roll, punch-ins, transitions, end card) on top of it. Then you render and measure. Every frame count below is at 30 fps unless it says otherwise; a 24 fps project (most film and cinema-style footage) multiplies frame counts by 0.8 and keeps every time in seconds as it is. Edited footage has no style family (`direction`): the footage is the look, and the format's reference file sets the graphics.
 
 ## When to use
 
@@ -72,14 +72,16 @@ Pick one row, then read its reference file. Numbers are defaults; the reference 
 | Format | Reference | Length | Visual change every | Gaps kept | Captions | Loudness |
 |---|---|---|---|---|---|---|
 | Podcast, full episode | `references/podcast.md` | as recorded, tightened | camera hold 4–10 s, wide every 30–90 s | pauses >0.7 s → 0.25–0.4 s | SRT sidecar | −16 LUFS, −1 dBTP |
-| Podcast clips (9:16) | `references/podcast.md` | 30–60 s (≤90) | 2–4 s | ≤150 ms | burned, word-timed | −14 LUFS |
-| YouTube talking head | `references/talking-head.md` | 8–15 min | jump cut 3–8 s, b-roll every 10–30 s | cut pauses >0.3–0.5 s | SRT sidecar | −14 LUFS |
-| Shorts / Reels / TikTok | `references/talking-head.md` | 20–45 s (≤60) | 1–3 s | ≤100 ms | burned, 1–3 words | −14 LUFS |
-| LinkedIn | `references/talking-head.md` | 30–90 s | 4–8 s | ≤200 ms | burned sentence case + SRT | −14 LUFS |
+| Podcast clips (9:16) | `references/podcast.md` | 30–60 s (≤90) | 2–4 s | join ≈0.13 s | burned, word-timed | −14 LUFS |
+| YouTube talking head | `references/talking-head.md` | 8–15 min | jump cut 3–8 s, b-roll every 10–30 s | join ≈0.2 s | SRT sidecar | −14 LUFS |
+| Shorts / Reels / TikTok | `references/talking-head.md` | 20–45 s (≤60) | 1–3 s, varied | join ≈0.08 s | burned, 1–3 words | −14 LUFS |
+| LinkedIn | `references/talking-head.md` | 30–90 s | 4–8 s | join ≈0.2 s | burned sentence case + SRT | −14 LUFS |
 | Course / tutorial | `references/talking-head.md` | 3–10 min per lesson | follow the action, 5–20 s | never cut a step | SRT | −16 to −14 LUFS |
-| Trailer / teaser | `references/trailer.md` | teaser 30–90 s, trailer 1:30–2:30 | ASL 3–5 s → under 1 s | designed silence | title cards | −14 LUFS |
-| Launch cut | `references/launch-cut.md` | 60–120 s (crowdfunding 1:30–3:00) | 1–3 s on music, hero 3–6 s | ≤150 ms | burned on social cutdowns | −14 LUFS |
-| Gen Z / TikTok-native | `references/genz.md` | 15–45 s | 0.7–2 s, interrupt every 2–4 s | ≤50–100 ms | burned, caps, 1–3 words | −14 LUFS |
+| Trailer / teaser | `references/trailer.md` | teaser 30–90 s, trailer 1:30–2:30 | ASL 2–5 s → 8–14 f (24 fps) in the climax | designed silence (room tone) | title cards; film subtitles if dialogue is subtitled | −14 LUFS |
+| Launch cut | `references/launch-cut.md` | 60–120 s (crowdfunding 1:30–3:00) | 1–3 s on music, hero 3–6 s | join ≈0.13 s | burned on social cutdowns | −14 LUFS |
+| Gen Z / TikTok-native | `references/genz.md` | 15–45 s | 0.7–2 s, varied; interrupt every 2–4 s | join ≈0.08 s | burned, caps, 1–3 words | −14 LUFS |
+
+"Gaps kept" is the silence left at a join; the pads that produce it and which pauses get cut at all are the pause table in Step 5.
 
 Write the chosen row into `VIDEO.md` front matter (`skill: video-editing`, `format:`, `aspect:`, `length:`).
 
@@ -97,8 +99,10 @@ Write the chosen row into `VIDEO.md` front matter (`skill: video-editing`, `form
 5. **The user still says go, or cannot answer:** make a clearly marked **no-captions draft**:
    - **The first line of your reply says so**: "Draft without captions: no speech-to-text was available. Send a transcript or SRT, or allow a local Whisper install, and I'll add them." Name the file `<name>-nocaptions.mp4` and record it in `VIDEO.md`.
    - **Never invent caption words**, never paraphrase what you have not heard.
-   - **Never lay out the frame around captions that are not there**: no empty lower band held for them. Recompose (the face lower, a 4:5 plate) and use the space for non-verbal text pops.
-   - **A hook title built only from public facts** (the title, the speaker's identity, the show), as a question or a POV, never a quote (`references/podcast.md`, `references/genz.md`).
+   - **Never lay out the frame around captions that are not there**: no empty lower band held for them. For a single speaker at 720p, 9:16: the plate from y 450 down at up to 2.0× (crop shifts as the step), the crop chosen so the eyes land at y 600–800, nothing load-bearing below y 1450, and the bands under the platform UI never pure white (`references/ffmpeg-recipes.md` §6 has the command and the luma check).
+   - **A hook title built only from public facts** (the title, the speaker's identity, the show), as a question or a POV, never a quote (`references/podcast.md`, `references/genz.md`). In a feed draft it stays on screen for the whole film as a **persistent header** (y 270–450, ≤2 lines): it is the only line a muted viewer can read.
+   - **A wordless cue at least every 6–8 s** on top of the picture steps (a gesture emoji pop, a freeze + shutter, a speed ramp across a pause, a second identity or topic pop: `references/genz.md`, The no-captions draft). No b-roll: without words nothing can be literal to them.
+   - **The peak is provisional**: on the loudest onset, marked as such in `VIDEO.md`.
    - **Prefer one continuous excerpt** over splicing sections you have not heard, chosen by the no-transcript method in `references/podcast.md` (question → answer units, not shots), and call the choice provisional.
    - Wire the caption layer with an empty word list, so the transcript drops in later without a rebuild.
 
@@ -124,19 +128,29 @@ Read the whole transcript before choosing anything. Then write the selects into 
 
 Turn the paper edit into a cut list in **seconds**, snapped:
 
-- in = first word start − 0.08 s; out = last word end + 0.12 s; merge runs whose gap is shorter than the format row's "Gaps kept" (Step 2): under 0.25 s for long-form and LinkedIn, 0.15 s for podcast clips and launch cuts, 0.05–0.1 s for Shorts and Gen Z. That threshold decides what is cut; caption grouping has its own pause rule (`ugc-craft`).
+- Pad and merge per the **pause table** below, the pack's one set of join numbers (`references/genz.md`, `references/talking-head.md`, `references/podcast.md` and `ugc-craft`'s breath trim all cite it). Caption grouping has its own pause rule (`ugc-craft`); it is unrelated.
+
+| Format | In pad (before the first word) | Out pad (after the last word) | Join gap left | Pauses that get cut |
+|---|---|---|---|---|
+| Gen Z, Shorts / Reels / TikTok, UGC talk | −0.03 s (1 f) | +0.05 s (1–2 f) | ≈0.08 s | between takes: all; inside a continuous monologue: only pauses ≥0.25 s |
+| Podcast clips, launch cuts | −0.05 s | +0.08 s | ≈0.13 s | ≥0.25 s |
+| Clean talking head (YouTube, LinkedIn, course) | −0.08 s | +0.12 s | ≈0.2 s | ≥0.3–0.5 s, and every flub |
+| Podcast, full episode | −0.10 s | +0.15 s | 0.25–0.4 s (compressed, not removed) | only pauses >0.6–0.8 s |
+| Trailer / film lines | whole lines, cut where the bed is quietest | | the music decides | none inside a line |
+
+Why ≥0.25 s inside a monologue: a tight speaker's shorter pauses buy 0.1–0.2 s each and cost a jump cut each, which turns the edit into a stutter; cut fewer, and get the density from picture steps (Step 6). The pads assume word times checked against the waveform: Whisper's can be 100–300 ms off, so snap each boundary to the nearest low-energy point first; on a silence map, pad from the silence edges.
 - Round every boundary to the **project** frame: `round(t × fps) / fps`, and give each segment its exact frame count `N = round((out − in) × fps)`.
 - 10 ms audio fades at every boundary (no clicks); room tone under gaps, never digital silence.
 
 Then conform in **one** ffmpeg pass (recipes §5): per segment `trim` → `fps` → exact `N` frames (and `atrim` to `N / fps`), then `concat`, scale, a 0.5 s tail handle, VP9 with `-g 15` to `assets/edit.webm`, and the dialogue to `assets/edit-audio.wav` (48 kHz). Keep the cut list in `edit/cutlist.json` with each segment's source in/out and its new start, so captions and b-roll can be re-timed: `new_t = segment_start + (src_t − in)`.
 
-Confirm `edit.webm` has exactly the **planned** frames + 15 (the handle), `edit-audio.wav` is exactly planned frames ÷ fps long, and the cut frames found by a difference scan match the planned segment starts. If not, the cut graph is wrong; fix it now, not after the render. (Applying `fps` once after the concat drifted a 23.976 source by 2 frames at a cut.)
+Confirm `edit.webm` has exactly the **planned** frames + the 0.5 s handle (15 frames at 30 fps, 12 at 24), `edit-audio.wav` is exactly planned frames ÷ fps long, and the cut frames found by a difference scan match the planned segment starts. If not, the cut graph is wrong; fix it now, not after the render. (Applying `fps` once after the concat drifted a 23.976 source by 2 frames at a cut.)
 
 ## Step 6: tighten
 
-- Pauses and fillers per the Step 2 row. Remove about 60–80% of isolated um/uh, not all of them: removing every one sounds robotic and causes pitch jumps.
-- Two consecutive segments of the same camera need a size change of at least 20% or b-roll over the join; otherwise the cut reads as a mistake. Use `ugc-craft`'s **jump zoom**: scale steps 1.0 → 1.2 on the cut frame and back to 1.0 on the next, never two zoomed segments in a row. On a low-res source the step is 1.1–1.12 and still reads (Step 7's enlargement limit wins).
-- **Feed formats need more changes than the speech has pauses.** Add picture-only steps on word onsets inside a continuous take (a hard 1.0 ↔ 1.2 step or an 80–120 px crop shift, no ease) until no stretch exceeds 2.5 s without a visual change (`references/genz.md`, Density; the check is in recipes §11).
+- Pauses and fillers per the Step 5 pause table. Remove about 60–80% of isolated um/uh, not all of them: removing every one sounds robotic and causes pitch jumps.
+- Two consecutive segments of the same camera need a visible framing change or b-roll over the join; otherwise the cut reads as a mistake. Two steps qualify: `ugc-craft`'s **jump zoom** (scale 1.0 → 1.2 on the cut frame and back to 1.0 on the next, never two zoomed segments in a row), or a **crop shift** of 80–120 output px left or right with no size change. The jump zoom multiplies the enlargement, the crop shift does not, so **base × step ≤ 2.0** (Step 7) decides: from a single 720p angle the crop shift is the workhorse (base up to 2.0), or a 1.2 jump zoom on a base of at most 1.66. A 6–8% size step alone reads as a twitch; pair it with a crop shift.
+- **Feed formats need more changes than the speech has pauses.** Add picture-only steps on word onsets inside a continuous take (a hard step, no ease) until no stretch exceeds 2.5 s without a visual change, and **vary the rhythm**: fast runs (2–3 changes 0.5–1 s apart) around the lines that matter, 2–2.5 s holds on lines that need reading, at least 3 kinds of change (size step, crop shift, speed ramp, freeze, text pop). The hook gets ≥2 events in its first 3 s, the first by 1.0 s. A step every 2.0 s for 35 s is a metronome even though it never breaks the ceiling (`references/genz.md`, Density; the check is in recipes §11).
 - Cut on action where you can (a head turn, a gesture); cut on a blink rather than mid-word.
 - J- and L-cuts on dialogue transitions and every b-roll in/out: audio leads or trails the picture by 6–24 frames.
 
@@ -145,7 +159,10 @@ Confirm `edit.webm` has exactly the **planned** frames + 15 (the handle), `edit-
 - Fixed framing (one crop per camera, the common podcast case): crop in ffmpeg during the conform (recipes §6), eyes on the upper-third line (y ≈ 1/3 of height), lead room in the direction of gaze.
 - Moving framing (speaker switches, eased reframes, zoom moves): conform at the source aspect and move the footage plate in the scene, where easing is a one-liner.
 - Two people in one wide shot for 9:16: stacked split screen (two 1080×960 halves) for exchanges; active-speaker crop for monologues; blurred letterbox only as a last resort. Use every angle the source has of the speaker, including a crop of the wide.
-- **Enlargement limit:** total enlargement of source pixels (reframe × jump zoom × punch-in, measured from the active picture) **≤2.0×, ≤1.3× ideal**. A full-height 9:16 crop of 720p is already 2.67× (3.5× from a 544 px letterboxed picture), so sources ≤720p or letterboxed take a different layout: stacked angles (1.33× from 720p), a 4:5 or 1:1 plate high in the frame with the hook above and captions over its lower part (1.9–2.0×), or the 16:9 picture whole on a blurred fill as the last resort (recipes §6). Sharpen mildly (`unsharp=5:5:0.6`) anything above 1.3×. If you accept more softness than this, name it in the delivery note.
+- **Enlargement limit:** total enlargement of source pixels, `base × step` (the reframe's scale times any jump zoom or punch-in, measured from the active picture), **≤2.0×, ≤1.3× ideal**. A full-height 9:16 crop of 720p is already 2.67× (3.5× from a 544 px letterboxed picture), so sources ≤720p or letterboxed take a different layout: stacked angles (1.33× from 720p), a 4:5 or 1:1 plate with the hook above it (base 1.875–2.0, so crop shifts, not size steps), the no-captions plate from y 450 (Step 3), or the 16:9 picture whole on a blurred fill as the last resort (recipes §6 has the table, the commands and the arithmetic). Compute the worst case before choosing and log it.
+- **Sharpen anything above 1.3×**, mildly: `unsharp=5:5:0.5` in the conform's scale chain (0.4–0.6; 0.8+ halos). If you accept more softness than the limit, name it in the delivery note.
+- **Bands outside the plate sit under platform UI** (white text): never pure white there; keep their mean luma under ~240 (a 0–35% gradient scrim, grey, a dark canvas, or the plate anchored to the bottom edge). Matching the canvas to a white wall hides the plate edge but needs the scrim.
+- **Keep a scope picture letterboxed** (2.39–2.40:1 in 16:9): never enlarge it to fill. In 9:16 it takes the letterboxed-source layouts above.
 
 ## Step 8: the motion layer
 
@@ -174,10 +191,17 @@ Entrances, exits, easing and overshoot come from `motion-language` (text 12 f pe
 
 Hand the mix to `sound-design`; it owns levels (its bed row is the one bed level), ducking, music sourcing, placeholder SFX and loudness. Editing-specific rules:
 
-- Clean the dialogue before it goes on the timeline, in this order: high-pass 80–100 Hz → gentle denoise → cut 200–400 Hz by 2–4 dB → compress 3:1 (3–6 dB of gain reduction) → de-ess → normalise to the delivery target (recipes §7). Over-denoising sounds underwater; stop early.
+- **A clean dialogue track** (a lav or a podcast mic): clean it before it goes on the timeline, in this order: high-pass 80–100 Hz → gentle denoise → cut 200–400 Hz by 2–4 dB → compress 3:1 (3–6 dB of gain reduction) → de-ess → normalise (recipes §7). Over-denoising sounds underwater; stop early.
+- **A finished mix, no stems** (a film, a published video, a broadcast: dialogue, music and effects in one track): **no denoise chain**, which eats the score and the room. Instead:
+  - pick lines whose bed is quiet (a gap in the score, a held chord), and cut their handles where the bed is quietest;
+  - lift a line with two cascaded 120–150 Hz high-passes, +3 dB at ~3 kHz, gain ≤ +6–8 dB, 40–80 ms fades at the handles (recipes §7, Lifting a line);
+  - measure the speech band (300–3400 Hz) RMS against the band below 250 Hz: if the low band wins, filter harder or choose another line. A flat gain lifts the score's low end with the voice and turns a whisper into a slab;
+  - a cold-open line sits 6–10 LU under Act 1's music, not above it (measure each section, recipes §11);
+  - ask once for stems or an M&E (music and effects) mix if the user may have them: with a clean dialogue stem none of this is needed.
+- **Headroom before SFX**: when sound effects sit on top of speech or music, pre-master the dialogue (or the music bed) to **−15 LUFS / −3 dBTP**, not −14 / −1.5, and expect the AAC encode to add up to ~1 dB of true peak; then the export's two-pass re-master is the standard last step (`sound-design`, Headroom and loudness).
 - Place `edit-audio.wav` on lane 0 at volume 1 from frame 0 with `place-audio`. A clip may be at most 18,000 frames (10 min at 30 fps): split longer dialogue into consecutive entries, each with `startFrom` (seconds) where the last one ended.
 - **Over speech** (talking head, podcast clip, a Gen Z edit of someone talking): the speech decides the cuts; a bed, if any, sits on `sound-design`'s bed row (0.12–0.2 after both are normalised, 14–20 LU under the voice; a busy track low-passed at 6–8 kHz). Podcast and LinkedIn often take none. Drop it out under the single most important line.
-- **Music-led** (trailers, a Gen Z montage without talk): pick the track first, then cut to it (`sound-design` beat grid).
+- **Music-led** (trailers, a Gen Z montage without talk): pick the track first, then cut to it (`sound-design` beat grid; on a score with no steady pulse, phrases and swells, `references/trailer.md`). Shape a trailer's loudness as a staircase with volume automation and peak limiting, never `loudnorm` on the whole cue, which flattens the build (`sound-design`).
 - No `sfx` on this surface: `sound-design`'s synthesised placeholders, labelled as such, beat a Gen Z edit with no sound design.
 
 ## Step 10: render
@@ -195,9 +219,9 @@ All with `ffmpeg`/`ffprobe` (recipes §11):
 3. **Frames at cuts:** extract the frame at every cut and one frame either side; look at them. For an exact check, compare the export to `edit.webm` with `psnr` over a band no graphic covers: runs of low values or a dip every Nth frame mean the footage is late; one isolated dip is encoder noise.
 4. **Caption timing:** at three random words, the frame at the word's start shows that word highlighted, and nothing sits in the platform's UI zones.
 5. **Unintended gaps:** `silencedetect` on the export finds no silence over 1 s you did not design.
-6. **Visual-change density** (feed formats): the cut scan plus your designed event frames leave no gap over 2.5 s (recipes §11).
+6. **Visual-change density** (feed formats): with the threshold calibrated on two planned cut frames (0.6× the smaller difference, recipes §11), the cut scan plus your designed event frames leave no gap over 2.5 s, and the interval report shows a varied rhythm (spread ≥2×, sd/mean ≥0.35, ≥20% of intervals ≤1.2 s) with the first event by 1.0 s.
 7. **Boundaries:** 2 s of source before every in and after every out show no thought being cut (recipes §11).
-8. **Loudness:** `ebur128` integrated within 1 LU of the target, true peak ≤ −1 dBTP. If not, fix it per `sound-design` and render again.
+8. **Loudness:** `ebur128` integrated within 1 LU of the target, true peak ≤ −1 dBTP. If the true peak is over, re-master the export (`sound-design`: peak-limit, then two-pass linear `loudnorm`, the video copied); if loudness is off by more than 1 LU, scale the clips and render again. For a trailer, also the loudness per section (recipes §11): rising act by act, the climax loudest.
 
 ## Step 12: deliver
 
@@ -233,18 +257,19 @@ All with `ffmpeg`/`ffprobe` (recipes §11):
 ## Checks before you finish
 
 - [ ] Every source file is probed and logged in `VIDEO.md` (active picture, fps, head/tail fades); VFR sources were conformed to CFR; the project fps and why are recorded.
-- [ ] Captions required and no words available: the user was asked once; any delivery without captions is named `*-nocaptions`, says so in the reply's first line, and has a public-facts hook title and no empty caption band.
+- [ ] Captions required and no words available: the user was asked once; any delivery without captions is named `*-nocaptions`, says so in the reply's first line, keeps a public-facts hook as a persistent header, has a wordless cue at least every 6–8 s, and no empty caption band.
 - [ ] The paper edit is in `VIDEO.md`, and no cut changes what a speaker said or meant.
-- [ ] `edit.webm` is VP9 with keyframes every 15 frames, at the project fps, with a 0.5 s tail handle; its frame count is the planned total + 15, `edit-audio.wav` is planned frames ÷ fps long, and its cut frames match the plan.
+- [ ] `edit.webm` is VP9 with keyframes every 15 frames, at the project fps, with a 0.5 s tail handle; its frame count is the planned total + the 0.5 s handle, `edit-audio.wav` is planned frames ÷ fps long, and its cut frames match the plan.
 - [ ] Every excerpt's in and out sit on complete thoughts (2 s source check either side), or the delivery note says it is mid-answer.
 - [ ] Frame 0 of the export already shows the hook (social) or the cold open (long-form); it is not black.
 - [ ] The frame at every cut and one frame after it show the intended source frame (looked at, or `psnr` band check clean).
-- [ ] No two adjacent segments of one angle at the same size without b-roll over the join.
-- [ ] Total enlargement of source pixels ≤2.0× everywhere (worst shot computed and logged), sharpened above 1.3×.
-- [ ] Feed formats: the density check prints no gap over 2.5 s.
+- [ ] No two adjacent segments of one angle at the same framing without b-roll over the join (a ≥20% size step or an 80–120 px crop shift).
+- [ ] Total enlargement `base × step` ≤2.0× everywhere (worst shot computed and logged), sharpened above 1.3×; no band under the platform UI is pure white (mean luma <240).
+- [ ] Feed formats: with the calibrated threshold the density check prints no gap over 2.5 s, the rhythm varies (spread ≥2×, sd/mean ≥0.35), and the first visual event is by 1.0 s.
 - [ ] Captions: at three sampled words the highlighted word matches the audio frame; lines fit the safe zone for the platform; reading rate within `references/captions.md`.
 - [ ] No graphic covers a face; lower thirds only on first appearance, and none in 9:16 Gen Z / Shorts edits.
-- [ ] `silencedetect` finds no unintended gap over 1 s; there are no clicks at cuts (10 ms fades).
+- [ ] `silencedetect` finds no unintended gap over 1 s; there are no clicks at cuts (10 ms fades); joins follow the Step 5 pause table for the format; any designed silence is room tone (−45 to −60 dBFS RMS), never digital zero.
+- [ ] Finished-mix sources: no denoise chain on them; every lifted line's speech band beats its low band.
 - [ ] Any bed sits on `sound-design`'s bed row (14–20 LU under the voice); placeholder SFX are labelled.
 - [ ] Integrated loudness within 1 LU of the format's target, true peak ≤ −1 dBTP.
 - [ ] Music and SFX licences, the cut list path and your assumptions are recorded in `VIDEO.md`.

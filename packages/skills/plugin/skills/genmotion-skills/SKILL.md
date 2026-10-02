@@ -97,6 +97,8 @@ Read a reference when the skill says the step needs it, not all of them up front
 
 Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `music`, `place-audio`, `transcribe`, `search-skills`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.
 
+**Times for `capture-frames`**: a bare number is a frame (`45` = `45f`); `1.5s`, `500ms` and `60%` (of the last frame) also work. They count from the start of the whole film, unless the tool takes a scene and you named one, so the land at frame 180 of a scene that starts at 90 is `270`.
+
 ## Requirements
 
 Nothing. This skill is the map.

@@ -1,6 +1,6 @@
 ---
 name: three-assets
-description: "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/."
+description: "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, a tested confetti burst, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font, confetti or any file from assets/."
 ---
 
 # Assets on Three.js: real files, loaded so every frame is complete
@@ -9,7 +9,7 @@ A scene may import only `three` and `@genmotion/three-engine`, so there are no a
 
 The recipes were built against the real host and debugged by rendering. The thing you would not guess: the CLI's Chromium cannot decode **H.264 MP4** at all, so footage must be VP9 WebM, seeked through `ctx.manager`. `video-editing`'s `references/footage-in-scene.md` is the pack's one tested footage helper; `references/footage-and-audio.md` here has an equivalent for short inserts.
 
-Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/drawn-ui.md` (`components/ui.ts`: app UI rebuilt as canvas-drawn planes when there are no screenshots), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio).
+Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/drawn-ui.md` (`components/ui.ts`: app UI rebuilt as canvas-drawn planes when there are no screenshots), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio), `references/confetti.md` (`components/confetti.ts`: a seeded burst from a number's edges).
 
 ## When to use
 
@@ -17,6 +17,7 @@ Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `ex
 - An owner skill says to `save-asset` something and then put it on screen.
 - Frames render with blank, black or stretched planes where an image or video should be.
 - Type needs a specific font, or a scene needs sound.
+- A land frame needs confetti (a milestone's number, a launch's reveal).
 
 Not for: finding or generating material (`stock-and-broll`, `screen-capture`), editing user footage into a cut (`video-editing`), type layout (`three-type`), sound levels (`sound-design`).
 
@@ -49,6 +50,10 @@ A product with no screens to show is rebuilt as flat canvas-drawn planes: `refer
 | Lockup (mark + wordmark) | Mark plane + a `three-type` label in the brand font, in one group; gap ≈ 0.25 × the symbol's height (0.75–1 × the cap height), cap height 0.3–0.4 × the symbol | Or the official lockup file as one plane. Move and centre it as one group |
 
 The path parser handles M L H V C S Q T Z, absolute and relative. Arcs throw an error: flatten them in the SVG first, or use the flat plane. Light extruded marks with `three-look`'s product setup and `brand` tone mapping so the brand colour holds.
+
+## Confetti
+
+`references/confetti.md` has `components/confetti.ts` (tested at 1080 × 1080): one `InstancedMesh` of ≤ 300 paper quads (120–180 for a hero land, 10–24 px), each launched from a `hash1` seed, posed in closed form with gravity, linear drag and spin, so any frame renders alone. It spawns on the edges of the box you give it (the number at its punch peak plus its unit line), crowded toward the corners, and aims every piece outward, so none crosses the glyphs for the first 20 f and the burst reads as poppers rather than two columns in the gutters. Pieces live 44–60 f and shrink out; the burst is gone about 2 s after the land. Pass the film's palette as `colors`.
 
 ## Device frames
 
@@ -118,6 +123,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Logo colour shifted | Lit or tone mapped | Flat: `toneMapped: false`; 3D: `brand` tone mapping (`three-look`) |
 | Wrong font in the export | Font named, not shipped | `withFonts()` with the woff2 in `assets/` (`three-type`) |
 | Silence in the export | Sound in scene code | `place-audio` |
+| Confetti in two thin columns, or over the number | Launched from two points, or spawned inside the type | `confetti()` with `box` around everything being read |
 
 ## Before building with assets
 
@@ -154,4 +160,5 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 3. No `http` URL in any scene or component file; every mark comes from an official file in `assets/`, or is the name set as a wordmark, or is a stand-in flagged in `VIDEO.md`.
 4. Logos, screenshots and drawn UI are crisp at their largest on-screen size; text inside screenshots and drawn UI clears 28 px on screen in the widest shot that shows it.
 5. Every sound is on the timeline in `project.json`, none in scene code.
-6. No randomness or wall-clock timing; `validate` passes.
+6. Confetti, when there is any: `capture-frames` at land, +2, +10 and +20 shows no piece over the number or its label, and land +65 shows none left.
+7. No randomness or wall-clock timing; `validate` passes.

@@ -83,11 +83,14 @@ export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const prog = (frame: number, start: number, dur: number, ease: Ease = (t) => t) =>
   ease(clamp01((frame - start) / dur));
 
+export const outQuad: Ease = (t) => 1 - (1 - t) ** 2;
 export const outCubic: Ease = (t) => 1 - (1 - t) ** 3;
 export const outQuart: Ease = (t) => 1 - (1 - t) ** 4;
 export const inCubic: Ease = (t) => t * t * t;
 export const inOutCubic: Ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 export const inOutSine: Ease = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+/** `ease` run only to `k` of its curve, rescaled to end at 1: still moving on its last frame (a count that must not park before the land uses trunc(outQuart, 0.85)). */
+export const trunc = (ease: Ease, k: number): Ease => (t) => ease(k * t) / ease(k);
 
 /** cubic-bezier(x1, y1, x2, y2) solved by Newton then bisection: CSS-identical, deterministic. */
 export function bezier(x1: number, y1: number, x2: number, y2: number): Ease {

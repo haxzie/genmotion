@@ -1,6 +1,6 @@
 # Podcast: the full episode, multicam, and clips
 
-Read this when the footage is a recorded conversation: an audio or video podcast, an interview, a panel. Part A is the full episode; Part B is mining it for vertical clips. Recipe numbers (§) refer to `ffmpeg-recipes.md`.
+Read this when the footage is a recorded conversation: an audio or video podcast, an interview, a panel. Part A is the full episode; Part B is mining it for vertical clips. Recipe numbers (§) refer to `ffmpeg-recipes.md`. Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (times in seconds stay as they are).
 
 ## Part A: the full episode
 
@@ -19,7 +19,7 @@ Read this when the footage is a recorded conversation: an audio or video podcast
 
 ### Cleanup rules
 
-- **Pauses:** compress any silence over 0.6–0.8 s down to 0.25–0.4 s. Keep 80–150 ms of room tone or breath either side of every cut. Long-form needs air; over-tightening sounds robotic.
+- **Pauses:** compress any silence over 0.6–0.8 s down to 0.25–0.4 s (the podcast-episode row of the main skill's pause table, Step 5). Keep 80–150 ms of room tone or breath either side of every cut. Long-form needs air; over-tightening sounds robotic.
 - **Fillers:** remove isolated "um", "uh", "er" (about 60–80% of them, not all). Keep one where removing it causes a pitch or breath jump, or a visible jump on a single camera with no cutaway. Leave "like", "you know", "so" unless repeated 3+ times in a sentence.
 - **Crosstalk:** keep laughter, agreement and energy; cut false starts and overlapping restarts. On multitrack audio duck the non-speaker 6–10 dB rather than muting, unless their track bleeds noise.
 - **Retakes:** keep the last complete take.
@@ -100,6 +100,8 @@ Search the transcript for "the secret", "nobody talks about", "the biggest mista
 2. **A camera change inside a monologue is not a boundary.** Multicam editors cut during answers as a matter of course (the wide every 30–90 s above), so the original edit's cut points say nothing about where a thought ends. In testing, a clip cut on the source's camera changes started and ended mid-answer.
 3. Rank the units by: length that fits the target (30–60 s), the guest facing a camera for most of it, visible energy (gestures, leaning in, laughter on the sheet and the RMS peaks), and loudness variation.
 4. **In point:** the guest's first syllable after the interviewer stops (the first speech onset in `silencedetect` after the question, minus 0.08 s). **Out point:** a pause of ≥0.5 s inside the last 10 s of the window, the longest one there. Trim to length by moving the out point back to an earlier ≥0.5 s pause, never by starting later.
+   - **A monologue** (a talking head, a lecture, one speaker with no interviewer) has no question → answer units: the units are sentences, and the out point is a sentence end.
+   - **No pause ≥0.5 s in the last 10 s** (a tightly delivered or already-edited source): end on the longest pause there whose pitch falls into it (a falling, sentence-final intonation; listen to the 2 s strip, or compare the RMS envelope: a sentence end decays, a mid-sentence breath stops abruptly). Say in the delivery note that the ending may be mid-thought, and close the clip with an end card that repeats the hook (`genz.md`, Loops and endings) rather than a credit alone.
 5. Check both boundaries (`ffmpeg-recipes.md` §11, In and out boundaries): 2 s either side. If the guest is still talking past the out point, move it or disclose a mid-answer excerpt.
 6. Prefer one continuous answer over a splice of sections you have not heard.
 
@@ -108,7 +110,7 @@ Search the transcript for "the secret", "nobody talks about", "the biggest mista
 - **Start on the hook.** Cut any preamble ("So, yeah, I think…").
 - **Reordering is allowed:** pull the punchline forward as a 2–4 s cold open, then play from the setup. Never splice words to make the hook; it must be a sentence the speaker said whole.
 - If context is missing, add one line of on-screen text or a 3–5 s host setup, not a voiceover.
-- Snap boundaries to sentence starts and ends. Tighten gaps to ≤150 ms (the breath trim in `ugc-craft` for the hook).
+- Snap boundaries to sentence starts and ends. Tighten joins per the podcast-clip row of the main skill's pause table (Step 5): a join gap of about 0.13 s.
 - End right after the payoff line, or on a line that loops into the hook. No outro over 2 s.
 - Check frame 0: not a blink, not black, not mid-gesture, not inside a camera move, the face forward and on the column. If the source is mid-move or looking down, start 2–6 frames later.
 - Pick the cover frame: a strong face, mouth closed.
@@ -130,7 +132,7 @@ Crops by ffmpeg (§6) when the framing per camera is fixed; in the scene (`foota
 
 - Captions: word pop per `ugc-craft`, placed per `captions.md`.
 - Hook title: a 5–9 word claim at y 270–450 for the first 3–5 s, or persistent ("Why VCs pass on 99% of founders"). Optional small guest label: name + credential, ≥40 px (a 28 px credit is unreadable on a phone).
-- **No transcript: still ship a hook title.** Build it only from public facts (the guest, the show, the episode or file title, the topic if the metadata names it), as a question or a POV, never a quote: "How does a rocket CEO decide what to learn?" when the episode title is about learning; "POV: you get 40 seconds with <guest>" when nothing names the topic. Never a bare name label, and never words the guest may not have said. Record it in `VIDEO.md` as unverified.
+- **No transcript: still ship a hook title.** Build it only from public facts (the guest, the show, the episode or file title, the topic if the metadata names it), as a question or a POV, never a quote: "How does a surgeon decide when to stop?" when the episode title is about that decision; "POV: you get 40 seconds with <guest>" when nothing names the topic. Never a bare name label, and never words the guest may not have said. Record it in `VIDEO.md` as unverified.
 - End: a 1 s "Full interview: <show>" card earns its place when the licence asks for credit; otherwise end on the payoff.
 - Music: optional; `sound-design`'s podcast-clip row (none, or 0.1 low-passed). SFX: at most one whoosh on the open and one pop on the key number.
 - Loudness −14 LUFS / −1 dBTP.

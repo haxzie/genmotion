@@ -1,6 +1,6 @@
 # Format recipes
 
-Read this when you write the cue sheet for a specific kind of video. Frames at 30 fps. Levels assume normalised sources (VO and music at −16 LUFS, SFX peaks at −3 dBFS). Master: −14 LUFS / −1 dBTP unless noted. The owner skill sets the beats; this file sets the sound on them.
+Read this when you write the cue sheet for a specific kind of video. Frames at 30 fps (×0.8 at 24 fps). Levels assume normalised sources (VO and music at −16 LUFS, SFX peaks at −3 dBFS). Master: −14 LUFS / −1 dBTP unless noted. The owner skill sets the beats; this file sets the sound on them.
 
 ## Launch film (20–90 s)
 
@@ -24,6 +24,8 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 - **Music-led at 1.0**: the track is the film. Sparse, no lead melody, so on-screen text stays the focus.
 - **Drop it on the breath, bring it back on the peak**: cue the track (`startFrom`) or edit it so a natural dropout sits on `direction`'s breath and the return lands on the peak frame. That alignment usually beats back-timing the ending (SKILL.md, Beat grid); end on a 30–45 f fade on a bar line under the held last card.
 - Sparse cues on the reveals the film hinges on (a tick as a packet crosses, a click on the key moment), never under every text line.
+- **Headroom**: with cues on top, pre-master the cued music to −15 LUFS / −3 dBTP, place cues at ≤0.7 (placeholders included), and re-master the export (SKILL.md, Headroom and loudness). A −1.5 dBTP bed with cues at 1.0 exported over −1 dBTP.
+- **Mid-phrase start**: aligning the dropout to the breath fixes `startFrom`, so frame 1 is mid-phrase. Fade in over ≥15 f and put a cue on frames 1–3.
 
 ## Brand sting (2–8 s)
 
@@ -46,8 +48,11 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 - **Act 1**: quiet, emotional, 60–80 BPM, sparse hits.
 - **Act 2**: pulses and percussion, rhythm accelerating, a braam on each act break, each break a dropout.
 - **Act 3**: everything firing, hits on every cut, pulse 120–140.
-- **Title**: riser → **hard cut to 0.5–1.5 s of silence** → title hit (braam + sub drop) → optional button (one last hit or joke).
-- VO lines sit in the gaps between hits. LRA is wider than a promo's; −14 LUFS still.
+- **Title**: riser → **hard cut to 0.5–1.5 s of room-tone silence** (never digital zero) → title hit (braam + sub drop) → optional button (one last hit or joke).
+- **The climax peaks**: its last 2–3 s are the loudest and densest, carried by a riser into the hard stop, never a flat plateau that just stops.
+- **Loudness as a staircase**: automate the music's volume per act (0.6 → 0.85 → 1.0) and limit peaks only (SKILL.md recipe). Never `loudnorm` the whole cue: its `dynamic` fallback flattens the build. Measure each section's integrated loudness; it rises act by act.
+- **A score with no steady pulse** (orchestral, an end-credits cue): cut on phrases and swells, and take isolated hits from elsewhere in the track as separate clips for the title and end card.
+- Dialogue lines sit in the gaps between hits; a cold-open line sits 6–10 LU under Act 1's music. From a finished film mix, lift lines with the shaped chain in `video-editing` (no denoise). LRA is wider than a promo's (9–13 LU); −14 LUFS still.
 
 ## Podcast clip (15–90 s, vertical)
 
@@ -88,7 +93,7 @@ Both: master −14 LUFS / −1 dBTP.
 
 - House templates in this family ship silent; this is the obvious upgrade.
 - **Music**: music-led at 1.0, 120 BPM so the count can step on beats.
-- **SFX**: a tick (0.45, 4 f fade) per count step or per digit roll, accelerating with the count; an **impact on the frame the final number lands** (0.8) with a short shimmer; confetti or burst with a soft pop at 0.5.
+- **SFX** (levels per `sfx-cues.md`): a tick per count step or per digit roll (4 f fade), accelerating with the count; an **impact on the frame the final number lands** with a short shimmer; confetti or burst with a soft pop.
 - Hold the number through the music's button.
 
 ## Chat / message ad (10–30 s)

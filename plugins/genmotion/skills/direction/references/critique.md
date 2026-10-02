@@ -73,7 +73,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] Brand is present by 3–4 s in feed ads (a product shot, the UI or the mark in context), not only at the end.
 
 ### Frame
-- [Blocker] Every word, logo and face that must be read is inside the safe zone for each aspect it ships in (9:16: inside x 120–840, y 270–1210).
+- [Blocker] Every word, logo and face that must be read is inside the safe zone for each aspect it ships in (9:16: inside x 120–840, y 270–1210 when the placement is unknown or multi-platform; for one named platform use its own row in `pacing.md`, e.g. Reels-only keeps 65 px sides, so a centred lockup is not capped at 600 px).
 - [Fix] One focal point per frame; the eye knows where to go within 15f of each cut.
 - [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame. One **semantic state colour** (error or threat red, for an attacker, a failure, a warning) may share frames with the accent if it is always paired with a shape or a label and never colours a message line.
 - [Fix] Hero and end-card frames leave negative space (content fills 40–60% of the frame).
@@ -107,8 +107,8 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Blocker] The beat table's frame ranges sum to the video's length, and the export's duration matches.
 - [Fix] There is a breath before the peak (10–30f of picture, even when the music's dropout under it runs longer) and the peak is the most contrasting moment in the film.
 - [Fix] The beat interval matches the energy chosen (Hyper 8–14f, High 18–30f, Medium 30–50f, Calm 45–70f) and varies along the curve.
-- [Fix] No dead holds: on the `freezedetect` pass above, any freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, is exempt). A line held more than 2× its formula with nothing else changing is the same fault.
-- [Fix] The logo holds 75–120f (10–30f only in beat-cut styles), with nothing new after the CTA.
+- [Fix] No dead holds: on the `freezedetect` pass above, any freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, or a standalone sting's ≥45f hold, is exempt). A line held more than 2× its formula with nothing else changing is the same fault.
+- [Fix] The logo holds 75–120f (10–30f only in beat-cut styles; a standalone sting follows `brand-sting`'s budget table, ≥45f), with nothing new after the CTA. Its one ambient behaviour is visible: if consecutive held frames measure as identical on a crop, the creep is too small (use 1%, or a flicker or light that fits the idea).
 
 ### Delivery
 - [Blocker] The file fits its destination. Landing-page hero: H.264, ≤ 5 Mb/s at 1080p (≤ 3 Mb/s at 720p), ≤ 15 MB, `+faststart` (moov at the front), plays muted and loops cleanly (last frame cuts back to frame 0 without a jump). Platform uploads (YouTube, feeds) re-encode, so anything under about 20 Mb/s is fine; store previews follow `app-store-preview`'s specs. A loop's seam passes the loop-seam measurement in §1. A file over budget is re-encoded (`-c:v libx264 -crf 23 -maxrate 5M -bufsize 10M -movflags +faststart`); if it still is, the grain or noise in the picture is the cause (`three-look`).
@@ -136,7 +136,7 @@ Hook for stings, channel intros and end cards: 1 = an empty or near-empty field 
 | **Pacing / energy** | Flat tempo; too fast to read or dead holds | A shape is visible, but the peak doesn't stand out | A clear curve: a breath, a peak at the planned frame, a calm resolve; intervals match the energy |
 | **Sound** | Missing where it was planned, clipping or mistimed | Levels fine, cues roughly placed | Cues land on their frames, the bed supports the VO, a sonic resolve on the logo |
 
-Mark Sound "n/a" for a deliberately silent film and average the other seven.
+Mark Transitions "n/a" for a single-scene piece with no cuts (a sting, a one-shot loop), and Sound "n/a" for a deliberately silent film and average the axes that remain.
 
 **Ship bar**: no axis below 3, and an average of 4 or more. Any Blocker in the checklist overrides the score.
 
@@ -156,6 +156,16 @@ Fix the lowest axis first; an Idea of 2 is not rescued by Motion of 5.
 | Sound | Cues placed by eye | Re-place cues against frame numbers from the beat table; follow `sound-design` levels |
 
 Re-capture the same frames after fixing and re-score. Never report a score for frames you did not look at.
+
+**A fault you found is fixed before delivery, even when a full render is slow.** Knowing the fix and shipping without it is the most common way a film lands below the bar. Re-render only what changed and splice it in:
+
+```sh
+# re-render the changed range (frames are inclusive) with audio off, then swap it into the full export
+npx @genmotion/cli render fix.mp4 --frames 150-239 --no-audio --json
+ffmpeg -i full.mp4 -i fix.mp4 -filter_complex "[0:v]trim=end_frame=150,setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];[0:v]trim=start_frame=240,setpts=PTS-STARTPTS[c];[a][b][c]concat=n=3:v=1[v]" -map "[v]" -map 0:a -c:a copy -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart spliced.mp4
+```
+
+If the fix moves timing (a beat starts earlier), the audio cues move with it: re-render in full instead. A partial render uses the same renderer and settings, so the seams are invisible; check the two frames either side of each seam.
 
 ## 5. Report format
 

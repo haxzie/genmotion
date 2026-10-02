@@ -93,7 +93,7 @@ Both: master −14 LUFS / −1 dBTP.
 
 - House templates in this family ship silent; this is the obvious upgrade.
 - **Music**: music-led at 1.0, 120 BPM so the count can step on beats.
-- **SFX**: a tick (0.45, 4 f fade) per count step or per digit roll, accelerating with the count; an **impact on the frame the final number lands** (0.8) with a short shimmer; confetti or burst with a soft pop at 0.5.
+- **SFX** (levels per `sfx-cues.md`): a tick per count step or per digit roll (4 f fade), accelerating with the count; an **impact on the frame the final number lands** with a short shimmer; confetti or burst with a soft pop.
 - Hold the number through the music's button.
 
 ## Chat / message ad (10–30 s)

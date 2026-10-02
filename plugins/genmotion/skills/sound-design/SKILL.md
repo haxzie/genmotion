@@ -5,7 +5,9 @@ description: "Music, sound effects and the voiceover mix for every kind of video
 
 # Sound design
 
-Half of what a viewer reads as "polish" is sound arriving on the right frame at the right level. This skill holds the shared numbers for music, SFX and the VO mix; owner skills cite it and only state their deviations.
+Half of what a viewer reads as "polish" is sound arriving on the right frame at the right level. This skill holds the shared numbers for music, SFX and the VO mix; owner skills cite it and only state their deviations, and where an owner's number differs from one here (a sting's anticipation ticks, its first sound on its first motivated frame), the owner wins for that format.
+
+Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (the beat grid has its own 24 fps column). Times in seconds and milliseconds hold at any rate.
 
 ## When to use
 
@@ -30,7 +32,7 @@ Know these units before placing anything, because they differ per field.
 
 Place clips with `place-audio`. On a HyperFrames project the same thing is an `<audio id src data-start data-duration data-volume data-media-start>` element (start, duration and media start in seconds); a volume tween on the timeline (`tl.to("#bgm", { volume: 0.2, duration: 0.2 }, t)`) is honoured by the export, so there you can automate ducking directly.
 
-The export sums every clip with `amix normalize=0` and **no limiter or loudness stage**. Coinciding peaks add, so headroom is your job and the export must be measured (see Checks).
+The export sums every clip with `amix normalize=0` and **no limiter or loudness stage**. Coinciding peaks add, and the AAC encode adds up to ~1 dB of true peak on top, so headroom is your job and the export must be measured (see Headroom and loudness, and Checks).
 
 ## The sound plan: four decisions
 
@@ -50,6 +52,9 @@ Make these before generating or fetching any audio, and write the answers into `
 ### Design for muted autoplay
 
 Most feeds autoplay muted. Captions and on-screen type must carry the meaning; sound is the reward for unmuting, never the only carrier of a claim. Frame 1 is never silent once the viewer does unmute: start on a transient or a downbeat, never a fade in from nothing.
+
+- **When the peak alignment fixes `startFrom`** (the track's dropout must sit on the breath), frame 1 lands mid-phrase: the alignment wins. Fade the music in over at least fps/2 frames *and* put a transient (a tick, the first reveal's cue) on frames 1–3, so frame 1 is still audible.
+- **A sting's first sound may sit on its first motivated frame** (a tick on the first visible motion at frame 6) rather than an arbitrary frame-0 transient, as long as nothing is silent for more than 0.5 s.
 
 ## Music
 
@@ -153,7 +158,22 @@ ffmpeg -i assets/vo-raw.mp3 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 48000 assets/v
 
 For an SFX, read `max_volume` from `ffmpeg -i in.wav -af volumedetect -f null -` and apply `volume=<−3 minus that>dB`.
 
-**One dense track that must carry the film alone** (music-led, no other clips) often cannot reach −14 LUFS by `volume` without its peaks passing −1 dBTP, and the export has no limiter. Pre-master the cued section with a two-pass `loudnorm` to `I=-14:TP=-1.5` (it may report `dynamic`, which is light limiting and fine here), then place it at 1.0. Commands in `references/mix-and-loudness.md`.
+**Pre-master what the SFX sit on.** When effects land on top of speech or music, pre-master that layer to **−15 LUFS / −3 dBTP** (not −14 / −1.5) before placing anything on it: an impact at 0.7–1.0 on a speech peak, plus the AAC encode's ~1 dB, otherwise pushes the export over −1 dBTP (measured: a −1.5 dBTP dialogue with three placeholder impacts exported at −0.8 dBTP; the same dialogue at −3 dBTP exported at −1.5). The export's re-master then brings it to −14 (Headroom and loudness).
+
+| Mix | Pre-master the base layer | Place it at | Others |
+|---|---|---|---|
+| Speech + SFX (talking head, Gen Z, podcast clip) | dialogue −15 LUFS / −3 dBTP | 1.0 | bed per the ladder; SFX per the ladder, placeholders as `references/sfx-cues.md` says |
+| **Music + sparse SFX** (a music-led promo, a text-led explainer, a launch with accents) | the cued music −15 LUFS / −3 dBTP | 1.0 | accents ≤0.7 (placeholders included); then re-master the export |
+| Music alone (no other clips) | the cued section −14 LUFS / −1.5 dBTP, two-pass `loudnorm`, linear | 1.0 | none |
+| **Music-led trailer or any piece whose loudness range is the design** | no `loudnorm`: automate a volume staircase, then limit peaks only (below) | 1.0 | hits ≤0.85; the staircase must survive |
+
+**`loudnorm` falling back to `dynamic` compresses the loudness range**: on a trailer score it squeezed a 12 dB dropout to 8 dB and lifted Act 1 to the climax's level, the opposite of a staircase (measured: LRA 9.2 → 6.6 LU). For a music-led trailer, shape the build with volume automation (Act 1 0.6, Act 2 0.85, climax 1.0, ramps of 0.5 s), add the makeup gain, and limit the peaks only (`alimiter` with `level=disabled`, so it never rides the gain itself). Tested on a 45 s score cue: −14.9 LUFS, LRA 12.3 LU, sections at −20.5 / −17.8 / −11.8 LUFS, −1.4 dBTP, and −1.2 dBTP after AAC:
+
+```
+ffmpeg -i assets/score-cue.wav -af "volume='0.6+0.25*min(max((t-15)/0.5,0),1)+0.15*min(max((t-30)/0.5,0),1)':eval=frame,volume=3.5dB,alimiter=limit=0.79:attack=5:release=50:level=disabled" -ar 48000 -c:a pcm_s16le assets/score-stair.wav
+```
+
+`t-15` and `t-30` are the act boundaries in seconds of the cue; the `volume=3.5dB` is the makeup to land near −14 LUFS (adjust by the measured difference); `limit=0.79` is −2 dBFS sample peak, which leaves room for intersample peaks and the encode. Duck under a line by wrapping the staircase in parentheses and multiplying: `volume='(0.6+…)*(1-0.76*between(t,22.1,24.0))'` holds the music at 0.24 of its level under a line at 22.1–24.0 s (tested: 11 dB down). Commands for the other rows in `references/mix-and-loudness.md`.
 
 ### Ducking
 
@@ -168,7 +188,7 @@ House default: **no ducking**, a constant bed per the ladder (0.1–0.2) under t
 | Clip | Fade |
 |---|---|
 | Bed in | ~15 f (house range 4–30); 0–1 f when it starts on a downbeat |
-| Bed out, music-only ending | 15 f, or none when it ends on a button |
+| Bed out, music-only ending | 15 f, or none when it ends on a button (frames at 30 fps; ×0.8 at 24) |
 | Bed out under VO | 30–45 f; split a long bed so the fade sits at the true end |
 | Any mid-phrase music start or stop | at least fps/2 frames (0.5 s), so it never clicks or lurches |
 | SFX transients | no fade in; fade out 2–12 f only if trimmed mid-tail (clicks 2, ticks 4, pings 8, long SFX 10–12) |
@@ -176,7 +196,7 @@ House default: **no ducking**, a constant bed per the ladder (0.1–0.2) under t
 
 ### Headroom and loudness
 
-Because the export has no limiter: keep every source peak at or below −3 dBFS; never stack a sub drop, a braam and a music drop at full gain on one frame (split the music clip and drop it 3–6 dB on the hit, or let the SFX carry it).
+Because the export has no limiter: keep every source peak at or below −3 dBFS, pre-master the base layer per the table above, and never stack a sub drop, a braam and a music drop at full gain on one frame (split the music clip and drop it 3–6 dB on the hit, or let the SFX carry it).
 
 Default delivery: **−14 LUFS integrated, −1 dBTP** for everything online (YouTube, TikTok, Reels, Shorts, web), music-led edits included: louder buys nothing once platforms turn it down. Podcast feeds −16 LUFS; EBU broadcast −23; US broadcast −24 / −2 dBTP. Measure every export:
 
@@ -184,7 +204,15 @@ Default delivery: **−14 LUFS integrated, −1 dBTP** for everything online (Yo
 ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af ebur128=peak=true -f null -
 ```
 
-Pieces under about 6 s (stings, bumpers) are the exception: judge them by true peak (−1 to −3 dBTP) rather than integrated loudness. Otherwise, if integrated loudness is off by more than 1 LU, scale every clip volume by the difference, or re-master the export with a two-pass `loudnorm` (`linear=true`, always `-ar 48000` or it outputs 192 kHz; the video stream is copied). Commands in `references/mix-and-loudness.md`.
+Pieces under about 6 s (stings, bumpers) are the exception: judge them by true peak (−1 to −3 dBTP) rather than integrated loudness; if a sting lands under −3 dBTP, scale every clip together (×1.33 is typical with the owner's placeholder levels).
+
+**The re-master is the standard last step**, not a rescue: whenever the export's true peak is above −1 dBTP or its loudness is off by more than 1 LU, re-master the exported file (the video stream copied, audio to AAC 192k, always `-ar 48000` or `loudnorm` outputs 192 kHz):
+
+1. Peak-limit to −4 dBFS inside the same chain (`alimiter=limit=0.63:attack=5:release=50:level=disabled`), so the gain that follows can stay linear.
+2. Two-pass `loudnorm` to `I=-14:TP=-1.5` with `linear=true`, feeding pass 1's measurements into pass 2.
+3. Read pass 2's `normalization_type`. `linear`: done. `dynamic` on a speech-led piece: acceptable (light limiting). `dynamic` on a music-led piece whose build matters: undo it and use the staircase + limiter recipe above on the music instead, then export again.
+
+Tested on a speech + impacts export at −15.3 LUFS / −1.5 dBTP: without step 1, pass 2 fell back to `dynamic`; with it, `linear`, landing at −14.1 LUFS / −1.7 dBTP after AAC. Commands in `references/mix-and-loudness.md`.
 
 ## SFX
 
@@ -205,7 +233,7 @@ Placement is frame-exact and comes from the same constants the animation uses (s
 
 **A riser into a hit is a level relationship, not two volumes.** The ladder's gains assume peak-normalised files, but a riser's tail is dense and a hit is short, so riser 0.55 + impact 0.8 can leave the hit only 1–4 dB above the riser (measured), and it doesn't punch. Verify it: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser's 50 ms RMS rises with **no dip over 6 dB** before its end (commands in `references/sfx-cues.md`). If the hit is short of 8 dB, lower the riser (usually to 0.3–0.4), never raise the impact past the headroom. Sound-on pieces give the anticipation sound too (ticks, an air bed, a whoosh): **never open on more than 0.5 s of silence**.
 
-**Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. One sound per event that matters, not one per event. Treat hard cuts consistently: all get a quiet swish or none do. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
+**Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. Exception: a sting's anticipation ticks follow its swing (6 ticks in 1.2 s on a quickening swing is right); the owner's beat sheet wins there. One sound per event that matters, not one per event. Treat hard cuts consistently: all get a quiet swish or none do. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
 
 **Getting them (`sfx`)**: describe the sound, not the picture: source, material, size, speed, envelope, tail, length, "one-shot", "no music". Use the model's own words: impact, whoosh, riser, braam, glitch, drone, ambience, loop. Set a duration (0.5–30 s) for anything timed, and loop mode for ambience. Generate 2–3 takes of hero sounds. Example: "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot, 0.6 seconds". Prompt library in `references/sfx-cues.md`.
 Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited); **synthesised placeholders** made with `ffmpeg` (riser, impact, whoosh, pop, tick, chime: tested recipes with safe levels in `references/sfx-cues.md`), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine-and-noise sound reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting.
@@ -213,7 +241,8 @@ Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from 
 ## Silence and endings
 
 - **Dropout before the reveal**: stop or cut the music 1–2 beats (0.25–1 s) before the reveal, then slam back with the hit and the downbeat. The silence is the effect.
-- **Trailer title**: riser → hard cut to 0.5–1.5 s of silence → title hit (braam + sub) → tail.
+- **Trailer title**: riser → hard cut to 0.5–1.5 s of silence → title hit (braam + sub) → tail. The climax before it peaks (loudest, densest in its last 2–3 s), never plateaus and stops.
+- **A musical dropout may be longer than the picture's breath**: a library track's only clean dropout is often 2–3 s, while `direction`'s breath is 10–30 f. Keep the picture still for the breath only and keep it moving through the rest of the dropout, or the film stalls.
 - **Room tone, not digital zero**, under quiet VO stretches; pure zero sounds broken on headphones.
 - **Endings land on a button**: the logo or CTA frame is the track's last hit and the tail rings 1–3 s. No button: fade 1–3 s ending on a bar line while the picture holds.
 - **Stings end on a sonic logo**: whoosh or riser into the lock-up (0.5–1.5 s) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. About 3 s total.
@@ -227,7 +256,8 @@ Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from 
 | Explainer, text-led (no VO) | music-led at 1.0, sparse, no lead melody | a cue on each reveal the diagram hinges on | dropout on the breath, return on the peak |
 | Brand sting | a 3 s sonic logo or none | riser → impact on settle → tail; sound under the anticipation too | no VO; hit ≥8 dB over the riser tail |
 | UGC / social ad | 95–130 trend-adjacent | transient on frame 1, swish on every jump cut or none | bed 0.12–0.2 under talk |
-| Trailer | three acts, accelerating | braams on act breaks, riser → silence → title hit | VO lines in the gaps |
+| Trailer | three acts, accelerating; a volume staircase, peaks limited, never `loudnorm` on the cue | braams on act breaks, riser → room-tone silence → title hit | lines in the gaps, a cold-open line 6–10 LU under Act 1's music |
+| Music + sparse accents | music-led at 1.0, pre-mastered −15 LUFS / −3 dBTP | ≤0.7, a few hero moments | re-master the export to −14 |
 | Podcast clip | none under talk (or 0.1), optional 1–2 s sting | sparing pops on caption emphasis | dialogue −16 LUFS, deliver −14 for social |
 | Talking head | intro, b-roll and section stings; bed 0.12–0.2 if any | swish on graphics and zoom punches | bed out under the key line |
 | Gen Z edit over speech | lo-fi / house / phonk bed, 0.14–0.2, low-passed at 6–8 kHz | 3–6 cues per 30 s on interrupts (pop, whoosh, hit) | speech decides the cuts; bed out under the hook line and payoff |
@@ -251,13 +281,14 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 
 ## Checks before you finish
 
-1. `ebur128` on the exported file reports integrated loudness within ±1 LU of the target (−14 LUFS by default) and true peak at or below −1 dBTP. Report both numbers to the user.
+1. `ebur128` on the exported file reports integrated loudness within ±1 LU of the target (−14 LUFS by default) and true peak at or below −1 dBTP; if not, the re-master above ran and its `normalization_type` is recorded. Report both numbers to the user.
 2. No clipping: `volumedetect` `max_volume` below 0 dB.
 3. Every SFX is on its frame: render `capture-frames` at each cue's frame and the frame before; the visual event (contact, first pixel, press, cut) is visible on the cue frame and not before.
 4. The bed sits 14–20 LU under the voice (from the normalised levels, or measured): never louder than 0.2 under a voice line on normalised sources, and never so low it disappears. In the export, the momentary loudness in a ≥1 s speech pause is above −35 LUFS when a bed is meant to be there.
-5. Frame 1 is audible (a transient or a downbeat): `silencedetect=noise=-50dB:d=0.5` on the export reports no `silence_start: 0`. The last picture frame lands on the music's button or inside a fade that ends on a bar line.
+5. Frame 1 is audible (a transient or a downbeat; a sting's first motivated tick within 0.5 s also passes): `silencedetect=noise=-50dB:d=0.5` on the export reports no `silence_start: 0`. The last picture frame lands on the music's button or inside a fade that ends on a bar line.
 6. Every riser into a hit: impact's first 10 ms RMS ≥8 dB above the riser's last 100 ms; no dip over 6 dB inside the riser (`references/sfx-cues.md`).
 7. Synthesised placeholder sounds are listed as placeholders in `VIDEO.md` and in your reply.
 8. Big cuts sit on downbeats: for each, `(cutFrame − offset) ÷ framesPerBeat` is within 1 frame of a whole number.
 9. No clip runs past the film's end unless it is a deliberate tail, and no long bed ends abruptly.
 10. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, and none is NC, BBC RemArc, YouTube-licence-only or a rip.
+11. A music-led trailer keeps its build: integrated loudness per section rises act by act and the climax is the loudest; any designed silence is room tone (−45 to −60 dBFS RMS), not digital zero.

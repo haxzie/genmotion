@@ -157,6 +157,16 @@ Fix the lowest axis first; an Idea of 2 is not rescued by Motion of 5.
 
 Re-capture the same frames after fixing and re-score. Never report a score for frames you did not look at.
 
+**A fault you found is fixed before delivery, even when a full render is slow.** Knowing the fix and shipping without it is the most common way a film lands below the bar. Re-render only what changed and splice it in:
+
+```sh
+# re-render the changed range (frames are inclusive) with audio off, then swap it into the full export
+npx @genmotion/cli render fix.mp4 --frames 150-239 --no-audio --json
+ffmpeg -i full.mp4 -i fix.mp4 -filter_complex "[0:v]trim=end_frame=150,setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];[0:v]trim=start_frame=240,setpts=PTS-STARTPTS[c];[a][b][c]concat=n=3:v=1[v]" -map "[v]" -map 0:a -c:a copy -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart spliced.mp4
+```
+
+If the fix moves timing (a beat starts earlier), the audio cues move with it: re-render in full instead. A partial render uses the same renderer and settings, so the seams are invisible; check the two frames either side of each seam.
+
 ## 5. Report format
 
 ```markdown

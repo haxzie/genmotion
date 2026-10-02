@@ -7,7 +7,7 @@ description: "The edit language of a short-form UGC ad, with one number for each
 
 Planning decides whether an ad is worth watching; craft decides whether it gets watched. This skill holds the UGC-specific numbers for cutting, moving, captioning and scoring. Shared motion numbers come from `motion-language`, levels from `sound-design`, safe zones from `ugc-ad-foundations`; this skill names how a UGC ad uses them.
 
-Frames are at 30 fps.
+Frames are at 30 fps; a 24 fps project multiplies every frame count by 0.8 (round, never below 1), and times in seconds stay as they are.
 
 ## When to use
 
@@ -31,7 +31,7 @@ Nothing on screen holds more than 90f (3 s) without a change: a cut, a zoom move
 ## Cutting
 
 - **Hard cuts, on a word or a sound.** A dissolve is a production code. Cut on the first frame of a stressed word, on a SFX transient, or on a music beat (big changes on a bar's beat 1, per `sound-design`).
-- **The breath trim.** Cut the silence around every spoken line: leave 2–3f before the first consonant and 3–5f after the last syllable, and keep any remaining gap ≤3f (0.1 s). Generated VO arrives with 0.2–0.5 s of air at each end; trim it with the clip's start offset rather than moving the clip.
+- **The breath trim.** Cut the silence around every spoken line: leave 1f (0.03 s) before the first consonant and 1–2f (0.05 s) after the last syllable's decay, so a join leaves about 0.08 s of air (2–3f). These are the feed row of `video-editing`'s pause table, the one set of join numbers for UGC talk, Gen Z and Shorts edits. In a continuous take, cut only pauses of 0.25 s or more; shorter ones cost a jump cut for a tenth of a second. Generated VO arrives with 0.2–0.5 s of air at each end; trim it with the clip's start offset rather than moving the clip.
 - **J and L cuts for cut-aways.** The VO runs continuously; picture cuts away and back. Let the cut-away land 3–6f after the word it illustrates starts, and return before the sentence ends, so the voice motivates the cut.
 - **Cut on action.** Cut mid-gesture (a hand entering, a tap, a lid lifting); motion hides the cut.
 - **Never cut a step the claim depends on.** A visible jump (a hard cut plus a "2 hours later" caption) is honest; a seamless one that hides time is not.
