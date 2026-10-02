@@ -25,7 +25,7 @@ Read `direction` before choosing anything. Its Part A turns the request into a p
 
 ## Step 2: search
 
-Run `search-skills` with the user's own words. Each result shows its kind, its **deliverable** (what the user ends up with), the questions it asks first, and which of its needs this setup has.
+Run `search-skills` with the user's own words for **what they want made**, in a short phrase ("animated logo for a coffee roastery", "vertical clip from our podcast"), not the whole brief pasted in: brand names, colours and platform details drown the words that pick the format. Each result shows its kind, its **deliverable** (what the user ends up with), the questions it asks first, and which of its needs this setup has. If no workflow or style skill is in the results, check the owner table in Step 3 before falling back to `freeform-video`.
 
 ## Step 3: pick exactly one owner
 
