@@ -41,7 +41,10 @@ export function coverLayer(width: number, height: number, color: string) {
       uniform vec3 uColor; uniform float uOpacity, uMode, uRadius, uProgress, uSoft, uSeed, uRadial;
       uniform vec2 uCenter, uDir, uHalf, uCells;
       varying vec2 vPos;
-      float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21) + uSeed); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+      // Integer PCG hash on whole cell coordinates (the same one three-look's grain uses): float
+      // fract-product hashes lose precision under SwiftShader, the CLI's default renderer.
+      uint pcg(uint v) { uint s = v * 747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
+      float hash(vec2 p) { uvec2 q = uvec2(ivec2(floor(p)) + 65536); return float(pcg(q.x + pcg(q.y + pcg(uint(uSeed * 977.0))))) / 4294967295.0; }
       void main() {
         float a = 1.0;
         if (uMode > 0.5 && uMode < 1.5) {          // disc: flood / iris-out
