@@ -99,7 +99,7 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     mcp: null,
     shell: null,
     fallback:
-      "run a local Whisper (`whisper-cli`/`whisper.cpp` or `whisper` with word timestamps) if your shell has one, or a connected speech-to-text service; otherwise cut on silences found with `ffmpeg` (`silencedetect`) and ask the user for the words that matter",
+      "run a local Whisper with word timestamps if your shell has one (`whisper-cli` from whisper.cpp, or `whisper` from the openai-whisper Python package; installing one needs the user's go-ahead and a model download), or a connected speech-to-text service (ElevenLabs' connector transcribes; offer it with `recommend-integration`), or a transcript or subtitle file the user has. Without any of these, cut on silences found with `ffmpeg` (`silencedetect`); captions then need the words from the user, so ask once, even after \"just make it\" — never invent caption words",
   },
   "place-audio": {
     label: "Put music, narration or an effect on the timeline (`project.json`'s `audio`)",
