@@ -83,6 +83,8 @@ The peak sits at about 60% of the duration. Springs, measured from the templates
 
 **Damped swings** (a compass needle, a pendulum, a hanging sign, a wobbling card): `θ(t) = A · e^(−ζω0·t) · cos(ωd·t)`. The eye reads the motion as over at its **last visible swing**, not at the formula's end, so plan the settle frame as the frame where the amplitude envelope `A · e^(−ζω0·t)` drops under **1°** (or 1 px for a translation): `t_settle = ln(A / 1°) / (ζω0)`. Then capture a strip of every 2nd frame around it and confirm; a swing planned to settle at f44 that is visibly still from f32 leaves a 12f dead beat. If the next move must start at the settle, start it on the measured frame.
 
+**Searching swings** (anticipation that builds into a snap, the opposite of a damped settle): amplitude shrinks while the rate rises, so energy climbs into the trigger. With `p = t / T` over the anticipation of length `T`: `θ(t) = A0 · (1 − 0.8p) · sin(2π · (f0·t + (f1 − f0) · t² / (2T)))`, for example `A0` 35°, `f0` 1.2 Hz, `f1` 3.5 Hz over 36f. Choose `T` so the phase lands on a zero crossing at `t = T`, then snap to rest in 3–4f with outCubic on that frame (a tick and a glint on it). Never let a damped swing stand in for this: a damped swing slows and calms, which drains the build.
+
 ## Holds that breathe
 
 | Behaviour | Numbers | On |

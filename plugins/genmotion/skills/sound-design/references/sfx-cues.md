@@ -113,7 +113,7 @@ Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (f
 | impact | −4.1 dBFS | 1.2 s | on the contact / lock frame |
 | whoosh | −13.0 dBFS, loudest at 0.17–0.22 s | 0.4 s | `startFrame = cut − 6` |
 | pop | −10.2 dBFS | 0.08 s | text pop, arrival |
-| riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36` |
+| riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36`; place at **0.7** (its tail is denser than the noise riser's: at 1.0 it measured only about 7 dB under the impact) |
 | tick | −13.4 dBFS | 0.04 s | counter steps, anticipation |
 | chime | −10.1 dBFS | 2.2 s | success, sonic-logo button |
 
