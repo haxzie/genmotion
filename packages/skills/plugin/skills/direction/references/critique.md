@@ -112,7 +112,7 @@ Score each axis 1–5 from the frames and the export. Write one sentence of evid
 | **Idea** | A feature list; passes the swap test for any brand | One clear SMP, but shown generically | "We show X as Y" is visible in the frames; a memorable moment only this film could have |
 | **Hook** | Fade from black or a logo card; nothing at 0.5 s | A clear opening line by 1 s, but static | Motion and the core tension on screen by frame 15; you want to see the next second |
 
-Hook for stings, channel intros and end cards: 1 = an empty or near-empty field for the first 0.5 s; 3 = motion by frame 15 but small in a large dead field; 5 = something already moving and filling a deliberate part of the frame at frame 0, building straight into the mark.
+Hook for stings, channel intros and end cards: 1 = an empty or near-empty field for the first 0.5 s (a thin line on a dark field counts as near-empty: judge visual mass, not span); 3 = motion by frame 15 but small in a large dead field; 5 = something already moving and filling a deliberate part of the frame at frame 0, building straight into the mark.
 | **Frame** | Several competing focal points; text in unsafe zones | Clean, safe, but centred-stack layouts in every scene | One focal point per frame, deliberate negative space, layouts vary by job, a disciplined palette |
 | **Type** | Unreadable holds or contrast; 3+ families | Readable and consistent, but flat hierarchy | Every line reads twice; strong hierarchy; type moves only where meaning needs it |
 | **Motion** | Linear or bouncy everywhere; the same fade-up on everything | Consistent easing, but uniform; some stalls or eases into cuts | One physics; entrances by role; staggers, settles and holds that breathe; no stalls |
