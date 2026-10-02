@@ -20,7 +20,7 @@ Conclusions:
 
 1. **Conform to VP9 WebM.** The CLI renders with Playwright's open-source Chromium (headless shell), which answers `canPlayType('video/mp4; codecs="avc1…"')` with `""` (no H.264, no AAC) and `"probably"` for VP9, VP8 and AV1. The desktop app exports through the same Three.js render host inside Electron, whose Chromium build normally includes H.264 (not measured here), so an `.mp4` can render on the desktop and come out black from the CLI. A project must render the same everywhere, so every engine gets VP9. The seek registration below matters on both: the desktop uses the same frame barrier.
 2. **Keyframe every 15 frames** (0.5 s). Exact and fastest; long GOPs are slower and can land one frame off.
-3. **Register every seek with the loading manager** (helper below). Seek to the middle of the frame, `(frame + 0.5) / fps`, never its leading edge: a seek on the boundary picks either neighbour.
+3. **Register every seek with the loading manager** (helper below). Seek to the middle of the frame, `(frame + 0.5) / fps`, never its leading edge: a seek on the boundary picks either neighbour. This is for the `<video>` element only: ffmpeg's `-ss` at the middle of frame k returns frame k + 1 (`ffmpeg-recipes.md` §2 has the formula for grabs).
 4. **Add a 0.5 s tail handle** to the conformed file. Without it the scene's last frame showed the second-to-last source frame.
 5. **Budget the render**: roughly 10–15 s per second of 1080p footage on 4 idle cores with the default WebGL; on a shared, loaded machine it was 2–3× that (a 41 s 9:16 edit took 28–35 min). `--gl gpu` is faster where a GPU exists. Run long renders in the background and poll the log.
 6. **A `VideoTexture` does not capture black.** That claim circulated in an older version of `three-assets`; re-tested, both a `VideoTexture` and a 2D-canvas copy render frame-exact. What matters is the three rules above (VP9, registered seeks, mid-frame seek times) plus marking the texture `needsUpdate` on `seeked`: a paused, seeked video does not drive the texture's own frame callback reliably, and without it about one frame in five showed the previous picture. `three-assets`' `footage()` is an equivalent helper; use either, not both in one project.
@@ -168,6 +168,18 @@ export default function build(ctx: ThreeSceneContext): ThreeSceneUpdate {
 
 - **One scene per section** (chapter, clip, act), each with its own `SOURCE_IN` into the one `edit.webm`. A scene is at most 18,000 frames. Scene boundaries are where `three-transitions` handoffs go; inside a scene, footage cuts are already in the file.
 - **Reframe:** `plate.position.x` (and `.y`) slide the crop; ease it with `interpolate` over 8–12 frames for a drift, hard-set it on a speaker change. Keep the plate covering the canvas: clamp to `maxShift`.
+- **Keyed reframe** (a subject that moves across the frame: a chase, a leap, a dive): one fixed or single-eased offset clips it somewhere in the shot. Key the subject's source x-centre 2–4 times per shot (from a 4-per-second strip of the shot) and run them through `glide` (`three-camera`'s `references/rig.md`: a monotone cubic that passes every key and never overshoots), or `interpolate(frame, keys, xs)` for straight segments:
+
+  ```ts
+  // shot 7 occupies scene frames 120–215; the subject's centre in source px at four frames
+  const SHOT7 = glide([120, 150, 180, 215], [900, 980, 1000, 760]);
+  // in the update: follow the subject, never uncover the canvas
+  plate.position.x = THREE.MathUtils.clamp((SRC_W / 2 - SHOT7(frame)) * k, -maxShift, maxShift);
+  ```
+
+  Keys sit on the subject's centre, plus lead room of 5–10% of the window width on the side it moves toward; a hard set (no glide) on the shot's first frame. The same keys work in the ffmpeg crop expression (`ffmpeg-recipes.md` §6, Keyed reframe) when the reframe lives in the conform.
+- **Check it on every 4th frame of every moving shot**: `capture-frames` (or the §6 strip on a short render) at every 4th frame of the shot; on every tile the subject's head and the point of action are inside the visible canvas (or the window, for a plate inside bands). A tile that clips it gets a key at that frame. Do the hook and the peak shot first.
+- **Units:** the camera above is 1 unit = 1 px. the house stage that `three-type`'s kit draws on is `PX = 0.01` (1 unit = 100 px, `three-camera`'s `references/rig.md`); mixing the two as written makes type 100× off. Pick one: build this camera in kit units (`-width * PX / 2` …, plate sizes × `PX`), or scale the kit's meshes by 100.
 - **Zoom moves scale the plate, not the camera.** Tested: zooming the orthographic camera (`camera.zoom`) also scales and shifts anything parented to the camera, captions included, because zoom is part of the projection. Scaling the plate leaves the caption layer untouched. The moves and their numbers are `ugc-craft`'s:
   - **Jump zoom:** `plate.scale` steps 1.0 → 1.2 on a cut frame, back to 1.0 on the next (as above).
   - **Punch-in:** `interpolate(frame, [f, f + 8], [1, 1.12], Easing.easeIn)`, hold ≥15 f, release over 12 f `easeInOut` or cut out. ≤4 per 30 s.

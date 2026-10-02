@@ -38,9 +38,13 @@ ffmpeg -i edit/cam-a-proxy.mp4 -vf "fps=1/10,scale=480:-2,drawtext=text='%{pts\:
 ffmpeg -i edit/cam-a-proxy.mp4 -vf "select='gt(scene,0.3)',scale=320:-2,tile=5x4" -fps_mode vfr edit/shots_%02d.jpg
 # shot boundaries as times
 ffmpeg -i edit/cam-a-proxy.mp4 -vf "select='gt(scene,0.3)',showinfo" -f null - 2>&1 | grep -o "pts_time:[0-9.]*"
-# one frame
+# one frame (at a time in seconds)
 ffmpeg -ss 12.5 -i assets/source/cam-a.mp4 -frames:v 1 -update 1 edit/frame.png
+# frame k exactly (k = 300 at 24 fps here): seek to (k - 0.5) / fps
+ffmpeg -ss 12.479167 -i assets/source/cam-a.mp4 -frames:v 1 -update 1 edit/f300.png
 ```
+
+**`-ss` returns the first frame whose time is at or after the seek**, so the middle of frame k, `(k + 0.5) / fps`, returns frame **k + 1** (tested on two 24 fps films at k = 240, 241, 1000 and 13035: every one came back one late). For frame k seek to `(k − 0.5) / fps` (k ≥ 1; `-ss 0` for frame 0), which is exact and safe from rounding; `k / fps` also worked but sits on the boundary. The scene's `<video>` seek is the opposite case: there the middle of the frame is right (`footage-in-scene.md`). Every "first frame of the segment" check uses the ffmpeg formula.
 
 Scene thresholds: `scene` 0.3–0.4 for hard cuts, lower for dissolves; `scdet=threshold=10` (8–15) is the alternative. Also useful: `blackdetect=d=0.1:pix_th=0.1`, `freezedetect=n=-60dB:d=2`.
 
@@ -146,6 +150,19 @@ ffmpeg -i wide.mp4 -filter_complex "[0:v]split[a][b];[a]crop=ih*9/8:ih:(XA-ih*9/
 ffmpeg -i in.mp4 -filter_complex "[0:v]split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=40,eq=brightness=-0.08[bgb];[fg]scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2,setsar=1[v]" -map "[v]" -map 0:a -c:a copy blur.mp4
 ```
 
+### Source rendition: fetch the tallest before reframing
+
+A film or published video often exists in several sizes, and every enlargement figure below depends on which one you hold. A streaming manifest lists them all:
+
+```sh
+# every video rendition in a DASH (.mpd) or HLS (.m3u8) manifest, with its size
+ffprobe -v error -show_entries stream=index,codec_type,width,height -of compact "https://example.org/film/dash.mpd"
+# take the tallest video stream (index 8 here) and the audio, stream-copied: pull the whole film, or a margin of seconds around your selects
+ffmpeg -i "https://example.org/film/dash.mpd" -map 0:v:8 -map 0:a:0 -c copy assets/source/film-4k.mp4
+```
+
+Tested on an open movie's manifest: nine renditions from 256×110 to **3840×1636**; the 1920×818 one a maker had picked made the full-height 9:16 crop 2.35×, the 3840 one makes it 1.17×. A 3 s stream-copied pull of the top rendition came back 3840×1636, 72 frames. Then the base per aspect, from the active height H: full-height 9:16 = 1920 ÷ H; 4:5 window = 1350 ÷ H; 1:1 = 1080 ÷ H. Log all three before you choose.
+
 ### Low-resolution or letterboxed sources into 9:16
 
 Work out the **total enlargement of source pixels** first: `total = base × step`, where `base = output px ÷ source px kept` and `step` is any size change the edit adds later (a jump zoom, a punch-in). A full-height 9:16 crop of 720p is 1920 ÷ 720 = 2.67× before any step; of a 2.35:1 picture 544 px tall inside 720p, 3.5×. Keep **base × step ≤ 2.0 (≤1.3× ideal)**; above that skin and fabric smear on a phone. So the base follows from the step you plan:
@@ -166,6 +183,8 @@ Layouts that stay inside the limit, best first (tested at 1080×1920):
 | 720p, one speaker, **with captions** | 4:5 plate (1080×1350) with its top at y 460, hook text above, captions at y 1160 over the plate's lower part; steps are crop shifts or 1.08 | 720p: 1.875× (× 1.08 = 2.03, so keep the size step ≤1.06) |
 | 720p, one speaker, **no captions** | plate 1080 wide with its top at y 450, the crop's top chosen so the eyes land at y 600–800, the hook as a persistent header in y 270–450, nothing load-bearing below y 1450 (platform UI); steps are crop shifts | 720p: 2.0× (plate ≤1440 tall; if the crop runs out of source first, the band below it is canvas) |
 | 544 px active picture (letterboxed) | 1:1 plate (1080×1080) at y 460–1540; crop shifts only | 1.99× |
+| **scope (2.35–2.40:1) film, active height ≥ ~1450 px** (a 4K master) | full-height 9:16 crop on every shot, keyed per shot (below); no bands | 3840×1636: 1.17× |
+| scope film, ~800–1100 px active (1080p/1440p renditions) | close-ups full-height (1440p: 1.76×; 1080p: 2.35×, only for clean CG or animation, sharpened and named in the delivery note), wides in a 4:5 window (1080p: 1.65×) with cards, subtitles and the title in its bands; never the same letterboxed window on every shot | 1.65–2.35× |
 | 16:9 kept whole | full width (1080×608) centred on a blurred, darkened fill, text above and below | ≤1× (last resort: it reads as a reposted landscape video) |
 
 For the no-captions layout the crop's source top is `eye_y − (700 − 450) ÷ base`: with the eyes at source y 270 and base 2.0, the crop starts at y 145, so a 575-row crop fills y 450–1600.
@@ -193,6 +212,19 @@ Tested on a 720p white-wall talking head: the first command's bands read luma 15
 - Or keep the plate in the scene at source size and do the layout there (`footage-in-scene.md`); the same limits apply.
 
 Find CX from a contact sheet: locked-off podcast cameras need one value per camera. A moving crop by expression (`x='if(lt(t,4.2),300,1180)'`) works, but an eased reframe is simpler in the scene (`footage-in-scene.md`).
+
+### Keyed reframe and the subject-in-window strip
+
+A subject that crosses a wide frame needs the crop to follow it: 2–4 keys `[frame, cx]` per shot, read off a 4-per-second strip of the shot, linear between keys (monotone: never overshoot the subject and come back), held before the first and after the last, clamped to the frame. `n` is the frame index inside the segment, counted from the `-ss`:
+
+```sh
+# full-height 9:16 from a scope shot, keys (0, 900) (48, 1000) (96, 760) in source px of the subject's centre
+ffmpeg -ss 20.5 -t 4 -i assets/source/film.mp4 -an -vf "crop=w=ih*9/16:h=ih:y=0:x='clip(if(lt(n,48),900+(1000-900)*n/48,if(lt(n,96),1000+(760-1000)*(n-48)/48,760))-ow/2,0,iw-ow)',scale=1080:1920:flags=lanczos,setsar=1" -c:v libx264 -crf 18 edit/shot07-916.mp4
+# the check: every 4th frame, source frame number burned in before the select, one strip per shot
+ffmpeg -i edit/shot07-916.mp4 -vf "drawtext=text='%{n}':x=8:y=8:fontsize=40:fontcolor=white:box=1:boxcolor=black@0.6,select='not(mod(n\,4))',scale=120:-2,tile=12x2" -frames:v 1 -update 1 edit/shot07-strip.jpg
+```
+
+Tested on a 1920×800 scope shot (96 frames out, the crop following the keys) and on a 3840×1636 rendition (8 s for 3 s of 4K). Look at the strip: on every tile the subject's head and the point of action are inside the crop, with lead room on the side it moves toward. A tile that clips it gets a key at that frame. The same keys drive the in-scene plate when the reframe lives in the scene (`footage-in-scene.md`, Keyed reframe). Do the hook shot and the climax's peak shot first.
 
 ## 7. Dialogue cleanup and loudness
 
@@ -261,12 +293,17 @@ ffmpeg -i in.mp4 -vf vidstabdetect=shakiness=5:accuracy=15:result=edit/transform
 ffmpeg -i in.mp4 -vf "vidstabtransform=input=edit/transforms.trf:smoothing=30:zoom=0:optzoom=1,unsharp=5:5:0.8:3:3:0.4" -c:a copy stab.mp4
 # colour: correct, then match, then look (keep saturation <= 1.2, skin natural)
 ffmpeg -i in.mp4 -vf "eq=contrast=1.05:saturation=1.1:gamma=0.98,curves=preset=medium_contrast,colortemperature=temperature=5800" -c:a copy graded.mp4
+# dark footage for a phone (lift the darks, keep the highlights): mean luma of 28-35 rose to 43-57 on four night/cave shots
+ffmpeg -i in.mp4 -vf "curves=master='0/0.04 0.10/0.24 0.35/0.55 1/1'" -c:a copy lifted.mp4
+# phone-size read test: each insert's middle frame, 9:16 crop, 150 px wide, side by side (look at it at 100%)
+ffmpeg -ss 567.5 -i in.mp4 -ss 586.0 -i in.mp4 -ss 588.5 -i in.mp4 -filter_complex "[0:v]trim=end_frame=1,crop=ih*9/16:ih,scale=150:-2[a];[1:v]trim=end_frame=1,crop=ih*9/16:ih,scale=150:-2[b];[2:v]trim=end_frame=1,crop=ih*9/16:ih,scale=150:-2[c];[a][b][c]hstack=3" -frames:v 1 -update 1 edit/read150.png
 # chroma key a green-screen creator over a background
 ffmpeg -i bg.mp4 -i gs.mp4 -filter_complex "[1:v]chromakey=0x00FF00:0.12:0.08,despill=type=green[k];[0:v][k]overlay=(W-w)/2:H-h" key.mp4
 ```
 
 - Slow motion below 0.5× needs high-fps capture; `minterpolate` artifacts on complex motion.
 - Don't stabilise deliberate handheld energy in TikTok-native edits.
+- **Grade for the phone, not the cinema.** "Dark and contrasty" reads as a smear at phone size and brightness. Lift the darks (the `curves` line above), measure each insert's mean luma (`signalstats` YAVG, §6) and aim for ≥45–50 on short inserts; on the 150 px strip you must be able to name the subject of every insert. An insert that still fails after the lift is replaced with a brighter shot of the same action, not held longer. Tested: the lift made a cave-scale close-up read; a dark wing edge on black still did not, so it was the shot, not the grade.
 - Log footage: apply the technical LUT (`lut3d=file=log-to-709.cube`) before any creative grade. Check with `waveform` / `vectorscope` frames.
 - Chroma key similarity 0.08–0.2; add `despill` and a slight erode against fringes (the chroma-key graph uses standard filters but was not run here).
 
@@ -368,6 +405,19 @@ ffmpeg -ss 216.87 -t 2 -i assets/source/cam-a.mp4 -vn -af silencedetect=noise=-3
 ```
 
 If the same speaker's mouth is moving on either strip, or speech resumes within 0.6 s of the out point, the clip cuts a thought: move the boundary, or say in the delivery note that it is a mid-answer excerpt.
+
+### Segments inside one shot (edits cut from shots)
+
+A segment that runs over a source cut shows a frame or two of the next shot, which reads as a glitch. Re-run this after **every** retime: `edit/segs.txt` holds one segment per line as source seconds `in out`.
+
+```sh
+# any scene change strictly inside a segment is printed; -nostdin keeps ffmpeg from eating the list
+while read IN OUT; do
+  ffmpeg -nostdin -ss $IN -to $OUT -copyts -i assets/source/film.mp4 -an -vf "scale=320:-2,select='gt(scene,0.2)',showinfo" -f null - 2>&1 | grep -o "pts_time:[0-9.]*" | cut -d: -f2 | awk -v i=$IN -v o=$OUT '$1>i+0.001 {printf "CUT INSIDE %s-%s at %.3f s (frame %d at 24 fps)\n", i, o, $1, $1*24+0.5}'
+done < edit/segs.txt
+```
+
+Tested on a film where a climax segment had been extended 2 frames past a cut: it printed the cut at the exact frame. **On dark footage lower the threshold**: across a 40 s night/cave climax, `scene` 0.3 found 1 cut, 0.2 found 6 and 0.12 found 14, and both cuts checked by eye at 0.12 were real. Use 0.12–0.2 on dark material and confirm each hit with a 6-frame strip (§11, frames at a cut); fire and flashes give false positives.
 
 ## 12. Deliver
 

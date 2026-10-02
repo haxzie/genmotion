@@ -11,7 +11,7 @@ The social word-pop spec is the pack's one caption spec for **word-timed caption
 | Word pop | TikTok, Reels, Shorts, podcast clips, Gen Z | per `ugc-craft`: 1–3 words, ≤15 characters, one line; breaks at punctuation, any pause ≥5 f, or 3 words; each group on its first word's start frame, hard-killed at the next group's start or 6 f after its last word; 4 f pop 0.9 → 1 outCubic; 76–96 px at 1080 wide (Bold caption up to 110); heavy sans 700–900; 8 px black stroke; one highlight colour |
 | Clean subtitle | LinkedIn, Meta feed, course, corporate | sentence case, up to 2 lines of ≤42 characters, 52–60 px, white on a 60% black rounded box, no word pop |
 | Karaoke line | music-led social, reaction | the whole group shown at once (`revealAll`), the active word tinted; same geometry as word pop |
-| Film subtitle | trailer, film cut, documentary excerpt, any dialogue in a cinematic picture | sentence case, 44–52 px at 1080p (48–52 if it will be watched on phones), weight 500, white, no box; centred in the lower letterbox bar when the picture is scope (y ≈ 1000 of 1080 for a 2.40:1 picture), otherwise baseline 70–100 px above the bottom with a soft shadow (blur 6–8 px, 50% black); up to 2 lines of ≤42 characters; cues follow the supplied subtitle file (below) |
+| Film subtitle | trailer, film cut, documentary excerpt, any dialogue in a cinematic picture | sentence case, 44–52 px at 1080p (48–52 if it will be watched on phones), weight 500, white, no box; centred in the lower letterbox bar when the picture is scope (y ≈ 1000 of 1080 for a 2.40:1 picture), otherwise baseline 70–100 px above the bottom with the halo below; up to 2 lines of ≤42 characters; cues follow the supplied subtitle file (below). **9:16 cutdown:** there is no usable lower bar (it is under the platform UI), so 60–64 px, weight 500–600, ≤2 lines of ≤28 characters, centred in the lower part of the picture (baseline y 1100–1180 of 1920); move a line to the top of the readable zone (y 300–450) only while a close-up puts the mouth in the lower band, never as the default |
 | SRT only | YouTube long-form, podcasts, accessibility copy | sidecar file, ≤42 characters × 2 lines, not burned |
 
 Rules that hold for all of them:
@@ -20,7 +20,7 @@ Rules that hold for all of them:
 - **Emoji:** 0–1 per group, only on a keyword, 1.2× the text size.
 - **Captions match the audio exactly.** A word appears on its own start frame, never early, and never two groups at once. Stale captions are the classic seek bug.
 - **Captions may drop fillers the speaker says** ("so I, uh, tried it" → "I tried it") but never change meaning, and never contradict the audio.
-- **Contrast:** text sits on a stroke or a box, never bare on footage.
+- **Contrast:** text sits on a stroke, a box or a halo, never bare on footage. **Film-subtitle halo** (no box, still readable over snow, sky or fire): the line drawn three times under itself with a black shadow at 85–90% opacity and blur 4, 10 and 18 px (on a canvas texture: `shadowColor = "rgba(0,0,0,0.88)"`, `shadowBlur` 4 / 10 / 18, then the white fill once more on top). A single 50% shadow leaves white text near 3:1 over a bright plate. Check it on the brightest frame each line sits on: `capture-frames` there, crop a 12 px band directly above the cap line and one below the baseline, and read `signalstats` YAVG (as in `ffmpeg-recipes.md` §6); both ≤ 115 means white text clears 4.5:1. If the plate is too bright for the halo, use a 40–50% black box behind the line instead.
 - **Fonts: ship and load the face before drawing it.** The capture machine has almost no fonts, so a family name alone silently becomes a default sans and every width changes. Put Inter's variable woff2 (or the brand face) in `assets/` and wrap each scene's builder in `three-type`'s `withFonts` (its type kit), so no caption texture is drawn before the face lands. The component below draws in Inter for that reason; change `FONT` only together with the file you ship.
 - On Three.js the captions are a layer above the footage plate that never moves with a punch-in. If you zoom by moving the camera instead of scaling the plate, parent the captions to the camera.
 
@@ -67,7 +67,7 @@ A subtitle file the user supplies, or one that ships with an open film, gives **
 
 Its times are in the **source file's** clock. If your source is an excerpt of the film (a file cut from 1:30), subtract that offset first; then re-time every cue through the cut list exactly like a word: `new_t = segment_start + (src_t − in)`, clipped to the shot it lands in. A cue that spans a cut is split, or kept only on the shot where most of it is spoken.
 
-Then fix the reading rate: a cue shorter than 0.83 s or faster than 17 characters per second is held longer, past the speech, up to the shot's end or the next cue, whichever comes first; never start a cue before its speech.
+Then fix the reading rate: a cue shorter than 0.83 s or faster than 17 characters per second is held longer, past the speech, up to the shot's end or the next cue, whichever comes first; never start a cue before its speech. Check every cue's start against the waveform (the `astats` RMS at 50 ms, or a silence map) before trusting it: shipped files are often a few hundred ms off, and one tested cue started 0.45 s after its line.
 
 The conversion, as inline commands (no script file), tested on a 71-cue TTML and a two-shot cut list:
 
@@ -216,7 +216,7 @@ return withFonts(ctx, [{ family: "Inter", url: interUrl }], () => {
 
 Variants:
 
-- **Film subtitle:** the clean-subtitle changes below with weight 500, size 44–52, no box, cues instead of words (one group per cue from `edit/edit-cues.tsv`), and `y` in the letterbox bar.
+- **Film subtitle:** the clean-subtitle changes below with weight 500, size 44–52 (60–64 in 9:16), no box but the three-pass halo, cues instead of words (one group per cue from `edit/edit-cues.tsv`), and `y` in the letterbox bar (9:16: baseline y 1100–1180, or y 300–450 while a close-up's mouth is in the lower band).
 - **Clean subtitle:** drop `.toUpperCase()`, weight 600, `stroke: 0`, size 52–60, draw a rounded 60% black box behind each group (one more canvas texture per group), raise `maxWords` and break on punctuation and 42 characters instead, and set the scale to 1 (no pop).
 - **Keyword colour:** pass a per-word colour in the word list for the 1–2 words per sentence that carry the meaning, instead of tinting every active word.
 - Words are drawn once in the builder; memory is about 250 KB per word texture, so a 60 s clip (~150 words) costs ~40 MB. Split long videos into scenes so only one section's words exist at a time.

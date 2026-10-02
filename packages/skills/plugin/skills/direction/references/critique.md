@@ -80,7 +80,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal or it is brand identity (a sting or end card on the exact brand hex).
 
 ### Type
-- [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible, and never more than 15 characters per second.
+- [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible (30 fps; at 24 fps use `pacing.md`'s 24 fps column, `max(24, 7.2 × words + 12)`), and never more than 15 characters per second.
 - [Blocker] Contrast ≥ 4.5:1 for read text under 60 px (≥ 3:1 at 60 px and above), measured against what is actually behind it. A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; a high-contrast accent eyebrow (yellow on near-black, about 13:1) passes.
 - [Fix] ≤ 2 type families; a size ratio ≥ 1.5× between levels; display tracking tightened (−0.02 to −0.045em).
 - [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers. The count is of message lines (headlines, captions, the line being said); a diagram's labels are capped separately (≤ 5 labelled parts, each label on its part, `explainer`).
