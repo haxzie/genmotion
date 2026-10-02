@@ -4,7 +4,7 @@ Read this when you set levels, duck a bed, normalise a source, or measure and re
 
 ## Why the numbers matter here
 
-The export sums every clip with `amix … normalize=0` and applies **no limiter and no loudness stage**. Two peaks at −6 dBFS that coincide reach about 0 dBFS. So: normalise sources, leave headroom, and measure the output.
+The export sums every clip with `amix … normalize=0` and applies **no limiter and no loudness stage**. Two peaks at −6 dBFS that coincide reach about 0 dBFS, and the AAC encode adds up to ~1 dB of true peak on top. So: normalise sources, pre-master whatever the SFX sit on to −15 LUFS / −3 dBTP, and measure the output.
 
 ## dB ↔ linear `volume`
 
@@ -79,7 +79,7 @@ Loudness is meaningless for a 0.3 s click; peak-normalise SFX.
 
 ## Ducking
 
-Typical amounts: 6–12 dB for gentle carving, 12–20 dB for clear narration. Attack 30–80 ms, release 300–1000 ms (longer stops the bed pumping up between words). In frames at 30 fps: 3–6 f down, 10–20 f up.
+Typical amounts: 6–12 dB for gentle carving, 12–20 dB for clear narration. Attack 30–80 ms, release 300–1000 ms (longer stops the bed pumping up between words). In frames at 30 fps: 3–6 f down, 10–20 f up (at 24 fps: 2–5 f, 8–16 f).
 
 House default is **no ducking**: a constant bed at 0.1–0.2 under the voice (the ladder). Duck only when the music should rise between lines (pauses ≥ 1.5 s), and per sentence, never per word.
 
@@ -117,7 +117,7 @@ Measured dip: 11–12 dB.
 
 Tween the `<audio>` element's volume on the timeline: down over ~0.2 s before a line, back over ~0.4 s after it. The export reads the per-frame gain, so the duck survives.
 
-## Fades (30 fps)
+## Fades (30 fps; at 24 fps multiply by 0.8)
 
 | Situation | Fade |
 |---|---|
@@ -184,9 +184,22 @@ Copy `input_i`, `input_tp`, `input_lra`, `input_thresh` and `target_offset` from
 ffmpeg -i out.mp4 -af "loudnorm=I=-14:TP=-1:LRA=11:measured_I=-20.72:measured_TP=-9.82:measured_LRA=0.10:measured_thresh=-30.72:offset=0.00:linear=true:print_format=summary" -ar 48000 -c:v copy -c:a aac -b:a 192k out-14lufs.mp4
 ```
 
-Always add `-ar 48000`: loudnorm otherwise outputs 192 kHz. If pass 2 reports `normalization_type: dynamic`, the peak target could not be met with plain gain and loudnorm compressed instead; reduce the loudest overlapping clips (or lower the TP target) and export again. Measure the new file before handing it over.
+Always add `-ar 48000`: loudnorm otherwise outputs 192 kHz. If pass 2 reports `normalization_type: dynamic`, the peak target could not be met with plain gain and loudnorm compressed instead. Measure the new file before handing it over.
 
-The loop: export → `ebur128` → off by more than 1 LU? scale every clip `volume` by the difference (×1.12 per +1 dB) or re-master → true peak above −1 dBTP? pull the loudest overlapping clips down → measure again.
+**The standard form: peak-limit first, then linear.** A mix that sits 1–2 LU under the target with peaks near −1.5 dBTP cannot be raised linearly (the gain would push the peaks over), so pass 2 falls back to `dynamic`. A sample-peak limiter at −4 dBFS in front of `loudnorm`, in both passes, leaves the gain linear:
+
+```
+P="alimiter=limit=0.63:attack=5:release=50:level=disabled"
+ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af "$P,loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json" -f null - 2>&1 | sed -n '/^{/,/^}/p' > assets/ln.json
+J(){ grep "\"$1\"" assets/ln.json | sed 's/.*: "\(.*\)".*/\1/'; }
+ffmpeg -i out.mp4 -af "$P,loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=$(J input_i):measured_TP=$(J input_tp):measured_LRA=$(J input_lra):measured_thresh=$(J input_thresh):offset=$(J target_offset):linear=true:print_format=json" -ar 48000 -c:v copy -c:a aac -b:a 192k -movflags +faststart out-14lufs.mp4 2>&1 | grep normalization_type
+```
+
+Tested on a speech + impacts export at −15.3 LUFS / −1.5 dBTP: plain two-pass gave `dynamic`; with the limiter, `linear`, −14.1 LUFS and −1.7 dBTP after AAC. `level=disabled` matters: `alimiter`'s default auto-level rides the gain itself. Delete `ln.json` after.
+
+If it still reports `dynamic`: on speech-led pieces accept it (light limiting); on a music-led piece whose build matters, re-shape the music with the staircase recipe (SKILL.md, Pre-master what the SFX sit on) and export again.
+
+The loop: export → `ebur128` → off by more than 1 LU or true peak above −1 dBTP? re-master as above (or scale every clip `volume` by the difference, ×1.12 per +1 dB, and pull the loudest overlapping clips down) → measure again.
 
 ## One dense track that has to carry the film alone
 
@@ -197,4 +210,6 @@ ffmpeg -ss 30.0 -t 30.2 -i assets/track.mp3 -af loudnorm=I=-14:TP=-1.5:LRA=11:pr
 ffmpeg -ss 30.0 -t 30.2 -i assets/track.mp3 -af "loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=<input_i>:measured_TP=<input_tp>:measured_LRA=<input_lra>:measured_thresh=<input_thresh>:offset=<target_offset>:linear=true" -ar 48000 assets/track-cue.wav
 ```
 
-If pass 2 falls back to `dynamic` (light limiting), that is acceptable for a music-only film. Place `track-cue.wav` at 1.0 with `startFrom` 0, and measure the export as usual.
+If pass 2 falls back to `dynamic` (light limiting), that is acceptable for a steady music-only promo, where the loudness range is small anyway. It is **not** acceptable when the track's dynamics are the design (a trailer score, a slow build): `dynamic` compressed one score cue's LRA from 9.2 to 6.6 LU and lifted its quiet act to the climax's level. Use the volume staircase + `alimiter` recipe in SKILL.md instead. Place `track-cue.wav` at 1.0 with `startFrom` 0, and measure the export as usual.
+
+When SFX will sit on the track (accents, hits), pre-master it to `I=-15:TP=-3` instead, place the accents at ≤0.7, and re-master the export as above.

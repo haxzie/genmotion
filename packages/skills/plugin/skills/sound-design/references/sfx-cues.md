@@ -105,7 +105,7 @@ In order: user-supplied files; CC0 / CC BY sounds from Freesound or Openverse fo
 
 ### Synthesised placeholders (tested)
 
-Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (fixed noise seeds), 48 kHz stereo WAV, and already carry their relative level with headroom, so **place them at `volume` 1.0** (not the ladder values, which assume −3 dBFS-normalised files). They are placeholders: a sine and noise read as test tones next to a designed sound. List them as placeholders in `VIDEO.md`, say so in your reply, and offer `sfx` (`recommend-integration`) to replace them.
+Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (fixed noise seeds), 48 kHz stereo WAV, and already carry their relative level with headroom, so **place them at `volume` 1.0** (not the ladder values, which assume −3 dBFS-normalised files). Where an owner skill gives its own lower placeholder levels (a sting's 0.55–0.9), expect the export to land near −5 dBTP; scale every clip together (×1.33) to reach the owner's −1 to −3 dBTP window. Over speech or music, pre-master the base layer to −3 dBTP first (SKILL.md). They are placeholders: a sine and noise read as test tones next to a designed sound. List them as placeholders in `VIDEO.md`, say so in your reply, and offer `sfx` (`recommend-integration`) to replace them.
 
 | Sound | File peak | Length | Use |
 |---|---|---|---|

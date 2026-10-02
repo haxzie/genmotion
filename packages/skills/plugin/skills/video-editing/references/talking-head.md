@@ -1,6 +1,6 @@
 # Talking head: YouTube, Shorts/Reels/TikTok, LinkedIn, courses, green-screen reaction
 
-Read this when one person talks to camera and the user wants it edited. Pick the section for the destination; the shared craft (paper edit, jump zooms, J/L cuts) is in the main skill. Recipe numbers (§) refer to `ffmpeg-recipes.md`.
+Read this when one person talks to camera and the user wants it edited. Pick the section for the destination; the shared craft (paper edit, jump zooms, J/L cuts) is in the main skill. Recipe numbers (§) refer to `ffmpeg-recipes.md`. Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (times in seconds stay as they are).
 
 ## A. YouTube long-form (8–25 min)
 
@@ -18,7 +18,7 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 
 **Cut rhythm**
 
-- Jump-cut every pause over 0.3–0.5 s and every flub: a cut every 3–8 s is typical.
+- Jump-cut every pause over 0.3–0.5 s and every flub (the clean talking-head row of the main skill's pause table, Step 5): a cut every 3–8 s is typical.
 - Hide jump cuts with `ugc-craft`'s jump zoom: alternate 1.0 and 1.2 on consecutive segments (≥20% size change), never two zoomed segments in a row. Hard steps, not animated zooms. Reserve a slow push (1.0 → 1.08 over 3–6 s) for serious lines.
 - Total enlargement of source pixels (reframe × zoom) ≤1.3× ideal, 2.0× ceiling: a 4K source in a 1080p timeline can scale to 2.0 without softness; a 1080p source stays ≤1.3; a 720p source needs the low-res layouts in `ffmpeg-recipes.md` §6.
 - B-roll or a graphic every 10–30 s (denser in the first 2 minutes), 2–5 s each, literal to the words, with J/L cuts so the voice carries across.
@@ -44,9 +44,9 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 | 35–42 s | Payoff or twist |
 | 42–45 s | CTA ≤2 s, or a line that loops into the hook |
 
-- A visual change every 1–3 s (jump cut, jump zoom, b-roll, text pop); no stretch over 2.5 s without one. When the speech has too few pauses to cut that often, add picture-only steps on word onsets (`genz.md`, Density) and run the density check (`ffmpeg-recipes.md` §11).
+- A visual change every 1–3 s (jump cut, jump zoom, crop shift, b-roll, text pop), varied rather than metronomic; no stretch over 2.5 s without one. When the speech has too few pauses to cut that often, add picture-only steps on word onsets (`genz.md`, Density) and run the density check (`ffmpeg-recipes.md` §11).
 - No lower third in 9:16: it fights the caption band. Name the speaker with a ≥60 px text pop in the hook or caption band for 1–2 s.
-- Gaps ≤100 ms; the breath trim from `ugc-craft`.
+- Joins per the Gen Z / Shorts row of the main skill's pause table (Step 5): in −0.03 s, out +0.05 s; in a monologue cut only pauses ≥0.25 s.
 - Punch-in (1.0 → 1.12 over 8 f) on stressed words, at most 4 per 30 s.
 - Captions: word pop per `ugc-craft`, placed per `captions.md`.
 - SFX: whoosh on b-roll entrances, pop on text, a ding on a key number; 3–8 per 30 s at most, each 6–12 dB under the voice.
@@ -91,7 +91,7 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 1. Probe; CFR; proxy; contact sheet (§1–§2).
 2. Transcribe with word timestamps (§3).
 3. Paper edit: drop retakes, keep the best take, reorder for the hook. Write it in `VIDEO.md`.
-4. Silence and filler cut with 50–120 ms pads (the format's gap row in the main skill).
+4. Silence and filler cut with the format's row of the pause table (main skill, Step 5).
 5. Jump zooms on alternate segments of the same angle.
 6. B-roll and graphics plan from the transcript's nouns and numbers; at least one insert per 10–30 s long-form, per 3 s short-form.
 7. Conform (§5), dialogue chain (§7), place audio, build the motion layer.

@@ -1,6 +1,6 @@
 # Captions: word-timed, in the scene, inside the safe zone
 
-Read this when an edit gets captions. Burned-in captions are mandatory on TikTok, Reels, Shorts and LinkedIn (feeds autoplay muted); YouTube long-form and podcasts get an SRT sidecar instead.
+Read this when an edit gets captions. Burned-in captions are mandatory on TikTok, Reels, Shorts and LinkedIn (feeds autoplay muted); YouTube long-form and podcasts get an SRT sidecar instead. Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (times in seconds stay as they are).
 
 ## Styles by platform
 
@@ -11,6 +11,7 @@ The social word-pop spec is the pack's one caption spec for **word-timed caption
 | Word pop | TikTok, Reels, Shorts, podcast clips, Gen Z | per `ugc-craft`: 1–3 words, ≤15 characters, one line; breaks at punctuation, any pause ≥5 f, or 3 words; each group on its first word's start frame, hard-killed at the next group's start or 6 f after its last word; 4 f pop 0.9 → 1 outCubic; 76–96 px at 1080 wide (Bold caption up to 110); heavy sans 700–900; 8 px black stroke; one highlight colour |
 | Clean subtitle | LinkedIn, Meta feed, course, corporate | sentence case, up to 2 lines of ≤42 characters, 52–60 px, white on a 60% black rounded box, no word pop |
 | Karaoke line | music-led social, reaction | the whole group shown at once (`revealAll`), the active word tinted; same geometry as word pop |
+| Film subtitle | trailer, film cut, documentary excerpt, any dialogue in a cinematic picture | sentence case, 44–52 px at 1080p (48–52 if it will be watched on phones), weight 500, white, no box; centred in the lower letterbox bar when the picture is scope (y ≈ 1000 of 1080 for a 2.40:1 picture), otherwise baseline 70–100 px above the bottom with a soft shadow (blur 6–8 px, 50% black); up to 2 lines of ≤42 characters; cues follow the supplied subtitle file (below) |
 | SRT only | YouTube long-form, podcasts, accessibility copy | sidecar file, ≤42 characters × 2 lines, not burned |
 
 Rules that hold for all of them:
@@ -28,7 +29,7 @@ Rules that hold for all of them:
 | Caption kind | Limit |
 |---|---|
 | Word pop | follows speech; the `ugc-craft` grouping keeps it readable |
-| Subtitle lines | ≤17 characters per second (the subtitle standard), each cue at least 20 f (0.83 s) and at most 7 s; ≤42 characters a line, 2 lines |
+| Subtitle lines | ≤17 characters per second (the subtitle standard), each cue at least 0.83 s (20 f at 24 fps, 25 f at 30) and at most 7 s; ≤42 characters a line, 2 lines |
 | Hook / title text | 5–10 words, held at least 1 s per 3–4 words and never under 18 f |
 | On-screen text overall | at most 5–10 words per second (TikTok creative guidance) |
 
@@ -59,6 +60,34 @@ Rules that hold for all of them:
 3. Convert to frames and to the scene's own timeline: `from = round(t × fps) − sceneStartFrame`, `to = round((start + (e − in)) × fps) − sceneStartFrame`.
 4. Write the result as a TypeScript array per scene in `components/words.ts` (`export const WORDS_SECTION_2: Word[] = [...]`), so the scene imports it and the editor can show it. Fix the transcript's spelling of names and brands here, not in the audio.
 5. Spot-check three words against the waveform: the frame at `from` should be the first frame the word is audible (± 2 frames). Whisper word times can be 100–300 ms off; nudge from there.
+
+## Subtitle files (TTML, SRT, VTT) as the source of words
+
+A subtitle file the user supplies, or one that ships with an open film, gives **cue** times, not word times: each cue spans a line of speech, often with a little air. Use it as it is for subtitles (film style, clean subtitle, SRT); for word-pop captions it needs `transcribe` or the 2.5 words/s estimate inside each cue, checked on three words.
+
+Its times are in the **source file's** clock. If your source is an excerpt of the film (a file cut from 1:30), subtract that offset first; then re-time every cue through the cut list exactly like a word: `new_t = segment_start + (src_t − in)`, clipped to the shot it lands in. A cue that spans a cut is split, or kept only on the shot where most of it is spoken.
+
+Then fix the reading rate: a cue shorter than 0.83 s or faster than 17 characters per second is held longer, past the speech, up to the shot's end or the next cue, whichever comes first; never start a cue before its speech.
+
+The conversion, as inline commands (no script file), tested on a 71-cue TTML and a two-shot cut list:
+
+```sh
+# 1) TTML -> tab-separated cues in source seconds (offset = where your source file starts in the film's clock, 90 here);
+#    <br/> inside a cue becomes "|"; handles begin/end clock times HH:MM:SS.mmm
+tr -d '\r\n\t' < assets/source/film.ttml | sed 's#<p #\n<p #g' | sed -n 's#^<p begin="\([0-9:.]*\)" end="\([0-9:.]*\)"[^>]*>\(.*\)</p>.*#\1\t\2\t\3#p' | sed -e 's#<br */>$##' -e 's#<br */>#|#g' -e 's#<[^>]*>##g' | awk -F'\t' -v off=90 'function s(x, a){split(x,a,":"); return a[1]*3600+a[2]*60+a[3]} {b=s($1)-off; e=s($2)-off; if (b>=0) printf "%.3f\t%.3f\t%s\n", b, e, $3}' > edit/cues.tsv
+# 2) re-time through the cut list (edit/cutlist.tsv: in, out, start per segment, seconds), clipped to each shot;
+#    the third column is the shot's end in the edit
+awk -F'\t' 'NR==FNR{i[++n]=$1; o[n]=$2; st[n]=$3; next} {for(k=1;k<=n;k++){b=($1>i[k]?$1:i[k]); e=($2<o[k]?$2:o[k]); if (e-b>=0.2) printf "%.3f\t%.3f\t%.3f\t%s\n", st[k]+b-i[k], st[k]+e-i[k], st[k]+o[k]-i[k], $3}}' edit/cutlist.tsv edit/cues.tsv | sort -n > edit/edit-cues.tsv
+# 3) SRT, each cue held to >= 0.83 s and <= 17 cps where the shot and the next cue allow
+awk -F'\t' '{b[NR]=$1; e[NR]=$2; se[NR]=$3; t[NR]=$4} END{for(k=1;k<=NR;k++){c=length(t[k]); need=(c/17>0.83?c/17:0.83); lim=se[k]; if (k<NR && b[k+1]<lim) lim=b[k+1]; if (e[k]-b[k]<need) e[k]=(b[k]+need<lim?b[k]+need:lim); gsub(/\|/,"\n",t[k]); printf "%d\n%s --> %s\n%s\n\n", k, ts(b[k]), ts(e[k]), t[k]}} function ts(x,  h,m,s,ms){ms=int(x*1000+0.5); h=int(ms/3600000); m=int(ms/60000)%60; s=int(ms/1000)%60; return sprintf("%02d:%02d:%02d,%03d",h,m,s,ms%1000)}' edit/edit-cues.tsv > deliver/edit.srt
+# 4) check it parses
+ffmpeg -v error -y -i deliver/edit.srt edit/srt-check.ass && grep -c Dialogue edit/srt-check.ass
+```
+
+- An SRT or VTT input skips step 1: ffmpeg converts either to the other (`ffmpeg -i in.vtt out.srt`), and the cue lines are `HH:MM:SS,mmm --> HH:MM:SS,mmm`; turn them into the same three columns before step 2.
+- TTML that uses frames (`00:00:23:12` with `ttp:frameRate`) or ticks (`230000000t` with `ttp:tickRate`) needs those units converted in the `s()` function: frames ÷ frame rate, ticks ÷ tick rate.
+- The cue rows in `edit/edit-cues.tsv` are also what a scene's subtitle layer reads: `from = round(start × fps)`, `to = round(end × fps)` per cue.
+- Check the result: in the test, a 29-character line over 1.5 s of speech (19 cps) was held to 1.71 s by step 3, and a cue that started 0.4 s before a cut was clipped to the shot.
 
 ## The caption component (Three.js), tested
 
@@ -105,9 +134,13 @@ function wordMesh(text: string, size: number, stroke: number) {
  * on gaps longer than `maxGap` frames; the active word is tinted and popped.
  */
 export function createCaptions(words: Word[], opts: {
-  size?: number; stroke?: number; y: number; maxWords?: number; maxGap?: number; highlight?: string; gap?: number; revealAll?: boolean; maxWidth: number; x?: number;
+  fps: number; size?: number; stroke?: number; y: number; maxWords?: number; maxGap?: number; highlight?: string; gap?: number; revealAll?: boolean; maxWidth: number; x?: number;
 }) {
-  const { size = 88, stroke = 8, y, maxWords = 3, maxGap = 5, highlight = "#FFE500", gap = 22, revealAll = false, maxWidth, x: centreX = 0 } = opts;
+  const { fps, size = 88, stroke = 8, y, maxWords = 3, highlight = "#FFE500", gap = 22, revealAll = false, maxWidth, x: centreX = 0 } = opts;
+  // Timings are seconds in the spec (pause 0.17 s, pop 0.13 s, tail 0.2 s), so they hold at 24, 25, 30 or 60 fps.
+  const maxGap = opts.maxGap ?? Math.round(fps * 0.17);
+  const pop = Math.max(2, Math.round(fps * 0.133));
+  const tail = Math.round(fps * 0.2);
   const root = new THREE.Group();
   root.name = "captions";
   const groups: Word[][] = [];
@@ -141,9 +174,9 @@ export function createCaptions(words: Word[], opts: {
     root.add(g);
     return { g, items, from: group[0]!.from };
   });
-  // Up until the next group starts, but never more than 6 frames past the last word.
+  // Up until the next group starts, but never more than `tail` frames past the last word.
   const ends = built.map((b, i) =>
-    Math.min(built[i + 1]?.from ?? Infinity, b.items[b.items.length - 1]!.w.to + 6),
+    Math.min(built[i + 1]?.from ?? Infinity, b.items[b.items.length - 1]!.w.to + tail),
   );
 
   function update(frame: number) {
@@ -156,8 +189,8 @@ export function createCaptions(words: Word[], opts: {
         const shown = revealAll || frame >= it.w.from;
         it.mat.opacity = shown ? 1 : 0.0;
         it.mat.color.copy(active ? hi : white);
-        // Entrance: 4-frame pop 0.9 -> 1, outCubic, from the word's start frame.
-        const p = Math.min(1, Math.max(0, (frame - it.w.from) / 4));
+        // Entrance: pop 0.9 -> 1 over `pop` frames (4 at 30 fps, 3 at 24), outCubic, from the word's start frame.
+        const p = Math.min(1, Math.max(0, (frame - it.w.from) / pop));
         it.mesh.scale.setScalar(0.9 + 0.1 * (1 - Math.pow(1 - p, 3)));
       }
     });
@@ -172,17 +205,18 @@ Use (9:16), inside the scene's `withFonts` builder:
 import interUrl from "../assets/InterVariable.woff2";
 // ...
 return withFonts(ctx, [{ family: "Inter", url: interUrl }], () => {
-  const captions = createCaptions(WORDS, { x: 480 - width / 2, y: height / 2 - 1160, size: 88, maxWidth: 720 });
+  const captions = createCaptions(WORDS, { fps: ctx.fps, x: 480 - width / 2, y: height / 2 - 1160, size: 88, maxWidth: 720 });
   captions.root.position.z = 1;          // above the footage plate
   scene.add(captions.root);
   return ({ frame }) => { /* footage seek … */ captions.update(frame); };
 });
 ```
 
-`maxGap` (default 5 f, about 0.17 s) is `ugc-craft`'s "break at any pause ≥5 f". It decides where caption groups break, and is unrelated to the cut list's merge threshold (main skill, Step 5).
+`fps` is the project's (`ctx.fps`); every timing inside is derived from it, so the same component is right at 24 and 30 fps. `maxGap` (default 0.17 s: 5 f at 30, 4 f at 24) is `ugc-craft`'s "break at any pause ≥5 f". It decides where caption groups break, and is unrelated to the cut list's merge threshold (main skill, Step 5).
 
 Variants:
 
+- **Film subtitle:** the clean-subtitle changes below with weight 500, size 44–52, no box, cues instead of words (one group per cue from `edit/edit-cues.tsv`), and `y` in the letterbox bar.
 - **Clean subtitle:** drop `.toUpperCase()`, weight 600, `stroke: 0`, size 52–60, draw a rounded 60% black box behind each group (one more canvas texture per group), raise `maxWords` and break on punctuation and 42 characters instead, and set the scale to 1 (no pop).
 - **Keyword colour:** pass a per-word colour in the word list for the 1–2 words per sentence that carry the meaning, instead of tinting every active word.
 - Words are drawn once in the builder; memory is about 250 KB per word texture, so a 60 s clip (~150 words) costs ~40 MB. Split long videos into scenes so only one section's words exist at a time.

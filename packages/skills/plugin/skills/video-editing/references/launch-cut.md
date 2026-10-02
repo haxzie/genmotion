@@ -1,6 +1,6 @@
 # Launch cut: founder footage, product footage and UI
 
-Read this when the user has real footage for a launch (a founder on camera, product shots, screen recordings) and wants it cut into a launch film, a crowdfunding video or social cutdowns. If there is no footage and the film is built from screenshots and motion graphics, `launch-playbook` owns it instead. Recipe numbers (§) refer to `ffmpeg-recipes.md`.
+Read this when the user has real footage for a launch (a founder on camera, product shots, screen recordings) and wants it cut into a launch film, a crowdfunding video or social cutdowns. If there is no footage and the film is built from screenshots and motion graphics, `launch-playbook` owns it instead. Recipe numbers (§) refer to `ffmpeg-recipes.md`. Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (times in seconds stay as they are).
 
 ## The shared skeleton (60–120 s)
 

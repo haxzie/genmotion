@@ -12,27 +12,41 @@ Read this when the user asks for a fast, native-feeling social edit of their foo
 ## The hook (under 1 s)
 
 - **Frame 0 already has a face, motion and text.** Start mid-action or mid-sentence ("…and that's why I quit").
-- Hook text at y 270–450, 5–10 words, large: a white box with black text (the native text style) or bold white with a black stroke.
+- Hook text at y 270–450, 5–10 words, 72–90 px (never smaller than the captions): the native text box or bold white with a black stroke. The box takes whichever polarity contrasts with what is behind it: black text on a white box over a dark or busy ground, white text on a black box over a white wall or a bright sky.
 - Hook shapes: a contrarian claim, "POV:", "Nobody tells you…", the result first ("I made $X…"), a question, a count ("3 things…"), a visual shock.
 - The spoken hook and the text hook say the same thing.
-- **No transcript:** write the hook text as a true question or a POV built only from public facts (the video's title, who the speaker is): "How did the founder of a free online school get into college?" or "POV: the guy who taught you algebra explains admissions". Never a bare title label ("<Name>'s college admissions story" is a label, not a hook), and never words the speaker may not have said.
+- **No transcript:** write the hook text as a true question or a POV built only from public facts (the video's title, who the speaker is): "How did a first-time founder get her first 100 customers?" when the title is about early sales, or "POV: a pastry chef explains why your bread is flat". Never a bare title label ("<Name>'s story" is a label, not a hook), and never words the speaker may not have said.
 - Frame 0 is the cover too: centre the face on the readable column (x ≈ 480) at the hook's framing.
 
 ## Density
 
 | Element | Number |
 |---|---|
-| Cut | every 0.7–2 s (21–60 f) |
+| Hook (first 3 s) | ≥2 visual events, the first by 1.0 s (a step, a pop, a cut); frame 0 already has face, motion and text |
+| Cut or step | every 0.7–2 s (21–60 f at 30, 17–48 f at 24) |
 | Pattern interrupt | every 2–4 s: a jump zoom, an angle swap, b-roll, a meme-style cutaway, a text pop, a sound |
-| Any stretch with no visual change | never over 2.5 s (75 f) |
-| Gaps between words | ≤50–100 ms: remove every breath and pause |
+| Any stretch with no visual change | never over 2.5 s (75 f at 30, 60 f at 24) |
+| Variation | intervals vary at least 2× (e.g. 0.6–2.4 s) and use ≥3 kinds of change (size step, crop shift, speed ramp, freeze, text pop, flash); never a metronome |
+| Joins and pauses | the Gen Z row of the main skill's pause table (Step 5): in −0.03 s, out +0.05 s, a join gap of about 0.08 s; in a monologue only pauses ≥0.25 s are cut |
 | Length | 15–45 s; completion matters more than length |
 
-**Picture cuts need not be audio cuts.** A tightly delivered source has few pauses (one 114 s talk had ten usable ones), so audio-driven cuts alone give an average shot of 4 s, not 0.7–2. On a continuous take, a hard step mid-sentence on a word onset is the native "camera switch": scale 1.0 ↔ 1.2 (or 1.12 on a low-res source), or a crop shift of 80–120 px left or right, no ease. Use these whenever the speech map gives fewer cuts than the table. After the paper edit, list every visual change by frame and fill every gap over 75 f with a picture-only step, a text pop or a sound (the density check in `ffmpeg-recipes.md` §11).
+**Never a metronome.** One move every 2.0 s for 35 s passes the 2.5 s ceiling and still reads as a template: the eye learns the beat and stops looking. Group changes into fast runs (2–3 changes 0.5–1 s apart) around the lines that matter, and let a line that needs reading hold 2–2.5 s. The density check in `ffmpeg-recipes.md` §11 prints the interval spread; it should pass the variation thresholds there, not only the gap ceiling.
+
+**Picture cuts need not be audio cuts.** A tightly delivered source has few pauses (one 114 s talk had ten usable ones), so audio-driven cuts alone give an average shot of 4 s, not 0.7–2. On a continuous take, a hard step mid-sentence on a word onset is the native "camera switch": scale 1.0 ↔ 1.2, or a crop shift of 80–120 px left or right, no ease (on a low-res source the crop shift, alone or with a 1.06–1.08 size change, because base × step ≤ 2.0). Use these whenever the speech map gives fewer cuts than the table. After the paper edit, list every visual change by frame and fill every gap over 2.5 s with a picture-only step, a text pop or a sound (the density check in `ffmpeg-recipes.md` §11). On a single-angle source at 720p or below the crop shift is the workhorse, because it costs no enlargement (`ffmpeg-recipes.md` §6: base × step ≤ 2.0).
 
 **Without words, interrupts are still available:** an icon or emoji pop on a gesture, a freeze + shutter on a look, a speed ramp across a pause, a picture-only step on the loudest syllable onset (the RMS envelope, `podcast.md`'s recipe), a 2-word identity or topic pop built from public facts.
 
-## The moves (numbers at 30 fps)
+### The no-captions draft (no transcript, the user said go)
+
+The main skill's Step 3 policy applies; this is how the edit itself changes, because a muted viewer gets no captions to read:
+
+- **The hook stays as a persistent header** for the whole film: y 270–450, ≤2 lines, the native box. It is the only line a muted viewer can read, so it never leaves.
+- **A wordless cue at least every 6–8 s** between the size steps and crop shifts: a gesture emoji pop, a freeze + shutter, a 3–5× speed ramp across a pause, a second identity or topic pop. A muted viewer must never go 8 s without a new element on top of the picture.
+- **No b-roll**: without words nothing can be literal to them, and unrelated stock reads as filler. Use the interrupts above.
+- **The peak is provisional**: put it on the loudest onset (the RMS envelope), mark it provisional in `VIDEO.md`, and move it once the words arrive.
+- **The layout has no caption band**: `ffmpeg-recipes.md` §6 gives the numbers for a single 720p speaker (plate from y 450, eyes y 600–800, nothing load-bearing below y 1450, the bands under the UI not pure white).
+
+## The moves (numbers at 30 fps; at 24 fps multiply frame counts by 0.8)
 
 - **Jump zoom** on cuts and **punch-in** on stressed words: `ugc-craft`'s numbers (1.0 ↔ 1.2 on the cut frame; 1.0 → 1.12 over 8 f, ≤4 per 30 s). A footage edit may go to 1.3 on a beat drop if the source is 4K.
 - **Zoom bump** on a beat: 1.0 → 1.15 → 1.08 over 2 + 4 frames, holding until the next cut: `interpolate(frame, [f, f + 2, f + 6], [1, 1.15, 1.08], Easing.easeOut)` on the plate (`footage-in-scene.md`).
@@ -45,7 +59,7 @@ Read this when the user asks for a fast, native-feeling social edit of their foo
 
 Word pop per `ugc-craft` (1–3 words, ALL CAPS Bold caption allowed up to 110 px, 8 px stroke, one highlight colour, 4 f pop), placed per `captions.md` (centred at y 1160, inside x 120–840). Keyword groups may take an emoji (0–1 per group, 1.2× text size).
 
-**No lower third.** A name-and-role bar reads as LinkedIn. Identity is a text pop in the hook band or the caption band, ≥60 px, in the caption style ("the guy from your algebra videos"), for 1–2 s, never overlapping the hook.
+**No lower third.** A name-and-role bar reads as LinkedIn. Identity is a text pop in the hook band or the caption band, ≥60 px, in the caption style ("she built <the product>"), for 1–2 s, never overlapping the hook.
 
 **Zoom pivot in 9:16:** scale the plate about a point at the bottom of the caption band (x 540, y ≈ 1150), so a zoom pushes the face *up and away* from the text; scaling about the eyes pushes the mouth down into the captions. Re-centre the face on x ≈ 480 per segment.
 
@@ -75,6 +89,9 @@ Both master at −14 LUFS / −1 dBTP.
 
 - End on a line that completes the opening line, or on a frame that matches frame 0, so the replay is seamless. Rewatches count.
 - Or end on the payoff and cut instantly: no outro, no 5 s "follow me" card.
+- **An end card closes on the hook's question** (or its answer, once you have the words), so the last frame sends the viewer back to the first: the reason to rewatch. A card that says only "Full story: <channel>" is a credit, not an ending, and a feed card is not clickable.
+- **Licence credit**: in the post's description where the licence allows it (most CC BY terms accept credit "reasonable to the medium"); otherwise a small line on the end card under the hook question, never instead of it.
+- **Out point of a monologue** (no question → answer units): end on a sentence end, not an answer. With words, the last full stop before the target length; without them, a pause of ≥0.5 s, or if none exists in the last 10 s, the longest pause whose pitch falls there, disclosed as a possible mid-thought ending (`podcast.md`, No transcript).
 
 ## What is current (2025–2026)
 
@@ -96,10 +113,10 @@ Restraint plus craft: clean captions with one highlight colour; fewer, purposefu
 
 ## Procedure
 
-1. Find the hook in the transcript: the most surprising or useful sentence. It goes first. No transcript: follow the main skill's Step 3 policy, prefer one continuous excerpt that ends on a falling, sentence-final pause over a splice of sections you have not heard, and write a public-facts hook (above).
+1. Find the hook in the transcript: the most surprising or useful sentence. It goes first. No transcript: follow the main skill's Step 3 policy, prefer one continuous excerpt that ends on a falling, sentence-final pause over a splice of sections you have not heard, write a public-facts hook (above), and build the no-captions draft (above).
 2. Paper edit to 15–45 s: hook → stakes → 2–3 beats → payoff/loop.
-3. Conform with gaps ≤100 ms (§5); stepped speed ramps where the footage drags.
+3. Conform with the Gen Z join padding (main skill, Step 5) (§5); stepped speed ramps where the footage drags.
 4. Decide the sound plan: over speech (bed under it) or music-led (beat grid first).
-5. Motion layer: hook text, word-pop captions, jump zooms on alternate segments, picture-only steps until no gap exceeds 75 f, 1–2 punch-ins (on 1.0 segments only for low-res sources), one flash at most, contrasting.
+5. Motion layer: hook text, word-pop captions, jump zooms or crop shifts on alternate segments, picture-only steps until no gap exceeds 2.5 s and the rhythm varies, 1–2 punch-ins (only where base × 1.12 ≤ 2.0), one flash at most, contrasting.
 6. SFX pass from the vocabulary (synthesised if need be), then the mix per `sound-design` (−14 LUFS).
-7. Measure: frame 0 has face + text; no gap over 100 ms between words (`silencedetect=noise=-45dB:d=0.1` on the dialogue WAV); the density check prints no gap; count the sounds per 30 s (3–8).
+7. Measure: frame 0 has face + text and the first visual event is by 1.0 s; no pause over 0.25 s left between words (`silencedetect=noise=-45dB:d=0.25` on the dialogue WAV); the density check prints no gap and passes the variation thresholds; count the sounds per 30 s (3–8); the end card repeats or answers the hook.
