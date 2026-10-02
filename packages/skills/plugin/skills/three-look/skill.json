@@ -1,7 +1,7 @@
 {
   "id": "three-look",
   "title": "Look and lighting (Three.js)",
-  "description": "Building the look of a Three.js video: the colour pipeline (output colour space, which tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment built from core three so metal and gloss read, lighting setups with intensities (product, neon, dramatic, soft, flat), materials that read on camera, a clip-space backdrop with radial lift, grain and vignette, glows, fog, banding, and line art that draws on and erases. Load it when setting a film's look, or when a Three.js frame looks flat, muddy, washed out, banded or cheap.",
+  "description": "Building the look of a Three.js video: the colour pipeline (output colour space, tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment so metal and gloss read, re-lit when the ground changes, lighting setups with intensities, materials that read on camera, a clip-space backdrop with radial lift, grain, vignette and a new ground inside one shot, glows, fog, banding, and line art that draws on, erases and keeps its width. Load it when setting a film's look, or when a frame looks flat, muddy or cheap.",
   "summary": "Colour pipeline, studio environment, lights, materials, backdrops, glow, grain and line art that make a Three.js frame look finished.",
   "kind": "technique",
   "category": "Craft",
@@ -55,6 +55,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.1",
+  "version": "2.2.0",
   "icon": "💡"
 }

@@ -24,7 +24,7 @@ Contents: 1 Beat interval by energy · 2 On-screen text · 3 Voiceover · 4 Cut 
 
 ## 2. On-screen text
 
-**Hold formula** (from the frame the line is fully legible; entrance frames do not count):
+**Hold formula** (from the frame the line is fully legible, which for a staggered line is the frame the *last* word's entrance finishes: opacity ≥ 0.9, blur ≤ 1 px; entrance frames do not count):
 
 ```
 hold_frames = max(30, 9 × words + 15)          // 0.3 s per word + 0.5 s, minimum 1 s
@@ -113,6 +113,7 @@ Design to a centre-weighted core that survives 16:9 → 1:1 → 9:16, or re-lay-
 
 The sizes are the house design standards, kept in one table in `three-type` (§ "One type system per film"): hero headline 72–130 px, supporting line 34–48, labels and annotations 28–34, uppercase eyebrows 28 at wide tracking, and **28 px as the floor for anything, anywhere**, at 1080 px on the frame's short side (1920 × 1080 and 1080 × 1920 alike; scale by the short side for other resolutions). In 9:16, break headlines to 2–4 words a line rather than dropping below 72 px. Word-timed social captions over footage follow the social caption spec in `ugc-craft`.
 
+- **Feed sizes** (a 9:16, 1:1 or 4:5 feed cut, or a 16:9 master that also plays in a feed, where the frame is shown at about a third of its size): message lines ≥ 90 px, and any label that carries the argument (a counter, a chip the hook depends on, a "before / after" tag) ≥ 40 px. A 28–34 px label is texture there; it may decorate, never carry the claim.
 - Contrast ≥ 4.5:1 for anything read; the house sets 5.3:1 as the dimmest tone allowed for small text.
 - Hierarchy ratio between levels ≥ 1.5–2×.
 - A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; accents are for display type, fills and glows, never body copy.
@@ -125,7 +126,7 @@ The sizes are the house design standards, kept in one table in `three-type` (§ 
 | Beat-cut, hyper styles | 10–30f, by design |
 | CTA or URL that must be read | ≥ 60f, and by the text formula above |
 
-The final hold is calmer than everything before it: one ambient behaviour at most, no new information after the CTA.
+The final hold is calmer than everything before it: one ambient behaviour at most, no new information after the CTA (a designed loop seam's last 15–25f, which grow the first frame back, are exempt).
 
 ## 8. Worked budget: 30 s click-to-play launch film, VO-led
 

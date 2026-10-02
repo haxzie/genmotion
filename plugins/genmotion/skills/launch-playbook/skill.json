@@ -1,8 +1,8 @@
 {
   "id": "launch-playbook",
   "title": "Launch playbook",
-  "description": "The product launch film, 15 to 90 seconds: five story shapes (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, the launch energy curve with the reveal at 25 to 30 percent, frame-budgeted beat sheets for 15, 30, 45 and 60 seconds with VO word budgets, the reveal and hero-shot craft measured from GenMotion's launch templates, the music or VO sound plan, social proof rules and recuts per destination. Load it for a product, app or company launch video.",
-  "summary": "Five launch shapes, the reveal at 25–30%, frame-budgeted beat sheets for 15–60 s, VO budgets, sound plan and recuts per destination.",
+  "description": "The product launch film, 15 to 90 seconds: five story shapes (problem-first, demo-first, manifesto, metric-first, category-creation) with the selection rule, peak placement by kind of film (an early reveal, or a name reveal plus a later outcome peak), frame-budgeted beat sheets for 15, 30, 45 and 60 seconds with VO word budgets, the reveal and hero-shot craft measured from GenMotion's launch templates, the music or VO sound plan, social proof rules and recuts per destination. Load it for a product, app or company launch video.",
+  "summary": "Five launch shapes, peak placement by film type, frame-budgeted beat sheets for 15–60 s, VO budgets, sound plan and recuts per destination.",
   "kind": "workflow",
   "category": "Launch",
   "tags": [
@@ -151,7 +151,9 @@
     "product hunt launch video",
     "make a video announcing our company",
     "turn our homepage into a launch film",
-    "apple style product reveal video"
+    "apple style product reveal video",
+    "launch film for our app, for the app store page and instagram",
+    "launch video for our new app, to post on social and the store page"
   ],
   "templates": [
     "codex-launch-video",
@@ -168,6 +170,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.3.1",
+  "version": "2.4.0",
   "icon": "🚀"
 }

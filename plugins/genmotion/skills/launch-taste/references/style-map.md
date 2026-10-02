@@ -52,7 +52,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Fails for**: consumer warmth; visual-first tools; "it's easy" messages.
 - **Motion personality**: stepped and digital (type-on, cells on and off, replacements rather than tweens) with exactly one organic counter-motion (a wave across a row of pins) [one]; a persistent frame element, such as a horizon rule at mid-height, carried through every section so hard changes still read as one film [one]; convergence staged literally (scatter → gather → collapse into the name) when the message is many → one [one]; the picture *simplifies* as the music climbs into the finale [one].
 - **Sound personality**: an electronic pulse with dynamics (not a wall); a stab or riser setting up the hero line, landed within a few frames of it; a real tail.
-- **Classic failure**: the floating "feature-tag cloud" around a centred phrase [two]; corner metadata nobody can read (version strings, frame sizes) [two]; a stock glitch flash not on the beat [one]; a different colour system per section, so "one product" is told in three palettes [one]; a loudness wall with no tail [one].
+- **Classic failure**: the floating "feature-tag cloud" around a centred phrase [two]; corner metadata nobody can read (version strings, frame sizes) [two]; a stock glitch flash not on the beat [one]; a different colour system per section, so "one product" is told in three palettes [one]; a loudness wall with no tail [one]; the device dropped after the reveal for a generic dashboard (funnel, retention curve, a wall of unlabelled sparkline tiles) that any analytics product could close on [one].
 - **House**: G (HUD variant).
 
 ## 3D object hero
@@ -62,7 +62,9 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Fails for**: workflow products (3D around flat content is decoration); more than one idea.
 - **Motion personality**: one material, one light, one move [two]. Entrances thrown and caught: fast, then a long ease-out tail, no bounce (about 25 frames in, 20 more to settle, measured on a sting that worked [one]); a lockup slammed from oversized to final size in about 16 frames with no overshoot, then dead still [one]. Long holds are carried by secondary motion *inside* the object (footage playing on it, micro-rotation), never by moving the background [one]. When the headline lands, the field behind it dims or vignettes [one]. A rigid grid of objects gets per-item phase so it shimmers instead of strobing (seeded, never random per run) [one].
 - **Sound personality**: whoosh on the entrance, a pad, a tonal hit on the lock, a decaying tail; two sync points can be enough [two].
-- **Classic failure**: the stock gold-metal-and-bloom look [one]; soft or upscaled textures on the object, which on a brand piece *is* the brand [one]; a long middle hold with nothing new [two].
+- **A device or object launch** (hardware, a wearable, a physical product): show the object at hero size, **≥ 35% of the frame width**, at least once, and give it one close-up on its material (the brushed edge, the weave, the sensor window), because a product seen only small reads as a generic prop. The headline spec is a **visible state on the object** (a charge arc that barely moves, a reading on its display, a light that stays on), not only a caption, so the claim survives a muted view.
+- **Calm C** (health, luxury, hardware sold on trust): drop house C's pop, slam and colour-flood numbers; keep one material, one light and one slow move, and let the ground change only at the peak.
+- **Classic failure**: the stock gold-metal-and-bloom look [one]; soft or upscaled textures on the object, which on a brand piece *is* the brand [one]; a long middle hold with nothing new [two]; the object small (under a fifth of the frame width) in every shot, with the spec carried only by type [one].
 - **House**: C.
 
 ## Data story / journey

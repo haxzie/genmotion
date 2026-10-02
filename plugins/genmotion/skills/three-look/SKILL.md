@@ -1,6 +1,6 @@
 ---
 name: three-look
-description: "Building the look of a Three.js video: the colour pipeline (output colour space, which tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment built from core three so metal and gloss read, lighting setups with intensities (product, neon, dramatic, soft, flat), materials that read on camera, a clip-space backdrop with radial lift, grain and vignette, glows, fog, banding, and line art that draws on and erases. Load it when setting a film's look, or when a Three.js frame looks flat, muddy, washed out, banded or cheap."
+description: "Building the look of a Three.js video: the colour pipeline (output colour space, tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment so metal and gloss read, re-lit when the ground changes, lighting setups with intensities, materials that read on camera, a clip-space backdrop with radial lift, grain, vignette and a new ground inside one shot, glows, fog, banding, and line art that draws on, erases and keeps its width. Load it when setting a film's look, or when a frame looks flat, muddy or cheap."
 ---
 
 # The look on Three.js: the how behind the style family
@@ -60,6 +60,7 @@ The renderer is shared by every scene in the film, so **every scene** calls `col
 - `studioEnvironment()` builds a grey room with four softbox panels and prefilters it with PMREM, once, in the builder: **metal and gloss without an environment render black or plastic.** This is the single biggest upgrade for any 3D object.
 - A rim light from behind separates a subject from a dark ground; add it before brightening anything.
 - Same light direction in every scene of the film.
+- **When the ground changes behind a lit object, the light changes with it, in the same frames.** An environment built for the old stage keeps reflecting the old room, so metal goes dark (tested: a titanium ring on a new warm-white ground rendered near-black). Swap `studioEnvironment()` for `followingEnvironment()` and lerp the key light over the ground's frames (`references/color-and-light.md` §7); check the hero material on both grounds.
 - A "product" that is flat printed matter (tickets, cards, paper) gains nothing from product lights: use the `flat` pipeline with a baked soft shadow plane under each piece, so its paper hex stays exact.
 
 ## Materials
@@ -73,12 +74,13 @@ Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness
 - **Fog** in the background colour so floors and far objects fade instead of ending in a line.
 - **Banding**: H.264 bands smooth dark gradients. Prefer radial lifts to linear gradients on dark grounds, keep the range small, and keep grain on.
 - Three depths per frame: background, subject, a little foreground.
+- **A new ground inside one shot** (night to morning, the brand colour arriving behind the product at the peak) grows in the backdrop, behind the subject, never on the camera overlay: the backdrop's `uFlood` disc, out of the subject's screen point, with a hard edge (2–4 px) or a very wide one (≥ 30% of the short side), never a 40–80 px soft iris; paired with the re-light above and a scale change on the subject. Recipe: `references/backdrops-and-finish.md` §7; for a ground change *at a cut*, `three-transitions`' cover layer.
 
 Family-by-family finish (paper, HUD, film overlay, dither): `references/backdrops-and-finish.md` §6.
 
 ## Line art
 
-Diagrams, underlines, gauges and the whole whiteboard family use one ribbon whose vertices carry their position along the stroke; two uniforms (`uReveal`, `uErase`) draw it on and erase it back along its own path. Hand-drawn wobble comes from a seeded hash per line, two passes per stroke. Code and the board timing grammar: `references/line-art.md`.
+Diagrams, underlines, gauges and the whole whiteboard family use one ribbon whose vertices carry their position along the stroke; two uniforms (`uReveal`, `uErase`) draw it on and erase it back along its own path. Hand-drawn wobble comes from a seeded hash per line, two passes per stroke. Width is a uniform: when a drawing scales down (into an end card), set `uScale` so its lines keep ≥ 2 px on screen, or they alias. Code and the board timing grammar: `references/line-art.md`; a resizable outline with a gap and a colour sweep is `three-assets`' `outline()`.
 
 ## Building a look, step by step
 
@@ -145,6 +147,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **A different `toneMapping` (or none set) per scene**: the film changes colour at a cut.
 - **Brand colour through ACES**: the client's lime turns lemon. Use `brand` mode.
 - **Glossy metal with no environment**: black blobs.
+- **A ground change with the old environment kept**: the hero goes dark or muddy on the new ground. Re-light in the same frames.
+- **A soft-edged disc wiping across the frame as "the peak"**: on the same framing it reads as a 2D iris. Hard or very wide edge, re-light, and a scale change.
 - **Ten slightly different greys**, or a material per mesh.
 - **Pure black (#000) grounds and pure white (#fff) type on them**: harsh and banding-prone; use `#07070c`–`#0b0b0c` and `#ededef`.
 - **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; static grain at 1–1.5%.
@@ -163,8 +167,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 
 1. Every scene calls `colorPipeline` and sets `scene.background`; one captured frame per scene, side by side, shows one palette, one light direction, one background family.
 2. The brand colour in a capture matches its hex within a couple of levels on flat fills, floods and logos (sample a pixel).
-3. Nothing important is pure black or clipped white; metal shows reflections, not black.
+3. Nothing important is pure black or clipped white; metal shows reflections, not black. If the ground changes behind a lit object, capture before and 10f after the change: its mid-tones are as light or lighter on the new ground and its highlights still read.
 4. Every line of text clears 4.5:1 (3:1 at ≥ 60 px) against what is actually behind it in the frame.
-5. A dark gradient frame from the export shows no visible steps, and a 100% crop of a flat area shows even noise, no stripes.
+5. A dark gradient frame from the export shows no visible steps, and a 100% crop of a flat area shows even noise, no stripes. Every line that must read is ≥ 2 px on screen on its smallest frame (the end card after a scale-down included).
 6. Grain: two consecutive held frames of the export have PSNR > 45 dB (static grain) or > 40 dB (moving); brand-identity frames have none. The export's bitrate fits its destination (`ffprobe … format=bit_rate`).
 7. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.

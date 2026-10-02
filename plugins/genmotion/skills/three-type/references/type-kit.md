@@ -203,16 +203,22 @@ export function letters(word: string, s: TypeStyle) {
 /* --------------------------------------------------------------- layering */
 
 /**
- * Keep type (or any overlay) in front of the 3D world. The kit's planes write no depth but
- * still TEST it, so a mesh nearer the camera than the type (a card flying in at z = +2, a
- * phone at z = 0.6) hides it. onTop turns the test off and draws the object after the
- * scene's other transparent objects; a higher `order` draws later (captions above headlines).
- * It sets renderOrder on MESHES only, never on a Group: three.js sorts by the nearest
- * ancestor Group's renderOrder first (its "groupOrder"), so an ordered Group would outrank
- * every mesh in every other group, the overlay's cover layer included.
+ * Keep type (or any overlay) in front of the 3D world, as ONE layer at `order`. The kit's planes
+ * write no depth but still TEST it, so a mesh nearer the camera than the type (a card flying in
+ * at z = +2, a phone at z = 0.6) hides it. onTop turns the test off on every mesh under `obj`
+ * and gives every mesh AND every Group under it (obj included) the same renderOrder.
+ * Why the Groups too: three.js sorts transparent objects by the nearest ancestor Group's
+ * renderOrder first ("groupOrder"), and every Group resets it to its own order, so the Group
+ * that line(), letters() and counter() return (order 0) would drop its words to the bottom of
+ * whatever layer it sits in. Orders: 100 (default) draws above the world and below the camera
+ * overlay's covers (group 900, cover 950); 960+ draws above a cover (a payoff line over a flood).
  */
 export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
   obj.traverse((o) => {
+    if ((o as THREE.Group).isGroup) {
+      o.renderOrder = order;
+      return;
+    }
     const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
     if (!m) return;
     o.renderOrder = order;
@@ -223,7 +229,7 @@ export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
 
 /* ------------------------------------------------------------------ fonts */
 
-export interface FontFile { family: string; url: string; weight?: string }
+export interface FontFile { family: string; url: string; weight?: string; features?: string }
 
 /**
  * Build the scene only once the project's fonts are loaded, so no texture is ever drawn
@@ -246,7 +252,7 @@ export function withFonts(ctx: ThreeSceneContext, fonts: FontFile[], build: () =
   ctx.manager.itemStart(key);
   Promise.all(
     fonts.map((f) =>
-      new FontFace(f.family, `url(${f.url})`, { weight: f.weight ?? "100 900" }).load().then((face) => {
+      new FontFace(f.family, `url(${f.url})`, { weight: f.weight ?? "100 900", ...(f.features ? { featureSettings: f.features } : {}) }).load().then((face) => {
         (doc.fonts as unknown as Set<FontFace>).add(face); // typed only with the DOM.Iterable lib
       }),
     ),
@@ -265,14 +271,26 @@ export function withFonts(ctx: ThreeSceneContext, fonts: FontFile[], build: () =
 
 /* ---------------------------------------------------------------- counter */
 
+/** True when the style's face sets every figure on one advance (tabular figures are on). */
+export const hasTabularFigures = (s: TypeStyle) => {
+  const w = [..."0123456789"].map((d) => measure(d, { ...s, tracking: 0 }));
+  return Math.max(...w) - Math.min(...w) < 0.5;
+};
+
 /**
  * A rolling number: one strip of 0-9 drawn once, one plane per digit slot showing a window
- * onto it. `set(value)` moves texture offsets only. Digit slots are tabular (equal width),
- * so nothing shuffles as the number changes. `pattern` like "$#,###": # is a digit.
+ * onto it. `set(value)` moves texture offsets (and, for proportional figures, slot positions) only.
+ * `pattern` like "$#,###": # is a digit.
+ * figures "tabular" (default): every slot is one advance wide. Use a face with tabular figures on
+ *   (withFonts with features '"tnum" 1'); with a proportional face a narrow 1 sits in a wide cell
+ *   and "$1,211" reads "$1, 2 1 1".
+ * figures "proportional": each slot is as wide as the digit it shows (blended while it rolls) and
+ *   the number stays right-anchored, for a face that has no tabular figures.
  */
-export function counter(pattern: string, s: TypeStyle) {
+export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "proportional" = "tabular") {
   const flat: TypeStyle = { ...s, tracking: 0 };
-  const digitW = Math.ceil(Math.max(...[..."0123456789"].map((d) => measure(d, flat))));
+  const adv = [..."0123456789"].map((d) => measure(d, flat));
+  const digitW = Math.ceil(Math.max(...adv));
   const cell = Math.ceil(s.size * 1.25);
   const canvas = new OffscreenCanvas(digitW * RES, cell * 11 * RES);
   const g = canvas.getContext("2d")!;
@@ -318,15 +336,17 @@ export function counter(pattern: string, s: TypeStyle) {
   /**
    * Show `value`; fractional values roll the last digit (and carry) smoothly. Leading zeros and
    * the separators before them are hidden ("$#,###" at 42 reads "$42", not "$0,042"); the digits
-   * stay right-anchored in their tabular slots, and a prefix ("$") moves to sit beside the first
-   * visible digit. Give the pattern as many # as the final value has digits.
+   * stay right-anchored, and a prefix ("$") moves to sit beside the first visible digit.
+   * Give the pattern as many # as the final value has digits.
    */
   const set = (value: number) => {
     const n = slots.length;
     let d = 0;
     let lead = true;
     let first: (typeof parts)[number] | undefined;
+    const widths: number[] = [];
     parts.forEach((p, k) => {
+      let w = p.w;
       if (p.digit) {
         const place = 10 ** (n - 1 - d);
         const tex = slots[d++]!;
@@ -336,13 +356,26 @@ export function counter(pattern: string, s: TypeStyle) {
         tex.offset.y = 1 - (whole + roll + 1) / 11;
         if (place === 1 || value > place - 1) lead = false; // shown once it is (or is rolling to) non-zero
         p.mesh.visible = !lead;
+        if (figures === "proportional") w = adv[whole]! + (adv[(whole + 1) % 10]! - adv[whole]!) * roll;
       } else {
         p.mesh.visible = k === 0 || !lead; // a separator shows only after a visible digit
       }
+      widths.push(w);
       if (k > 0 && p.mesh.visible && !first) first = p;
     });
+    if (figures === "proportional") {
+      // lay out right to left from the fixed right edge, so the number grows leftward
+      let r = total / 2;
+      for (let k = parts.length - 1; k >= 0; k--) {
+        const p = parts[k]!;
+        if (k === 0 && !p.digit) continue; // the prefix is placed below
+        p.x = (r - widths[k]! / 2) * PX;
+        p.mesh.position.x = p.x;
+        if (p.mesh.visible) r -= widths[k]!;
+      }
+    }
     const pre = parts[0];
-    if (pre && !pre.digit && first) pre.mesh.position.x = first.x - ((first.w + pre.w) / 2) * PX;
+    if (pre && !pre.digit && first) pre.mesh.position.x = first.x - ((widths[parts.indexOf(first)]! + pre.w) / 2) * PX;
   };
   set(0);
   /** Fades the whole counter; never re-shows a hidden leading slot. */
@@ -351,7 +384,12 @@ export function counter(pattern: string, s: TypeStyle) {
     symbols.forEach((m) => (m.material.uniforms.uOpacity!.value = o));
     group.visible = o > 0.001;
   };
-  return { group, set, setOpacity, width: total * PX };
+  /** Tints the whole counter (the strip is drawn white unless style.color says otherwise): an ink change on a new ground. */
+  const setColor = (c: THREE.Color) => {
+    materials.forEach((m) => m.color.copy(c));
+    symbols.forEach((m) => (m.material.uniforms.uColor!.value as THREE.Color).copy(c));
+  };
+  return { group, set, setOpacity, setColor, width: total * PX };
 }
 ```
 
@@ -364,9 +402,10 @@ export function counter(pattern: string, s: TypeStyle) {
 | `letters(word, style)` | `{ group, letters[], track(em, anchor?) }` | Per-character titles; a wordmark whose tracking tightens. `anchor` "left" / "center" / "right" is the edge that stays put; `track` returns the word's width |
 | `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | — | Per-frame look: blur in px, tint (draw white, tint per frame), clip below a world y, clip right of a world x (a wipe, feathered by `maskSoft` world units) |
 | `measure(text, style)` | px | Layout maths: slot widths, wrapping by hand |
-| `counter("$#,###", style)` | `{ group, set(value), setOpacity(o), width }` | Tabular count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit |
+| `counter("$#,###", style, figures?)` | `{ group, set(value), setOpacity(o), setColor(c), width }` | Count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit. `figures` "tabular" (default: load the face with tabular figures on, §3) or "proportional" (a face without them: each slot as wide as its digit, right-anchored). `setColor` changes its ink (a counter crossing onto a new ground) |
+| `hasTabularFigures(style)` | boolean | Whether the style's face sets every figure on one advance: true for a face loaded with `features: '"tnum" 1'` that has them |
 | `withFonts(ctx, files, build)` | the scene's update | Wrap the whole builder so no texture is drawn in a fallback face |
-| `onTop(obj, order?)` | the same object | Type over 3D: no depth test, drawn last; call it on every label or group that must never be hidden (it orders the meshes, never the groups) |
+| `onTop(obj, order?)` | the same object | Type over 3D as one layer: no depth test on its meshes, and `order` on every mesh **and Group** under it (the groups `line()`/`letters()`/`counter()` return included). 100 = above the world, under covers; 960+ = above a cover |
 
 Styles: `{ size (px), weight (400–500), color, tracking (em), font }`. Keep one `TYPE` table of named styles in `components/` and use only those.
 
@@ -390,6 +429,21 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Getting Inter** (SIL Open Font License, free to embed; font CDNs are often blocked from agent sandboxes, these were not): `save-asset` `https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/InterVariable.woff2` (352 KB, every weight) to `assets/InterVariable.woff2`; or the official release zip at `https://github.com/rsms/inter/releases` (`InterVariable.woff2` inside); or, where npm works, `npm pack @fontsource-variable/inter` and take `files/inter-latin-wght-normal.woff2`. A brand face comes from the brand (its site's woff2 or the user), never a lookalike.
 - **Several static weights of one family**: `withFonts` decides "already loaded" by family name, so give each weight its own family name (`"Brand 400"`, `"Brand 500"`) and use those names in `font`, or use one variable file.
 - Variable fonts: one file, `weight: "100 900"`, any weight. Static files: one entry per weight, same family name, `weight: "500"`.
+- **Two families** (a sans for messages, a mono for labels): one `withFonts` call with both files, `[{ family: "Inter", url: interUrl }, { family: "JetBrains Mono", url: monoUrl }]`, and `font: '"JetBrains Mono", monospace'` in the label styles.
+- **Tabular figures for counters.** A counter's digits sit in equal slots; with a face's default proportional figures (Inter, DM Sans and most UI faces) a narrow 1 then sits in a wide slot and "$1,211" reads "$1, 2 1 1". Load the same file a second time under its own family name with the OpenType feature on, and use that family for every number that counts:
+
+```ts
+withFonts(ctx, [
+  { family: "Inter", url: interUrl },
+  { family: "Inter Tnum", url: interUrl, features: '"tnum" 1' },   // the same file, tabular figures on
+], () => {
+  const NUM = { size: 120, weight: 500, font: '"Inter Tnum"' };
+  const total = counter("$#,###", NUM);                                // hasTabularFigures(NUM) === true
+  // ...
+});
+```
+
+  Tested in the capture browser: Inter's 1 and 0 measure 41.0 and 71.5 px at 120 px; with `"tnum" 1` both measure 73.7. A face with no `tnum` feature still reports `hasTabularFigures(...) === false` after this: use `counter(pattern, style, "proportional")`, which sizes each slot to the digit it shows (blending the two widths while a slot rolls) and keeps the number right-anchored. Never pad digits with spaces or pick a monospace face just for the count.
 - `withFonts` registers the load on `ctx.manager`, runs the builder when it lands, and re-poses the frame the host asked for before the barrier releases. A missing file never hangs the export; the fallback face draws instead (check a still).
 
 ## 4. Why it is built this way
@@ -401,5 +455,5 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Blur room**: each canvas is padded by 16 px so a 10–16 px blur spreads instead of being clipped at the plane edge. For heavier display blur (18–34 px) pass a larger `blurRoom`.
 - **The masks are world coordinates**: `maskY` discards everything below a horizontal line, which is all `riseMask` and mask push-up need. Put the line just under the descenders: `baselineY - size * 0.75 * PX` for a centred label; for an all-caps word (no descenders) just under the caps, `y - size * 0.36 * PX` for a centred label (measured: Inter caps on a label centred at `y` run from 0.39 × size above it to 0.33 × size below, so caps sit 0.03 × size above the plane's centre; shift an all-caps wordmark down by that to centre it optically on a symbol). `maskX` discards everything right of a vertical line, so a light line or an arm travelling left to right can *write* a word in; `maskSoft` (world units, about 0.15 × size × PX) feathers that edge. Both are world values: if the type's group moves or sits inside a moved parent, convert with `getWorldPosition` first.
 - **Cap height**: Inter's capitals are 0.727 em tall, so a wordmark whose caps must be 96 px is set at `96 / 0.727 ≈ 132` px. Other faces: measure a capital H on a still once.
-- **Draw order, and the Group trap**: three.js sorts transparent objects by **groupOrder first** (the `renderOrder` of the nearest ancestor `THREE.Group`, 0 when that group's is 0, and a nested Group at 0 resets its subtree to 0), then by the mesh's own `renderOrder`, then by depth. So a `renderOrder` set on a Group outranks every mesh in every other group, however high their own order: that is why `onTop()` orders meshes only, and why `three-camera`'s `overlay()` sets its group to 900, so a cover layer on it beats every `onTop` label in the world. A label or caption group nested inside the overlay is its own Group at 0: give it `renderOrder = 900` too if it must draw above the world's onTop type. Layered flat shapes (a stand-in mark built from overlapping facets) follow the same rule: order them as meshes inside one group, or give each layer its own Group with the order on the Group.
+- **Draw order, and the Group trap**: three.js sorts transparent objects by **groupOrder first** (the `renderOrder` of the nearest ancestor `THREE.Group`; every Group resets it to its own order, 0 by default), then by the mesh's own `renderOrder`, then by depth. So the Group that `line()`, `letters()` or `counter()` returns, at 0, drops its words to the bottom of whatever they sit in, whatever order the meshes carry: the trap a judged film hit when a payoff line nested in the overlay vanished under a flood. `onTop(obj, order)` therefore sets `order` on every Group under `obj` as well as every mesh, so the subtree is one layer. `three-camera`'s `overlay()` group is 900 and the cover inside it 950: `onTop(x)` (100) keeps world type under covers, `onTop(x, 960)` puts a line above a flood (tested: the same nested line without `onTop` drew under the cover, with `onTop(…, 960)` above it). Covers and panels must be `transparent: true`: opaque objects all draw before transparent ones. Layered flat shapes (a stand-in mark built from overlapping facets): one Group per layer, each `onTop(layer, n)` with rising `n`.
 - **Picking**: every plane is named after its words (`slug`), so a click in the editor arrives as `#ship-the-whole-film`.

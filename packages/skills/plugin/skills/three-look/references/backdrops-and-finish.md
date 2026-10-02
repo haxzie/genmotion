@@ -2,7 +2,7 @@
 
 The background is half the look. The 3D templates never leave a flat fill behind a subject: a clip-space backdrop shader gives a radial lift, a vignette and a fine grain in one draw, and additive sprites give glow without post-processing (which is not available: no addons). Add these to `components/look.ts`; they compile against `three` r185 and were captured.
 
-Contents: 1 The backdrop · 2 Glow · 3 Fog and depth · 4 Grain, vignette, film finish · 5 Banding · 6 Textures by style family
+Contents: 1 The backdrop · 2 Glow · 3 Fog and depth · 4 Grain, vignette, film finish · 5 Banding · 6 Textures by style family · 7 A new ground inside one shot
 
 ## 1. The backdrop
 
@@ -13,7 +13,7 @@ Contents: 1 The backdrop · 2 Glow · 3 Fog and depth · 4 Grain, vignette, film
  * dithers the gradient so it never bands under H.264. The grain is STATIC unless you set
  * u.uFrame per frame (see section 4 for when moving grain is worth its bitrate).
  */
-export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift) {
+export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift, height = 1080) {
   const uniforms = {
     uAspect: { value: aspect },
     uBase: { value: new THREE.Color(base) },
@@ -23,6 +23,12 @@ export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift) {
     uVignette: { value: 0.35 },
     uGrain: { value: 0.015 },
     uFrame: { value: 0 },
+    // a new ground growing inside the shot (section 7): colour, centre and radius in composition px
+    uFlood: { value: new THREE.Color(base) },
+    uFloodC: { value: new THREE.Vector2(0, 0) },
+    uFloodR: { value: 0 },
+    uFloodSoft: { value: 3 },
+    uRes: { value: new THREE.Vector2(height * aspect, height) }, // composition px of the frame
   };
   const mat = new THREE.ShaderMaterial({
     uniforms,
@@ -33,9 +39,9 @@ export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift) {
       void main() { vUv = uv; gl_Position = vec4(position.xy * 2.0, 0.9999, 1.0); }`,
     fragmentShader: /* glsl */ `
       varying vec2 vUv;
-      uniform float uAspect, uRadius, uVignette, uGrain, uFrame;
-      uniform vec2 uCenter;
-      uniform vec3 uBase, uLift;
+      uniform float uAspect, uRadius, uVignette, uGrain, uFrame, uFloodR, uFloodSoft;
+      uniform vec2 uCenter, uFloodC, uRes;
+      uniform vec3 uBase, uLift, uFlood;
       // Integer hash (PCG) on whole pixel coordinates: exact under SwiftShader, the CLI's default GL.
       // A float fract-product hash (fract(p * 123.34)...) shows vertical stripes there.
       uint pcg(uint v) { uint s = v * 747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
@@ -46,6 +52,9 @@ export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift) {
         vec3 col = mix(uLift, uBase, smoothstep(0.0, 1.0, r));
         vec2 q = vec2((vUv.x - 0.5) * uAspect, vUv.y - 0.5);
         col *= 1.0 - uVignette * smoothstep(0.35, 1.1, length(q));
+        // the new ground: composition px from the frame centre, y up, so it lines up with screenPx()
+        float fd = length((vUv - 0.5) * uRes - uFloodC);
+        col = mix(col, uFlood, 1.0 - smoothstep(uFloodR - uFloodSoft, uFloodR, fd));
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
         // GRAIN MUST FOLLOW colorspace_fragment: there uGrain is in display units (0.015 = ±2 of 255).
@@ -91,7 +100,7 @@ export function glow(tex: THREE.Texture, color: string, size: number, name = "gl
 
 ```ts
 // in a scene
-const bg = backdrop(width / height);   // LOOK.bg with a lift behind the subject
+const bg = backdrop(width / height, LOOK.bg, LOOK.bgLift, height);   // LOOK.bg with a lift behind the subject
 scene.add(bg.mesh);
 // frame
 // grain stays static (uFrame 0); set bg.u.uFrame.value = frame only for moving grain (section 4)
@@ -146,3 +155,27 @@ H.264 at web bitrates bands smooth dark gradients into visible steps. Prefer rad
 | Textured tactile | Dark `#070605`, HUD panels | Pixel-block wipes, dither, ember particles from a seeded hash |
 | Music video | Night `#0b0620` → deep `#150a33`, fog | Film overlay: moving grain 3%, vignette 0.75, scanlines |
 | Whiteboard | Paper `#ffffff` | None: the strokes are the texture (`references/line-art.md`) |
+
+## 7. A new ground inside one shot
+
+A colour change behind the subject while the shot keeps running (night to morning, the moment a product "turns on", the brand colour arriving behind the object at the peak). It is not a cut, so `three-transitions`' cover layer (which sits on the camera, *above* everything) is the wrong tool: the new ground must grow **behind** the subject, in the backdrop, while the subject stays in front and lit. The backdrop above carries it: `uFlood` (the new ground's colour), `uFloodC` (its centre, composition px from the frame centre, y up: `screenPx()` from `three-transitions` gives the subject's point), `uFloodR` (radius, px) and `uFloodSoft` (edge feather, px).
+
+```ts
+// builder: the new ground's colour, and the backdrop told the frame height so px are exact
+const bg = backdrop(width / height, LOOK.bg, LOOK.bgLift, height);
+bg.u.uFlood.value.set(LOOK.day);
+// frame: grows out of the subject over 24f; the light follows over the same frames (color-and-light.md §7)
+const g = prog(frame, PEAK, 24, inOutCubic);
+const c = screenPx(ring, cam, width, height);                  // where the subject is now
+bg.u.uFloodC.value.set(c.x, c.y);
+bg.u.uFloodR.value = g * coverRadius(c.x, c.y, width / 2, height / 2);
+env.set(prog(frame, PEAK, 30, inOutSine));                     // reflections follow the ground
+```
+
+- **Re-light in the same frames, always.** A lit object keeps reflecting the old room after its ground changes: titanium on a new warm-white ground rendered dark bronze in a judged film, because its reflections still came from the grey night room. Pair every ground change with `followingEnvironment()` and a key-light change (`color-and-light.md` §7), started on the same frame and finished within 6f of the ground.
+- **Pick one edge.** A hard edge (`uFloodSoft` 2–4 px) reads as a graphic flood out of the object; a very wide feather (≥ 30% of the frame's short side) reads as light filling the room. A 40–80 px soft edge reads as a flat 2D iris wipe crossing the frame, the in-between to avoid.
+- **Give it a scale change too.** On the same framing a colour change alone reads as a wipe; push in on the subject (`three-camera` push, 1.1–1.3×) or let the subject move while the ground grows, so the peak is the picture changing, not the wallpaper.
+- **Everything flat on the ground changes ink with it.** Type, strokes and lines that sit on the old ground cross into the new one: tint them per frame from whether the disc covers them (`dist(screenPx(label), uFloodC) < uFloodR` → the new ground's ink), or do it per pixel by giving their shader the same disc. Contrast is re-checked on the new ground (`three-look` check 4).
+- `scene.background` stays the old colour (the backdrop covers it); when the shot ends on the new ground, set it to `uFlood` on the frame the disc passes the far corner, so the next scene opens on the same hex.
+
+Tested with a polished metal ring on a graphite ground turning warm white over 24f: with the environment and key following, the ring stays bright titanium on the new ground; without, it renders near-black against it. The re-render costs about 2 s per changing frame under SwiftShader (held frames are free).

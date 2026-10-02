@@ -13,6 +13,7 @@ Contents: Idea · Structure and energy · Frame and type · Motion and transitio
 3. **Static product footage.** The UI is on screen for 9 s and does nothing the film claims (idle panes, an unchanged grid). *Fix*: show it working, or cut it to the length of one move.
 4. **Abstract demos.** Translucent boxes "demonstrating" an effect that only someone who already knows the term can read. *Fix*: a tiny real scene (a headline over a picture) per demo.
 5. **Decoration posing as the idea.** A glow, particles, a tag cloud, a gradient doing the work an idea should. *Fix*: SKILL.md step 2.
+5a. **The device dies after the reveal.** The first third builds a real device; the proof beats switch to stock UI and the device never returns, so the claim is asserted in type rather than shown. *Fix*: build every run from the device; a contrast device keeps both sides in frame (SKILL.md step 2).
 
 ## Structure and energy
 
@@ -67,6 +68,9 @@ Any one of these on screen makes a film read as agent-made or template-made. Che
 - Per-letter opacity fades as the only type move; blur-in/blur-out on every transition.
 - Exact periodicity: every pop, swap or tease on the same frame interval with the same envelope.
 - A "feature cloud" of tags orbiting a centred phrase with flickering squares.
+- A **tile wall** as the "scale" beat: a grid of unlabelled cards, sparkline or bar tiles, or app screenshots standing in for "many". Show many of the device's own event instead.
+- A **generic dashboard** as the proof: funnel, line chart and KPI cards that any product in the category could own, with the film's device nowhere in the frame.
+- A payoff line alone on a flat brand-colour flood (the device thrown away at the peak).
 - Chromatic-aberration outline type; thumbnail-preset lettering (white marker face, black stroke, drop shadow, warped baseline).
 - A system emoji inside set typography.
 - Identical enter and exit timing for every section.

@@ -44,7 +44,7 @@ Questions you never need to ask: length and aspect (the placement implies them; 
 
 - **Single-minded proposition (SMP)**: one sentence, the one thing the viewer takes away. Outcome language ("Invoices that chase themselves"), not inventory ("12 new features"). If you cannot write it in one sentence, that is the question to ask.
 - **Audience**: who, and what they already know. A developer audience lets you show code; a buyer audience needs the outcome first.
-- **Placement and sound**: feed (autoplay, sound off by default, 9:16 or 4:5, platform UI over the frame) · landing-page hero (muted autoplay loop: browsers block sound on autoplay, so sound is a bonus for the click-to-play version; 16:9, small file, loop-safe last frame) · YouTube, keynote or a click-to-play page video (sound on, full attention, 16:9) · store page (muted autoplay, device-framed) · in-app or docs (sound optional, loopable). Sound-off placements must carry the whole message in picture and type.
+- **Placement and sound**: feed (autoplay, sound off by default, 9:16 or 4:5, platform UI over the frame) · landing-page hero (muted autoplay loop: browsers block sound on autoplay, so sound is a bonus for the click-to-play version; 16:9, small file, loop-safe last frame) · YouTube, keynote or a click-to-play page video (sound on, full attention, 16:9) · store page (muted autoplay, device-framed) · in-app or docs (sound optional, loopable). Sound-off placements must carry the whole message in picture and type. **A 16:9 master that also plays in a feed** (LinkedIn, X, Instagram) is a feed film: the product in context by 3–4 s and the mark in frame by 4 s, message lines ≥ 90 px and argument-carrying labels ≥ 40 px at 1080p (`references/pacing.md` §6).
 - **What it is**: when the subject is a product, a stranger watching muted must be able to say what kind of product it is (an app, a web tool, a device, a service) from the frames. An app film shows its UI; if no screens were supplied, the owner skill says how to build a representative one.
 - **Feeling**: two adjectives and one "not": "confident, warm, not corporate". The "not" is what stops the median choice.
 
@@ -85,13 +85,13 @@ The owner skill usually names a default family; follow it unless the assets or t
 
 ### Step 5: energy curve
 
-Energy is 0–10 per beat. Draw the shape for the format, put exactly **one peak** at the moment of greatest contrast (biggest scale jump, fastest cuts, most saturated colour, biggest camera move), and put a **breath** of 10–30f (stillness, black, or silence) right before it. The picture's breath stays 10–30f even when the music's natural dropout under it is longer: keep the last line or the held diagram on screen through the rest of the dropout, never a textless, near-still frame for 2 s. Contrast is what makes the peak feel big: if every beat is an 8, none of them is.
+Energy is 0–10 per beat. Draw the shape for the format, put exactly **one peak** at the moment of greatest contrast (biggest scale jump, fastest cuts, most saturated colour, biggest camera move), and put a **breath** of 10–30f (stillness, black, or silence) right before it. The picture's breath stays 10–30f even when the music's natural dropout under it is longer: keep the last line or the held diagram on screen through the rest of the dropout, never a textless, near-still frame for 2 s. Contrast is what makes the peak feel big: if every beat is an 8, none of them is. One allowed exception, for launch-type films: the two-peak shape in `launch-taste` step 7 (a name reveal early at ≤ 7, the device's completion later as the one 10).
 
-The peak is a picture event first: it gets the film's **biggest scale change or camera move** (a push into the device, a part growing to hero size, a punch-in), not just a colour change on the same layout. Calm formats too: an explainer's "click" is quiet in tempo but is still the biggest scale change in the film. Sound reinforces the peak; it cannot make one on its own.
+The peak is a picture event first: it gets the film's **biggest scale change or camera move** (a push into the device, a part growing to hero size, a punch-in), not just a colour change on the same layout, and never a line alone on a flat colour flood (the device completes on screen and holds ≥ 30f before any flood). It reads with the sound off: the picture change and a change in the words land on the same frame. Calm formats too: an explainer's "click" is quiet in tempo but is still the biggest scale change in the film. Sound reinforces the peak; it cannot make one on its own.
 
 | Format | Shape | Where the peak goes |
 | --- | --- | --- |
-| Launch / reveal (20–60 s) | Quiet tease (3) → build (5) → **reveal (9)** → feature cascade (6–8, micro-peaks) → hero + name (8) → end card (3) | Reveal at 25–30% of length |
+| Launch / reveal (20–60 s) | Quiet tease (3) → build (5) → **reveal (9)** → feature cascade (6–8, micro-peaks) → hero + name (8) → end card (3) | Set by `launch-taste` step 7's kind of film: reveal-led at 25–33%; accumulation or outcome at 60–75%, with the name reveal early as a secondary peak (≤ 7) |
 | Explainer (30–180 s) | Low plateau in steps: problem (4) → solution (7) → steps (5–6) → payoff (8) → answer restated (5) | Payoff at 75–90% |
 | Sting / ident (2–10 s) | Anticipation (3) → **hit (10)** → settle and hold (4) | Hit at 40–60% |
 | Social ad, feed (6–30 s) | Front-loaded: hook at 8 by frame 15, a micro-peak every 1–3 s, CTA last 3–4 s | The hook itself; a second smaller peak on the proof |
@@ -155,7 +155,8 @@ PLACEMENT ── feed (TikTok/Reels/Shorts) → 9:16, 6–30 s, sound off first,
           ├─ landing-page hero          → 16:9, 20–45 s, muted autoplay loop (sound a bonus), ≤ 5 Mb/s, curve: launch
           ├─ launch film (YouTube, post)→ 16:9, 20–45 s, sound on, music- or VO-led, curve: launch
           ├─ keynote / event screen     → 16:9, 30–90 s, sound on, slower, premium holds
-          └─ store page                 → owner's spec, muted autoplay
+          ├─ store page, store preview   → `app-store-preview`'s spec, muted autoplay
+          └─ store page, launch film     → treat as a muted feed: picture-led, product in context by 3–4 s
 INTENT ──── wow (launch, hype) → B or C (A if only copy + logo) · curve: launch or trailer
           ├─ understanding     → F, or B for a product's own flow · curve: explainer · VO-led
           ├─ conversion (ad)   → E or B, vertical · curve: social ad · captions carry it
@@ -230,7 +231,7 @@ Run this on captured frames, not on the code; code that looks right often render
    - Decoration with no job: gradient blobs, glass cards, particles, lens flares "because premium".
    - More than one accent colour in a frame, more than two type families, small text in a low-contrast accent (< 4.5:1). (One semantic state colour, an error or threat red, may sit beside the accent if it is always paired with a shape or label and never colours a message line.)
    - A logo that arrives in the last second with no build, or holds under 1.5 s (outside the beat-cut style).
-   - A dead hold: more than 1.5 s (feed) or 2.5 s (elsewhere) where nothing changes, or a line held over 2× its formula with nothing else moving.
+   - A dead hold: more than 1.5 s (feed) or 2.5 s (elsewhere) where nothing changes, or a line held over 2× its formula with nothing else moving. A creep of a few percent the viewer cannot see does not count as change, and "left as deliberate" does not excuse it.
    - A product film where nobody could tell what kind of product it is.
    - Text in a 9:16 platform-UI zone.
    - Bounce on everything; overshoot is for one playful moment, not the default.

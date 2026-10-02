@@ -27,6 +27,15 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 - **Headroom**: with cues on top, pre-master the cued music to −15 LUFS / −3 dBTP, place cues at ≤0.7 (placeholders included), and re-master the export (SKILL.md, Headroom and loudness). A −1.5 dBTP bed with cues at 1.0 exported over −1 dBTP.
 - **Mid-phrase start**: aligning the dropout to the breath fixes `startFrom`, so frame 1 is mid-phrase. Fade in over ≥15 f and put a cue on frames 1–3.
 
+## Picture-led designed sound (no music, no VO)
+
+A muted-first launch, a calm hardware or data film, a film whose content is many sound events: the picture carries the meaning and sound is the reward for unmuting (SKILL.md, Sparse, picture-led films).
+
+- **Cues lead**: 5–20 designed cues on the film's events (a tone per unit, a tick per crossing, the hit on the peak, a 2–4 note sonic logo on the mark). Each cue's loudest 50 ms RMS sits **≥12 dB above the bed** (`mix-and-loudness.md`, Sparse mixes).
+- **Bed**: none, or an air bed at 0.05–0.15 low-passed at ≤ 4 kHz (`sfx-cues.md`'s ambient bed, brown noise alone). Take it out for the breath so the silence is real (room tone at −45 to −60 dBFS, not a riser filling it).
+- **Many events**: one stem from the scene's event schedule with the many-events rules (`sfx-cues.md`, Many events); heroes (first, last, isolated) at full level.
+- **Master**: −16 to −18 LUFS integrated, ≤ −1 dBTP, LRA ≥ 4–5 LU, with the computed-ceiling re-master (`mix-and-loudness.md`); −14 only when the cues are dense and energetic and still lead after it. Tell the user why it is quieter than −14 (platforms turn loud files down, not reliably quiet ones up).
+
 ## Brand sting (2–8 s)
 
 - **Sequence**: whoosh or riser into the lock-up (0.5–1.5 s) → **impact on the settle frame** → tonal button (2–4 notes or a chord) → shimmer tail 1–1.5 s. About 3 s of sound.

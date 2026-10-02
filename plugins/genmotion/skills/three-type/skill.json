@@ -1,7 +1,7 @@
 {
   "id": "three-type",
   "title": "Type (Three.js)",
-  "description": "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a tabular rolling counter. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen.",
+  "description": "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a rolling counter with tabular or proportional figures. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen.",
   "summary": "Crisp canvas-texture type with real fonts, blur, tint and masks, plus every kinetic-type recipe, counters and captions.",
   "kind": "technique",
   "category": "Craft",
@@ -67,6 +67,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.2.0",
+  "version": "2.3.0",
   "icon": "🔤"
 }

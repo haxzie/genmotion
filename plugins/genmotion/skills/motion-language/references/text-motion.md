@@ -22,7 +22,9 @@ A move that makes text unreadable is wrong however good it looks. These rules co
 
 | Role | Default recipe | Why |
 | --- | --- | --- |
-| Hero headline | blurUp by word, or riseMask | Confident arrival, readable fast |
+| Hero headline, energetic film | blurUp by word, or riseMask | Confident arrival, readable fast |
+| Hero headline, calm-trust film | Rise + fade by word, no blur, or riseMask | Blur reads as template on a calm film |
+| Evidence line (a fact, a number, a label for a run) | Mask push-up or a hard cut on, by line | A second entrance role, plainer than the message lines |
 | Sub line, body | fadeUp by line, 12f, small travel | Supports, never competes |
 | Eyebrow / label | fadeUp by word, stagger 2, 10f | Quick, small |
 | Product name, title card | Per-character with a colour sweep | One of the 2–3 per-character moments |
@@ -36,10 +38,11 @@ A move that makes text unreadable is wrong however good it looks. These rules co
 
 ## 3. Recipes
 
-### blurUp (the house default)
+### blurUp (the house default for energetic films)
 - By word. Duration 12f (12–14) outCubic, stagger 3f (hero 3–4, sub 2, slow slide-ins 5).
 - From y +0.5em (10–34 px), blur 10 px → 0 (heavy display type 14–34 px), opacity reaching 1 by about 35% of the move so the word is readable while it settles.
 - Exit: 6–8f inCubic, y −10 to −20 px, blur up to 10, all words together or stagger 1–2f.
+- Not on calm-trust films, and not on every line of any film: blur in and blur out on every line is a template tell. Calm: the same timing and rise (y +0.3em, 14–16f) with blur 0, exit 7–9f fade + y −10 px.
 
 ### riseMask
 - Words rise from below an invisible baseline mask: y 100% → 0 of the line height, 13f outQuart, stagger 4f. No blur needed: the mask edge is the effect.

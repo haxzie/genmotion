@@ -170,6 +170,7 @@ Measured on a CC BY orchestral end-credits score (126 s, no beat): this join's 0
 | Apple Podcasts | −16 LUFS ± 1 | ≤ −1 dBTP |
 | Podcasts general | −16 stereo / −19 mono | −1 dBTP |
 | Web or in-app autoplay | −14 to −16 | −1 dBTP |
+| Sparse, picture-led film (designed cues, no music or VO), any online destination | −16 to −18 LUFS (platforms turn loud files down, not reliably quiet ones up: it plays a little quieter and keeps its silences) | ≤ −1 dBTP, LRA ≥ 4–5 LU |
 | EBU R128 broadcast | −23 LUFS ± 0.5 | ≤ −1 dBTP |
 | ATSC A/85 (US broadcast) | −24 LKFS ± 2 | ≤ −2 dBTP |
 | Netflix | −27 LKFS ± 2, dialogue-gated | ≤ −2 dBTP |
@@ -205,18 +206,54 @@ ffmpeg -i out.mp4 -af "loudnorm=I=-14:TP=-1:LRA=11:measured_I=-20.72:measured_TP
 
 Always add `-ar 48000`: loudnorm otherwise outputs 192 kHz. If pass 2 reports `normalization_type: dynamic`, the peak target could not be met with plain gain and loudnorm compressed instead. Measure the new file before handing it over.
 
-**The standard form: peak-limit first, then linear.** A mix that sits 1–2 LU under the target with peaks near −1.5 dBTP cannot be raised linearly (the gain would push the peaks over), so pass 2 falls back to `dynamic`. A sample-peak limiter at −4 dBFS in front of `loudnorm`, in both passes, leaves the gain linear:
+**The standard form: peak-limit at a computed ceiling, then linear.** A mix that sits below the target with peaks near the ceiling cannot be raised linearly (the gain would push the peaks over), so pass 2 falls back to `dynamic`. A sample-peak limiter in front of `loudnorm`, in both passes, keeps the gain linear, **if its ceiling leaves room for the whole gain**:
+
+`ceiling_dBFS = target_TP − (target_I − I_measured) − 1`
+
+The gain `loudnorm` will apply is `target_I − I_measured`; a peak limited to the ceiling lands at `target_TP − 1` after it, and the 1 dB covers intersample peaks, the small loudness the limiter itself removes, and the AAC encode. A fixed −4 dBFS ceiling is the special case of a mix about 2 LU under target; a sparse picture-led mix 5–9 LU under it needs −6 to −10 dBFS. `alimiter`'s lowest `limit` is 0.0625 (−24 dBFS); if the formula asks for less, the film needs mixing, not mastering (raise the cues, not the master).
 
 ```
-P="alimiter=limit=0.63:attack=5:release=50:level=disabled"
-ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af "$P,loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json" -f null - 2>&1 | sed -n '/^{/,/^}/p' > assets/ln.json
+IN=out.mp4; TI=-16; TTP=-1          # target: -16 for a calm sparse film, -14 for everything else
+MI=$(ffmpeg -hide_banner -nostats -i $IN -map 0:a -af ebur128 -f null - 2>&1 | awk '$1=="I:"{v=$2} END{print v}')
+C=$(awk -v ti=$TI -v tp=$TTP -v mi=$MI 'BEGIN{printf "%.2f", tp-(ti-mi)-1}')
+LIM=$(awk -v c=$C 'BEGIN{printf "%.4f", 10^(c/20)}')
+echo "measured $MI LUFS -> ceiling $C dBFS (limit=$LIM)"
+P="alimiter=limit=$LIM:attack=5:release=50:level=disabled:latency=1"
+ffmpeg -hide_banner -nostats -i $IN -map 0:a -af "$P,loudnorm=I=$TI:TP=$TTP:LRA=20:print_format=json" -f null - 2>&1 | sed -n '/^{/,/^}/p' > assets/ln.json
 J(){ grep "\"$1\"" assets/ln.json | sed 's/.*: "\(.*\)".*/\1/'; }
-ffmpeg -i out.mp4 -af "$P,loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=$(J input_i):measured_TP=$(J input_tp):measured_LRA=$(J input_lra):measured_thresh=$(J input_thresh):offset=$(J target_offset):linear=true:print_format=json" -ar 48000 -c:v copy -c:a aac -b:a 192k -movflags +faststart out-14lufs.mp4 2>&1 | grep normalization_type
+ffmpeg -y -hide_banner -nostats -i $IN -af "$P,loudnorm=I=$TI:TP=$TTP:LRA=20:measured_I=$(J input_i):measured_TP=$(J input_tp):measured_LRA=$(J input_lra):measured_thresh=$(J input_thresh):offset=$(J target_offset):linear=true:print_format=json" -ar 48000 -c:v copy -c:a aac -b:a 192k -movflags +faststart out-master.mp4 2>&1 | grep -E '"(normalization_type|output_i|output_tp)"'
+ffmpeg -hide_banner -nostats -i out-master.mp4 -map 0:a -af ebur128=peak=true -f null - 2>&1 | grep -A14 Summary | grep -E "I:|LRA:|Peak:"
 ```
 
-Tested on a speech + impacts export at −15.3 LUFS / −1.5 dBTP: plain two-pass gave `dynamic`; with the limiter, `linear`, −14.1 LUFS and −1.7 dBTP after AAC. `level=disabled` matters: `alimiter`'s default auto-level rides the gain itself. Delete `ln.json` after.
+The grep prints `"normalization_type" : "linear"` (or `"dynamic"`) with the output loudness and true peak: record the type in `VIDEO.md`. `LRA=20` keeps loudnorm from treating a sparse film's wide range as a reason to compress; `latency=1` removes the limiter's 5 ms lookahead delay; `level=disabled` stops `alimiter` riding the gain itself. Delete `ln.json` after.
 
-If it still reports `dynamic`: on speech-led pieces accept it (light limiting); on a music-led piece whose build matters, re-shape the music with the staircase recipe (SKILL.md, Pre-master what the SFX sit on) and export again.
+Tested on ffmpeg 6.1 with three sparse picture-led exports (cue-led sound, no music or VO):
+
+| Source | Target | Ceiling | `normalization_type` | Result after AAC |
+|---|---|---|---|---|
+| −21.0 LUFS, LRA 5.7 | −16 / −1 | −7.0 dBFS | linear | −16.1 LUFS, −1.9 dBTP, LRA 5.2 |
+| −23.4 LUFS, LRA 2.2 | −16 / −1 | −9.4 dBFS | linear | −15.9 LUFS, −1.6 dBTP, LRA 2.2 |
+| −23.4 LUFS | −14 / −1 | −11.4 dBFS | linear | −13.9 LUFS, −1.7 dBTP |
+| −20.6 LUFS, LRA 7.7 | −16 / −1 | −6.6 dBFS | linear | −15.8 LUFS, −1.5 dBTP, LRA 7.5 |
+
+The first source through the old fixed −4 dBFS limiter to −14 gave `dynamic`. On a speech + impacts export at −15.3 LUFS / −1.5 dBTP the fixed limiter is enough (−14.1 LUFS, −1.7 dBTP, linear): there the formula gives about −3.5 dBFS anyway.
+
+If it still reports `dynamic`: recompute `C` from the new measurement and rerun; on speech-led pieces a residual `dynamic` is acceptable (light limiting); on a music-led piece whose build matters, re-shape the music with the staircase recipe (SKILL.md, Pre-master what the SFX sit on) and export again. A linear master keeps the source's LRA, so an LRA under 3 LU after it was already in the mix: fix the bed, not the master.
+
+## Sparse mixes: do the cues lead?
+
+For a picture-led film of designed cues over an air bed (SKILL.md, Sparse, picture-led films). Compare like with like: a cue's **loudest 50 ms RMS** against the bed's RMS in a cue-free stretch. Not the cue's sample peak: a noise bed's own sample peaks sit about 10 dB above its RMS, so a peak-versus-RMS reading passes a mix whose cues are only 5–8 dB over the bed (measured).
+
+```
+# 50 ms RMS rows of the export (or of the mix before muxing)
+ffmpeg -v error -i out.mp4 -map 0:a -af "aresample=48000,asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/w50.txt" -f null -
+# the bed: power-average of a cue-free window (here 3.0-4.0 s)
+awk -F'[:= ]+' '/pts_time/{t=$NF} /RMS_level/{if(t>=3.0&&t<4.0&&$NF!="-inf"){s+=10^($NF/10);n++}} END{printf "bed %.1f dB\n", 10*log(s/n)/log(10)}' assets/w50.txt
+# a cue: the loudest 50 ms row in its window (here the cue at 4.6 s)
+awk -F'[:= ]+' '/pts_time/{t=$NF} /RMS_level/{if(t>=4.5&&t<5.0&&(m==""||$NF+0>m))m=$NF+0} END{printf "cue %.1f dB\n", m}' assets/w50.txt
+```
+
+Pass: every cue ≥ 12 dB over the bed. Measured on a film the bed swamped: bed −24.2 dB, cues −17.9 and −18.3 dB, a 6 dB gap. The fix is the bed (halve it twice: 0.5× is −6 dB), never the cues past the headroom. Then master per the table above and read LRA (≥4–5 LU passes). Delete `w50.txt` after.
 
 The loop: export → `ebur128` → off by more than 1 LU or true peak above −1 dBTP? re-master as above (or scale every clip `volume` by the difference, ×1.12 per +1 dB, and pull the loudest overlapping clips down) → measure again.
 

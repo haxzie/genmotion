@@ -1,6 +1,6 @@
 ---
 name: three-type
-description: "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a tabular rolling counter. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen."
+description: "Typography in Three.js scenes, built on one type kit: canvas-texture type drawn once at 2x with real tracking, the project's font files loaded through the frame barrier, per-word and per-character planes with a small shader for blur, tint and a baseline mask, and a rolling counter with tabular or proportional figures. Recipes for blurUp, riseMask, colour sweeps, two-pass ink, wordmark tracking, typewriter, word-slot flip, highlights, count-ups, captions and karaoke, with sizes and safe zones per aspect. Load it whenever a Three.js scene puts words on screen."
 ---
 
 # Type on Three.js: the how behind the text motion
@@ -28,9 +28,9 @@ Copy `references/type-kit.md` into `components/type.ts` (it imports `PX`/`RES` f
 | `line(text, style, align?)` | One plane per word, laid out with measured widths; each keeps `restX`; `align` "left" / "center" / "right" (a left column is "left") |
 | `letters(word, style)` | One plane per character; `track(em, anchor?)` re-spaces them with no redraw, holding the `anchor` edge ("left" for a wordmark right of its symbol) still |
 | `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | The per-frame look: blur in px, tint, clip below a line, clip right of a line (a wipe that writes the word in) |
-| `counter("#,###", style)` | Tabular digits rolling on a strip texture; leading zeros hidden ("$42", not "$0,042") |
-| `withFonts(ctx, files, build)` | Builds the scene only once the font files have loaded, inside the frame barrier |
-| `onTop(obj, order?)` | Keeps type in front of 3D objects: depth test off, drawn after them (orders meshes, never groups) |
+| `counter("#,###", style, figures?)` | Digits rolling on a strip texture; leading zeros hidden ("$42", not "$0,042"); `setColor` for an ink change. Load the face with tabular figures on (`features: '"tnum" 1'`) or pass `"proportional"` |
+| `withFonts(ctx, files, build)` | Builds the scene only once the font files have loaded, inside the frame barrier; several families in one call; `features` turns on OpenType features (tabular figures) |
+| `onTop(obj, order?)` | Keeps type in front of 3D objects as one layer: depth test off, `order` on every mesh **and Group** under it. 100 = above the world, under covers; 920 = captions on the overlay; 960+ = above a flood |
 
 Rules it encodes, and why:
 
@@ -41,7 +41,7 @@ Rules it encodes, and why:
 - **Text is never tone mapped and never lit.** The kit's shader ignores `renderer.toneMapping`, so `#ededef` stays `#ededef` under any look.
 - **Text is never hidden by the 3D world.** The planes write no depth but still test it, so anything nearer the camera covers them. Wrap every headline, label and caption that shares a frame with 3D objects in `onTop()` (depth test off, drawn last); check a frame where an object passes in front.
 - **Kerned per character.** `letters()` places each glyph where it sits inside the kerned word, so "WAVY", "AV" and "To" set per character match the same word set whole.
-- **Draw order is by Group first.** three.js sorts transparent objects by the nearest ancestor Group's `renderOrder` before the mesh's own, and a nested Group at 0 resets its subtree to 0. So never put `renderOrder` on a Group to lift type (it outranks everything in other groups, cover layers included); `onTop()` orders meshes only, and `three-camera`'s `overlay()` sets its group to 900 so floods and flashes cover onTop type. Covers and panels must be `transparent: true`: opaque objects all draw before transparent ones. Details in `references/type-kit.md` §4.
+- **Draw order is by Group first.** three.js sorts transparent objects by the nearest ancestor Group's `renderOrder` before the mesh's own, and every Group resets it: the Group that `line()`, `letters()` and `counter()` return sits at 0, so its words sort to the bottom of wherever they are nested, whatever order the meshes carry. That is why `onTop(obj, order)` sets the order on the groups too: always pass the group through `onTop` with the layer you want. `three-camera`'s `overlay()` group is 900 and a cover in it 950, so `onTop(x)` (100) stays under floods and flashes, `onTop(caption, 920)` puts captions on the overlay above world type, and `onTop(line, 960)` puts a payoff line above a flood. Covers and panels must be `transparent: true`: opaque objects all draw before transparent ones. Details in `references/type-kit.md` §4.
 - **Name every plane after its words** (the kit does): the editor's click on a word arrives as `#ship-the-whole-film`.
 
 ## One type system per film
@@ -81,6 +81,7 @@ export const TYPE = {
 
 - No wrapping happens for you. Break lines yourself at 2–6 words; measure with `measure()` and stack lines at 1.1–1.2 × size.
 - 16:9: keep words inside the house comfort zone, 8–10% per side (150–190 px left/right).
+- **Beside a hero object** (text left, product right): the text column is ≤ 40–45% of the frame width from the left margin (about 610–690 px of type at 1920 after a 170 px margin), so at hero size (92–110 px) that is 2–3 words a line, and a 4–6 word line breaks in two. Keep ≥ 80 px between the column's longest line and the object's silhouette at its largest. Don't run the same text-left / object-right layout on every beat: move the column or centre the payoff.
 - 9:16 (1080×1920): everything readable inside x 120–840, y 270–1210 (the platform UI superset); headlines 2–4 words a line, 64–132 px; the hook just below the top band (y 270–450).
 - 1:1 and 4:5: 5–8% margins; 4:5 keeps key words inside the centre 1080×1080.
 - Scale a whole block to fit with `fitBlock()` only as a last resort; re-breaking lines per aspect is better than shrinking.
@@ -109,7 +110,7 @@ Two specs, by job:
 
 - **Social captions over footage** (feed edits, UGC, podcast clips, Gen Z): `ugc-craft`'s caption spec is the one spec (word groups, size, heavy weight with a stroke or scrim, active-word highlight); the house guide sanctions it as the exception to the weight cap. Build it with this kit (one `label` per group, drawn in the shipped font inside `withFonts`, never a family name alone).
 - **Editorial captions and subtitles** (explainers, launch films, anything designed rather than shot): one phrase of 2–5 words at a time, cut on phrase boundaries from the VO's word timings (`transcribe`), no tween between phrases; legible as or before the word is spoken, held ≥15f after it. 16:9: 34–48 px, weight 400–500, bottom of the block ≥ 8% above the frame edge. 9:16: block centred 58–63% down (y ≈ 1110–1210), 48–72 px.
-- Both sit on the camera-locked overlay (`three-camera` `overlay()`), so a punch-in or shake never moves them, inside `onTop()`. On footage or anything busy, a scrim plane at 0.5–0.6 opacity behind them.
+- Both sit on the camera-locked overlay (`three-camera` `overlay()`), so a punch-in or shake never moves them, wrapped in `onTop(group, 920)` (above world type; 960 if a flood passes under them). On footage or anything busy, a scrim plane at 0.5–0.6 opacity behind them.
 
 ## A complete scene
 
@@ -171,6 +172,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Per-character animation on a sentence**, or a stagger so long the first word has settled before the last appears.
 - **Tilted or receding type the viewer must read.** Keep text planes parallel to the screen unless the tilt is the point.
 - **Type on footage without a scrim.**
+- **A counter in a face's default proportional figures**: "$1,211" reads "$1, 2 1 1". Tabular figures on, or `"proportional"` slots.
+- **A line nested in a group without `onTop`**: it sorts under whatever its group's order is (0), and a flood or panel covers it.
 
 ## Requirements
 
@@ -184,8 +187,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 ## Checks before you finish
 
 1. `capture-frames` on every held line: the face is the brand font (not a fallback sans), edges crisp, nothing under 28 px, no headline heavier than 500.
-2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter). Mid-reveal frames of uppercase display type show no grey, half-opaque capitals. A counter mid-count shows no leading zeros.
-3. A frame where a 3D object passes the type: the type stays in front.
+2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter). Mid-reveal frames of uppercase display type show no grey, half-opaque capitals. A counter mid-count shows no leading zeros, and a value with 1s in it (1,211) is evenly spaced: no wide gap either side of a 1.
+3. A frame where a 3D object passes the type: the type stays in front. A frame where a cover, flood or panel overlaps type: the type is on the side of it you intended (each group went through `onTop` with its layer's order).
 4. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down.
 5. Mid-reveal frame of each recipe: blur and colour sweep visible, no word clipped by its plane edge.
 6. Every line is fully legible by 15–20f after its first word, and holds `max(30, 9 × words + 15)` frames once legible.

@@ -1,6 +1,6 @@
 ---
 name: three-assets
-description: "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, a tested confetti burst, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font, confetti or any file from assets/."
+description: "Bringing real material into Three.js scenes so no frame is blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), fonts, confetti, piles of identical objects, resizable outlines, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font, confetti or any file from assets/."
 ---
 
 # Assets on Three.js: real files, loaded so every frame is complete
@@ -9,7 +9,7 @@ A scene may import only `three` and `@genmotion/three-engine`, so there are no a
 
 The recipes were built against the real host and debugged by rendering. The thing you would not guess: the CLI's Chromium cannot decode **H.264 MP4** at all, so footage must be VP9 WebM, seeked through `ctx.manager`. `video-editing`'s `references/footage-in-scene.md` is the pack's one tested footage helper; `references/footage-and-audio.md` here has an equivalent for short inserts.
 
-Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/drawn-ui.md` (`components/ui.ts`: app UI rebuilt as canvas-drawn planes when there are no screenshots), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio), `references/confetti.md` (`components/confetti.ts`: a seeded burst from a number's edges).
+Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `extrudedMark()` with an SVG path parser, device frames), `references/drawn-ui.md` (`components/ui.ts`: app UI rebuilt as canvas-drawn planes when there are no screenshots), `references/footage-and-audio.md` (`footage()`, transcoding, continuity across a cut, fonts, audio), `references/confetti.md` (`components/confetti.ts`: a seeded burst from a number's edges), `references/piles.md` (`components/pile.ts`: many identical objects heaping up), `references/outline.md` (`components/outline.ts`: a resizable rounded-rectangle outline with gaps, a draw-on and a colour sweep).
 
 ## When to use
 
@@ -18,6 +18,8 @@ Code: `references/images-and-logos.md` (imports, `picture()`, `logoPlane()`, `ex
 - Frames render with blank, black or stretched planes where an image or video should be.
 - Type needs a specific font, or a scene needs sound.
 - A land frame needs confetti (a milestone's number, a launch's reveal).
+- Many identical objects gather into a mass (coins into a jar, items onto a floor, a crowd arriving).
+- A border, frame or boundary must resize, open a gap, or change colour along its path, or a thin line must stay readable when it scales down.
 
 Not for: finding or generating material (`stock-and-broll`, `screen-capture`), editing user footage into a cut (`video-editing`), type layout (`three-type`), sound levels (`sound-design`).
 
@@ -37,7 +39,7 @@ Not for: finding or generating material (`stock-and-broll`, `screen-capture`), e
 
 ## Drawn UI (no screenshots)
 
-A product with no screens to show is rebuilt as flat canvas-drawn planes: `references/drawn-ui.md` has `components/ui.ts` (tested) with `screenPanel`, `statusBar`, `field`, `chip`, `button`, `listRow`, `textBars` and `softShadow`, all drawn once at 2× inside `withFonts`, unlit and never tone mapped. Every glyph that is seen clears **28 px on screen** (a panel shown at scale `s` draws its text at ≥ `28 / s`); copy that cannot is grey bars. Anything that moves on its own (a chip that flies out, a field that fills) is its own plane in the panel's group. Generic chrome in the brand's colours, recorded in `VIDEO.md` as illustrative UI.
+A product with no screens to show is rebuilt as flat canvas-drawn planes: `references/drawn-ui.md` has `components/ui.ts` (tested) with `screenPanel`, `statusBar`, `field`, `chip`, `button`, `listRow`, `textBars` and `softShadow`, all drawn once at 2× inside `withFonts`, unlit and never tone mapped. Every glyph that is seen clears **28 px on screen** (a panel shown at scale `s` draws its text at ≥ `28 / s`); copy that cannot is grey bars. **Grey bars are for incidental copy only.** When the product's output *is* text (a writing tool, a summariser, a translator, a notes or email app), the words it produces are the proof: set them as real, legible text with the `three-type` kit (≥ 60 px at the payoff, push in rather than shrink), never as bars or as lorem ipsum. Anything that moves on its own (a chip that flies out, a field that fills) is its own plane in the panel's group. Generic chrome in the brand's colours, recorded in `VIDEO.md` as illustrative UI.
 
 ## Logos
 
@@ -46,7 +48,7 @@ A product with no screens to show is rebuilt as flat canvas-drawn planes: `refer
 | Flat mark, any size | `logoPlane(ctx, svgUrl, widthPx, aspect, name)` | The SVG is rasterised at 2× the shown size: crisp at any size |
 | 3D mark | `extrudedMark(d, widthPx, depthPx, material, name)` | From the file's path `d` copied verbatim into `components/brand.ts`; bevel 1.2% of width catches the light |
 | Mark with gradient fill | Draw the path into a canvas with `Path2D(d)` and the gradient, or extrude and use a face material per tone | The Samsung Pay template draws its marks with `Path2D` |
-| Flat mark built from layered facets (a stand-in) | One mesh per facet in one group, `renderOrder` on the meshes; or one Group per layer with the order on the Group | three.js sorts by the parent Group's `renderOrder` before the mesh's, so an order set on a Group outranks every mesh in other groups (`three-type` `type-kit.md` §4) |
+| Flat mark built from layered facets (a stand-in) | One mesh per facet in one group, `renderOrder` on the meshes; or one Group per layer, each through `onTop(layer, n)` with rising `n` | three.js sorts by the parent Group's `renderOrder` before the mesh's, so an order set on a Group outranks every mesh in other groups (`three-type` `type-kit.md` §4) |
 | Lockup (mark + wordmark) | Mark plane + a `three-type` label in the brand font, in one group; gap ≈ 0.25 × the symbol's height (0.75–1 × the cap height), cap height 0.3–0.4 × the symbol | Or the official lockup file as one plane. Move and centre it as one group |
 
 The path parser handles M L H V C S Q T Z, absolute and relative. Arcs throw an error: flatten them in the SVG first, or use the flat plane. Light extruded marks with `three-look`'s product setup and `brand` tone mapping so the brand colour holds.
@@ -54,6 +56,14 @@ The path parser handles M L H V C S Q T Z, absolute and relative. Arcs throw an 
 ## Confetti
 
 `references/confetti.md` has `components/confetti.ts` (tested at 1080 × 1080): one `InstancedMesh` of ≤ 300 paper quads (120–180 for a hero land, 10–24 px), each launched from a `hash1` seed, posed in closed form with gravity, linear drag and spin, so any frame renders alone. It spawns on the edges of the box you give it (the number at its punch peak plus its unit line), crowded toward the corners, and aims every piece outward, so none crosses the glyphs for the first 20 f and the burst reads as poppers rather than two columns in the gutters. Pieces live 44–60 f and shrink out; the burst is gone about 2 s after the land. Pass the film's palette as `colors`.
+
+## Piles and crowds
+
+`references/piles.md` has `components/pile.ts` (tested at 1920 × 1080 with 120 coins): one `InstancedMesh` of real items; each has a rest slot computed once (rings per layer, each layer turned by the golden angle, slots jittered and tilted from `hash1`, filled in a hashed order so the surface is ragged) and a land frame from the film's event schedule. Falling is closed-form gravity that lands exactly on its frame, then one damped hop and a settling wobble, so any frame renders alone. `set(frame)` returns how many have landed: drive the counter from it. Never fake a heap with a texture of stacked edges (it reads as a ribbed can, and it snaps on); never leave a few dozen loose items scattered (it reads sparse). The land list is the same one `sound-design`'s many-events stem is built from, so every sound lands on its item.
+
+## Outlines that resize, and lines that survive a scale-down
+
+`references/outline.md` has `components/outline.ts` (tested): a rounded rectangle drawn by a signed-distance shader on one plane, with size, radius, two gaps (a doorway, a notch for a label), a draw-on from any point (one way or both), and a colour sweep along the path, all as per-frame uniforms placed by **perimeter px** so sweeps travel at even speed round the corners. Its stroke is in **screen px**: a 3 px border stays 3 px when it, or the group around it, shrinks into an end card. Lines must stay ≥ 2 px on screen on their smallest frame (thinner lines alias and flicker in the encode); for free-form paths use `three-look`'s line-art stroke with its `uScale` set to the group's scale.
 
 ## Device frames
 
@@ -160,5 +170,6 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 3. No `http` URL in any scene or component file; every mark comes from an official file in `assets/`, or is the name set as a wordmark, or is a stand-in flagged in `VIDEO.md`.
 4. Logos, screenshots and drawn UI are crisp at their largest on-screen size; text inside screenshots and drawn UI clears 28 px on screen in the widest shot that shows it.
 5. Every sound is on the timeline in `project.json`, none in scene code.
-6. Confetti, when there is any: `capture-frames` at land, +2, +10 and +20 shows no piece over the number or its label, and land +65 shows none left.
-7. No randomness or wall-clock timing; `validate` passes.
+6. A pile or crowd: `capture-frames` at its first land, mid-fill and full: single items visibly fall and settle, the surface is ragged, and a 100% crop of the full heap shows no rows, rings or stripes; the counter beside it equals the landed count. Every outline or thin line is ≥ 2 px on screen on its smallest frame (crop and look). If the product's output is text, the payoff frame shows that text legible at ≥ 60 px, not bars.
+7. Confetti, when there is any: `capture-frames` at land, +2, +10 and +20 shows no piece over the number or its label, and land +65 shows none left.
+8. No randomness or wall-clock timing; `validate` passes.

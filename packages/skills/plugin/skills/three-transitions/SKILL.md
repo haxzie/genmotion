@@ -66,12 +66,14 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 | Whip | Content flung out with sub-frame motion blur | Enters from the opposite side at the same speed | carries §5–6 |
 | Exit-then-cut | Everything leaves, clear 4–8f early | First element 3–6f after the cut | carries §7 |
 | Board erase | Strokes un-draw from `D − 18` over 10f, 8f blank | Identical blank paper | carries §8 |
+| New ground behind the subject (no cut) | The backdrop's `uFlood` disc grows out of the subject, behind it; environment and key light follow in the same frames; the subject scales or moves | — (one continuous shot) | `three-look` backdrops-and-finish §7, color-and-light §7 |
 
 ## Picking the build for a film
 
 - The signature handoff goes on chapter turns and the peak; the workhorse (usually exit-then-cut or a persisting element) on the rest. At most two transition styles besides plain cuts.
 - Floods, irises and block wipes want a carrier on screen to motivate them: a button that is pressed, a mark, a dot, a chip in the wipe's colour. A flood or a wipe from nowhere is decoration.
 - **The object a flood contracts into is the only moving thing for 6f after it lands**, and at least 6% of the frame's width; anything else arriving in those frames (new elements, a camera move, traffic crossing it) hides the "it became this" read. Its label is drawn above the disc, or fades 2f before the disc reaches it, so the disc never tears the label.
+- **A colour change that is not a cut** (the ground turning behind a product, night to morning inside one shot) is not a cover: the cover layer sits on the camera above everything and would erase the subject. Grow it in the backdrop behind the subject and re-light the subject in the same frames (`three-look`, A new ground inside one shot). Without the re-light, a lit object goes dark on the new ground; without a scale change, it reads as a flat wipe.
 - Flash-to-white on every cut only in a music film, with the cut on the hit. A flash contrasts ≥ 50% in mean luma with the frames either side, **measured within the flashing area** (crop to it), never into an already bright plate (there it reads as a bloom: flash out of the bright shot onto a darker one, or use the punch alone). On a letterboxed picture the flash plane covers the picture area only (a `PlaneGeometry(width, pictureHeight)` on the overlay); full-frame white over the black bars composites to grey bars.
 - Motion blur is for the 8–10f around a whip, never a whole film: it multiplies render time by the sample count and the editor can't point at objects inside it.
 - Fade to black only on the final frame or a chapter break of a long piece.

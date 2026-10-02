@@ -47,7 +47,7 @@ VO budgets at the house 2.3 words/s over the VO window (starts 6f in, last 45–
 
 | # | Frames | Job | Content | Typical motion | Sound |
 | - | - | - | - | - | - |
-| 1 | 0–90 | What changed | The feature's name in the first 6 words, over the product already on screen | Name blurUp by word 12f, stagger 3–4f; the UI is already visible behind it | Frame-1 transient; VO from 6f |
+| 1 | 0–90 | What changed | The feature's name in the first 6 words, over the product already on screen | Name by word in the family's headline entrance (`motion-language`: blurUp for energetic films, rise + fade for calm ones); the UI is already visible behind it | Frame-1 transient; VO from 6f |
 | 2 | 90–240 | Why it matters | One real moment the viewer has had: the "before" state | Same framing as beat 3 so the change reads; slow creep +2–3% | Bed only |
 | 3 | 240–330 | **First use (peak)** | The cursor or finger triggers the feature; the result appears | Cursor 16–26f arc, press 4f in / 6f out, ring 8–14f; focus push 24–48f to 1.3–2.5× on the new control | Click 0.8–1.0 on the press frame |
 | 4 | 330–750 | Show it | 1–2 more runs on the same surface: input → response → result | Persisting element between runs; layout morphs 24f | One cue per interaction, ≤1 per second |

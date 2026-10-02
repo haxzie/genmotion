@@ -1,6 +1,6 @@
 # Launch shapes, beat by beat
 
-Read this after picking the shape, while writing the Beats table. Each shape adapts the 30 s default (900f, 120 BPM grid, reveal at 240) from `SKILL.md`; scale the frames proportionally for 15, 45 and 60 s. Frames at 30 fps.
+Read this after picking the shape, while writing the Beats table. Each shape adapts the 30 s default (900f, 120 BPM grid, reveal at 240) from `SKILL.md`; scale the frames proportionally for 15, 45 and 60 s. Frames at 30 fps. The tables are laid out reveal-led; when `launch-taste` step 7 makes the film an accumulation or outcome film, keep the shape's opening and move its 10 to the device's completion at 60–75% (`SKILL.md`, Accumulation or outcome at 30 s).
 
 Contents: Problem-first · Demo-first · Manifesto · Metric-first · Category-creation · 90 s structure
 
@@ -20,6 +20,7 @@ The product is absent until the turn; the relief rhymes with the opening shot.
 | 720–900 | Hero + end card | The opening shot again, now calm; mark |
 
 - House: Gojiberry (VO-led, 15 of 20 cuts exit-then-cut, a 6f blue flood from the Send button at the turn); ElevenLabs (paper and dither, 7 pixel-block wipes, VO +3 to +8f after cuts, bed 0.28 as measured; mix to `sound-design`'s bed row today).
+- Feed placements: "product absent" means absent as the answer, not absent from the frame. The product's context (its icon in the corner, the device on the desk, the mark as a small header tag) is in frame by 3–4 s; the turn at 240 reveals what it does.
 - Goes wrong: agitation longer than a quarter of the film; a turn with a different subject than the problem.
 
 ## Demo-first

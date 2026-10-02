@@ -1,7 +1,7 @@
 {
   "id": "sound-design",
   "title": "Sound design",
-  "description": "Music, sound effects and the voiceover mix for every kind of video in the pack: the four-decision sound plan, choosing and legally sourcing a track (user file, a connected generator, CC0 or CC BY libraries, or no music), the beat grid in frames and cutting to it, the level ladder in gain and dB, ducking, fades, SFX placement to the frame, silence as a beat, and measuring the export's loudness because the mix has no limiter. Load it whenever a video has sound.",
+  "description": "Music, sound effects and the voiceover mix for every kind of video in the pack: the four-decision sound plan, choosing and legally sourcing a track (user file, a connected generator, CC0 or CC BY libraries, or no music), the beat grid in frames and cutting to it, the level ladder in gain and dB, ducking, fades, SFX placement to the frame, silence as a beat, sparse picture-led films and many-event stems, and measuring and re-mastering the export's loudness because the mix has no limiter. Load it whenever a video has sound.",
   "summary": "Music sourcing, beat grid, SFX timing, the VO mix in gain and dB, ducking, and loudness checks on the export.",
   "kind": "technique",
   "category": "Craft",
@@ -95,6 +95,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "icon": "🎚️"
 }

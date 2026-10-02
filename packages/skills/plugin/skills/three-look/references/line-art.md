@@ -2,7 +2,7 @@
 
 The whiteboard explainer template draws every diagram line as a pen stroke and erases it back along its path before each cut. The trick is a flat ribbon whose vertices carry `aT`, their position along the stroke (0 → 1 by arc length); the fragment shader discards everything past `uReveal` and before `uErase`. Two uniforms, set per frame, are the whole animation: no geometry is rebuilt. The same ribbon draws pen underlines, gauge rings, chart lines and arrows in any family.
 
-Contents: 1 `components/stroke.ts` · 2 Drawing on and erasing · 3 Hand-drawn wobble · 4 Board timing
+Contents: 1 `components/stroke.ts` · 2 Drawing on and erasing · 3 Hand-drawn wobble · 4 Board timing · 5 Width that survives a scale change
 
 ## 1. `components/stroke.ts`
 
@@ -18,6 +18,8 @@ type Pt = [number, number]; // composition px from frame centre, y up
  * A pen stroke as a flat ribbon whose vertices carry `aT` (0 at the start, 1 at the end,
  * by arc length). The shader discards everything past uReveal and before uErase, so a
  * stroke draws on and erases back along its own path: pure functions of two uniforms.
+ * The width is a uniform too: uWidth (px) / uScale, applied in the vertex shader, so a
+ * stroke keeps its on-screen width when its group is scaled (set uScale to that scale).
  */
 export function stroke(points: Pt[], widthPx: number, color: string, name: string) {
   const cum = [0];
@@ -27,6 +29,7 @@ export function stroke(points: Pt[], widthPx: number, color: string, name: strin
   }
   const total = cum[cum.length - 1]! || 1;
   const pos: number[] = [];
+  const side: number[] = []; // unit normal per vertex (+ on one edge, - on the other); the shader scales it
   const ts: number[] = [];
   const idx: number[] = [];
   points.forEach((p, i) => {
@@ -35,8 +38,8 @@ export function stroke(points: Pt[], widthPx: number, color: string, name: strin
     const tl = Math.hypot(tx, ty) || 1;
     tx /= tl;
     ty /= tl;
-    const hw = widthPx / 2;
-    pos.push((p[0] - ty * hw) * PX, (p[1] + tx * hw) * PX, 0, (p[0] + ty * hw) * PX, (p[1] - tx * hw) * PX, 0);
+    pos.push(p[0] * PX, p[1] * PX, 0, p[0] * PX, p[1] * PX, 0); // both edges start on the centre line
+    side.push(-ty, tx, ty, -tx);
     const t = cum[i]! / total;
     ts.push(t, t);
     if (i > 0) {
@@ -47,9 +50,15 @@ export function stroke(points: Pt[], widthPx: number, color: string, name: strin
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute("aT", new THREE.Float32BufferAttribute(ts, 1));
+  geo.setAttribute("aSide", new THREE.Float32BufferAttribute(side, 2));
   geo.setIndex(idx);
+  geo.computeBoundingSphere();
+  geo.boundingSphere!.radius += (widthPx * 2 * PX); // room for a widened stroke (culling)
 
   const uniforms = {
+    uWidth: { value: widthPx }, // px at scale 1
+    uScale: { value: 1 }, // the group's scale: width is divided by it, so it stays uWidth px on screen
+    uPx: { value: PX },
     uColor: { value: new THREE.Color(color) },
     uReveal: { value: 0 },
     uErase: { value: 0 },
@@ -62,8 +71,14 @@ export function stroke(points: Pt[], widthPx: number, color: string, name: strin
     side: THREE.DoubleSide,
     vertexShader: /* glsl */ `
       attribute float aT;
+      attribute vec2 aSide;
+      uniform float uWidth, uScale, uPx;
       varying float vT;
-      void main() { vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      void main() {
+        vT = aT;
+        vec2 off = aSide * 0.5 * uWidth * uPx / max(uScale, 1e-3);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xy + off, position.z, 1.0);
+      }`,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor; uniform float uReveal, uErase, uOpacity;
       varying float vT;
@@ -140,3 +155,18 @@ Draw two passes per line (the second at 0.8× width with a different seed) for t
 | Blank paper | last 8f | the cut lands on identical paper |
 
 The camera drift uses `restDrift` (`three-camera`) so it is at rest at both ends, and the VO starts 6f after every cut (`sound-design`).
+
+## 5. Width that survives a scale change
+
+A 3 px line drawn at scale 1 is 1.5 px when its group scales to 0.5 for an end card, and under 2 px a line aliases and flickers in the encode (measured in a judged film: 3.4 px ribbons fell to about 2 px and broke up). Width is a uniform, so keep it on screen:
+
+```ts
+// frame: the whole drawing scales into the end card; its strokes keep 3 px on screen
+rig.scale.setScalar(s);
+for (const st of strokes) st.u.uScale.value = s;            // width / s in local units = 3 px on screen
+// or let it thin a little but never below 2 px:  st.u.uWidth.value = Math.max(2 / s, 3);  (uScale left at 1)
+```
+
+- `uScale` is the product of the scales above the stroke (`mesh.getWorldScale(v).x` once per frame if several groups scale). A perspective camera adds its own factor for strokes off the z = 0 plane: multiply by `D0 / (D0 − z)` (`three-camera`).
+- **Floor: 2 px on screen for any line that must read, 1.5 px for a hairline texture.** Below that, thicken it or drop it.
+- For outlines whose *size* changes per frame (a box that resizes, a rounded rectangle with a gap), the ribbon would have to be rebuilt every frame: use `three-assets`' `outline()` (`references/outline.md` there), a signed-distance shader whose stroke is in screen px.

@@ -2,7 +2,7 @@
 
 How the 3D templates get glossy product, exact brand colours and clean type in the same frame, as one `components/look.ts`. Compiles against `three` r185 as written; the tone-mapping numbers below were measured from captured frames.
 
-Contents: 1 `components/look.ts` · 2 Which tone mapping · 3 What must opt out · 4 Lighting setups · 5 Materials that read · 6 Shared renderer state
+Contents: 1 `components/look.ts` · 2 Which tone mapping · 3 What must opt out · 4 Lighting setups · 5 Materials that read · 6 Shared renderer state · 7 When the ground changes behind a lit object
 
 ## 1. `components/look.ts`
 
@@ -138,3 +138,80 @@ All scenes in a film share one `WebGLRenderer`. Whatever a scene sets on it (ton
 - call `colorPipeline(renderer, mode)` at the top of **every** scene, even when the mode is the default;
 - restore `autoClear` and call `setRenderTarget(null)` after any off-screen render (`three-transitions` motion blur does);
 - set `scene.background` in every scene: the canvas is transparent.
+
+## 7. When the ground changes behind a lit object
+
+Metal and gloss show the room they reflect, not the ground behind them. When the stage colour changes under a lit subject (a dark ground turning warm white at the peak, `backdrops-and-finish.md` §7), an environment built once for the old stage keeps reflecting the old room: measured, a titanium ring on a new warm-white ground rendered near-black, and in a judged film it read "darker and browner" after the change. So the environment and the key light change **in the same frames** as the ground. Add this to `components/look.ts`:
+
+```ts
+/** Linear-light mix of two hex colours into `out` (no allocation per frame). */
+const _a = new THREE.Color(), _b = new THREE.Color();
+export function mixHex(out: THREE.Color, a: string, b: string, t: number) {
+  return out.copy(_a.set(a)).lerp(_b.set(b), t);
+}
+
+/**
+ * The studio room of studioEnvironment(), rebuilt from a 0..1 mix between two stages (`from` the
+ * old ground's room, `to` the new one's), so reflections follow the ground as it changes.
+ * set(t) re-renders the PMREM only when the quantised mix changes (1/32 steps): a held frame
+ * costs nothing, and the map is a pure function of t, so any frame renders alone.
+ */
+export interface Room { room: string; panel: string; bounce: string; strength: number }
+export function followingEnvironment(renderer: THREE.WebGLRenderer, scene: THREE.Scene, from: Room, to: Room) {
+  const room = new THREE.Scene();
+  room.background = new THREE.Color(from.room);
+  const panels: { mat: THREE.MeshBasicMaterial; k: number; bounce: boolean }[] = [];
+  const panel = (w: number, h: number, x: number, y: number, z: number, k: number, bounce = false) => {
+    const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    m.position.set(x, y, z);
+    m.lookAt(0, 0, 0);
+    room.add(m);
+    panels.push({ mat, k, bounce });
+  };
+  panel(6, 3, 0, 6, 3, 6); // the same four softboxes as studioEnvironment()
+  panel(3, 5, -6, 1, 3, 4);
+  panel(3, 5, 6, 2, -2, 3.5);
+  panel(8, 2, 0, -4, 5, 1.6, true); // the floor bounce: this is where the new ground shows up
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  let rt: THREE.WebGLRenderTarget | null = null;
+  let last = -1;
+  const tint = new THREE.Color();
+  const set = (t: number) => {
+    const q = Math.round(Math.min(1, Math.max(0, t)) * 32) / 32;
+    if (q === last) return;
+    last = q;
+    mixHex(room.background as THREE.Color, from.room, to.room, q);
+    const s = from.strength + (to.strength - from.strength) * q;
+    for (const p of panels) {
+      mixHex(tint, p.bounce ? from.bounce : from.panel, p.bounce ? to.bounce : to.panel, q);
+      p.mat.color.copy(tint).multiplyScalar(p.k * s);
+    }
+    const next = pmrem.fromScene(room, 0.035);
+    scene.environment = next.texture;
+    rt?.dispose(); // the previous map: one target alive at a time
+    rt = next;
+  };
+  set(0);
+  return { set };
+}
+```
+
+```ts
+// builder: one room per stage. The new room is a few steps DARKER than the new ground, so the metal keeps edge contrast
+const env = followingEnvironment(renderer, scene,
+  { room: "#3a3b40", panel: "#ffffff", bounce: "#2a2b30", strength: 0.7 },   // night stage (graphite ground)
+  { room: "#9e978c", panel: "#fff6ea", bounce: "#f1ece3", strength: 1.0 });  // morning stage (warm-white ground)
+const L = productLights(scene);
+// frame: the ground grows over [PEAK, PEAK + 24); the light follows over the same frames plus a 6f tail
+const lit = prog(frame, PEAK, 30, inOutSine);
+env.set(lit);
+L.key.intensity = 2.2 + 0.8 * lit;               // a brighter, warmer key for the brighter stage
+mixHex(L.key.color, "#ffffff", "#fff1de", lit);
+L.amb.intensity = 0.5 + 0.4 * lit;
+```
+
+- Call `followingEnvironment` **instead of** `studioEnvironment` in that scene; both build the same four softboxes, so a film can mix them scene by scene and the lighting matches.
+- The new room: the new ground's hue, 30–40% darker (`#9e978c` for a `#f1ece3` ground), panels tinted toward it. A room as light as the ground washes the metal out to a flat beige silhouette (tested); one left grey turns it dark.
+- Cost: one PMREM render per changed 1/32 step, about 2 s per changing frame under the CLI's SwiftShader; held frames reuse the map. Keep the change to 20–40 frames.
+- Check: `capture-frames` the last frame before the change and a frame 10f after it ends; the subject's mid-tones are as light or lighter on the new ground, and its highlights still read (Checks 3).

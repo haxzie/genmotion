@@ -35,7 +35,7 @@ Only `workflow` and `style` skills own a video. Pick one:
 
 1. **Match the deliverable, not a word in passing.** "A launch video with a logo sting at the end" is a launch (`launch-playbook`), not a sting. "A TikTok ad for our app" is a UGC format, not an app store preview.
 2. **Inputs break ties.** Footage the user shot (a podcast, a talking head, a clip to cut into a trailer or social edit) points to `video-editing`; a screen recording toward `ugc-screen-demo`, `app-store-preview` or `demo-walkthrough`; a single number toward `announce-milestone`; a concept to explain toward `explainer`.
-3. **Still tied? Lower `priority` wins.** It ranks the more specific format above the more general one.
+3. **Still tied? Lower `priority` wins.** It ranks the more specific format above the more general one. Not a tie: a launch video or film that names the App Store or Google Play page as one destination is `launch-playbook`; `app-store-preview` owns only a store-spec listing preview (886 × 1920 or the store's sizes, app captures only), when that is what is asked for.
 4. **Nothing fits?** `freeform-video`. Never stitch two owners together; borrow a shot list from a second skill by name if you must.
 
 | Owner | The video |

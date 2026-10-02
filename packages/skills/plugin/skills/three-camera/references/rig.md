@@ -55,7 +55,8 @@ export function fitBlock(width: number, height: number, wPx: number, hPx: number
  * grain and captions that must never move with the shot. Call `fit()` after any fov change.
  * renderOrder 900 on the GROUP: three.js sorts by the nearest ancestor Group's order first,
  * so this is what puts a cover layer above type the world wrapped in onTop() (`three-type`).
- * A Group nested inside it starts again at its own order (0): give it 900 too.
+ * A Group nested inside it starts again at its own order (0): pass it through three-type's
+ * onTop(group, order): 920 for captions above the world, 960 to sit above a cover.
  */
 export function overlay(scene: THREE.Scene, camera: THREE.PerspectiveCamera, height: number, dist = 1) {
   const group = new THREE.Group();
@@ -73,7 +74,7 @@ export function overlay(scene: THREE.Scene, camera: THREE.PerspectiveCamera, hei
 
 ## 2. `components/ease.ts`
 
-The house curves from `motion-language` (its `references/easing.md` has the formulas and when to use each), typed, plus the two things the engine's `interpolate` cannot do: a multi-key move that does not stop at interior keys, and zoom in log space.
+The house curves from `motion-language` (its `references/easing.md` has the formulas and when to use each), typed, plus the two things the engine's `interpolate` cannot do: a multi-key move that does not stop at interior keys, and zoom in log space; and the house springs, closed form, so nobody re-derives the time scale.
 
 ```ts
 export type Ease = (t: number) => number;
@@ -191,6 +192,54 @@ export function hash1(n: number): number {
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
+
+/** Spring presets, mass / stiffness / damping (motion-language easing.md §6). */
+export const SPRING = {
+  stiff: [0.8, 320, 28],
+  default: [1, 170, 26],
+  gentle: [1, 120, 30],
+  molasses: [2, 90, 28],
+  chatBubble: [0.8, 165, 17],
+  reaction: [0.6, 200, 14],
+  livelyBubble: [0.85, 170, 13],
+  bouncy: [1, 220, 14],
+} as const;
+export type SpringPreset = keyof typeof SPRING;
+
+/** A damped spring released from 0 towards 1, t in seconds: closed form, no simulation, no state. */
+export function springValue(t: number, m: number, k: number, c: number): number {
+  if (t <= 0) return 0;
+  const w0 = Math.sqrt(k / m), z = c / (2 * Math.sqrt(k * m));
+  if (z < 1) {
+    const wd = w0 * Math.sqrt(1 - z * z);
+    return 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + ((z * w0) / wd) * Math.sin(wd * t));
+  }
+  if (Math.abs(z - 1) < 1e-9) return 1 - Math.exp(-w0 * t) * (1 + w0 * t);
+  const s = Math.sqrt(z * z - 1), r1 = -w0 * (z - s), r2 = -w0 * (z + s);
+  return 1 - (r2 * Math.exp(r1 * t) - r1 * Math.exp(r2 * t)) / (r2 - r1);
+}
+
+const settleCache = new Map<string, number>();
+/** Seconds until the spring stays within 0.5% of 1 (scanned once per preset at 1/600 s, then cached). */
+export function springSettle(m: number, k: number, c: number): number {
+  const key = `${m}/${k}/${c}`;
+  const hit = settleCache.get(key);
+  if (hit !== undefined) return hit;
+  let last = 0;
+  for (let i = 1; i <= 6000; i++) if (Math.abs(1 - springValue(i / 600, m, k, c)) > 0.005) last = i / 600;
+  settleCache.set(key, last);
+  return last;
+}
+
+/**
+ * 0 -> 1 (overshooting for the bouncy presets) over exactly `dur` frames from `start`: the preset's
+ * shape, time-scaled so it has settled within 0.5% on frame start + dur. "gentle over 16f" means this.
+ */
+export function springIn(frame: number, start: number, dur: number, preset: SpringPreset = "default"): number {
+  const [m, k, c] = SPRING[preset];
+  if (frame >= start + dur) return 1;
+  return springValue(((frame - start) / dur) * springSettle(m, k, c), m, k, c);
+}
 ```
 
 ## 3. Using them
@@ -218,6 +267,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - Lay everything out in composition px times `PX`. A headline 120 px tall at z = 0 is exactly 120 px on screen at the fitted distance, in 16:9 and 9:16 alike.
 - Anything at another depth scales by `D0 / (D0 − z)`: an object at z = +2 (towards the camera) appears `D0 / (D0 − 2)` times larger. Use it to place parallax layers on purpose.
 - `logLerp(D0, D0 / k, t)` is a zoom of k× on the z = 0 plane: apparent size goes as 1 / distance, so interpolate the distance's log.
+- **Springs**: `springIn(frame, start, dur, "gentle")` is the gentle preset's shape stretched so it has settled (within 0.5%) on `start + dur`, which is what "gentle over 16f" means in `motion-language`. Use it as a progress (`lerp(a, b, springIn(...))`, a scale `springIn(...)` for a pop-in). Tested natural settle times at 30 fps (to 0.5%): stiff 7.5f, default 16.9f, gentle 34.8f, molasses 36.6f, chatBubble 14.9f (3.2% overshoot), reaction 14.1f (7.4%), livelyBubble 19.5f (13.3%), bouncy 23.1f (18.6%). Over 16f, gentle reads 0.39 / 0.69 / 0.92 / 0.98 at frames 2 / 4 / 8 / 12. One preset per role across the film; the no-overshoot presets (default, gentle, molasses; stiff overshoots only 0.3%) for calm, premium and trust films.
 
 ## 4. Orthographic and pixel-space scenes
 

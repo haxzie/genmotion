@@ -1,7 +1,7 @@
 {
   "id": "three-camera",
   "title": "Camera (Three.js)",
-  "description": "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly.",
+  "description": "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, closed-form springs, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed, and the reveal that the subject was inside a device. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly.",
   "summary": "Exact framing in px, house curves and spline, and push, punch, orbit, keyed paths and matched cuts on a real camera.",
   "kind": "technique",
   "category": "Craft",
@@ -61,6 +61,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.3",
+  "version": "2.2.0",
   "icon": "🎥"
 }

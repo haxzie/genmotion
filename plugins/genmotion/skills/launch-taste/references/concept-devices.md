@@ -13,7 +13,9 @@ Contents: Choosing · The product makes the film · The invisible made felt · O
 1. Write the still-image test: "As a still, this would lose ___". The device is whatever fills the blank.
 2. Sketch three: one from the product's own visual world (its UI, its output, its unit), one from the feeling (a small human story, an object, a place), one from an unexpected format (a ledger, a receipt, a terminal session, a map, a countdown).
 3. Keep the least obvious one that still passes the swap test (direction Step 3). If it only works with a voiceover explaining it, drop it.
-4. Decide the memorable moment from the device: it is the frame where the device completes (the many become one, the old word becomes the new, the unit becomes the field).
+4. Decide the memorable moment from the device: it is the frame where the device completes (the many become one, the old word becomes the new, the unit becomes the field). That frame stays on screen ≥ 30f before any flood or cut carries it away, and the payoff line sits on or beside it.
+5. **Stock-image nouns.** When the product's own noun is also the category's stock image (a shield or padlock for security, a rocket for a launch tool, a cloud for storage, a suitcase for travel, a waveform for audio, a sparkle or magic wand for AI, a chat bubble for an assistant, a glowing brain for "smart"), the noun alone fails the swap test, however literal it is. Pair it, at the device's completion, with what only this product's user sees: the person (a hand, a face, a name in their own writing) or the outcome object (the thing that was protected, shipped, kept or reached).
+6. **The device outlives the reveal.** Plan the proof beats from the device before building the hook: if the runs would need a different picture (stock UI, a dashboard), the device covers only a third of the film and is the wrong one, or the runs must be rebuilt from it.
 
 ## The product makes the film [several]
 
@@ -47,15 +49,15 @@ Contents: Choosing · The product makes the film · The invisible made felt · O
 
 - **When**: the product generates content (images, video, voice, 3D, layouts).
 - **Examples**: a voice tool's wordmark drawn as the waveform of its own name being spoken; an image model's mark tiled from its renders, rotating to show different faces; a 3D-printing service's name extruded layer by layer.
-- **Build**: one object or mark made of the output, turned or revealed so the variety shows without cuts; secondary motion inside it (the footage playing) carries the hold; echo one colour from the object in the lockup.
-- **Goes wrong**: low-resolution or visibly generated output on the hero object (on a brand piece the texture *is* the brand); seams and misregistration on the object's edges.
+- **Build**: show the **first unit of output once in its native, recognisable form** (a waveform with its time axis, a chart with its labels, a render in its frame, a receipt with its total) before it becomes material, so the viewer knows what the material is made of without a caption; then one object or mark made of the output, turned or revealed so the variety shows without cuts; secondary motion inside it (the footage playing) carries the hold; echo one colour from the object in the lockup.
+- **Goes wrong**: low-resolution or visibly generated output on the hero object (on a brand piece the texture *is* the brand); seams and misregistration on the object's edges; output so abstracted (concentric lines, dots) that it reads as decoration until the copy names it; a conversion (input becoming output) that turns to mush mid-flight: it stays legible throughout, one arc, one turn, in reading order, so the viewer can follow which piece became which.
 
 ## The unit becomes the quantity [two]
 
 - **When**: a milestone or scale claim (users, downloads, deliveries, lines processed).
 - **Examples**: a million downloads: one install arrow close to camera, then a pull-back to a field of them, then the figure; ten thousand deliveries: one parcel, then a city of parcels.
-- **Build**: start on one unit large enough to read as the unit; the camera pull-back *is* the counting; seed per-item phase so a grid shimmers instead of strobing; land the figure with a confident slam and no bounce; dim the field behind it.
-- **Goes wrong**: black for the first second; an odometer and confetti over a gradient instead; a generic metallic material.
+- **Build**: start on one unit large enough to read as the unit; the camera pull-back *is* the counting; seed per-item phase so a grid shimmers instead of strobing; land the figure with a confident slam and no bounce; dim the field behind it. When the count runs *against* something (a battery, a deadline, a budget, a goal), that thing is on screen from frame 0, so the tension is in the first frame; the first unit takes ≤ 2.5 s (75f), the units tighten, and only the last one before the peak slows down.
+- **Goes wrong**: black for the first second; an odometer and confetti over a gradient instead; a generic metallic material; a first unit that crawls for 4–5 s with one thin moving part; the count completing as a gauge with nobody and no outcome in the frame (pair it with the person or the outcome, Choosing §5).
 
 ## The journey [two]
 
@@ -82,8 +84,8 @@ Contents: Choosing · The product makes the film · The invisible made felt · O
 
 - **When**: positioning against an incumbent idea ("pages vs motion", "manual vs automatic").
 - **Examples**: the old workflow in grey monospace on a flat ground; the new in warm colour with depth; one visible crossing between them at the turn.
-- **Build**: each world gets its own palette, type voice and physics; the crossing is the signature transition and happens once. After it, stay in the new world.
-- **Goes wrong**: more than two looks; the crossing repeated as a tic; the old world returning without meaning.
+- **Build**: each world gets its own palette, type voice and physics; the crossing is the signature transition and happens once. After it, the new world leads, but **when the claim is the contrast** (a refused crossing, "stays here, not there", before and after), both sides stay in frame through every proof beat: the old side inert, empty or greyed, its counter frozen in place, while the product works on the other. The contrast *is* the proof; removing one side turns the proof into a claim.
+- **Goes wrong**: more than two looks; the crossing repeated as a tic; the old world returning without meaning; the antagonist faded out at the reveal, so the second half is ordinary product UI.
 
 ## The brand becomes the UI [two]
 

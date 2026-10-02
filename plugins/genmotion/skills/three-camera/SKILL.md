@@ -1,13 +1,13 @@
 ---
 name: three-camera
-description: "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly."
+description: "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, closed-form springs, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed, and the reveal that the subject was inside a device. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly."
 ---
 
 # Camera on Three.js: the how behind the camera grammar
 
 `motion-language` decides *what* the camera does and for how long (push 24–48f, punch 6–10f, orbit 10–30°, drift 4–7 px). On Three.js the camera is a real `PerspectiveCamera`, so every one of those moves is arithmetic on its position, target and fov. This skill is that arithmetic, distilled from the 3D templates (the LightPay and Samsung Pay launch films, the NotchBrowser one-shot, the crypto dashboard glide, the p(doom) music video) and checked by rendering it.
 
-Two modules carry everything: `components/stage.ts` (units, fitting, a camera-locked overlay) and `components/ease.ts` (curves, spline, log zoom, drift, kick). Both are in `references/rig.md` ready to copy; the move recipes are in `references/moves.md`.
+Two modules carry everything: `components/stage.ts` (units, fitting, a camera-locked overlay) and `components/ease.ts` (curves, closed-form springs, spline, log zoom, drift, kick). Both are in `references/rig.md` ready to copy; the move recipes are in `references/moves.md`.
 
 ## When to use
 
@@ -15,6 +15,7 @@ Two modules carry everything: `components/stage.ts` (units, fitting, a camera-lo
 - A subject must fill the frame exactly, or the video ships in more than one aspect.
 - Two scenes cut on a matched framing (match-push), or a move must carry across a cut.
 - A camera path stops at every keyframe, or a zoom races then crawls.
+- The film reveals that what we watched was on a device's screen (pull back as the device closes in), or a spring needs a fixed length.
 
 Not for: choosing the move or its duration (`motion-language`), what sits in front of the lens at a cut (`three-transitions`), type that must survive a move (`three-type`).
 
@@ -59,6 +60,9 @@ Numbers from `motion-language`; recipes in `references/moves.md`.
 | Shake | Per-frame `hash1(frame)` offset × `kick(time, hits)` | Never a random source; dies within 3–6f |
 | Slam | Headline z 6 → 0, scale keys 0.7 → 1.04 → 1 over 14f | Once per film |
 | Subject rig | Pose the layout (pivot + scale + tilt) instead of the camera | For flat UI gliding in 3D, where camera math gets awkward |
+| It was inside the device | Rig origin on the subject; device scaled `logLerp(coverScale(...), 1)` in x/y only, rig travels to the final framing, 45–60f | A plain pull-back lets the bezel into the close-up, or never covers the frame; `references/moves.md` §12 |
+| Push on a flat film | Scale a map group about the focus (`position = focus × (1 − k)`) | Labels and screen-px strokes keep their size; `references/moves.md` §13 |
+| Spring settle | `springIn(frame, start, dur, "gentle")` from the ease module | The preset's shape, settled exactly on `start + dur`; never re-derive the time scale |
 
 ## Keyframes that never stop
 
@@ -157,4 +161,5 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 3. Around each interior key of a keyed path, 5 consecutive frames show steady movement (no stall).
 4. For every matched cut, the last frame of N and the first of N+1 match in position and size of the carrier; drift is zero on both.
 5. Nothing reads while the camera is mid-move on its first appearance.
-6. No allocation, randomness or wall-clock timing in any frame callback; `validate` passes.
+6. An inside-the-device reveal: frame 0 of the move shows no bezel or screen edge (the whole ground around the subject is the screen's colour, matching the shot before to the pixel), and the last frame shows the whole device at its final size.
+7. No allocation, randomness or wall-clock timing in any frame callback; `validate` passes.

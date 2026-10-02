@@ -158,6 +158,15 @@ ffmpeg -hide_banner -nostats -i out.mp4 -af silencedetect=noise=-50dB:d=0.5 -f n
 
 Replace `H` with the number (for a hit on frame 72 at 30 fps, `start=2.3:end=2.4` and `start=2.4:end=2.41`).
 
+**No gap on the landing frame.** A riser must run into the hit, never stop short of it. Read the 50 ms rows from 0.15 s before the hit to 0.1 s after it; none may fall more than 6 dB below the riser's last rows:
+
+```
+ffmpeg -v error -i out.mp4 -map 0:a -af "aresample=48000,asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/w.txt" -f null -
+awk -F'[:= ]+' -v h=2.0 '/pts_time/{t=$NF} /RMS_level/{if(t>=h-0.15&&t<h+0.1)printf "%.2f %s\n", t, $NF}' assets/w.txt
+```
+
+Measured with the placeholder riser and impact, hit at 2.0 s: on the frame, the rows read −21.8, −21.3, −21.6, **−13.4**, −16.8 (the riser climbs straight into the hit); the same impact placed 4 f late reads −21.8, −21.3, −21.6, **−inf, −inf**, a hole on the landing frame that plays as a dropout. Fix by moving the hit (or the riser's `startFrame`), never by stretching a fade over the gap. Delete `w.txt` after.
+
 ### Synthesised ambient bed (a product that makes sound, no recording)
 
 For a launch or demo of a product whose output *is* sound (a soundscape or white-noise app, a sleep or meditation app, an ambient generator), the film plays that output for 2–4 s with the score ducked 10–12 dB under it (`launch-playbook`). With no recording from the user and no `music`/`sfx` to generate one, synthesise a placeholder: stereo brown noise low-passed to a soft rumble with a slow swell, under three slow sine pads (A2, E3, B3, a stacked fifth, slightly detuned left and right so it is wide), each breathing at its own rate (0.03–0.08 Hz, so nothing repeats inside the clip), faded 2 s in and 3 s out, normalised to −16 LUFS / −3 dBTP so it can sit at speech level in the foreground. Tested: 24.0 s, 48 kHz stereo, −16.7 LUFS integrated, LRA 4.3 LU, true peak −4.4 dBTP, energy below 1 kHz with nothing audible above about 6 kHz.
@@ -175,4 +184,65 @@ ffmpeg -i assets/placeholder-ambient-bed.wav -af "aresample=48000,asetnsamples=n
 ```
 
   720 rows for 24 s; map dB to a 0–1 amplitude with `10^(dB/20)` and normalise to the loudest row. Delete the text file after.
+- **As an air bed under designed cues** (a picture-led film with no music), not the product's own sound: brown noise alone, low-passed at ≤ 4 kHz (here 500 Hz already), placed at 0.05–0.15 so every cue's loudest 50 ms sits ≥12 dB above it (`mix-and-loudness.md`, Sparse mixes). Air left bright up to 10–17 kHz reads as hiss as soon as a re-master lifts it.
 - It is a **placeholder** for the product's real output: name it `placeholder-…`, list it in `VIDEO.md` as "synthesised stand-in for <product>'s sound, replace with a real recording", and say so in your reply. A real 20–30 s capture from the user (or `music` prompted with the product's own description of its sound) replaces it 1:1.
+
+## Many events: one stem from the scene's schedule
+
+For a film whose content is many sound events (dozens of coins into a jar, a counter ticking a hundred times, items landing in a crowd). Placing one clip per event with `place-audio` does not scale, and identical repeats at one level read as a machine gun or a wall. Build one stem from the **same event list the scene animates from**, so picture and sound cannot drift:
+
+1. Keep the land frames in `components/events.json` (an array of film frames, ascending); the scene imports it and poses each item from it in closed form.
+2. Build the stem with the five rules (SKILL.md, Many sound events): seeded variation, thinning, phrases, a voice ceiling, density-scaled level. The `node -e` below prints an `ffmpeg` filter graph from the list (type it inline, nothing saved as a script): one branch per voiced event, pitch by `asetrate`, level by `volume`, placed by `adelay`, summed with `amix normalize=0`.
+3. Place the stem at 1.0 from frame 0 with `place-audio`, list it in `VIDEO.md` as built from the event schedule (and as a placeholder if its source sound is synthesised).
+
+```
+# one source sound: a short bright coin/tick (this is a synthesised placeholder: two decaying partials, -6.6 dBFS peak)
+ffmpeg -f lavfi -i "aevalsrc='0.5*min(t/0.002,1)*(exp(-38*t)*sin(2*PI*2093*t)+0.5*exp(-60*t)*sin(2*PI*5650*t))':s=48000:d=0.3" -af "aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-coin.wav
+
+# the stem: run from the project folder
+ffmpeg -y -hide_banner -nostats -i assets/sfx-coin.wav -filter_complex "$(node -e '
+const F = require("./components/events.json"), fps = 30, tail = 0.25, maxVoices = 4;
+const hash1 = (n) => { let t = (Math.imul(n | 0, 0x9e3779b1) + 0x6d2b79f5) >>> 0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const SCALE = [0, 2, 4, 7, 9, 12, 14, 16];
+const ev = []; let last = -1e9, step = 0, ringing = [];
+F.forEach((f, i) => {
+  const t = f / fps, hero = i === 0 || i === F.length - 1;
+  if (!hero && f - last < 2) return;
+  step = f - last >= 8 ? 0 : Math.min(step + 1, SCALE.length - 1);
+  ringing = ringing.filter((end) => end > t);
+  if (!hero && ringing.length >= maxVoices) return;
+  const n = ringing.length + 1;
+  const db = hero ? 0 : -2 - 10 * Math.log10(n) + (step === 0 ? 2 : 0) + (hash1(2 * i + 1) - 0.5) * 3;
+  const semi = SCALE[step] + (hash1(2 * i) - 0.5);
+  ev.push([t, 2 ** (semi / 12), db]); ringing.push(t + tail); last = f;
+});
+const a = ev.map((e, k) => `[s${k}]asetrate=${(48000 * e[1]).toFixed(1)},aresample=48000,volume=${e[2].toFixed(2)}dB,adelay=${Math.round(e[0] * 1000)}:all=1[a${k}]`);
+console.log(`[0:a]asplit=${ev.length}${ev.map((_, k) => `[s${k}]`).join("")};${a.join(";")};${ev.map((_, k) => `[a${k}]`).join("")}amix=inputs=${ev.length}:normalize=0[out]`);
+console.error(`${F.length} events -> ${ev.length} voiced`);
+')" -map "[out]" -c:a pcm_s16le assets/events-stem.wav
+```
+
+What each number does, so you can tune one at a time:
+
+| Rule | In the code | Effect |
+|---|---|---|
+| Seeded variation | `hash1(2i)` ±0.5 semitone, `hash1(2i+1)` ±1.5 dB | no two neighbours identical; the same on every run (`hash1` is `components/ease.ts`'s) |
+| Thinning | events < 2 f apart are one sound | the picture keeps every item; the ear gets a clean onset |
+| Phrases | a gap ≥ 8 f resets `step`; inside a phrase the pitch climbs `SCALE` (pentatonic, in semitones) and the phrase's first event gets +2 dB | a run reads as a gesture with a start, not a stream |
+| Voice ceiling | at most `maxVoices` (4) ringing within `tail` (0.25 s) | a burst never sums into a wall; extra events are silent, not quieter |
+| Density level | −10·log10(n), n = voices ringing | equal-power: four voices together sound like one at full level |
+| Heroes | first and last event at 0 dB, never thinned | the start and the land stay readable; add any event the picture isolates the same way |
+
+Tested on ffmpeg 6.1 with 80 events accelerating from 30 f apart to every 1–2 f: 56 voiced, peak −5.1 dBFS, 0.5 s RMS −28 to −24 dB on the sparse opening, a steady −30 to −31 dB through the densest run (a texture under the isolated hits, not a wall), and −25 dB on the final hero event. Pitch tied to state instead of phrase (rising with the jar's fill) is the same code with `semi` from the fill fraction (`12 * i / F.length`). A different source sound (a real coin foley, a `sfx` take) drops straight in: peak-normalise it to −6 dBFS first.
+
+## Speech-like murmur (placeholder)
+
+When a film needs the *sound* of people talking without words (a café, a meeting behind a product, a crowd reacting, an app whose output is speech before a real recording exists) and there is no `voiceover` or `sfx`: formant-filtered noise and a low buzz, gated into syllables at about 4 Hz with phrase breaks. It is unmistakably a placeholder (it reads as "voices through a wall"); name it `placeholder-murmur.wav`, list it in `VIDEO.md` as a stand-in, and replace it with a real recording or a `voiceover` take of the actual words when the film's meaning depends on them.
+
+```
+# 6 s murmur: pink noise + a 125 Hz voiced buzz (3 harmonics, slow pitch drift) through three formant bands (600 / 1400 / 2600 Hz),
+# syllables at ~4.2 Hz with jittered phase, a 0.37 Hz phrase swell, and a 0.5 s pause every 2.6 s
+ffmpeg -f lavfi -i "anoisesrc=c=pink:r=48000:a=0.5:seed=17:d=6" -f lavfi -i "aevalsrc='0.25*(sin(2*PI*(125*t+2.4*sin(2*PI*0.9*t)))+0.6*sin(4*PI*(125*t+2.4*sin(2*PI*0.9*t)))+0.4*sin(6*PI*(125*t+2.4*sin(2*PI*0.9*t))))':s=48000:d=6" -filter_complex "[0:a][1:a]amix=inputs=2:normalize=0,asplit=3[x][y][z];[x]bandpass=f=600:width_type=q:w=4[f1];[y]bandpass=f=1400:width_type=q:w=5,volume=0.7[f2];[z]bandpass=f=2600:width_type=q:w=6,volume=0.4[f3];[f1][f2][f3]amix=inputs=3:normalize=0,volume='max(0.05,pow(max(0,sin(2*PI*4.2*t+0.8*sin(2*PI*1.3*t))),1.4))*(0.65+0.35*sin(2*PI*0.37*t))*lt(mod(t,2.6),2.1)':eval=frame,afade=t=in:d=0.02,afade=t=out:st=5.8:d=0.2,loudnorm=I=-16:TP=-3:LRA=11,aresample=48000,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/placeholder-murmur.wav
+```
+
+Measured: −18.7 LUFS, true peak −6.0 dBTP; its 50 ms RMS swings between about −15 dB on a syllable and −37 dB between syllables, roughly every 0.24 s (4.2 Hz), with true silence in each phrase pause. Variations one at a time: syllable rate 3–5 Hz (`4.2`; slower reads calmer), a different speaker by moving the buzz (`125`: 100–110 lower, 180–220 higher) and the formants together by the same ratio, several voices by mixing two or three takes with different `seed`, buzz pitch and phrase period, each at 0.5–0.7. Under a VO or cues it is a bed: place it at 0.05–0.15 per the ladder (room tone / ambience), never at a level where the ear tries to understand it. In the foreground (the meeting or recording the product listens to, as a hook) place it at 0.5–0.7 so it sits under the film's hero cues: it must never be the loudest moment of the film, and when it stops, the room tone that follows starts 4–6 f before its tail ends (no digital zero between them).
