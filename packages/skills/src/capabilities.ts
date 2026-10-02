@@ -83,7 +83,7 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     desktop: "`generate_sfx`",
     mcp: null,
     shell: null,
-    fallback: "place sound files the user provides with `place-audio`, or leave the moment silent",
+    fallback: "place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`), named as placeholders to the user; silence only where the skill allows it",
   },
   music: {
     label: "A music bed or score: generated, or found under a licence that allows the use",
