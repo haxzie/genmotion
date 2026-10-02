@@ -107,15 +107,11 @@ Design to a centre-weighted core that survives 16:9 → 1:1 → 9:16, or re-lay-
 
 ## 6. Type sizes that read
 
-| Destination | Headline | Body | Labels |
-| --- | --- | --- | --- |
-| 16:9 full screen (site, keynote) | ≥ 80 px (house heroes 96–220) | ≥ 36–48 px | ≥ 26 px |
-| Feed (in a scrolling list, small) | ≥ 90 px | ≥ 32 px | ≥ 24 px |
-| 9:16 at 1080 wide | 64–132 px | 30–46 px | ≥ 24 px |
+The sizes are the house design standards, kept in one table in `three-type` (§ "One type system per film"): hero headline 72–130 px, supporting line 34–48, labels and annotations 28–34, uppercase eyebrows 28 at wide tracking, and **28 px as the floor for anything, anywhere**, at 1080 px on the frame's short side (1920 × 1080 and 1080 × 1920 alike; scale by the short side for other resolutions). In 9:16, break headlines to 2–4 words a line rather than dropping below 72 px. Word-timed social captions over footage follow the social caption spec in `ugc-craft`.
 
 - Contrast ≥ 4.5:1 for anything read; the house sets 5.3:1 as the dimmest tone allowed for small text.
 - Hierarchy ratio between levels ≥ 1.5–2×.
-- The bright brand accent never carries small text.
+- A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; accents are for display type, fills and glows, never body copy.
 
 ## 7. Holds that end a film
 
@@ -127,7 +123,7 @@ Design to a centre-weighted core that survives 16:9 → 1:1 → 9:16, or re-lay-
 
 The final hold is calmer than everything before it: one ambient behaviour at most, no new information after the CTA.
 
-## 8. Worked budget: 30 s landing-page launch, VO-led
+## 8. Worked budget: 30 s click-to-play launch film, VO-led
 
 1. Length 900f. VO window: starts at 6f, ends at 840f (last 60f VO-free) → 834f ≈ 27.8 s → at 2.3 words/s, **64 words** maximum.
 2. Energy High in the cascade (new information every 20–25f), Medium elsewhere (30–40f).

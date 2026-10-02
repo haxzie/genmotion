@@ -30,7 +30,7 @@ export const LOOK = {
 ```
 
 - **One accent.** Everything else is neutral, tinted a degree toward the accent hue so the frame feels designed rather than grey. A second "punch" colour appears on exactly one word in the film's most important line.
-- The bright accent never carries small text; it is for fills, rays, glows and display type.
+- The accent is for fills, rays, glows and display type, never body copy. A short label or eyebrow may wear it only if it clears 4.5:1 on its ground (yellow `#ffd23f` on near-black is about 13:1); a low-contrast accent (< 4.5:1) never carries text under 60 px.
 - Contrast for words: ≥ 4.5:1 under 60 px, ≥ 3:1 at 60 px and above. On near-black, `#8a8a93` is the dimmest text allowed; on white, `#5e606a` (≈6:1). Text on footage or a glow sits on a scrim (0.45–0.65 opacity).
 
 ## The colour pipeline (decide it first)
@@ -60,6 +60,7 @@ The renderer is shared by every scene in the film, so **every scene** calls `col
 - `studioEnvironment()` builds a grey room with four softbox panels and prefilters it with PMREM, once, in the builder: **metal and gloss without an environment render black or plastic.** This is the single biggest upgrade for any 3D object.
 - A rim light from behind separates a subject from a dark ground; add it before brightening anything.
 - Same light direction in every scene of the film.
+- A "product" that is flat printed matter (receipts, cards, paper) gains nothing from product lights: use the `flat` pipeline with a baked soft shadow plane under each piece, so its paper hex stays exact.
 
 ## Materials
 
@@ -67,7 +68,7 @@ Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness
 
 ## Background, glow and finish
 
-- **Never a flat fill behind a subject**, except brand identity. The clip-space `backdrop()` gives a radial lift behind the subject, a 0.25–0.35 vignette and 1–2% grain (display units, added after the colour-space conversion) that changes per frame, in one draw that ignores the camera. Brand identity (a sting, a logo end card, a brand guide) is the exception: the brand hex exact at centre and corners (±2 levels), no vignette, no moving grain.
+- **Never a flat fill behind a subject**, except brand identity. The clip-space `backdrop()` gives a radial lift behind the subject, a 0.25–0.35 vignette and a 1–1.5% grain, in one draw that ignores the camera. The grain is in display units (added after the colour-space conversion; in linear light it boils) and **static by default** (a fixed seed): it dithers banding, survives the encode and keeps the file small. Moving grain is for film-look families only, ≤0.8% for web delivery; measured, the boiling linear-light version made a 30 s landing-page film 69 Mb/s. Brand identity (a sting, a logo end card, a brand guide) is the exception: the brand hex exact at centre and corners (±2 levels), no vignette, no grain.
 - **Glow** is an additive sprite with a soft radial texture behind one subject, breathing 1.2–2.2% at 0.2 Hz; no post-processing is available or needed.
 - **Fog** in the background colour so floors and far objects fade instead of ending in a line.
 - **Banding**: H.264 bands smooth dark gradients. Prefer radial lifts to linear gradients on dark grounds, keep the range small, and keep grain on.
@@ -116,7 +117,6 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
   halo.position.z = -1;
   scene.add(halo, mark);
   return ({ frame, time }) => {
-    bg.u.uFrame.value = frame;                           // grain varies per frame
     mark.rotation.set(0.12, -0.45 + 0.6 * prog(frame, 0, D, inOutSine), 0); // 34 degree turn over the scene
     halo.material.opacity = 0.5 + 0.1 * Math.sin(time * 2 * Math.PI * 0.2);  // breathe at 0.2 Hz
     mark.position.y = 3 * PX * Math.sin(time * Math.PI * 0.5);               // float 3 px at 0.25 Hz
@@ -130,9 +130,9 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | --- | --- | --- | --- |
 | Beat-cut kinetic type | flat | none | Solid black or white; no grain |
 | Soft-light SaaS | flat | none (UI is unlit) | White/creme with a 3–5% radial lift |
-| 3D product hero | brand | product + studio env | White or near-black, lift, 1% grain, one glow |
-| One-shot film | flat | none | The world itself; 8% grain overlay, vignette 0.28 |
-| Brand identity (sting, end card) | flat | flat or product | The exact brand hex, no vignette, no grain or a static ≤0.5%; depth from the mark's own shading |
+| 3D product hero | brand | product + studio env | White or near-black, lift, static 1% grain, one glow |
+| One-shot film | flat | none | The world itself; moving grain overlay (8%, or ≤0.8% on the background for web), vignette 0.28 |
+| Brand identity (sting, end card) | flat | flat or product | The exact brand hex, no vignette, no grain (a static ≤0.5% only if a brand gradient bands); depth from the mark's own shading |
 | Chat-UI social | flat | none | The app's own colours, pixel-faithful |
 | Whiteboard | flat | none | Paper white; strokes are the texture |
 | Textured tactile | flat or cinematic | dramatic, if anything is lit | Dark HUD panels, dither, pixel-block wipes |
@@ -147,7 +147,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Glossy metal with no environment**: black blobs.
 - **Ten slightly different greys**, or a material per mesh.
 - **Pure black (#000) grounds and pure white (#fff) type on them**: harsh and banding-prone; use `#07070c`–`#0b0b0c` and `#ededef`.
-- **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; grain at 1–2%.
+- **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; static grain at 1–1.5%.
+- **Grain added before `colorspace_fragment`, or a float hash that stripes under SwiftShader.** Copy the backdrop as written: integer hash, grain last.
 - **Text on a busy area without a scrim.**
 
 ## Requirements
@@ -164,5 +165,6 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 2. The brand colour in a capture matches its hex within a couple of levels on flat fills, floods and logos (sample a pixel).
 3. Nothing important is pure black or clipped white; metal shows reflections, not black.
 4. Every line of text clears 4.5:1 (3:1 at ≥ 60 px) against what is actually behind it in the frame.
-5. A dark gradient frame from the export shows no visible steps.
-6. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.
+5. A dark gradient frame from the export shows no visible steps, and a 100% crop of a flat area shows even noise, no stripes.
+6. Grain: two consecutive held frames of the export have PSNR > 45 dB (static grain) or > 40 dB (moving); brand-identity frames have none. The export's bitrate fits its destination (`ffprobe … format=bit_rate`).
+7. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.

@@ -56,7 +56,7 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 | Flood becomes object | Disc from the button, 10f inCubic, complete 3f early | Opens in that colour; disc contracts onto the object 13f, then fades as the real object takes over | cover-layers §2 |
 | Iris-in to an object | — | Hole shrinks from the frame to the object's radius over 30f | cover-layers §3 |
 | White wipe-up | Wipe, last 8f, ease-in, 40 px feather | Opens white | cover-layers §4 |
-| Block wipe | Cells cover, 18–24f | Starts covered, clears with the same cells; content already 12f in | cover-layers §5 |
+| Block wipe | Cells grow out of an on-screen object of the wipe's colour, 18–24f | Starts covered, clears with the same cells; entrance clocks offset +12f (`prog(frame + 12, …)`) | cover-layers §5 |
 | Flash-to-white | Ramp the last 4–8f, ease-in | Decay 6–9f | cover-layers §6 |
 | Colour-field push | Panel slides over, 8–23f | Panel slides off; content carries 46 px → 0 over 16f | cover-layers §7 |
 | Persisting element | Carrier lands on the handoff pose, no exit | Same factory, same pose on frame 0, then moves in its new role | carries §1 |
@@ -70,7 +70,7 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 ## Picking the build for a film
 
 - The signature handoff goes on chapter turns and the peak; the workhorse (usually exit-then-cut or a persisting element) on the rest. At most two transition styles besides plain cuts.
-- Floods and irises want a carrier on screen to motivate them: a button that is pressed, a mark, a dot. A flood from nowhere is decoration.
+- Floods, irises and block wipes want a carrier on screen to motivate them: a button that is pressed, a mark, a dot, a packet in the wipe's colour. A flood or a wipe from nowhere is decoration.
 - Flash-to-white on every cut only in a music film, with the cut on the hit.
 - Motion blur is for the 8–10f around a whip, never a whole film: it multiplies render time by the sample count and the editor can't point at objects inside it.
 - Fade to black only on the final frame or a chapter break of a long piece.
@@ -114,7 +114,7 @@ Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, 
 | Match-push | push `D−34 … D−10`, hold | settle or creep from 0 |
 | Flash-to-white | ramp `D−6 … D` | decay 0–8 |
 | White wipe-up | `D−8 … D` | opens white |
-| Block wipe | `D−22 … D−2` | clears 0–20, content already 12f in |
+| Block wipe | `D−22 … D−2` | clears 0–20, entrances offset +12f |
 | Exit-then-cut | exits `D−14 … D−7` | first entrance at 3–6 |
 
 ## Building order for a multi-scene film
@@ -147,8 +147,9 @@ Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, 
 ## Checks before you finish
 
 1. For every cut, `capture-frames` on the last frame of N and the first of N+1: the carrier matches in position, size, rotation and colour (sample a pixel of floods; the values are identical).
-2. The frame 3f before each exit-then-cut shows background only; every cover completes 2–5f before its cut.
-3. Every handoff number exists once, in `components/handoff.ts`, imported by both scenes; continuous loops run on film frame and the scene-start table matches `project.json`.
-4. Cover planes are on the camera overlay, `toneMapped: false`, `pickable = false`.
-5. A frame checker flagging single-colour frames at flood or flash cuts shows the carrier colour, not an empty scene.
-6. No randomness or wall-clock timing in any transition; block wipes use a fixed seed; `validate` passes.
+2. The frame 3f before each exit-then-cut shows background only; every cover completes 2–5f before its cut; every block wipe's first cells touch an on-screen object of their colour.
+3. Parked carriers (an object waiting in a node, a certificate set aside) sit in a reserved slot that clears every label on the first and last frame of each scene; one larger than its parking spot is hidden while parked.
+4. Every handoff number exists once, in `components/handoff.ts`, imported by both scenes; continuous loops run on film frame and the scene-start table matches `project.json`.
+5. Cover planes are on the camera overlay, `toneMapped: false`, `pickable = false`.
+6. A frame checker flagging single-colour frames at flood or flash cuts shows the carrier colour, not an empty scene.
+7. No randomness or wall-clock timing in any transition; block wipes use a fixed seed; `validate` passes.

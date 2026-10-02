@@ -33,7 +33,7 @@ Work down the list and stop at the first one that yields something usable.
 | Licence | Commercial and advertising use allowed; not editorial-only; not NC; attribution text recorded if required | An ad is commercial use; editorial stock cannot sell anything |
 | Releases | Recognisable people and private property carry model/property releases (stock), or are generated | A face in an ad implies endorsement |
 | Marks | No third-party logo, readable sign, screen or packaging you cannot account for | A stray brand in frame is a claim you did not mean to make |
-| Resolution | After the crop to the canvas, the region kept is ≥1080 px wide for 9:16 (upscale ≤1.25×) | Upscaled stock goes soft on a phone, and soft reads as cheap |
+| Resolution | After the crop to the canvas, the region kept is ≥1080 px wide for 9:16. Total enlargement of source pixels, zooms included: ≤1.3× ideal, 2.0× ceiling, with a mild sharpen (`unsharp=5:5:0.6`) above 1.3× | Upscaled stock goes soft on a phone, and soft reads as cheap; with stock you can usually pick a bigger file instead. The same limit governs the user's own footage (`video-editing`) |
 | Credit | A line in `VIDEO.md` for every non-user, non-generated file: source URL, creator, licence, attribution text | Same rule `sound-design` uses for audio |
 
 Video clips are trimmed and re-encoded per `screen-capture` (VP9 WebM at the project fps, a keyframe every 15 frames, a 0.5 s tail) before a scene plays them.

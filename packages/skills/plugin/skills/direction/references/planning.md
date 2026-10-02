@@ -64,19 +64,19 @@ The `## Beats` table from `direction`. One row per beat; a scene may hold severa
 
 ---
 
-## Example A: 30 s launch, landing page, VO-led
+## Example A: 30 s launch, landing page (click-to-play), VO-led
 
 ### Direction
 
 ```markdown
 ## Direction
 SMP: Ledgerly chases unpaid invoices for you, politely, so you get paid without writing a single reminder.
-Audience / placement / sound: freelancers and small studios · landing page hero · sound on
+Audience / placement / sound: freelancers and small studios · landing page, click-to-play film below the hero · sound on (the muted autoplay hero loop is a separate cut that carries the SMP in picture and type)
 Feeling: relieved, confident — not corporate, not cute
 Idea: We show 47 unpaid invoices as a pile of sticky notes that one click flips into "Paid" stamps.
 Style family: B Soft-light SaaS — the material is the app's UI; the audience wants to see it work
 Palette: bg #FAFAF7 · ink #141414 · muted #5E5E58 · accent #18A957 (paid green; on stamps and the CTA only)
-Type: one grotesque 500/600, hero 150 px at −0.035em; body 38 px; eyebrow 28 px caps +0.16em
+Type: one grotesque 500, hero 120 px at −0.03em; body 38 px; eyebrow 28 px caps +0.16em
 Motion: per `motion-language` — enter blurUp 12f outCubic, exit 8f inCubic, word stagger 3f, overshoot none (stamps 1.08), hold breathe 0.6% + camera drift 4 px
 Camera: locked with 4 px drift; pushes 36f inOutCubic on the two UI demos; drift dies before every matched cut
 Transitions: signature persisting element (the "Auto-chase" button becomes the next scene's toggle) · workhorse exit-then-cut · hard cuts none · travel L→R

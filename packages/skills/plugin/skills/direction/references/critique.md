@@ -17,7 +17,28 @@ Contents: 1 What to capture · 2 The checklist · 3 The rubric (8 axes × 1–5)
 - the moment each on-screen line becomes legible and the last frame before it starts to leave (to measure the hold);
 - the final frame.
 
-Assemble them into a contact sheet with `ffmpeg` (a tile of the stills in order), so rhythm, palette drift and repeated layouts are visible at a glance. For sound, measure the export with `ffmpeg` (loudness and peaks, per `sound-design`) and listen to the cuts against the picture if you can.
+Assemble a contact sheet with `ffmpeg`, so rhythm, palette drift and repeated layouts are visible at a glance:
+
+```sh
+# one tile per second of the export, 30 tiles per sheet (sheet-01.png, sheet-02.png, ...)
+ffmpeg -v error -i export.mp4 -vf "fps=1,scale=384:-2,tile=6x5:padding=4" sheet-%02d.png
+# or from a folder of captured stills, in name order
+ffmpeg -v error -pattern_type glob -i 'stills/*.png' -vf "scale=384:-2,tile=6x5:padding=4" stills-%02d.png
+```
+
+Use `fps=2` for a feed piece under 20 s. For sound, measure the export with `ffmpeg` (loudness and peaks, per `sound-design`) and listen to the cuts against the picture if you can.
+
+Two measurements on the export, every time:
+
+```sh
+# dead holds: a blur hides grain, so only real stillness counts
+ffmpeg -i export.mp4 -vf "scale=320:-2,gblur=sigma=2,freezedetect=n=0.003:d=1.0" -map 0:v -f null - 2>&1 | grep -o "freeze_[a-z]*: [0-9.]*"
+# delivery: bitrate (bit/s) and size; then faststart (moov must be listed before mdat)
+ffprobe -v error -show_entries format=bit_rate,size -of default=nw=1 export.mp4
+ffprobe -v trace export.mp4 2>&1 | grep -o "type:'\(moov\|mdat\)'" | head -2
+```
+
+Freezes that touch (one's end is the next one's start) are one hold: add them up.
 
 ## 2. The checklist
 
@@ -32,6 +53,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 
 ### Hook and first frame
 - [Blocker] Feed placements: the frame at 0.5 s already shows the hook. No fade from black, no empty frame, no logo-first card.
+- Stings, channel intros and end cards are logo-first by definition: judge their hook on whether motion has started by frame 15 (not an empty field with a speck in it) and the mark or name is legible by the lock frame.
 - [Fix] Brand is present by 3–4 s in feed ads (a product shot, the UI or the mark in context), not only at the end.
 
 ### Frame
@@ -39,11 +61,11 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] One focal point per frame; the eye knows where to go within 15f of each cut.
 - [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame.
 - [Fix] Hero and end-card frames leave negative space (content fills 40–60% of the frame).
-- [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal.
+- [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal or it is brand identity (a sting or end card on the exact brand hex).
 
 ### Type
 - [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible, and never more than 15 characters per second.
-- [Blocker] Contrast ≥ 4.5:1 for read text; the bright accent never carries small text.
+- [Blocker] Contrast ≥ 4.5:1 for read text under 60 px (≥ 3:1 at 60 px and above), measured against what is actually behind it. A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; a high-contrast accent eyebrow (yellow on near-black, about 13:1) passes.
 - [Fix] ≤ 2 type families; a size ratio ≥ 1.5× between levels; display tracking tightened (−0.02 to −0.045em).
 - [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers.
 - [Polish] No widows (a single word alone on the last line of a headline).
@@ -55,6 +77,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] Multi-key moves do not stop at each key (watch camera paths frame by frame for a stall).
 - [Fix] One ambient behaviour per held frame; holds share phase across words on a line.
 - [Fix] Overshoot is used for one role (a button, a badge, a stamp), not on everything; enterprise and luxury tones have none.
+- [Fix] Nothing passes through read type: a moving element never crosses a word that is on screen, and a lockup (mark + name) moves as one group.
 - [Polish] Anticipation before big moves; settle after them.
 
 ### Transitions
@@ -68,8 +91,11 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Blocker] The beat table's frame ranges sum to the video's length, and the export's duration matches.
 - [Fix] There is a breath before the peak and the peak is the most contrasting moment in the film.
 - [Fix] The beat interval matches the energy chosen (Hyper 8–14f, High 18–30f, Medium 30–50f, Calm 45–70f) and varies along the curve.
-- [Fix] No more than 3 s without meaningful change in feed formats.
+- [Fix] No dead holds: on the `freezedetect` pass above, any freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, is exempt). A line held more than 2× its formula with nothing else changing is the same fault.
 - [Fix] The logo holds 75–120f (10–30f only in beat-cut styles), with nothing new after the CTA.
+
+### Delivery
+- [Blocker] The file fits its destination. Landing-page hero: H.264, ≤ 5 Mb/s at 1080p (≤ 3 Mb/s at 720p), ≤ 15 MB, `+faststart` (moov at the front), plays muted and loops cleanly (last frame cuts back to frame 0 without a jump). Platform uploads (YouTube, feeds) re-encode, so anything under about 20 Mb/s is fine; store previews follow `app-store-preview`'s specs. A file over budget is re-encoded (`-c:v libx264 -crf 23 -maxrate 5M -bufsize 10M -movflags +faststart`); if it still is, the grain or noise in the picture is the cause (`three-look`).
 
 ### Sound (when the film has any)
 - [Blocker] VO is intelligible over the bed; no clipping in the export.
@@ -85,6 +111,8 @@ Score each axis 1–5 from the frames and the export. Write one sentence of evid
 | --- | --- | --- | --- |
 | **Idea** | A feature list; passes the swap test for any brand | One clear SMP, but shown generically | "We show X as Y" is visible in the frames; a memorable moment only this film could have |
 | **Hook** | Fade from black or a logo card; nothing at 0.5 s | A clear opening line by 1 s, but static | Motion and the core tension on screen by frame 15; you want to see the next second |
+
+Hook for stings, channel intros and end cards: 1 = an empty or near-empty field for the first 0.5 s; 3 = motion by frame 15 but small in a large dead field; 5 = something already moving and filling a deliberate part of the frame at frame 0, building straight into the mark.
 | **Frame** | Several competing focal points; text in unsafe zones | Clean, safe, but centred-stack layouts in every scene | One focal point per frame, deliberate negative space, layouts vary by job, a disciplined palette |
 | **Type** | Unreadable holds or contrast; 3+ families | Readable and consistent, but flat hierarchy | Every line reads twice; strong hierarchy; type moves only where meaning needs it |
 | **Motion** | Linear or bouncy everywhere; the same fade-up on everything | Consistent easing, but uniform; some stalls or eases into cuts | One physics; entrances by role; staggers, settles and holds that breathe; no stalls |

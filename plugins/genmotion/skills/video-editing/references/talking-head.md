@@ -20,17 +20,17 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 
 - Jump-cut every pause over 0.3–0.5 s and every flub: a cut every 3–8 s is typical.
 - Hide jump cuts with `ugc-craft`'s jump zoom: alternate 1.0 and 1.2 on consecutive segments (≥20% size change), never two zoomed segments in a row. Hard steps, not animated zooms. Reserve a slow push (1.0 → 1.08 over 3–6 s) for serious lines.
-- 4K source in a 1080p timeline can scale to 2.0 without softness; 1080p sources stay ≤1.3.
+- Total enlargement of source pixels (reframe × zoom) ≤1.3× ideal, 2.0× ceiling: a 4K source in a 1080p timeline can scale to 2.0 without softness; a 1080p source stays ≤1.3; a 720p source needs the low-res layouts in `ffmpeg-recipes.md` §6.
 - B-roll or a graphic every 10–30 s (denser in the first 2 minutes), 2–5 s each, literal to the words, with J/L cuts so the voice carries across.
 - A pattern interrupt every 30–60 s: b-roll, a graphic, a zoom change, a text pop with a sound, an angle change, a screen insert.
 
 **Graphics:** lower third on first appearance (4–6 s); keyword pops of 2–5 words for 1.5–3 s; chapter cards 1–2 s; spoken numbers become an animated chart; all inside title-safe.
 
-**Sound:** a bed 20–28 dB under the voice, changing at each chapter; drop it to silence under the most important line; light SFX (a soft whoosh on transitions, a click on text). Loudness −14 LUFS.
+**Sound:** a bed per `sound-design`'s bed row (0.12–0.2, 14–20 LU under the voice), changing at each chapter; drop it to silence under the most important line; light SFX (a soft whoosh on transitions, a click on text). Loudness −14 LUFS.
 
 **Delivery:** H.264 High, CRF 18 (or 12–20 Mbps at 1080p), AAC 48 kHz; SRT uploaded separately (not burned); chapters in the description.
 
-**Mistakes:** branded intros; zooming on every cut (seasick); a zoom without a cut; b-roll that doesn't match the words; music louder than the voice; burned captions on long-form; ending with "that's it, bye" and 20 s of dead air.
+**Mistakes:** branded intros; zooming on every cut (seasick); an animated zoom drifting in and out with no reason (a hard picture-only step on a word is fine, see `genz.md`); b-roll that doesn't match the words; music louder than the voice; burned captions on long-form; ending with "that's it, bye" and 20 s of dead air.
 
 **Render:** a 10–15 minute video is past the in-project render budget; use the hybrid path (main skill Step 10): the body by ffmpeg, the designed inserts by the project.
 
@@ -44,7 +44,8 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 | 35–42 s | Payoff or twist |
 | 42–45 s | CTA ≤2 s, or a line that loops into the hook |
 
-- A visual change every 1–3 s (jump cut, jump zoom, b-roll, text pop); `ugc-craft`'s three-second rule is the ceiling.
+- A visual change every 1–3 s (jump cut, jump zoom, b-roll, text pop); no stretch over 2.5 s without one. When the speech has too few pauses to cut that often, add picture-only steps on word onsets (`genz.md`, Density) and run the density check (`ffmpeg-recipes.md` §11).
+- No lower third in 9:16: it fights the caption band. Name the speaker with a ≥60 px text pop in the hook or caption band for 1–2 s.
 - Gaps ≤100 ms; the breath trim from `ugc-craft`.
 - Punch-in (1.0 → 1.12 over 8 f) on stressed words, at most 4 per 30 s.
 - Captions: word pop per `ugc-craft`, placed per `captions.md`.
@@ -52,7 +53,7 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 - Aspect 1080×1920; eyes at y 500–750.
 - Loudness −14 LUFS / −1 dBTP.
 
-**Reframing a horizontal recording:** a static 9:16 crop on the face (§6) if they barely move; a scene-side crop with eased drift (`footage-in-scene.md`) if they lean and gesture.
+**Reframing a horizontal recording:** a static 9:16 crop on the face (§6) if they barely move; a scene-side crop with eased drift (`footage-in-scene.md`) if they lean and gesture. From a 720p or letterboxed source the full-height crop is a 2.67×+ enlargement: use a 4:5 plate or stacked angles instead (`ffmpeg-recipes.md` §6).
 
 **Mistakes:** a slow start (logo, "hi guys"); captions under the bottom UI; text under 50 px; 8-word caption lines; music over the voice; a 5 s "follow me" card; hook text that doesn't match the spoken hook.
 

@@ -159,7 +159,7 @@ export function extrudedMark(d: string, widthPx: number, depthPx: number, materi
 
 - **Flat** (`logoPlane`): an SVG is rasterised by the canvas at the size it is shown, × 2, so it is crisp at any size. Pass the mark's real aspect (from its viewBox).
 - **Extruded** (`extrudedMark`): from the real file's path `d` attribute, copied verbatim into `components/brand.ts`. Handles M L H V C S Q T Z, absolute and relative; arcs (A) throw, so flatten them in the source file first, or use the flat plane. Multi-colour marks: one extrusion per colour path. Light it with `three-look`'s product setup and `brand` tone mapping so the colour holds.
-- **Never redraw or generate a brand's mark**, and never hot-link a logo CDN: `save-asset` the official file into `assets/`. If there is no file, ask for it, and use the wordmark in the brand's type meanwhile.
+- **Never redraw or generate a brand's mark**, and never hot-link a logo CDN: `save-asset` the official file into `assets/`. If there is no file, ask for it, and use the wordmark in the brand's type meanwhile. A mark the user only described (no file exists yet) may be built from geometry as a stand-in, kept in `components/brand.ts` and flagged in `VIDEO.md` (`brand-sting`'s no-logo policy); never present it as the logo.
 - Name it (`hero-mark`, `logo-flat`) so the editor can point at it.
 
 ## 4. Device frames

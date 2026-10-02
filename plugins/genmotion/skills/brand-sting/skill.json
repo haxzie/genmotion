@@ -44,7 +44,7 @@
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "The real logo file, never a redrawn one."
+      "why": "The real logo file; without one, the name as a wordmark, never a redrawn mark."
     },
     {
       "kind": "capability",
@@ -146,6 +146,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.0",
+  "version": "2.1.0",
   "icon": "✨"
 }

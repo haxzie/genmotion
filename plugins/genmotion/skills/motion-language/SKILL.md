@@ -81,6 +81,8 @@ The peak sits at about 60% of the duration. Springs, measured from the templates
 
 "Gentle over 16f" means the gentle shape time-scaled to settle in exactly 16f; write springs that way on every engine (closed-form code in `references/easing.md` §6).
 
+**Damped swings** (a compass needle, a pendulum, a hanging sign, a wobbling card): `θ(t) = A · e^(−ζω0·t) · cos(ωd·t)`. The eye reads the motion as over at its **last visible swing**, not at the formula's end, so plan the settle frame as the frame where the amplitude envelope `A · e^(−ζω0·t)` drops under **1°** (or 1 px for a translation): `t_settle = ln(A / 1°) / (ζω0)`. Then capture a strip of every 2nd frame around it and confirm; a swing planned to settle at f44 that is visibly still from f32 leaves a 12f dead beat. If the next move must start at the settle, start it on the measured frame.
+
 ## Holds that breathe
 
 | Behaviour | Numbers | On |
@@ -93,6 +95,7 @@ The peak sits at about 60% of the duration. Springs, measured from the templates
 | Constant spin | 0.006 rad/frame (rays), 0.05°/frame (orbits) | Background objects, linear |
 
 - **One** ambient behaviour on the focal element at a time; the camera drift can run under it.
+- **Lockups move as one group.** A mark + name, an icon + label, a chip + its text: animate the group's transform, not the parts on separate paths, so nothing passes through a visible word. If one part must arrive first, the other enters only after the first has cleared its slot.
 - A line floats with one shared phase; per-word phases break the baseline.
 - Drift dies before a matched cut: `drift × (1 − transition progress)`.
 - In diagram explainers, drift returns to rest at both ends of each scene so cuts land on identical frames.
@@ -144,8 +147,8 @@ Choose one signature and one workhorse per film (`direction` Step 7). House usag
 | Iris | 16–34f inOutCubic | Circle from the clicked control to the farthest corner; iris-in shrinks to an object | End of a demo, ending on a mark | Click 0.9 (−0.9) on the press; swell 0.6 (−4.4) from iris start |
 | Match-push | 24–48f readable, 6–10f aggressive | Camera ends at an exact crop; next scene laid out at that scale; drift stopped | Into a UI element | Whoosh 0.5–0.75 (−6 to −2.5), 2–4f before the cut |
 | Push through screen | 45f in, 52f back out | Zoom = frame width / screen width | Device → UI → device | Soft whoosh 0.5 (−6) or none |
-| Flash-to-white | ramp 4–8f ease-in, decay 6–9f | White layer straddles the cut | Music cuts, impacts | Impact 0.7–0.85 (−3.1 to −1.4) on the cut ±2f |
-| Block wipe | 18–24f | 12 × 7 cells by sweep + clump + jitter; incoming beat already 12f in | Textured, editorial films | Wipe sound 0.5 (−6) on the wipe's first frame |
+| Flash-to-white | ramp 4–8f ease-in, decay 6–9f | White layer straddles the cut; ≥ 50% luma contrast with the frames either side | Music cuts, impacts; once or twice per film elsewhere | Impact 0.7–0.85 (−3.1 to −1.4) on the cut ±2f |
+| Block wipe | 18–24f | 12 × 7 cells by sweep + clump + jitter, growing out of an on-screen object of the wipe's colour; incoming beat already 12f into its entrances | Textured, editorial films | Wipe sound 0.5 (−6) on the wipe's first frame |
 | Colour-field push / panel wipe | 8–23f inOutCubic | Field owns the last frame; next scene carries momentum (46 px → 0 over 16f) | Chapters, palette changes | Whoosh 0.5–0.7 (−6 to −3.1) from push start |
 | Card morph | 18–28f inOutCubic | Card lerps to an overscanned full frame; labels fade 2.4× faster | Opening an example into its scene | Soft whoosh 0.5 (−6) or none |
 | Typewriter delete | 2–2.4 f/char type, 2.1 delete | Same slot, width reserved | "Introducing" → the name | Key ticks 0.3–0.45 (−10.5 to −6.9) |

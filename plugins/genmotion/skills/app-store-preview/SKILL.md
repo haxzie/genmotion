@@ -50,7 +50,7 @@ What gets rejected (Apple's guidelines; Play is looser but the same rules keep t
 
 ## Direction defaults
 
-- **Style family**: none of the house families wholesale: the app's own UI is the look. Overlay text borrows B's type (a neutral grotesque 500–600, one accent) and stays out of the UI's way. Landscape Play videos may use B or C around a device on a stage.
+- **Style family**: none of the house families wholesale: the app's own UI is the look. Overlay text borrows B's type (a neutral grotesque 400–500 per `three-type`'s size table, one accent) and stays out of the UI's way. Landscape Play videos may use B or C around a device on a stage.
 - **Framing**: **full screen, native UI, no device frame** (the store presents the video; a frame inside wastes pixels). Apple recommends native resolution rather than zooming in, so keep pushes rare: at most one slow push of ≤1.15× on a detail, held, per cut.
 - **Energy curve**: front-loaded like a feed ad: the core interaction is visible by frame 15, a new step every 1–3 s, the payoff in the last 4–5 s. Each cut has its own small peak.
 - **Pacing**: High to Medium (a new UI state every 20–45f). Real UI transitions as they happen in the app; between scenes, a cut or a short dissolve (Apple names cuts, dissolves and fades as the expected transitions).

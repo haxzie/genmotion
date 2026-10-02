@@ -12,6 +12,9 @@ Read this before the first scene that shows the user's footage. Everything here 
 | VP9, all-intra (`-g 1`), seek registered | 300 of 300 | 160 s |
 | **VP9, `-g 15`, seek registered** | **300 of 300** | **121 s** |
 | A 7 s two-segment edit conformed this way, with its WAV on the timeline | 210 of 210, audio onsets on the matching frames | 97 s |
+| Re-test (640×360, frame-counter clip, VP9 `-g 15`): this helper | 90 of 90 | — |
+| Same clip: `three-assets`' `footage()` (2D-canvas copy into a `CanvasTexture`) | 90 of 90, pixel-identical to the row above | — |
+| Same clip: this helper with the `needsUpdate` line on `seeked` removed | 71 of 90 (stale frames, not black) | — |
 
 Conclusions:
 
@@ -19,7 +22,8 @@ Conclusions:
 2. **Keyframe every 15 frames** (0.5 s). Exact and fastest; long GOPs are slower and can land one frame off.
 3. **Register every seek with the loading manager** (helper below). Seek to the middle of the frame, `(frame + 0.5) / fps`, never its leading edge: a seek on the boundary picks either neighbour.
 4. **Add a 0.5 s tail handle** to the conformed file. Without it the scene's last frame showed the second-to-last source frame.
-5. **Budget the render**: roughly 10–15 s per second of 1080p footage on 4 cores with the default WebGL. `--gl gpu` is faster where a GPU exists.
+5. **Budget the render**: roughly 10–15 s per second of 1080p footage on 4 idle cores with the default WebGL; on a shared, loaded machine it was 2–3× that (a 41 s 9:16 edit took 28–35 min). `--gl gpu` is faster where a GPU exists. Run long renders in the background and poll the log.
+6. **A `VideoTexture` does not capture black.** That claim circulated in an older version of `three-assets`; re-tested, both a `VideoTexture` and a 2D-canvas copy render frame-exact. What matters is the three rules above (VP9, registered seeks, mid-frame seek times) plus marking the texture `needsUpdate` on `seeked`: a paused, seeked video does not drive the texture's own frame callback reliably, and without it about one frame in five showed the previous picture. `three-assets`' `footage()` is an equivalent helper; use either, not both in one project.
 
 ## The footage helper (Three.js)
 
@@ -168,7 +172,8 @@ export default function build(ctx: ThreeSceneContext): ThreeSceneUpdate {
   - **Jump zoom:** `plate.scale` steps 1.0 → 1.2 on a cut frame, back to 1.0 on the next (as above).
   - **Punch-in:** `interpolate(frame, [f, f + 8], [1, 1.12], Easing.easeIn)`, hold ≥15 f, release over 12 f `easeInOut` or cut out. ≤4 per 30 s.
   - **Slow push** (long-form, a serious line): `interpolate(frame, [a, a + 150], [1, 1.08], Easing.easeInOut)`.
-  - Scale about the subject, not the centre: shift `plate.position` by `(centre − subject) × (scale − 1)` so the eyes stay on the upper-third line.
+  - Scale about a pivot, not the centre: shift `plate.position` by `(centre − pivot) × (scale − 1)`. In 16:9 pivot on the eyes, so they stay on the upper-third line. In 9:16 with captions, pivot at the bottom of the caption band (x 540, y ≈ 1150 top-down), so the zoom pushes the face up and away from the text; pivoting on the eyes pushes the mouth into the captions.
+  - **Total enlargement** (the cover-fit `k` × any zoom, against the conformed file's source pixels) stays ≤2.0×; from a 720p source, jump zoom to 1.1–1.12 and punch in only on segments at 1.0 (main skill, Step 7).
 - **Shake** on an impact (Gen Z, trailer): deterministic, a sum of sines decaying over 4–8 frames, e.g. `x = 18 * Math.sin(t * 91) * Math.exp(-(frame - f) / 3)`, applied to `plate.position`. No randomness.
 - **B-roll:** a second `createFootage` on its own plate (z 0.5) whose `visible` toggles on its frames, or a still on a `TextureLoader(ctx.manager)` texture with a slow push. Conform b-roll the same way (VP9, `-g 15`).
 - **Speed ramps:** do them in the conform (stepped `setpts` segments, see `ffmpeg-recipes.md` §8), not by remapping time in the scene: a scene time-remap seeks backwards and forwards across GOPs and gets slow.
@@ -189,4 +194,4 @@ export default function build(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Last frame repeats the previous one | no tail handle | `tpad=stop_mode=clone:stop_duration=0.5` in the conform |
 | `validate` error naming `document.` | global DOM access | `ctx.canvas.ownerDocument.createElement("video")` |
 | Render crawls | long GOP, 4K source, or many plates | `-g 15`, conform at ≤1920 on the long edge, one footage plate visible at a time |
-| Soft picture after a punch-in | upscaling a 1080p source past 130% | keep punch-ins ≤130%, or conform from 4K at 2× and scale the plate down |
+| Soft picture after a punch-in | total enlargement of source pixels past 1.3× (smeared past 2×) | keep the total ≤2.0×, sharpen mildly in the conform (`unsharp=5:5:0.6`) above 1.3×, or conform from 4K at 2× and scale the plate down; low-res sources: `ffmpeg-recipes.md` §6 layouts |

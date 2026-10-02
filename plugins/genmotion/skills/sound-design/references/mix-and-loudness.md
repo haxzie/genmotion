@@ -32,7 +32,8 @@ The export sums every clip with `amix … normalize=0` and applies **no limiter 
 | VO | 1.0 | 0 dB | −16 to −14 LUFS short-term |
 | Music alone | 1.0 | ≈ 0 to −2 dB | −16 to −14 LUFS |
 | Music under SFX only | 0.5–0.6 | — | — |
-| Music bed under VO | 0.14–0.28 (default 0.18) | −17 to −11 dB (−15 default; speech-centric content ≥ 20 dB down per WCAG 1.4.7) | −30 to −24 LUFS |
+| Music bed under any voice (VO or recorded speech) | 0.1–0.2 (default 0.18 sparse bed under VO; 0.12 dense track under recorded speech) | −20 to −14 dB: the bed sits 14–20 LU under the voice | −34 to −28 LUFS |
+| Podcast clip | none, or 0.1 | −20 dB | −34 LUFS |
 | UI clicks / taps | 0.8–1.0 | short transients, perceived well below VO | −30 to −22 LUFS |
 | Impacts | 0.7–0.85 | hits under VO ≈ −6 dB | peaks −10 to −6 dBFS |
 | Whooshes | 0.5–0.7 | | |
@@ -43,6 +44,24 @@ The export sums every clip with `amix … normalize=0` and applies **no limiter 
 | A quiet source (house: tile clinks) | up to 2.0 | | prefer normalising |
 
 These hold only if sources are normalised: VO and music to −16 LUFS integrated, SFX to a −3 dBFS peak.
+
+### Is the bed audible? (and not masking)
+
+The rule is 14–20 LU between voice and bed. On normalised sources it is `−20·log10(volume)`. To measure it on real files, read each source's integrated loudness and add the clip gain:
+
+```
+ffmpeg -hide_banner -nostats -i assets/edit-audio.wav -af ebur128 -f null - 2>&1 | grep -E "^\s+I:"
+ffmpeg -hide_banner -nostats -i assets/bed.wav -af ebur128 -f null - 2>&1 | grep -E "^\s+I:"
+# gap = voice I − (bed I + 20·log10(volume)); 14–20 passes
+```
+
+A dense bed (drums, bright synths, anything busy at 1–4 kHz) masks consonants at a smaller gap than a sparse pad. Low-pass it rather than burying it below 20 LU, where a phone speaker loses it entirely:
+
+```
+ffmpeg -i assets/track.mp3 -af "lowpass=f=7000,loudnorm=I=-16:TP=-1.5:LRA=11" -ar 48000 assets/bed.wav
+```
+
+On the export, a ≥1 s pause in the speech should read above −35 LUFS momentary when a bed is meant to be there (the momentary curve command under Measuring).
 
 ## Normalising sources
 
@@ -62,7 +81,7 @@ Loudness is meaningless for a 0.3 s click; peak-normalise SFX.
 
 Typical amounts: 6–12 dB for gentle carving, 12–20 dB for clear narration. Attack 30–80 ms, release 300–1000 ms (longer stops the bed pumping up between words). In frames at 30 fps: 3–6 f down, 10–20 f up.
 
-House default is **no ducking**: a constant bed at 0.14–0.28 under VO. Duck only when the music should rise between lines (pauses ≥ 1.5 s), and per sentence, never per word.
+House default is **no ducking**: a constant bed at 0.1–0.2 under the voice (the ladder). Duck only when the music should rise between lines (pauses ≥ 1.5 s), and per sentence, never per word.
 
 ### A. Split the bed on the timeline (any engine)
 
@@ -127,7 +146,7 @@ The output is 8 + (end − 24) − 0.03 s long. Use ½–2 beats of crossfade on
 | Destination | Integrated | True peak |
 |---|---|---|
 | YouTube (turns loud uploads down, never quiet ones up) | −14 LUFS | ≤ −1 dBTP |
-| TikTok, Reels, Shorts (not published; practitioners measure ≈ −14) | −14 LUFS (music-led edits up to −13; never above −10) | ≤ −1 dBTP |
+| TikTok, Reels, Shorts (not published; practitioners measure ≈ −14) | −14 LUFS, music-led edits included | ≤ −1 dBTP |
 | Spotify video / podcasts | −14 LUFS | ≤ −1 dBTP (−2 if louder) |
 | Apple Podcasts | −16 LUFS ± 1 | ≤ −1 dBTP |
 | Podcasts general | −16 stereo / −19 mono | −1 dBTP |
@@ -168,3 +187,14 @@ ffmpeg -i out.mp4 -af "loudnorm=I=-14:TP=-1:LRA=11:measured_I=-20.72:measured_TP
 Always add `-ar 48000`: loudnorm otherwise outputs 192 kHz. If pass 2 reports `normalization_type: dynamic`, the peak target could not be met with plain gain and loudnorm compressed instead; reduce the loudest overlapping clips (or lower the TP target) and export again. Measure the new file before handing it over.
 
 The loop: export → `ebur128` → off by more than 1 LU? scale every clip `volume` by the difference (×1.12 per +1 dB) or re-master → true peak above −1 dBTP? pull the loudest overlapping clips down → measure again.
+
+## One dense track that has to carry the film alone
+
+A single music clip at 1.0 with a high crest factor can measure −17 LUFS with peaks already at −0.7 dBTP: no `volume` reaches −14 without breaking −1 dBTP, and there are no other clips to pull down. Pre-master the cued section before placing it (cue it first with `-ss`/`-t`, so the measurement is of what plays):
+
+```
+ffmpeg -ss 30.0 -t 30.2 -i assets/track.mp3 -af loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json -f null -
+ffmpeg -ss 30.0 -t 30.2 -i assets/track.mp3 -af "loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=<input_i>:measured_TP=<input_tp>:measured_LRA=<input_lra>:measured_thresh=<input_thresh>:offset=<target_offset>:linear=true" -ar 48000 assets/track-cue.wav
+```
+
+If pass 2 falls back to `dynamic` (light limiting), that is acceptable for a music-only film. Place `track-cue.wav` at 1.0 with `startFrom` 0, and measure the export as usual.

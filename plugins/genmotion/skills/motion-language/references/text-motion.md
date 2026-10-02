@@ -126,7 +126,7 @@ A move that makes text unreadable is wrong however good it looks. These rules co
 - One emphasised word per line: the accent colour, a heavier weight, or a size step. Never all three, never two emphasised words.
 - The film's punch colour appears on one word in the film's most important line, not on every line.
 - Emphasis gradient text by character (warm orange → amber) for one phrase at most.
-- The bright brand accent never carries small text; use it for fills, rules and glows.
+- The brand accent is for fills, rules, glows and display type. Under 60 px it may carry a short label only if it clears 4.5:1 on its ground; a low-contrast accent (< 4.5:1) never carries small text.
 
 ## 6. Numbers
 

@@ -28,6 +28,7 @@ coin.scale.setScalar(lerp(COIN.scale, 0.6, k));
 - Both scenes need the same camera framing at the cut (both `fitCamera`, no drift: `restDrift` or drift × (1 − progress)), the same lights and the same `colorPipeline`, or the "same" object renders differently.
 - Text carriers come from the same `three-type` helper at the same style, so the glyphs match exactly.
 - Everything else in scene N has left 4–8f before the cut. A 1–2 px or 2% mismatch reads as a jump: check the two frames overlaid.
+- **Reserve the parking spot.** A carrier that waits between beats (a packet parked in a node, a certificate set aside) gets a slot in `components/handoff.ts` chosen to clear every label and tag in both scenes; if it is larger than what it parks inside, hide it while parked (`visible = false`) rather than letting it peek out.
 
 ## 2. Match-push
 

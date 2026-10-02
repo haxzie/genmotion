@@ -1,6 +1,8 @@
 # Footage, fonts and audio
 
-User footage on a plane, seeked from the frame and waited for by the frame barrier; the font files type needs; and why sound never lives in a scene. The footage recipe was built and debugged by rendering: the obvious version (a `VideoTexture`, or a `<video>` uploaded straight to WebGL) captures **black** in the headless renderer, and H.264 MP4 does not decode there at all.
+User footage on a plane, seeked from the frame and waited for by the frame barrier; the font files type needs; and why sound never lives in a scene.
+
+**One footage helper for the pack**: `video-editing`'s `references/footage-in-scene.md` (`createFootage`, a `VideoTexture` updated on every `seeked`) is the tested helper for edits and anything long. `footage()` below is an equivalent for short inserts (a recording on a device, a clip in a launch film): render-tested side by side, the two give pixel-identical frames, 90/90 frame-exact. Whichever you use, three rules decide whether it works: (1) **VP9 WebM** (the CLI's Chromium cannot decode H.264: black planes); (2) every seek **registered on `ctx.manager`** and released on `seeked`; (3) the texture marked `needsUpdate` on `seeked` (without it a paused, seeked video shows stale frames). A `VideoTexture` does not capture black; a video that was never seeked through the manager, or an MP4, does.
 
 Contents: 1 Prepare the file · 2 `footage()` · 3 Using it · 4 Continuity across a cut · 5 Fonts · 6 Audio
 
@@ -23,8 +25,8 @@ ffmpeg -ss 12.0 -t 6.0 -i input.mov -an -c:v libvpx-vp9 -b:v 4M -g 15 -row-mt 1 
 /**
  * User footage as a texture that is SEEKED from the frame, never played.
  * Every seek is registered on ctx.manager, so a capture waits for the decoded frame
- * ("seeked") before it reads pixels. The frame is copied through a 2D canvas: uploading
- * a <video> straight to WebGL comes out black in the headless renderer.
+ * ("seeked") before it reads pixels. The frame is copied through a 2D canvas, which also
+ * lets you crop or scale it (equivalent to video-editing's VideoTexture helper).
  * `size` is the canvas the frame is drawn into (the file's pixel size, or smaller).
  */
 export function footage(
@@ -102,7 +104,7 @@ Why it is built this way:
 
 - **Seeked, never played**: `play()` runs on the wall clock and the export would not match the preview.
 - **Each seek is an item on `ctx.manager`**: `itemStart` when the seek begins, `itemEnd` on `seeked`; the host's barrier waits for it and draws again before the frame is captured.
-- **Copied through a 2D canvas** on `loadeddata` and `seeked`: a `<video>` uploaded straight to WebGL captures black in the headless renderer; the canvas copy works everywhere.
+- **Copied through a 2D canvas** on `loadeddata` and `seeked`, with `needsUpdate` set each time: the texture changes exactly when a seek lands, never on the video's own frame callback (which a paused, seeked video does not drive reliably).
 - **A quarter-frame offset**: WebM timestamps are rounded to 1 ms, and a seek exactly on a frame boundary can land on the previous frame.
 - **Errors end the item**: a broken file must never hang an export.
 - `ctx.canvas.ownerDocument` creates the element: scene code may not touch the page's globals directly, and validation rejects it.
@@ -131,8 +133,8 @@ A clip that continues across a cut uses one source with offsets that agree: in s
 
 ## 5. Fonts
 
-Type needs its font file in the project; the capture machine has almost none installed. `save-asset` the brand's woff2 (or Inter's variable woff2) into `assets/` and load it with the type kit's `withFonts()` (`three-type`), which registers the load on `ctx.manager` and builds the scene only once the face is there.
+Type needs its font file in the project; the capture machine has almost none installed. `save-asset` the brand's woff2, or Inter's variable woff2 (sources that work, in `three-type`'s Fonts section), into `assets/` and load it with the type kit's `withFonts()` (`three-type`), which registers the load on `ctx.manager` and builds the scene only once the face is there.
 
 ## 6. Audio
 
-Audio never lives in a scene: a scene's `<audio>` or Web Audio is silent in the export and drifts in the preview. Music, voiceover and effects are files in `assets/` placed on the timeline with `place-audio` (lane, start frame, duration, volume, fades in `project.json`'s `audio`). Levels, fades, ducking and loudness are `sound-design`'s (a music bed under VO sits at 0.14–0.28, default 0.18 ≈ −15 dB). Footage that has its own sound: extract it (`ffmpeg -i in.mov -vn -c:a aac -b:a 192k assets/demo-audio.m4a`), place it at the same start frame and offset as the picture, and keep the picture file silent.
+Audio never lives in a scene: a scene's `<audio>` or Web Audio is silent in the export and drifts in the preview. Music, voiceover and effects are files in `assets/` placed on the timeline with `place-audio` (lane, start frame, duration, volume, fades in `project.json`'s `audio`). Levels, fades, ducking and loudness are `sound-design`'s: take the bed level from its ladder, not from here. Footage that has its own sound: extract it (`ffmpeg -i in.mov -vn -c:a aac -b:a 192k assets/demo-audio.m4a`), place it at the same start frame and offset as the picture, and keep the picture file silent.

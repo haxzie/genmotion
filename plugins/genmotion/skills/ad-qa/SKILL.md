@@ -71,7 +71,7 @@ ffmpeg -i frame.png -vf "drawbox=x=120:y=270:w=720:h=940:color=red@0.8:t=4,drawb
 
 ### 6. Text size and contrast
 - [Blocker] Text that must be read is ≥34 px at 1080 wide (UI text, source text, prices); nothing meaningful under 24 px.
-- [Blocker] Contrast ≥ 4.5:1 against what is behind it (stroke or box counts); the bright accent never carries small text.
+- [Blocker] Contrast ≥ 4.5:1 against what is behind it (stroke or box counts); an accent colour carries text under 60 px only if it clears 4.5:1 itself.
 - Fix: crop tighter or focus-push; rebuild the UI magnified; add the stroke or a 60% box.
 
 ### 7. Pacing

@@ -27,6 +27,7 @@ export function coverLayer(width: number, height: number, color: string) {
     uHalf: { value: new THREE.Vector2(width / 2, height / 2) },
     uCells: { value: new THREE.Vector2(12, 7) },
     uSeed: { value: 1 },
+    uRadial: { value: 0 }, // blocks: 0 sweep along uDir, 1 grow outward from uCenter (an on-screen object)
   };
   const mat = new THREE.ShaderMaterial({
     uniforms,
@@ -37,7 +38,7 @@ export function coverLayer(width: number, height: number, color: string) {
       varying vec2 vPos;
       void main() { vPos = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform vec3 uColor; uniform float uOpacity, uMode, uRadius, uProgress, uSoft, uSeed;
+      uniform vec3 uColor; uniform float uOpacity, uMode, uRadius, uProgress, uSoft, uSeed, uRadial;
       uniform vec2 uCenter, uDir, uHalf, uCells;
       varying vec2 vPos;
       float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21) + uSeed); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -55,7 +56,10 @@ export function coverLayer(width: number, height: number, color: string) {
         } else if (uMode > 3.5) {                  // blocks: sweep + clump + jitter
           vec2 uv = (vPos + uHalf) / (2.0 * uHalf);
           vec2 cell = floor(uv * uCells);
-          float sweep = dot((cell + 0.5) / uCells - 0.5, uDir) + 0.5;
+          vec2 cpx = ((cell + 0.5) / uCells - 0.5) * 2.0 * uHalf;     // cell centre in px
+          float sweep = uRadial > 0.5
+            ? length(cpx - uCenter) / length(uHalf + abs(uCenter))    // 0 at the object, 1 at the far corner
+            : dot((cell + 0.5) / uCells - 0.5, uDir) + 0.5;
           float clump = hash(floor(cell / 3.0) + 7.0);
           float jitter = hash(cell);
           float t = sweep * 0.62 + clump * 0.24 + jitter * 0.14;
@@ -147,17 +151,23 @@ The next scene either opens on that white (its background is white) or clears it
 
 ## 5. Block wipe
 
+A block wipe needs a cause on screen, like a flood: the cells **grow out of an object already in the frame that has the wipe's colour** (the yellow packet, the yellow wire as it lights), never from a blank frame edge. A full-frame wipe in a colour nothing on screen carries reads as an unmotivated flash.
+
 ```ts
-// 12 x 7 cells by sweep + clump + jitter, 20f; alternate direction scene to scene
+// 12 x 7 cells growing out of the yellow packet, 20f
+const c = screenPx(packet, cam, width, height);       // the motivating object, px from centre
 cover.u.uMode.value = 4;
 cover.u.uCells.value.set(12, 7);
-cover.u.uDir.value.set(1, 0);                         // sweeps left to right
+cover.u.uRadial.value = 1;                            // grow outward from uCenter
+cover.u.uCenter.value.set(c.x, c.y);
 cover.u.uSeed.value = 3;                              // a different, fixed seed per wipe
 cover.u.uProgress.value = prog(frame, D - 22, 20);    // linear: the cells are the easing
 cover.mesh.visible = cover.u.uProgress.value > 0;
+// a sweep across the frame instead: uRadial 0, uDir.set(1, 0); alternate direction scene to scene,
+// and start it at the edge where the motivating object sits
 ```
 
-The next scene starts covered and clears with the same cells (`1 − progress`), already 12f into its own animation so it is alive as it appears. The surface underneath slides 48 px outCubic during the wipe. Pixel dissolve (cells go chunky before dropping) is the same per-cell hash applied to an image layer's shader; the Moonlight template's layer shader does it with a `dissolve` uniform.
+The next scene starts covered and clears with the same cells (`1 − progress`, same seed and centre). **"Already 12f in"** means its content is mid-animation when the cells open, so it is alive as it appears. Scene N+1 has no frames before its frame 0, so offset its entrance clocks: write them as `prog(frame + 12, start, dur, ease)` (or start its keys at −12), so frame 0 shows what would have been its 12th frame; anything whose entrance would finish before frame 0 is simply on screen. Check frame 0 of N+1 with the cover hidden: elements are part-way in, none still at their start pose. The surface underneath slides 48 px outCubic during the wipe. Pixel dissolve (cells go chunky before dropping) is the same per-cell hash applied to an image layer's shader; the Moonlight template's layer shader does it with a `dissolve` uniform.
 
 ## 6. Flash-to-white and impact frames
 
@@ -170,7 +180,8 @@ cover.u.uOpacity.value = prog(frame, D - 6, 6, inCubic);   // scene N: ramp the 
 
 - Stack an fov punch (−5 to −10°) and a 3–6f shake on the same frame (`three-camera` moves §9).
 - Anime impact frame: a second plane with `blending: THREE.CustomBlending, blendSrc: THREE.OneMinusDstColorFactor, blendDst: THREE.ZeroFactor` (inverts what is behind it), visible for exactly 2 frames on the hit.
-- On every cut of a music film; elsewhere at most once or twice, or it becomes a tic.
+- On every cut of a music film; elsewhere at most once or twice as a transition, or it becomes a tic. A flash the product itself makes (a camera shutter) may repeat on that action at 0.25–0.4 of the big one.
+- A flash must contrast: ≥ 50% luma difference from the frames either side, ≤ 4f at full strength, additive toward white or the accent. Composited at low opacity over a mid-tone it reads as a grey dip; on a bright plate, flash dark or use the punch alone.
 
 ## 7. Colour-field push and panel wipe
 

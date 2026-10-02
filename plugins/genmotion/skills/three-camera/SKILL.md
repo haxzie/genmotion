@@ -30,7 +30,7 @@ title.position.y = 140 * PX;            // 140 px above centre, exactly
 - Visible height at distance d: `2 · tan(fov/2) · d`. Px per unit at d: `height / that`. At 1080p with a 50° lens, `D0` = 11.58.
 - Something at depth z appears `D0 / (D0 − z)` times its z = 0 size. Use it to place parallax layers and to compute any matched framing.
 - Width is the constraint in 9:16: fit blocks with `fitBlock(width, height, wPx, hPx)` (an 8% margin per side) instead of shrinking type, and re-lay-out lines per aspect (safe zones per `direction`'s pacing reference).
-- Flat films (whiteboard, chat UI, 2D compositors) use an orthographic pixel camera instead: `references/rig.md` §4.
+- **Diagrams and flat films use the fitted stage too**: it is already pixel-exact at z = 0, and it is what the type kit, line art and cover layers are written for (`PX` = 0.01). An orthographic pixel camera (`references/rig.md` §4) suits a film with no depth at all (a pure 2D compositor, a keyed one-shot over a desktop); with it, every kit object is 100× too small, so scale those groups by `1 / PX`.
 
 ## Lens
 
@@ -126,7 +126,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | 3D product hero | Fitted, 30–50° | Slam, orbit 10–30°, rush into the lens at the peak |
 | One-shot film | Orthographic or fitted, keyed | Keyed `[frame, x, y, zoom]` path, 1.5–3 s moves, log zoom |
 | Chat-UI social | Fitted | Push through the screen 45f; pull back 52f |
-| Whiteboard | Orthographic | `restDrift` ±4 / ±2.5 px, zoom +1.2% mid-scene |
+| Whiteboard | Fitted (or orthographic, groups scaled by `1 / PX`) | `restDrift` ±4 / ±2.5 px, zoom +1.2% mid-scene |
 | Textured tactile | Subject rig | Tilted glides over a dashboard; hard cut to flat close-ups |
 | Music video | Perspective, 48–75° | Shots of 3–4 s on bar lines; fov punch and shake on hits |
 | Milestone | Fitted | Creep on the number; punch 1.06 on the land |

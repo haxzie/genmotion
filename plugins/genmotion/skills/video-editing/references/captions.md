@@ -4,7 +4,7 @@ Read this when an edit gets captions. Burned-in captions are mandatory on TikTok
 
 ## Styles by platform
 
-The social word-pop spec is the pack's one caption spec and lives in `ugc-craft` (grouping, timing, pop, size, stroke, position). Edited footage uses it unchanged on TikTok, Reels, Shorts and podcast clips; this table only adds the other placements an edit ships to.
+The social word-pop spec is the pack's one caption spec for **word-timed captions over footage in a social feed**, and it lives in `ugc-craft` (grouping, timing, pop, size, weight, stroke, position). Edited footage uses it unchanged on TikTok, Reels, Shorts and podcast clips; this table only adds the other placements an edit ships to. Its heavy weight (700–900) and stroke are the one sanctioned exception to the house type rule (weight ≤500, no outlined text): captions must read over a moving picture at phone size. Designed text in the same video (hook title, identity pop, end card) follows the caption style when it sits over footage, and `three-type` everywhere else.
 
 | Style | Use for | Spec |
 |---|---|---|
@@ -20,7 +20,7 @@ Rules that hold for all of them:
 - **Captions match the audio exactly.** A word appears on its own start frame, never early, and never two groups at once. Stale captions are the classic seek bug.
 - **Captions may drop fillers the speaker says** ("so I, uh, tried it" → "I tried it") but never change meaning, and never contradict the audio.
 - **Contrast:** text sits on a stroke or a box, never bare on footage.
-- Fonts: load the face before drawing it (per `three-type`); a missing font falls back silently to a system face and every width changes.
+- **Fonts: ship and load the face before drawing it.** The capture machine has almost no fonts, so a family name alone silently becomes a default sans and every width changes. Put Inter's variable woff2 (or the brand face) in `assets/` and wrap each scene's builder in `three-type`'s `withFonts` (its type kit), so no caption texture is drawn before the face lands. The component below draws in Inter for that reason; change `FONT` only together with the file you ship.
 - On Three.js the captions are a layer above the footage plate that never moves with a punch-in. If you zoom by moving the camera instead of scaling the plate, parent the captions to the camera.
 
 ## Reading rate
@@ -70,7 +70,8 @@ import * as THREE from "three";
 /** One spoken word, in composition frames (scene-local). */
 export interface Word { text: string; from: number; to: number }
 
-const FONT = '900 {size}px Montserrat, Inter, "Helvetica Neue", Arial, sans-serif';
+// Inter must be loaded by the scene (withFonts) before createCaptions runs.
+const FONT = '900 {size}px Inter, "Helvetica Neue", Arial, sans-serif';
 
 /** A word drawn once: white fill, black stroke. Tinting the material recolours the fill only. */
 function wordMesh(text: string, size: number, stroke: number) {
@@ -165,7 +166,20 @@ export function createCaptions(words: Word[], opts: {
 }
 ```
 
-Use (9:16): `const captions = createCaptions(WORDS, { x: 480 - width / 2, y: height / 2 - 1160, size: 88, maxWidth: 720 });`, add `captions.root` at z 1 above the footage plate, and call `captions.update(frame)` in the frame callback.
+Use (9:16), inside the scene's `withFonts` builder:
+
+```ts
+import interUrl from "../assets/InterVariable.woff2";
+// ...
+return withFonts(ctx, [{ family: "Inter", url: interUrl }], () => {
+  const captions = createCaptions(WORDS, { x: 480 - width / 2, y: height / 2 - 1160, size: 88, maxWidth: 720 });
+  captions.root.position.z = 1;          // above the footage plate
+  scene.add(captions.root);
+  return ({ frame }) => { /* footage seek … */ captions.update(frame); };
+});
+```
+
+`maxGap` (default 5 f, about 0.17 s) is `ugc-craft`'s "break at any pause ≥5 f". It decides where caption groups break, and is unrelated to the cut list's merge threshold (main skill, Step 5).
 
 Variants:
 
@@ -189,7 +203,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Word,Montserrat,88,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,0,2,120,240,710,1
+Style: Word,Inter,88,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,0,2,120,240,710,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -202,7 +216,7 @@ Dialogue: 0,0:00:00.30,0:00:00.45,Word,,0,0,0,,THIS {\c&H0000E5FF&\fscx108\fscy1
 - `Alignment=2, MarginV=710` at PlayResY 1920 puts the bottom of the line at y 1210, so one line fills the 1110–1210 band; `MarginL=120, MarginR=240` keep it inside x 120–840 (bottom-centre alignment centres it at x 480).
 - `BorderStyle=3` turns the outline into an opaque box (clean subtitle style). Pop-in: `{\fscx80\fscy80\t(0,80,\fscx100\fscy100)}`.
 - ASS times are centiseconds; scene captions are frame-exact, which is why they are the default.
-- Burn: `ffmpeg -i in.mp4 -vf "subtitles=caps.ass:fontsdir=./fonts" -c:a copy out.mp4`. Ship the TTF in `fontsdir`; libass silently substitutes a missing font.
+- Burn: `ffmpeg -i in.mp4 -vf "subtitles=caps.ass:fontsdir=./fonts" -c:a copy out.mp4`. Ship the TTF in `fontsdir` (Inter's release has `InterVariable.ttf`; libass needs a TTF or OTF, not woff2); libass silently substitutes a missing font.
 - SRT with `force_style` scales against a 384×288 default PlayRes (so FontSize ≈ 22 means large); prefer ASS with explicit PlayRes.
 
 ## SRT sidecar

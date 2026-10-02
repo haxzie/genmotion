@@ -51,7 +51,7 @@ The most common failure is a feature tour: eight capabilities in ninety seconds,
 | Next step | 5–10% | One specific action: "Connect your first repo from Settings → Integrations" |
 
 - **Chapter card**: 45–75f (1.5–2.5 s), the chapter's name in 2–4 words at 72–96 px, entering blurUp 12f and leaving 6–9f. This is one format where a title card is allowed, because an opted-in viewer benefits from knowing the shape.
-- **Progress indicator**: a persistent label in a corner (eyebrow style, 26–30 px caps at +0.14em, ≥5:1 contrast), "2 / 4 · Invite your team", updating with a word-slot flip (10–14f) at each turn.
+- **Progress indicator**: a persistent label in a corner (`three-type`'s eyebrow role: 28 px caps at +0.14em, ≥5:1 contrast), "2 / 4 · Invite your team", updating with a word-slot flip (10–14f) at each turn.
 
 ## Beat sheets
 

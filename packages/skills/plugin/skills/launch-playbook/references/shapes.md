@@ -19,7 +19,7 @@ The product is absent until the turn; the relief rhymes with the opening shot.
 | 330–720 | Relief | The same problem solved, step by step, on the product's surface |
 | 720–900 | Hero + end card | The opening shot again, now calm; mark |
 
-- House: Gojiberry (VO-led, 15 of 20 cuts exit-then-cut, a 6f blue flood from the Send button at the turn); ElevenLabs (paper and dither, 7 pixel-block wipes, VO +3 to +8f after cuts, bed 0.28).
+- House: Gojiberry (VO-led, 15 of 20 cuts exit-then-cut, a 6f blue flood from the Send button at the turn); ElevenLabs (paper and dither, 7 pixel-block wipes, VO +3 to +8f after cuts, bed 0.28 as measured; mix to `sound-design`'s bed row today).
 - Goes wrong: agitation longer than a quarter of the film; a turn with a different subject than the problem.
 
 ## Demo-first

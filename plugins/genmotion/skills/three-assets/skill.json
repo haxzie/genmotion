@@ -1,7 +1,7 @@
 {
   "id": "three-assets",
   "title": "Assets (Three.js)",
-  "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played, copied through a canvas so it captures), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/.",
+  "description": "Bringing real material into Three.js scenes so no frame ships blank: asset imports and their type declarations, images and screenshots at true aspect, logos rasterised crisp from SVG or extruded from the real path data with a bevel, device frames, user footage transcoded to WebM and seeked from the frame through the loading barrier (never played), font files for type, and why audio goes on the timeline with place-audio instead of in a scene. Load it when a Three.js scene uses a logo, screenshot, photo, recording, font or any file from assets/.",
   "summary": "Logos, screenshots, device frames, seeked footage and fonts in Three.js scenes, loaded so no frame ships blank.",
   "kind": "technique",
   "category": "Craft",
@@ -70,6 +70,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.0",
+  "version": "2.1.0",
   "icon": "🖼️"
 }

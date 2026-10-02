@@ -82,6 +82,16 @@ Read the owner skill fully. Then load its `requires` that apply to this project'
 - **Techniques**, cross-cutting: `screen-capture`, `ai-presenter`, `stock-and-broll`, `ad-qa`.
 - **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them.
 
+## Opening a skill's reference files
+
+Skills keep long tables and code in `references/*.md` beside their `SKILL.md`, and say when to read each one. A path like `references/critique.md` is relative to that skill's own folder. How to open one on each surface:
+
+- **Shell**: `npx @genmotion/cli skills show <id> references/<file>.md` (for example `skills show direction references/critique.md`); `skills show <id>` alone prints `SKILL.md` and lists the reference files at the end.
+- **The GenMotion MCP server**: `get_skill` with the skill's `id` and `file: "references/<file>.md"`.
+- **Skills installed as files** (the Claude Code plugin, Codex's `.agents/skills`, the desktop app): read `<the skill's folder>/references/<file>.md` directly.
+
+Read a reference when the skill says the step needs it, not all of them up front.
+
 ## Capabilities, not tools
 
 Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `music`, `place-audio`, `transcribe`, `search-skills`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.

@@ -42,7 +42,20 @@ ffmpeg -i edit/cam-a-proxy.mp4 -vf "select='gt(scene,0.3)',showinfo" -f null - 2
 ffmpeg -ss 12.5 -i assets/source/cam-a.mp4 -frames:v 1 -update 1 edit/frame.png
 ```
 
-Scene thresholds: `scene` 0.3–0.4 for hard cuts, lower for dissolves; `scdet=threshold=10` (8–15) is the alternative. Also useful: `blackdetect=d=0.1:pix_th=0.1`, `freezedetect=n=-60dB:d=2`, `cropdetect` (letterboxing).
+Scene thresholds: `scene` 0.3–0.4 for hard cuts, lower for dissolves; `scdet=threshold=10` (8–15) is the alternative. Also useful: `blackdetect=d=0.1:pix_th=0.1`, `freezedetect=n=-60dB:d=2`.
+
+```sh
+# who is talking, without a transcript: 1 tile per second, source timecode burned in (the 160 = the -ss offset)
+ffmpeg -ss 160 -t 60 -i assets/source/cam-a.mp4 -vf "fps=1,scale=320:-2,drawtext=text='%{pts\:hms\:160}':x=4:y=4:fontsize=16:fontcolor=white:box=1:boxcolor=black@0.6,tile=6x10" -frames:v 1 -update 1 edit/talk-160.jpg
+# active picture inside letterbox bars (read the last crop= line)
+ffmpeg -ss 60 -t 20 -i assets/source/cam-a.mp4 -an -vf "cropdetect=limit=24:round=2:reset=0" -f null - 2>&1 | grep -o "crop=[0-9:]*" | tail -1
+# fades or title cards at the source's ends: per-frame mean luma of the first and last 3 s
+ffmpeg -sseof -3 -i assets/source/cam-a.mp4 -an -vf "signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=edit/tail-luma.txt" -f null -
+```
+
+- The talk sheet: mark each second where the interviewer's mouth or hands move. Tested on a two-person interview: the host's gestures stand out clearly on 320 px tiles.
+- `cropdetect` finds black bars only. A burned-in logo strip or lower third inside a bar defeats it (tested: a 720p source with a 2.35:1 picture and a logo bar reported 1280×716); confirm the active area on a full-size frame and crop it by hand.
+- Tail luma: a steady fall over the last 0.3–1 s (tested: 225 → 91 in the last 0.5 s) is a fade to black. Keep your out point before it starts, or hold the last clean frame.
 
 Compute cut lists on the proxy in **seconds**, then apply the same seconds to the originals.
 
@@ -69,33 +82,41 @@ whisper-cli -m ggml-medium.en.bin -f edit/audio16k.wav -oj -ojf        # whisper
 ffmpeg -hide_banner -nostats -i edit/audio16k.wav -af silencedetect=noise=-35dB:d=0.45 -f null - 2>&1 | grep -oE "silence_(start|end): [0-9.]+"
 ```
 
-- Threshold −30 to −40 dB for a clean mic, −25 dB in a noisy room; measure the floor first with `astats` or `ebur128`. Duration `d`: 0.3 s (Shorts) to 0.8 s (podcast).
+- Threshold −30 to −40 dB for a clean mic, −25 dB in a noisy room; measure the floor first with `astats` or `ebur128`. Duration `d`: 0.3 s (Shorts) to 0.8 s (podcast). If the map finds almost nothing, raise the threshold and lower `d` until pauses appear (a tightly delivered talking head needed −30 dB and `d=0.07`).
+- An already-edited source (a YouTube upload, a creator's own cut) has almost no silence left: one 114 s video gave ~30 pauses and 1.5 s of savings. Pause-trimming cannot hit a target length there; reaching it means dropping whole passages, which is a story decision (main skill, Step 4).
 - Keep-segments from the list: speech runs from each `silence_end − pad` to the next `silence_start + pad` (pad 0.08–0.15 s); drop pieces under 0.2 s; compress rather than delete long pauses in long-form (leave 0.25–0.4 s).
 - Audio-only podcasts can use `silenceremove=stop_periods=-1:stop_duration=0.5:stop_threshold=-35dB`; it cannot keep video in sync.
 
 ## 5. Conform the edit (render-tested)
 
-One pass from the cut list to the two files the project uses. Segments `[0,3)` and `[5,9)` of a 30 fps source:
+One pass from the cut list to the two files the project uses. **Every segment is conformed to an exact frame count on its own**, before the concat: `fps` per segment, a short clone pad, then `trim=end_frame=N`. Applying `fps` once after the concat (the obvious graph) lets each segment keep its source-frame quantisation, so on a 23.976 or 29.97 source the cuts drift: measured, a cut planned for frame 770 landed on 772, the video ran one frame long and the audio 55 ms long. Planned counts first:
+
+- Snap every in/out to the **project** frame grid: `t = round(t × fps) / fps`.
+- `N = round((out − in) × fps)` per segment; the edit is `ΣN` frames; segment k starts at frame `Σ N₀…N(k−1)`.
+
+Segments `[1.3, 3.7)` and `[5.1, 8.0333)` of a 23.976 fps source, project at 30 fps (N = 72 and 88):
 
 ```sh
 ffmpeg -y -i assets/source/cam-a.mp4 -filter_complex "\
-[0:v]trim=start=0:end=3,setpts=PTS-STARTPTS[v0];\
-[0:a]atrim=start=0:end=3,asetpts=PTS-STARTPTS,afade=t=in:d=0.01,afade=t=out:st=2.99:d=0.01[a0];\
-[0:v]trim=start=5:end=9,setpts=PTS-STARTPTS[v1];\
-[0:a]atrim=start=5:end=9,asetpts=PTS-STARTPTS,afade=t=in:d=0.01,afade=t=out:st=3.99:d=0.01[a1];\
+[0:v]trim=start=1.3:end=3.7,setpts=PTS-STARTPTS,fps=30,tpad=stop_mode=clone:stop_duration=0.2,trim=end_frame=72,setpts=PTS-STARTPTS[v0];\
+[0:a]atrim=start=1.3:end=3.7,asetpts=PTS-STARTPTS,apad,atrim=end=2.4,afade=t=in:d=0.01,afade=t=out:st=2.39:d=0.01[a0];\
+[0:v]trim=start=5.1:end=8.0333,setpts=PTS-STARTPTS,fps=30,tpad=stop_mode=clone:stop_duration=0.2,trim=end_frame=88,setpts=PTS-STARTPTS[v1];\
+[0:a]atrim=start=5.1:end=8.0333,asetpts=PTS-STARTPTS,apad,atrim=end=2.93333,afade=t=in:d=0.01,afade=t=out:st=2.92333:d=0.01[a1];\
 [v0][a0][v1][a1]concat=n=2:v=1:a=1[vc][ac];\
-[vc]fps=30,scale=1920:1080:flags=lanczos,setsar=1,tpad=stop_mode=clone:stop_duration=0.5,format=yuv420p[v]" \
+[vc]scale=1920:1080:flags=lanczos,setsar=1,tpad=stop_mode=clone:stop_duration=0.5,format=yuv420p[v]" \
  -map "[v]" -an -c:v libvpx-vp9 -deadline realtime -cpu-used 8 -row-mt 1 -crf 30 -b:v 0 -g 15 -keyint_min 15 assets/edit.webm \
  -map "[ac]" -vn -c:a pcm_s16le -ar 48000 -ac 2 edit/edit-audio-raw.wav
 ```
 
-- `fps=` is the project fps; `scale=` is the project size if framing is final, or the source size (≤1920 on the long edge) if the scene reframes or punches in.
+Tested: 160 + 15 handle = 175 frames exactly, WAV 5.3333 s = 160/30 to the sample, and the cut on frame 72. The same graph on a 30 fps source is harmless (the per-segment `fps` is a no-op).
+
+- `fps=` is the project fps (Step 1 of the main skill picks it); `scale=` is the project size if framing is final, or the source size (≤1920 on the long edge) if the scene reframes or punches in.
+- Each segment's audio: `apad,atrim=end=N/fps` makes it exactly as long as its picture; `afade` out at `st = N/fps − 0.01`.
 - `-g 15` keyframes every half second: measured exact and fastest (`footage-in-scene.md`). `-crf 30` with `-deadline realtime -cpu-used 8` is visually clean for 1080p talk and encodes at ~2× real time on 4 cores; use `-deadline good -cpu-used 4 -crf 28` for a hero trailer.
-- `tpad` adds the 0.5 s tail handle the last scene frame needs.
-- Each `afade` pair: `st` = segment length − 0.01.
-- Multiple sources: add inputs and use `[1:v]`, `[1:a]`; every segment must reach `concat` at the same size, fps and sample rate, so put `fps`, `scale`, `setsar` and `aresample=48000` on each segment when sources differ.
+- `tpad` after the concat adds the 0.5 s tail handle the last scene frame needs.
+- Multiple sources: add inputs and use `[1:v]`, `[1:a]`; put `scale`, `setsar` and `aresample=48000` on each segment when sources differ.
 - Many segments: write the graph to `edit/cut.filter` and use `-filter_complex_script edit/cut.filter`.
-- Check: `ffprobe -v error -count_frames -select_streams v -show_entries stream=nb_read_frames -of csv=p=0 assets/edit.webm` equals the edit's frames + 15 (the handle), and the WAV's duration equals the edit's duration.
+- **Check against the plan, not against itself:** `ffprobe -v error -count_frames -select_streams v -show_entries stream=nb_read_frames -of csv=p=0 assets/edit.webm` equals the **planned** `ΣN + 15`; the WAV's duration equals `ΣN / fps`; and the cut frames from a difference scan of `edit.webm` (§11, density check) equal the planned segment starts.
 
 B-roll and inserts are conformed the same way, each to its own `.webm`.
 
@@ -109,6 +130,27 @@ ffmpeg -i wide.mp4 -filter_complex "[0:v]split[a][b];[a]crop=ih*9/8:ih:(XA-ih*9/
 # blurred-background letterbox (last resort)
 ffmpeg -i in.mp4 -filter_complex "[0:v]split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=40,eq=brightness=-0.08[bgb];[fg]scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2,setsar=1[v]" -map "[v]" -map 0:a -c:a copy blur.mp4
 ```
+
+### Low-resolution or letterboxed sources into 9:16
+
+Work out the **total enlargement of source pixels** first: `scale = output px ÷ source px kept`, multiplied by any zoom the scene adds later. A full-height 9:16 crop of 720p is 1920 ÷ 720 = 2.67× before any jump zoom; of a 2.35:1 picture 544 px tall inside 720p, 3.5×. Keep the total **≤2.0× (≤1.3× ideal)**; above that skin and fabric smear on a phone. Layouts that stay inside it, best first (tested at 1080×1920):
+
+| Source kept | Layout | Enlargement |
+|---|---|---|
+| two angles (or the wide + a crop of it) | stacked halves, 1080×960 each, a 9:8 crop per half | 720p: 1.33× |
+| 720p, one speaker | 4:5 plate (1080×1350) with its top at y 460, hook text above, captions at y 1160 over the plate's lower part | 720p: 1.875× |
+| 544 px active picture (letterboxed) | 1:1 plate (1080×1080) at y 460–1540 | 1.99× |
+| 16:9 kept whole | full width (1080×608) centred on a blurred, darkened fill, text above and below | ≤1× (last resort: it reads as a reposted landscape video) |
+
+```sh
+# 4:5 plate centred on CX, mild sharpen for the upscale, on a near-black 9:16 canvas
+ffmpeg -i in.mp4 -filter_complex "[0:v]crop=w=ih*4/5:h=ih:x='min(max(CX-ih*2/5,0),iw-ih*4/5)':y=0,scale=1080:1350:flags=lanczos,unsharp=5:5:0.6[p];color=c=0x0a0a0a:s=1080x1920:r=30[bg];[bg][p]overlay=x=0:y=460:shortest=1,setsar=1[v]" -map "[v]" -map 0:a? plate45.mp4
+```
+
+- Crop from the **active picture** (`cropdetect`, §2), never the full frame with its bars.
+- Any upscale over 1.3× gets `unsharp=5:5:0.6` (mild; 0.8+ halos edges). Then jump zooms and punch-ins only on segments at 1.0, and the jump zoom drops to 1.1–1.12 so the total stays ≤2.0×.
+- Use every angle the source gives you of the speaker, including a crop of the wide: a cut between the wide-crop and the close angle is a real camera change, which a single crop cannot give you.
+- Or keep the plate in the scene at source size and do the layout there (`footage-in-scene.md`); the same limits apply.
 
 Find CX from a contact sheet: locked-off podcast cameras need one value per camera. A moving crop by expression (`x='if(lt(t,4.2),300,1180)'`) works, but an eased reframe is simpler in the scene (`footage-in-scene.md`).
 
@@ -199,6 +241,40 @@ ffmpeg -hide_banner -nostats -i exports/edit.mp4 -af ebur128=peak=true -f null -
 - The `setpts=N/30/TB` on both inputs matters: without it the WebM and MP4 timestamps round differently and every third frame pairs with its neighbour, a false alarm. Use the project fps.
 - Reading `psnr.log`: a clean edit sits around 35–50 dB; runs of low frames, or a dip on every Nth frame, mean the footage is late; one isolated dip is encoder noise. Only valid where the scene shows `edit.webm` full-frame and unscaled.
 - First frame not black: `ffmpeg -i exports/edit.mp4 -vf "blackdetect=d=0.03:pix_th=0.1" -f null - 2>&1 | grep black_start`.
+
+### Contact sheet of the export (look at the whole film at once)
+
+```sh
+# 2 tiles per second, each labelled with its export frame number (30 fps), 50 tiles a sheet
+ffmpeg -i exports/edit.mp4 -vf "fps=2,scale=180:-2,drawtext=text='f%{eif\:t*30\:d}':x=4:y=4:fontsize=18:fontcolor=white:box=1:boxcolor=black@0.6,tile=10x5" -fps_mode vfr edit/export_%02d.jpg
+```
+
+### Visual-change density (feed formats)
+
+A talking face always moves, so "nothing changed" has to be counted from editorial events: cuts (measured) plus the designed events you placed (text pops, punch-in starts, picture-only steps, from the beat table). Tested on a 41 s 9:16 edit: the difference scan found all 10 hard cuts (including a 1.0 → 1.2 jump zoom) and nothing else at the 30 threshold.
+
+```sh
+# 1) hard cuts: frame-to-frame difference on a small grey copy; a cut reads 40–70, speech motion stays under 25
+ffmpeg -i exports/edit.mp4 -an -vf "scale=320:-2,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=edit/diff.txt" -f null -
+awk -F'[ =:]+' '/^frame/{f=$2+1} /YAVG/{if ($NF>30) print f}' edit/diff.txt > edit/changes.txt
+# 2) append the designed event frames (one per line), then list every gap over 2.5 s (75 f at 30 fps; set end= to the total frames)
+sort -n -u edit/changes.txt | awk -v fps=30 -v end=1241 '{if ($1-p > 2.5*fps) print "gap", p, "->", $1; p=$1} END{if (end-p > 2.5*fps) print "gap", p, "->", end}'
+# 3) held stills and frozen plates (graphics-only stretches, a stuck footage seek): any output is a frozen stretch over 1 s
+ffmpeg -i exports/edit.mp4 -an -vf "scale=320:-2,gblur=sigma=2,freezedetect=n=0.003:d=1.0" -f null - 2>&1 | grep -E "freeze_(start|duration)"
+```
+
+Any printed gap fails a feed format: fill it with a picture-only cut, a text pop or a sound (the main skill's Step 6). `freezedetect` finds a frozen picture, not a monotonous one: on the talking-head edit it printed nothing even across 6 s with no edit, which is why steps 1–2 are the density check.
+
+### In and out boundaries of an excerpt
+
+```sh
+# the 2 s of source before the in point and after the out point, 4 tiles a second (in 175.51 and out 216.87 here)
+ffmpeg -ss 173.51 -t 2 -i assets/source/cam-a.mp4 -vf "fps=4,scale=320:-2,tile=8x1" -frames:v 1 -update 1 edit/before-in.jpg
+ffmpeg -ss 216.87 -t 2 -i assets/source/cam-a.mp4 -vf "fps=4,scale=320:-2,tile=8x1" -frames:v 1 -update 1 edit/after-out.jpg
+ffmpeg -ss 216.87 -t 2 -i assets/source/cam-a.mp4 -vn -af silencedetect=noise=-35dB:d=0.4 -f null - 2>&1 | grep -E "silence_(start|end)"
+```
+
+If the same speaker's mouth is moving on either strip, or speech resumes within 0.6 s of the out point, the clip cuts a thought: move the boundary, or say in the delivery note that it is a mid-answer excerpt.
 
 ## 12. Deliver
 

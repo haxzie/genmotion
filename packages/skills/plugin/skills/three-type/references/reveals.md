@@ -1,6 +1,6 @@
 # Reveal recipes on the type kit
 
-The kinetic-type recipes from `motion-language` (`references/text-motion.md` has the numbers and the reading-time rules), written as frame-callback code over `components/type.ts` (`references/type-kit.md`) and `components/ease.ts` (`three-camera`). `D` is `durationInFrames`; `ink`, `accent`, `grey` are `THREE.Color`s built once; `tmp` is one scratch `THREE.Color`. Every recipe was compiled and captured.
+The kinetic-type recipes from `motion-language` (`references/text-motion.md` has the numbers and the reading-time rules), written as frame-callback code over `components/type.ts` (`references/type-kit.md`) and `components/ease.ts` (`three-camera`). `D` is `durationInFrames`; `ink`, `accent`, `grey` are `THREE.Color`s built once; `tmp` is one scratch `THREE.Color`. `TYPE` is the table in SKILL.md plus the roles a recipe names: `wordmark` (the brand's face, sized by the lockup), `number` (the image-word, above 130 px), `caption` (28–48 px by spec) and `ui` (≥ 28 px where seen), all weight ≤ 500. Every `// builder` line runs inside the scene's `withFonts(ctx, [{ family: "Inter", url: interUrl }], () => { … })` builder (SKILL.md, A complete scene), so no texture is drawn in a fallback face; type that shares the frame with 3D objects is wrapped in `onTop()`. Every recipe was compiled and captured.
 
 Contents: 1 blurUp by word · 2 riseMask and mask push-up · 3 Per-character title with colour sweep · 4 Wordmark landing · 5 Two-pass ink and L→R sweep · 6 Typewriter · 7 Word-slot flip · 8 Scatter pops and beat cards · 9 Highlight and underline · 10 Count-up · 11 Captions and karaoke · 12 Exits
 
@@ -53,12 +53,13 @@ Per character is for 2–3 key words in the whole film (a title, the product nam
 
 ```ts
 const mark = letters("GENMOTION", TYPE.wordmark);
-// tracking +0.32em -> +0.01em over 15f outCubic; letters 1.5f apart, 4f each
-mark.track(lerp(0.32, 0.01, prog(frame, 16, 15, outCubic)));
+// tracking +0.32em -> +0.12em over 15f outCubic (an uppercase wordmark settles at +0.08 to +0.16em;
+// a sentence-case one at -0.01 to -0.03em); letters 1.5f apart, 4f each
+mark.track(lerp(0.32, 0.12, prog(frame, 16, 15, outCubic)));
 mark.letters.forEach((l, i) => setLabel(l, { opacity: prog(frame, 16 + i * 1.5, 4, outSmooth) }));
 ```
 
-Each letter is placed from measured prefixes, so tracking animates with no reflow. Slide the mark in beside it 8–9f later.
+Each letter is placed where it sits in the kerned word, so tracking animates with no reflow. Slide the mark in beside it 8–9f later; if the mark travels, move mark and wordmark as one group so the mark never crosses a visible letter.
 
 ## 5. Two-pass ink and L→R sweep
 
@@ -169,7 +170,7 @@ CUES.forEach((c, i) => setLabel(caps[i]!, { opacity: frame >= c.at && frame < c.
 ```
 
 - Captions live on the camera-locked overlay (`three-camera` `overlay`) in px units, so camera moves never shake them. In the overlay 1 unit = 1 px: build them with a style scaled by `1 / PX`, or put them in a child group scaled by `1 / PX`.
-- Position: 9:16 caption block centred 58–63% down the frame (y ≈ 1110–1210 at 1080×1920); 16:9 bottom of the block ≥ 8% above the bottom edge. Size 9:16 56–72 px, 16:9 40–48 px, weight 500–600, on a scrim (a dark rounded plane at 0.5–0.6 opacity) whenever the background is footage or busy.
+- Position: 9:16 caption block centred 58–63% down the frame (y ≈ 1110–1210 at 1080×1920); 16:9 bottom of the block ≥ 8% above the bottom edge. Editorial captions: 9:16 48–72 px, 16:9 34–48 px, weight 400–500, on a scrim (a dark rounded plane at 0.5–0.6 opacity) whenever the background is footage or busy. Social captions over footage take `ugc-craft`'s spec instead (SKILL.md, Captions).
 - Time cues from the VO's word timings (`transcribe`), legible as or before the word is spoken, held ≥15f after it.
 - Karaoke: the line enters 5f before its first word (7f outQuad from y −30 px); each sung word flashes the accent and pops to 1.16 with a decaying wobble (`1 + 0.16 · kick(time, [wordTime], 8)`), then fades toward the text colour.
 

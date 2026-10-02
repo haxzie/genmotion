@@ -42,7 +42,8 @@ Questions you never need to ask: length and aspect (the placement implies them; 
 
 - **Single-minded proposition (SMP)**: one sentence, the one thing the viewer takes away. Outcome language ("Invoices that chase themselves"), not inventory ("12 new features"). If you cannot write it in one sentence, that is the question to ask.
 - **Audience**: who, and what they already know. A developer audience lets you show code; a buyer audience needs the outcome first.
-- **Placement and sound**: feed (autoplay, sound off by default, 9:16 or 4:5, platform UI over the frame) · site or keynote (sound on, full attention, 16:9) · store page (muted autoplay, device-framed) · in-app or docs (sound optional, loopable). Sound-off placements must carry the whole message in picture and text.
+- **Placement and sound**: feed (autoplay, sound off by default, 9:16 or 4:5, platform UI over the frame) · landing-page hero (muted autoplay loop: browsers block sound on autoplay, so sound is a bonus for the click-to-play version; 16:9, small file, loop-safe last frame) · YouTube, keynote or a click-to-play page video (sound on, full attention, 16:9) · store page (muted autoplay, device-framed) · in-app or docs (sound optional, loopable). Sound-off placements must carry the whole message in picture and type.
+- **What it is**: when the subject is a product, a stranger watching muted must be able to say what kind of product it is (an app, a web tool, a device, a service) from the frames. An app film shows its UI; if no screens were supplied, the owner skill says how to build a representative one.
 - **Feeling**: two adjectives and one "not": "confident, warm, not corporate". The "not" is what stops the median choice.
 
 ### Step 3: the idea
@@ -76,9 +77,13 @@ Pick exactly one. The families are measured from GenMotion's own house style; `r
 
 The owner skill usually names a default family; follow it unless the assets or the audience say otherwise, and write why.
 
+**Family versus owner**: the owner's pacing and beat sheet win; the family supplies the look (palette, type, texture, transition style, sound colour). A technical explainer in family G keeps the explainer's calm scene lengths and borrows G's HUD panels and wipes, not G's 25–30f beat rate. Type sizes and weights in every family follow `three-type`'s size table (the house design standards: hero 72–130 px, headline weight ≤ 500, nothing under 28 px).
+
 ### Step 5: energy curve
 
 Energy is 0–10 per beat. Draw the shape for the format, put exactly **one peak** at the moment of greatest contrast (biggest scale jump, fastest cuts, most saturated colour, biggest camera move), and put a **breath** of 10–30f (stillness, black, or silence) right before it. Contrast is what makes the peak feel big: if every beat is an 8, none of them is.
+
+The peak is a picture event first: it gets the film's **biggest scale change or camera move** (a push into the device, a part growing to hero size, a punch-in), not just a colour change on the same layout. Calm formats too: an explainer's "click" is quiet in tempo but is still the biggest scale change in the film. Sound reinforces the peak; it cannot make one on its own.
 
 | Format | Shape | Where the peak goes |
 | --- | --- | --- |
@@ -120,6 +125,8 @@ Write three lines:
 
 Keep one direction of travel for "progress" (left to right, or bottom to top) and reverse it only to mean "reversal". Durations, build recipes and sound pairings for every handoff are in `motion-language`.
 
+**Flashes**: a flash used as a transition appears once or twice in a film. A flash the product itself makes (a camera shutter, a notification) may repeat on that action, smaller each time (0.25–0.4 of the big one), but every flash must contrast: at least 50% luma difference from the frames either side, additive toward white or the accent, ≤ 4f. A flash that composites to grey is a dip, not a flash; on a bright plate flash dark or skip it.
+
 ### Step 8: sound plan
 
 Decide the shape here; `sound-design` decides levels, sources and the mix.
@@ -128,6 +135,7 @@ Decide the shape here; `sound-design` decides levels, sources and the mix.
 - **Density**: none, accents only (the peak, the logo), or literal (every on-screen event sounds; about one cue per second at most).
 - **Sonic logo**: what sounds when the mark lands (a hit, a chime, the track's button).
 - **Silence**: where the breath before the peak goes quiet.
+- **A flat library track** (no build, no drop, the same phrase gaps every few bars) has no peak of its own: shape it (the recipe is in `launch-playbook`'s Sound section, levels per `sound-design`): search the onsets for a natural dropout and hit to cue onto the peak, automate a breath before the peak that no other bar has, duck the bed 3–4 dB under the cascade, end on a phrase ending or a ≥45f tail after the mark. Or pick another track.
 
 ### Step 9: the one memorable moment
 
@@ -138,7 +146,8 @@ Name the single frame or second the viewer will describe to someone else, and pu
 ```
 PLACEMENT ── feed (TikTok/Reels/Shorts) → 9:16, 6–30 s, sound off first, hook by frame 15, Hyper/High
           ├─ feed (LinkedIn/X)          → 1:1 or 4:5, 15–45 s, sound off first, High/Medium
-          ├─ landing page / launch      → 16:9, 20–45 s, sound on, music- or VO-led, curve: launch
+          ├─ landing-page hero          → 16:9, 20–45 s, muted autoplay loop (sound a bonus), ≤ 5 Mb/s, curve: launch
+          ├─ launch film (YouTube, post)→ 16:9, 20–45 s, sound on, music- or VO-led, curve: launch
           ├─ keynote / event screen     → 16:9, 30–90 s, sound on, slower, premium holds
           └─ store page                 → owner's spec, muted autoplay
 INTENT ──── wow (launch, hype) → B or C (A if only copy + logo) · curve: launch or trailer
@@ -204,7 +213,7 @@ Then build, `validate`, and `capture-frames` on the scene's first frame, its ful
 
 ## Self-critique before you finish
 
-Run this on captured frames, not on the code; code that looks right often renders wrong. Capture frame 0, frame 15 (0.5 s), the middle and last frame of every scene, the first frame of every next scene, the peak, and the final frame. A contact sheet made with `ffmpeg` from those stills makes the rhythm visible at a glance.
+Run this on captured frames, not on the code; code that looks right often renders wrong. Capture frame 0, frame 15 (0.5 s), the middle and last frame of every scene, the first frame of every next scene, the peak, and the final frame. A contact sheet made with `ffmpeg` from those stills makes the rhythm visible at a glance; `references/critique.md` §1 has the command, plus the dead-hold (`freezedetect`) and delivery (bitrate, faststart) measurements to run on the export.
 
 1. **Anti-slop pass**. Fix any that are true:
    - Everything enters the same way (the same fade-up on every element in every scene).
@@ -213,8 +222,10 @@ Run this on captured frames, not on the code; code that looks right often render
    - Text that cannot be read twice in its hold, or a paragraph on screen.
    - A flat energy curve: no breath, no peak, the end card as loud as the hook.
    - Decoration with no job: gradient blobs, glass cards, particles, lens flares "because premium".
-   - More than one accent colour in a frame, more than two type families, small text in the bright accent.
+   - More than one accent colour in a frame, more than two type families, small text in a low-contrast accent (< 4.5:1).
    - A logo that arrives in the last second with no build, or holds under 1.5 s (outside the beat-cut style).
+   - A dead hold: more than 1.5 s (feed) or 2.5 s (elsewhere) where nothing changes, or a line held over 2× its formula with nothing else moving.
+   - A product film where nobody could tell what kind of product it is.
    - Text in a 9:16 platform-UI zone.
    - Bounce on everything; overshoot is for one playful moment, not the default.
 2. **Swap test**: cover the logo on the frames. Could this be any company's video? If yes, the idea is missing from the picture; put the subject's own UI, numbers or nouns into the memorable moment.
@@ -236,9 +247,10 @@ Run this on captured frames, not on the code; code that looks right often render
 2. The SMP is one sentence and the idea is written as "We show X as Y".
 3. Every on-screen line's hold meets `max(30, 9 × words + 15)` frames from the frame it is legible (check two lines with `capture-frames` at the start and end of their hold).
 4. VO word count ≤ length × 2.5, with the last 1.5 s of the film VO-free.
-5. The frame at 0.5 s already shows the hook (feed placements: no fade from black).
+5. The frame at 0.5 s already shows the hook (feed placements: no fade from black). Stings, intros and end cards: motion has started by frame 15.
 6. The memorable moment is at the frame the block says, and the 10–30f before it are calmer.
 7. Every non-cut transition has a carrier you can point to in the frames either side of the cut.
 8. For 9:16, nothing that must be read sits in the platform-UI zones from `references/pacing.md`.
 9. The self-critique passed: no anti-slop item true, the swap test fails for a competitor, rubric average ≥4 with no axis below 3.
-10. `validate` passes.
+10. The export fits its destination (critique's Delivery blocker: a landing-page hero is ≤ 5 Mb/s at 1080p with faststart).
+11. `validate` passes.

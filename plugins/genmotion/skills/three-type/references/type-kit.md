@@ -17,7 +17,7 @@ export const FONT = 'Inter, "SF Pro Display", -apple-system, "Helvetica Neue", A
 
 export interface TypeStyle {
   size: number; // composition px
-  weight?: number; // 400-600; hierarchy comes from size, not weight
+  weight?: number; // 400-500 (house cap 500); hierarchy comes from size, not weight
   color?: string; // drawn colour; draw white and tint with setLabel({ color }) for sweeps
   tracking?: number; // em; defaults by size
   font?: string;
@@ -150,15 +150,18 @@ export function line(text: string, s: TypeStyle) {
 
 /**
  * A word as one plane per character, for per-character titles and wordmarks.
- * x(i, tracking) = advance of the untracked prefix + i * tracking * size, so tracking
- * can animate per frame without redrawing anything.
+ * x(i, tracking) = where glyph i starts inside the untracked, kerned word + i * tracking * size,
+ * so tracking can animate per frame without redrawing anything.
  */
 export function letters(word: string, s: TypeStyle) {
   const group = new THREE.Group();
   group.name = slug(word);
   const flat: TypeStyle = { ...s, tracking: 0 };
   const chars = [...word];
-  const prefix = chars.map((_, i) => measure(chars.slice(0, i).join(""), flat));
+  // Glyph i starts where it starts inside the whole word: the kerned advance of chars 0..i minus
+  // its own advance. (The advance of chars 0..i-1 alone misses the pair kern (i-1, i): in "Tally"
+  // the a would sit too far right and both l's would overlap it.)
+  const prefix = chars.map((ch, i) => measure(chars.slice(0, i + 1).join(""), flat) - measure(ch, flat));
   const full = measure(word, flat);
   const meshes = chars.map((ch, i) => {
     const m = label(ch, flat, "left", 12);
@@ -173,6 +176,23 @@ export function letters(word: string, s: TypeStyle) {
   };
   track(s.tracking ?? trackingFor(s.size));
   return { group, letters: meshes, track };
+}
+
+/* --------------------------------------------------------------- layering */
+
+/**
+ * Keep type (or any overlay) in front of the 3D world. The kit's planes write no depth but
+ * still TEST it, so a mesh nearer the camera than the type (a card flying in at z = +2, a
+ * receipt at z = 0.6) hides it. onTop turns the test off and draws the object after the
+ * scene's other transparent objects; a higher `order` draws later (captions above headlines).
+ */
+export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
+  obj.traverse((o) => {
+    o.renderOrder = order;
+    const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    if (m) for (const mat of Array.isArray(m) ? m : [m]) mat.depthTest = false;
+  });
+  return obj;
 }
 
 /* ------------------------------------------------------------------ fonts */
@@ -301,8 +321,9 @@ export function counter(pattern: string, s: TypeStyle) {
 | `measure(text, style)` | px | Layout maths: slot widths, wrapping by hand |
 | `counter("$#,###", style)` | `{ group, set(value), setOpacity(o), width }` | Tabular count-ups; fractional values roll |
 | `withFonts(ctx, files, build)` | the scene's update | Wrap the whole builder so no texture is drawn in a fallback face |
+| `onTop(obj, order?)` | the same object | Type over 3D: no depth test, drawn last; call it on every label or group that must never be hidden |
 
-Styles: `{ size (px), weight (400–600), color, tracking (em), font }`. Keep one `TYPE` table of named styles in `components/` and use only those.
+Styles: `{ size (px), weight (400–500), color, tracking (em), font }`. Keep one `TYPE` table of named styles in `components/` and use only those.
 
 ## 3. Fonts
 
@@ -320,7 +341,9 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 }
 ```
 
-- The capture machine has almost no fonts installed: a family name alone (`Inter`, `SF Pro`) silently falls back to a default sans in the export. Ship the font file in `assets/` (`save-asset` the brand's woff2, or Inter's variable woff2) and load it this way in **every** scene that draws type; each scene bundles its own copy of the module.
+- The capture machine has almost no fonts installed, and `genmotion init` ships none: a family name alone (`Inter`, `SF Pro`) silently falls back to a default sans in the export. Ship the font file in `assets/` and load it this way in **every** scene that draws type; each scene bundles its own copy of the module.
+- **Getting Inter** (SIL Open Font License, free to embed; font CDNs are often blocked from agent sandboxes, these were not): `save-asset` `https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/InterVariable.woff2` (352 KB, every weight) to `assets/InterVariable.woff2`; or the official release zip at `https://github.com/rsms/inter/releases` (`InterVariable.woff2` inside); or, where npm works, `npm pack @fontsource-variable/inter` and take `files/inter-latin-wght-normal.woff2`. A brand face comes from the brand (its site's woff2 or the user), never a lookalike.
+- **Several static weights of one family**: `withFonts` decides "already loaded" by family name, so give each weight its own family name (`"Brand 400"`, `"Brand 500"`) and use those names in `font`, or use one variable file.
 - Variable fonts: one file, `weight: "100 900"`, any weight. Static files: one entry per weight, same family name, `weight: "500"`.
 - `withFonts` registers the load on `ctx.manager`, runs the builder when it lands, and re-poses the frame the host asked for before the barrier releases. A missing file never hangs the export; the fallback face draws instead (check a still).
 

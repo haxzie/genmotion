@@ -34,7 +34,7 @@ Another owner fits better when:
 - **Energy curve**: steps to one peak: the first time the new control is used and its result appears, at **35–45%** of the length. Before it, the familiar product (energy 4); after it, the payoff and the CTA (5, then 3).
 - **Pacing**: Medium (new information every 30–50f); a social cut runs High (18–30f).
 - **Transitions**: signature is the **persisting element**: the same window, card or cursor carries across every cut, because the feature lives inside a product the viewer knows. Workhorse exit-then-cut. A match-push (24–48f) into the new control is the natural peak.
-- **Sound**: VO-led with a bed at 0.14–0.18 (−17 to −15 dB) for changelog embeds; music-led at 1.0 with UI clicks for social; none for an in-app loop. One sound per interaction that matters.
+- **Sound**: VO-led with a bed per `sound-design`'s bed row (0.1–0.2 under any voice, default 0.18) for changelog embeds; music-led at 1.0 with UI clicks for social; none for an in-app loop. One sound per interaction that matters.
 - **Memorable moment**: the new control doing its job in one move: the poll appears and the votes roll in, the export lands in the CDN, the typed command becomes the result.
 
 ## Beat sheets

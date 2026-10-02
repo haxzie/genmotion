@@ -4,6 +4,12 @@ The ten looks GenMotion's own templates are built in, measured from their source
 
 Moves named here (blurUp, pop, flood, iris, persisting element…) are defined with exact timings in `motion-language`.
 
+Two rules sit above every row:
+
+- **Type follows the house size table** in `three-type` (the design standards every project carries): hero 72–130 px, supporting 34–48, labels 28–34, uppercase eyebrows 28, nothing under 28 px, headline weight ≤ 500. Some templates were measured heavier or smaller; the rows below are already adjusted, and where anything here seems to differ, the table wins. The only type above 130 px is a single word or number that *is* the image (A's bleed punch word, J's hero number, a brand's wordmark lockup).
+- **The owner's pacing wins**: a family gives the look (palette, type, texture, transitions, sound colour); the owner skill's beat sheet and scene lengths decide the tempo.
+- **Levels in the Sound rows are what the templates measured**; the mix itself follows `sound-design` (one bed row: 0.1–0.2 under any voice, −14 LUFS master).
+
 Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D One-shot camera film · E Chat-UI social · F Whiteboard explainer · G Textured tactile · H Music video · I Brand guide / identity loop · J Milestone / stat · Mixing families · Engine notes
 
 ---
@@ -17,7 +23,7 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Signature | Numbers |
 | --- | --- |
 | Palette | Pure #000 / #fff. At most one accent (a violet like #9b9cff on dark, a royal blue like #1f3fd1 on white). Emphasis cards invert (white ground, black type) |
-| Type | One grotesque at 600–700. Sizes in steps: 68 / 112 / 176 / 268 px, plus a "bleed" size of 580–960 px for the punch word. Tracking tightens with size: −0.012em under 100 px, −0.025em above 100, −0.035em above 200. Line height 0.78 for bleed type, 1.05 otherwise. Tabular figures |
+| Type | One grotesque at 500 (the templates ran 600–700; the house cap is 500). Reading cards in two steps inside 72–130 px, plus a "bleed" size of 580–960 px for the one punch word that is the image. Tracking tightens with size: −0.012em under 100 px, −0.025em above 100, −0.035em for bleed. Line height 0.78 for bleed type, 1.05 otherwise. Tabular figures |
 | Motion | No easing at all, or a micro-settle (scale 1.06 → 1 over 12f). Accent cards open with a 2-frame strobe of solid foreground colour. Letters or words can build 2f apart. Two-pass ink: words appear grey, ink 5f later |
 | Pacing | Card holds are multiples of an eighth note: at 90 BPM one eighth is 10f, so holds of 5, 7.5, 10, 12.5, 15f; countdown digits 30f. Average about 8f per card. Scenes 70–160f |
 | Transitions | The hard cut on the beat *is* the grammar. Chapter separators: cut to black, an 8f fade to black, or an 8f white wipe |
@@ -35,7 +41,7 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Signature | Numbers |
 | --- | --- |
 | Palette | Bg #fff, #fafafb, #fdfdfd or a creme #F7F4ED. Ink #0a0a0b–#1b1b1b. Muted around #5c5a55–#6b6b73, kept at ≥5:1 contrast. One brand gradient used on one element at a time (a band, the mark, an underline, an emphasis word) |
-| Type | A neutral grotesque 400–600. Hero 96–220 px at −0.025 to −0.04em; body 36–38; eyebrow 26–30 uppercase at +0.14 to +0.2em |
+| Type | A neutral grotesque 400–500. Hero 96–130 px at −0.025 to −0.03em; body 36–38; eyebrow 28 px uppercase at +0.14 to +0.2em |
 | Motion | blurUp / riseMask by word (12–14f, stagger 3–4), sometimes with a colour sweep from light to ink. Word-slot flips. Typing at 2–3 frames per character with a real caret. Click = 4f press + 6f release + an 8–14f ring. Camera pushes to 1.7–3.8×. Marks arrive on a gentle spring with no overshoot. Counters 40–120f |
 | Pacing | New information every 14–50f; scenes 30–310f, mean about 5 s |
 | Transitions | Persisting element, card → full-bleed morph, colour-field push, button flood, iris from the clicked button or the logo, gradient band wipe, scale-matched cut, exit-then-cut |
@@ -52,8 +58,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 
 | Signature | Numbers |
 | --- | --- |
-| Palette | White or near-black stage + one electric brand colour (a lime like #c8f31d) used only as fills, rays and glows, never small text + one punch colour (an electric blue like #1d2bf0) for exactly one word. Extruded type in three tones of the brand colour (face, bevel, side) |
-| Type | Grotesque 600, 150–190 px at −0.03 to −0.035em; eyebrow 26 px at +0.22em |
+| Palette | White or near-black stage + one electric brand colour (a lime like #c8f31d) used only as fills, rays and glows, never small text (it fails 4.5:1 on white) + one punch colour (an electric blue like #1d2bf0) for exactly one word. Extruded type in three tones of the brand colour (face, bevel, side) |
+| Type | Grotesque 500. Headlines 110–130 px at −0.03em; a single slammed word or number may go to 150–190 px as the image; eyebrow 28 px at +0.2em |
 | Motion | Pop: keys [0 → 1.08 at 60% → 1] over 14f. Slam: z 6 → 0 with scale 0.7 → 1.04 → 1 over 14f. Burst: 25 objects staggered 1–2f, 22–26f ease-out. Rays spin 0.006 rad/frame continuously. Kinetic words 3f apart, entrance 9f, exit 6f |
 | Pacing | 18–25f between beats; scenes 33–180f |
 | Transitions | Radial colour flood (10–13f, ease-in) that the next scene contracts into an object (a pill, a button); rush into the lens; push into a ring; white wipe; hard cut to black at the very end |
@@ -127,8 +133,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Palette | HUD: near-black #070605, yellow #ffd23f, loss red #ff4d4f, panel #0d0e10. Paper: #efeeea, ink #111, a dither gradient from blue #1f6db5 to olive #8f9a4a, an orange gradient #e8462b → #f38a2c |
 | Type | A tech display face for HUD, or a grotesque 400 at −0.02em for paper (scatter words 96 px) |
 | Motion | Pixel-block wipe (12 × 7 cells, 18–24f). Pixel-glitch dissolves 15–21f. Scatter words pop 6f apart in 2-frame pops. Linear paper drift so words are carried off, not faded. Heartbeat halos at 75 BPM (lub, dub 8f later at 0.6 strength). Badges stamp: a 1-frame flash, settle over 4–5f. Block-caret typing at about 12 characters per second |
-| Pacing | 25–30f between beats; scenes about 75f median when VO-led |
-| Transitions | Block wipe (incoming beat already 12f in when the wipe starts), iris to an object, shrink to an avatar, frame → card collapse, fall into dark |
+| Pacing | 25–30f between beats; scenes about 75f median when VO-led (as a look borrowed by a calm owner such as `explainer`, keep the owner's scene lengths) |
+| Transitions | Block wipe (cells grow out of an on-screen object of the wipe's colour; the incoming beat is already 12f into its animation when the cells clear, see `three-transitions`), iris to an object, shrink to an avatar, frame → card collapse, fall into dark |
 | Sound | A soundtrack with visuals locked to its pulses, or VO at full level + bed at −11 dB (0.28) + a wipe sound at −6 dB starting on the wipe's first frame + rings on the cut |
 | Logo hold | 60–105f |
 
@@ -160,15 +166,15 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 
 | Signature | Numbers |
 | --- | --- |
-| Palette | The brand's own hex values, shown on screen as content. Dotted rules (3 px every 16 px at about 16% opacity) |
-| Type | The brand's display face at a measured cap height; labels small, uppercase, +0.08em |
+| Palette | The brand's own hex values, shown on screen as content; the ground is the brand hex exactly (±2 levels at centre and corners), no vignette, no grain. Dotted rules (3 px every 16 px at about 16% opacity) |
+| Type | The brand's display face at a measured cap height; labels 28–34 px, uppercase, +0.08em |
 | Motion | Clip-draw the mark over 16f with a 26 px lift. Palette sheets slide 16f ease-out at staggers of 4–20f. Typewriter specimen with a colour trail 4 characters long. Slot-machine tiles (one face every 24f, an 11f roll, cells staggered 3f). Glitch text with a 2-frame stutter |
 | Pacing | About 22f between beats; scenes 74–155f |
 | Transitions | Ink panel wipe (8f), the last sheet keeps travelling and floods the frame (16f), the held word recedes on Z, photos morph into lockup blocks (18f) |
 | Sound | One bed at full level, or a single quiet source boosted up to +6 dB |
 | Logo hold | 19–150f; a loop holds the settled lockup for most of its length |
 
-**Goes wrong when**: the mark is redrawn instead of using the real file (slightly wrong is worse than absent), or the specimen shows type the brand doesn't use.
+**Goes wrong when**: the mark is redrawn instead of using the real file (slightly wrong is worse than absent), or the specimen shows type the brand doesn't use. No logo file: set the name as a wordmark in the brand's face (`brand-sting` has the full no-logo policy).
 
 ## J. Milestone / stat
 
@@ -179,7 +185,7 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Signature | Numbers |
 | --- | --- |
 | Palette | Warm paper #FBFAF8 or #FAFAFA, ink #111114–#1C1917, muted #66666E (≥5.3:1 for small text), one brand orange like #FA5D19 |
-| Type | Grotesque 500 at 250–264 px, −0.04 to −0.045em, tabular figures; caps labels 28 px at +0.2em |
+| Type | Grotesque 500 at 250–264 px for the hero number (the image), −0.04 to −0.045em, tabular figures; caps labels 28 px at +0.2em |
 | Motion | Hero number enters 12f (rise 50 px, blur 10, scale 0.94 → 1). Count 120–210f with ease-out cubic; any chart or bar draws on the **same** eased progress so the line and the digits settle together. Land punch 1 → 1.06 → 1 over 5f up and 13f down. Confetti or poppers fire within ±2f of the land. Afterwards the number breathes 0.4–1.5% |
 | Pacing | Entrance inside 30f, the long count, a 90–120f payoff hold |
 | Transitions | Usually a single scene; exit with a blur-out (12–16 px) |

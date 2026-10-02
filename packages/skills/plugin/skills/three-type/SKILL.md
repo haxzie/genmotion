@@ -30,40 +30,48 @@ Copy `references/type-kit.md` into `components/type.ts` (it imports `PX`/`RES` f
 | `setLabel(m, { opacity, blur, color, maskY })` | The per-frame look: blur in px, tint, clip below a line |
 | `counter("#,###", style)` | Tabular digits rolling on a strip texture |
 | `withFonts(ctx, files, build)` | Builds the scene only once the font files have loaded, inside the frame barrier |
+| `onTop(obj, order?)` | Keeps type in front of 3D objects: depth test off, drawn after them |
 
 Rules it encodes, and why:
 
 - **Draw once in the builder, animate the meshes.** Redrawing a canvas per frame re-uploads a texture 30 times a second.
 - **2× canvases, sized in composition px.** Captures run at up to 2× device pixels. Never draw small and scale the plane up: that is the "blurry text" bug. Raise `size` instead.
-- **Ship the font file.** The capture machine has almost no fonts installed; `"Inter"` by name silently becomes a default sans in the export. Put the woff2 in `assets/` (`save-asset` the brand font, or Inter) and wrap each scene's builder in `withFonts`.
+- **Ship the font file.** The capture machine has almost no fonts installed and a new project ships none; `"Inter"` by name silently becomes a default sans in the export. Put the woff2 in `assets/` and wrap each scene's builder in `withFonts`. Inter (OFL): `save-asset` `https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/InterVariable.woff2` (font CDNs are often blocked; this and the rsms/inter GitHub release are not); more sources in `references/type-kit.md` §3.
 - **Draw white, tint per frame.** Colour sweeps, inking and the punch word are one plane whose tint changes; two crossfaded copies let the background through and read pale.
 - **Text is never tone mapped and never lit.** The kit's shader ignores `renderer.toneMapping`, so `#ededef` stays `#ededef` under any look.
+- **Text is never hidden by the 3D world.** The planes write no depth but still test it, so anything nearer the camera covers them. Wrap every headline, label and caption that shares a frame with 3D objects in `onTop()` (depth test off, drawn last); check a frame where an object passes in front.
+- **Kerned per character.** `letters()` places each glyph where it sits inside the kerned word, so "Tally", "AV" and "To" set per character match the same word set whole.
 - **Name every plane after its words** (the kit does): the editor's click on a word arrives as `#ship-the-whole-film`.
 
 ## One type system per film
 
-Keep one `TYPE` table in `components/`, named by role, and use nothing else:
+Keep one `TYPE` table in `components/`, named by role, and use nothing else. **This is the pack's one size table**: it is the house design standards every project's `AGENTS.md` carries, and other skills cite it rather than restating sizes.
 
 ```ts
 export const TYPE = {
-  display: { size: 150, weight: 600, tracking: -0.03 },  // one per film: the title, the number
-  hero: { size: 96, weight: 500 },                       // headlines, 72–130
-  sub: { size: 44, weight: 400, color: "#8a8a93" },      // supporting line, 34–48
-  label: { size: 30, weight: 500 },                      // labels and captions in 16:9, 28–34
-  eyebrow: { size: 26, weight: 600, tracking: 0.22 },    // uppercase eyebrows only
+  hero: { size: 110, weight: 500 },                      // headlines, 72–130 (one per scene)
+  sub: { size: 42, weight: 400, color: "#8a8a93" },      // supporting line, 34–48
+  label: { size: 30, weight: 500 },                      // labels, annotations, 16:9 captions, 28–34
+  eyebrow: { size: 28, weight: 500, tracking: 0.16 },    // uppercase eyebrows only, 28 (the floor)
+  display: { size: 130, weight: 500, tracking: -0.03 },  // the film's title or its one number
 } as const;
 ```
 
-| Size (px at 1080 high) | Tracking | Weight |
-| --- | --- | --- |
-| ≥ 120 | −0.03 to −0.035em | 500–600 |
-| 60–119 | −0.02em | 500 |
-| 28–59 | 0 | 400–500 |
-| Uppercase eyebrow 22–28 | +0.12 to +0.22em | 600 |
+| Role (px at 1080 on the short side) | Size | Tracking | Weight |
+| --- | --- | --- | --- |
+| Hero headline | 72–130 | −0.02em (60–119 px), −0.03em (120–130 px) | 400–500, **never above 500** |
+| Supporting line | 34–48 | 0 | 400 |
+| Labels, annotations, captions (16:9) | 28–34 | 0 | 400–500 |
+| Eyebrow (uppercase, the only all-caps text) | 28 | +0.12 to +0.2em | 500 |
+| The one image-word: a wordmark lockup, a hero number, a bleed punch word | Above 130, sized by the lockup or the frame | sentence case −0.03 to −0.045em; **uppercase wordmark +0.08 to +0.16em** | the brand's, else 500 |
 
-- **28 px is the floor** for anything read (≈2.6% of frame height in other sizes). Destination sizes, hierarchy ratio (≥1.5–2× between levels) and contrast (≥4.5:1 under 60 px, ≥3:1 above) are in `direction`'s pacing reference; `three-look` has the colour pairs that pass.
-- **Light on dark reads heavier**: drop one weight step (600 → 500) for light type on a dark ground under 60 px, and never go below 400.
-- Hierarchy comes from size and colour, not weight; sentence case; one emphasised word per line.
+- **28 px is the floor** for anything, anywhere (≈2.6% of the frame's short side at other sizes). The house guide's eyebrow range is 22–28, so with the floor an eyebrow is 28. If a layout only works smaller, cut words or zoom in.
+- **Weight**: hierarchy comes from size and colour, not weight; headlines 400–500. A brand that specifies a heavier face for its wordmark overrides this for the wordmark only. Word-timed social captions over footage are the one sanctioned exception: they follow `ugc-craft`'s caption spec.
+- **Only the image-word goes above 130 px**: one word or number that is a picture in itself, never a sentence.
+- Sentence case everywhere except eyebrows and a brand's uppercase wordmark. Uppercase at display size needs *positive* tracking: caps set tight read cramped.
+- **Light on dark reads heavier**: under 60 px, light type on a dark ground uses 400–500, never lighter than 400.
+- **Printed matter on a prop** (receipt line items, a document's body, a phone's status bar) is drawn as grey bars or lines, not as glyphs under 28 px: text that cannot be read should not look like text.
+- Hierarchy ratio ≥1.5–2× between levels; contrast ≥4.5:1 under 60 px, ≥3:1 above (`three-look` has the colour pairs that pass). One size pair per scene, three sizes at most.
 - 1 world unit = 100 px at z = 0, so `size` is the on-screen size there. Type at another depth scales by `D0 / (D0 − z)` (`three-camera`); work it out, then confirm on a frame.
 
 ## Layout in each aspect
@@ -83,7 +91,7 @@ All in `references/reveals.md`, compiled and captured:
 | blurUp by word: 12f outCubic, 3f stagger, blur 10 → 0 | `line()`, `setLabel({ opacity, blur })`, y offset |
 | riseMask: 13f outQuart, stagger 4f | `setLabel({ maskY })` just under the descenders |
 | Per-character title with colour sweep | `letters()`, tint lands 1.6× slower than the move |
-| Wordmark: tracking +0.32 → +0.01em over 15f | `letters().track(em)` per frame |
+| Wordmark: tracking +0.32 → +0.01em over 15f (uppercase: → +0.08 to +0.16em) | `letters().track(em)` per frame |
 | L→R sweep, two-pass ink | tint per word, 2f apart; grey → ink 5f later |
 | Typewriter: 2–2.4 f/char, caret solid while typing | `letters()` visibility by index + a caret plane |
 | Word-slot flip: −96° out, +92° in, slot morphs 14f | pivot on the baseline, `rotation.x`, measured slot widths |
@@ -94,9 +102,11 @@ All in `references/reveals.md`, compiled and captured:
 
 ## Captions
 
-- One phrase of 2–5 words at a time, cut on phrase boundaries from the VO's word timings (`transcribe`), no tween between phrases; legible as or before the word is spoken, held ≥15f after it.
-- On the camera-locked overlay (`three-camera` `overlay()`), so a punch-in or shake never moves them.
-- 9:16: block centred 58–63% down (y ≈ 1110–1210), 56–72 px, weight 500–600. 16:9: 40–48 px, bottom of the block ≥ 8% above the frame edge. On footage or anything busy, sit them on a scrim plane at 0.5–0.6 opacity.
+Two specs, by job:
+
+- **Social captions over footage** (feed edits, UGC, podcast clips, Gen Z): `ugc-craft`'s caption spec is the one spec (word groups, size, heavy weight with a stroke or scrim, active-word highlight); the house guide sanctions it as the exception to the weight cap. Build it with this kit (one `label` per group, drawn in the shipped font inside `withFonts`, never a family name alone).
+- **Editorial captions and subtitles** (explainers, launch films, anything designed rather than shot): one phrase of 2–5 words at a time, cut on phrase boundaries from the VO's word timings (`transcribe`), no tween between phrases; legible as or before the word is spoken, held ≥15f after it. 16:9: 34–48 px, weight 400–500, bottom of the block ≥ 8% above the frame edge. 9:16: block centred 58–63% down (y ≈ 1110–1210), 48–72 px.
+- Both sit on the camera-locked overlay (`three-camera` `overlay()`), so a punch-in or shake never moves them, inside `onTop()`. On footage or anything busy, a scrim plane at 0.5–0.6 opacity behind them.
 
 ## A complete scene
 
@@ -118,7 +128,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     colorPipeline(renderer, "flat");
     fitCamera(camera, height);
     scene.background = new THREE.Color(LOOK.bg);
-    const head = line("Ship the whole film", TYPE.hero);
+    const head = line("Ship the whole film", TYPE.hero);   // wrap in onTop(head.group) if 3D objects share the frame
     head.group.position.y = 60 * PX;
     const sub = label("in one take", TYPE.sub);
     sub.position.y = -60 * PX;
@@ -142,8 +152,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Family (`direction`) | Type build |
 | --- | --- |
 | Beat-cut kinetic type | One `label` per card, no tween, hard cut on the beat; accent cards a 2-frame strobe |
-| Soft-light SaaS | blurUp by word, 96–120 px, 500; UI text drawn inside the UI canvases at their true size |
-| 3D product hero | Display 150–190 px at −0.03em, 600; one punch word in the second colour; slam out of the lens |
+| Soft-light SaaS | blurUp by word, 96–120 px, 500; UI text drawn inside the UI canvases, ≥28 px where it is seen (zoom in rather than shrink) |
+| 3D product hero | Headlines 110–130 px at −0.03em, 500; a single slammed word or number may go larger as the image-word; one punch word in the second colour; type over the 3D objects in `onTop()` |
 | One-shot film | Words carried in from 170 px right, 3.6f apart, colour band sweeping each line |
 | Whiteboard | Hand-written text revealed left to right by a soft x-wipe in its shader, 8–18f by width; left column at a 140 px margin |
 | Music video | Karaoke lines, sung word flashing the accent |
@@ -163,16 +173,18 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Font files in the project | `save-asset` the brand's woff2 (or Inter's) into `assets/` | The kit falls back to the system sans; say so to the user |
+| Font files in the project | `save-asset` the brand's woff2, or Inter's from the rsms/inter GitHub URL above, into `assets/` | Any OFL woff2 already on disk; else the kit falls back to the system sans: say so to the user |
 | Caption timing | `transcribe` on the VO | Time phrases by ear from the script at the VO's words per minute |
 | Checking legibility | `capture-frames` mid-reveal and on the held line | None |
 | Text motion numbers | `motion-language` | — |
 
 ## Checks before you finish
 
-1. `capture-frames` on every held line: the face is the brand font (not a fallback sans), edges crisp, nothing under 28 px.
-2. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down.
-3. Mid-reveal frame of each recipe: blur and colour sweep visible, no word clipped by its plane edge.
-4. Every line is fully legible by 15–20f after its first word, and holds `max(30, 9 × words + 15)` frames once legible.
-5. Every text plane is named after its words; no canvas is drawn inside a frame callback.
-6. No randomness or wall-clock timing in any scene or component; `validate` passes.
+1. `capture-frames` on every held line: the face is the brand font (not a fallback sans), edges crisp, nothing under 28 px, no headline heavier than 500.
+2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter).
+3. A frame where a 3D object passes the type: the type stays in front.
+4. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down.
+5. Mid-reveal frame of each recipe: blur and colour sweep visible, no word clipped by its plane edge.
+6. Every line is fully legible by 15–20f after its first word, and holds `max(30, 9 × words + 15)` frames once legible.
+7. Every text plane is named after its words; no canvas is drawn inside a frame callback.
+8. No randomness or wall-clock timing in any scene or component; `validate` passes.

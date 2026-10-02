@@ -14,7 +14,9 @@ Pick one per concept and keep it for the whole film. The metaphor must survive t
 | --- | --- |
 | Request / response, APIs | A packet (one recurring shape) travelling a path between two labelled boxes; the response is the same packet returning changed |
 | Caching | A shelf beside the road: the second trip stops at the shelf and comes back in a third of the time (show the time) |
-| Encryption | A packet locked into a box whose key only one side holds; the box is visibly opaque in transit |
+| Encryption (symmetric, session traffic) | A packet sealed in a box that **both ends open with the same key**; the key itself never travelled; the box is visibly opaque in transit |
+| Key exchange (Diffie–Hellman) | Paint mixing: each side mixes its private colour into the other's public mix and both arrive at the same colour; an eavesdropper holding both public mixes cannot unmix them. Call them "public shares", **never "halves" of a key** |
+| Public-key signatures, certificates | **Show the attack it stops first** (an impostor in the middle swapping in their own key), then the check that stops it: the certificate signed by an authority **and** the server proving it holds the matching private key |
 | Sync, replication | Two (or three) identical boards; a stroke drawn on one appears on the others with a visible delay |
 | Queues, backpressure | Items lining up at a narrow gate; the line grows when arrivals outpace the gate |
 | Load balancing | One stream splitting across N lanes; one lane fails and its items re-route |
@@ -27,7 +29,8 @@ Pick one per concept and keep it for the whole film. The metaphor must survive t
 ## 2. Diagram grammar
 
 - **Build order is reading order**: left to right, top to bottom, cause before effect. The first element to draw is the one the VO names first.
-- **Labels sit on the thing**, never in a legend. Label type ≥40 px on 16:9 (≥32 px in a 9:16 frame at 1080 wide).
+- **Labels sit on the thing**, never in a legend, at `three-type`'s label size (28–34 px) in full-contrast ink, not the muted tone. If a part must be studied, make the part bigger, not its label: at the click, the parts that matter are ≥ 15% of the frame's height.
+- **Parked objects get a reserved slot** that clears every label: an object waiting "inside" a node larger than the node is hidden while parked, not just overlapped.
 - **At most 5 boxes on screen at once**; a bigger system is shown as a whole (pulled back, details unreadable on purpose) and then entered part by part with a push.
 - **Arrows draw in the direction of flow** over 8–12f, outCubic; the head appears in the last 3f.
 - **Emphasis** is one colour (the red pen in family F, the brand accent elsewhere) on one element at a time.
@@ -41,7 +44,7 @@ Pick one per concept and keep it for the whole film. The metaphor must survive t
 - **Give the number a unit the viewer can feel**: "enough water for 2,000 homes" beats "1.2 million litres", shown beside the exact figure.
 - **Lines draw on with the count**: the chart's head and the counter run off the same eased progress so they settle together.
 - **Comparisons share an axis and a beat**: both bars grow at once on the same easing; the difference is what lands.
-- **Sources** go on screen (24–28 px, muted) for any number a viewer might quote.
+- **Sources** go on screen (28 px, the floor; muted, still ≥ 4.5:1) for any number a viewer might quote.
 
 ## 4. Hooks for explainers
 

@@ -27,8 +27,14 @@ Another owner fits better when:
 ## Ask first (only what changes the film)
 
 1. **What is the product, and the one thing it does that the alternative can't?** This becomes the proposition. Offer your best guess from their site.
-2. **Where does it run first, and with sound?** Landing page or keynote (16:9, sound on) and feed (muted, 1:1, 4:5 or 9:16) are different films, not recrops.
+2. **Where does it run first, and with sound?** A landing-page hero (16:9 muted autoplay loop), a click-to-play film or keynote (16:9, sound on) and feed (muted, 1:1, 4:5 or 9:16) are different films, not recrops.
 3. **What real material is there?** Screens or a recording, a logo file, a true number. It decides the style family and whether metric-first is possible.
+
+When the user says "just make it" and material is missing:
+
+- **No screens** (an app or web product): build a **representative UI of the core flow** (for a receipt app: the phone camera viewfinder → the parsed fields → the category chip), in the brand colours, generic chrome, no features beyond the brief. Record it under "I assumed" as "illustrative UI, replace with real screens". An app launch in which no device or screen ever appears fails: the viewer must see *that it is an app*, not only what it does.
+- **No logo file**: set the product name as a wordmark in the brand's face (or the house face). A motif built from the film (stacks that become a tally mark) may sit beside it, flagged in `VIDEO.md` as "motif, not a logo"; never present an invented symbol as the brand mark (`brand-sting` has the full policy).
+- **Props need content** (a receipt needs a total): fictional merchants and plausible amounts are fine as illustration; they are not claims, and `VIDEO.md` says so. Claims (users, savings, ratings) still trace to the user.
 
 Everything else (length, music, voice, palette) you choose and state under "I assumed".
 
@@ -54,7 +60,15 @@ Write these into the Direction block in `VIDEO.md` (`direction` Step 4–9) unle
 - **Energy curve**: quiet tease (3) → build (5) → **reveal (9) at 25–30% of the length** → feature cascade (6–8, a micro-peak per feature) → hero + name (8) → end card (3). A 10–30f breath before the reveal: stillness, a music dropout, or black.
 - **Pacing**: Medium (new information every 30–50f) for VO-led films; High (18–30f) in the feature cascade and for music-led films; Hyper (8–14f) only for an A-family montage passage.
 - **Transitions**: signature from the reveal device (flood becomes object, iris from the clicked button, rush into the lens, match-push into the UI); workhorse persisting element (B, C) or exit-then-cut (VO-led). Hard cuts only on the beat. One direction of travel, left to right.
-- **Sound**: music-led (track at 1.0, or 0.5–0.6 under SFX) when there is no VO; VO-led with a bed at 0.18 (−15 dB) otherwise. 110–128 BPM build-and-drop with the drop on the reveal; ask for 120 BPM (15f per beat, 60f per bar) so the grid sits on frames. Sonic logo on the mark.
+- **Sound**: music-led (track at 1.0, or 0.5–0.6 under SFX) when there is no VO; VO-led with a bed at 0.18 (−15 dB, `sound-design`'s bed row: 0.1–0.2 under any voice) otherwise. 110–128 BPM build-and-drop with the drop on the reveal; ask for 120 BPM (15f per beat, 60f per bar) so the grid sits on frames. Sonic logo on the mark. The product's key action (a shutter, a send, a click) always has its own sound; with no `sfx`, use `sound-design`'s synthesised placeholders.
+- **A flat library track** (no build or drop; the same phrase gap every few bars) has no peak until you give it one:
+  1. Search the onset dump (`sound-design`, Beat grid) for a natural dropout followed by a hit, and cue the track (`startFrom`) so the hit lands on the reveal frame.
+  2. Make the breath unique: over the 10–30f before the reveal, duck the bed 10–12 dB (or filter it with `ffmpeg`'s `lowpass`/`highpass`), full band again on the reveal frame, so it does not sound like every other phrase end.
+  3. Duck the bed 3–4 dB under the cascade, so the reveal and the mark have headroom.
+  4. End on a phrase ending under the mark, or fade the tail over ≥ 45f after the mark lands; never a mid-groove cut in the last frames.
+  Check: the 0.5 s RMS of the breath is lower than any other gap in the film, and the export's loudness range (LRA) is above about 3 LU.
+- **Landing-page hero**: it autoplays **muted** and usually loops, so the whole message lives in picture and type; sound is a bonus for the click-to-play version. The last frame must cut back to frame 0 cleanly, and the file must be small (≤ 5 Mb/s at 1080p, faststart; the Delivery blocker in `direction`'s critique).
+- **The peak is the biggest picture change**: the reveal gets the film's largest scale change or camera move (a push through the phone, the product growing to fill the frame), not only a flash or a colour change on the same layout.
 - **Memorable moment**: the reveal, built from the idea: the send button floods the frame and contracts into the product; the camera pushes through the phone into the UI; "Introducing" deletes itself and types the name; the headline slams out of the lens.
 
 ## Beat sheets
@@ -106,9 +120,11 @@ Hook 0–90 · problem or claim 90–450 (2–3 beats of 120f, proposition by 45
 - **First frame**: the product doing something, a transformation already half-way, a number already moving, or the manifesto's sharpest line. Never a logo, a black card, a mission statement or a person about to speak.
 - **UI**: rebuild the real screens at true proportions and magnify the part that matters 2–2.5×; never paste a full screenshot flat. Camera pushes 1.7–3.8× onto the control that matters, 24–48f inOutCubic. Typing 2–3 frames per character with a solid caret. Click: press 4f in, 6f out, scale −8 to −15%, ring 8–14f.
 - **One demo is a run**: three or more beats on the same surface (input → response → result → benefit) joined by persisting elements. Single-shot features with a new layout each time read as a slideshow.
+- **Same surface, different framing**: each run gets its own camera move (push into the line being read, track to where it files, pull back to the result), and runs shorten as the viewer learns the pattern (for example 150 → 110 → 60f, the last a montage of several at once). Three runs with one locked framing read as one shot played three times.
+- **Flashes**: one big flash (the reveal) is the signature. A flash the product itself makes (a shutter) may repeat on that action, each 0.25–0.4 of the big one and ≤ 4f, additive toward white or the accent so it contrasts (≥ 50% luma against the frames either side); a flash that composites to grey is a dip and is cut.
 - **The reveal**: build the 10–30f before it calmer. Device timings (`motion-language`): flood 6–13f ease-in then contract 10–13f; iris 16–34f; rush into the lens 10–24f; slam z 6 → 0 with scale 0.7 → 1.04 → 1 over 14f; typewriter "Introducing" at 2.4 f/char, delete at 2.1, name at 2 f/char.
-- **Hero type**: 96–220 px at −0.025 to −0.04em on 16:9; feed headlines ≥90 px, body ≥32 px. One accent colour, on the focal element and CTA only.
-- **End card**: mark lands on a gentle spring (no overshoot) 14–20f, holds 75–120f (2.5–4 s); a URL or CTA holds ≥60f and its text formula. Calmer than everything before it.
+- **Hero type**: sizes from `three-type`'s house table (hero 72–130 px at −0.02 to −0.03em, weight ≤ 500; supporting 34–48; labels 28–34); feed headlines ≥ 90 px. Only the name or the one number that *is* the image goes bigger. One accent colour, on the focal element and CTA only. Printed matter on a prop (receipt line items, a document's body) is drawn as grey bars, never as glyphs under 28 px.
+- **End card**: mark lands on a gentle spring (no overshoot) 14–20f, holds 75–120f (2.5–4 s); a URL or CTA holds ≥60f and its text formula. Calmer than everything before it. It follows the brand-identity look (`three-look`): the brand hex exact at centre and corners, no grain, no vignette; the lockup centred optically as one group (mark + name + tagline), and every mesh from the previous beat hidden once it has handed off.
 - **Social proof**: only if real and strong. Numbers before names. Logos 60–90f in a row, never long enough to read one by one, never before the demonstration, never a relationship the user hasn't confirmed. No invented numbers or quotes; leave a bracketed placeholder and say so.
 
 ## Destination recuts
@@ -117,7 +133,8 @@ Build the master for the first destination; the others are recuts of the same be
 
 | Destination | Aspect, length | What changes |
 | --- | --- | --- |
-| Landing page, keynote | 16:9, 20–60 s | The master. Sound on, the reveal can breathe |
+| Landing-page hero | 16:9, 10–30 s loop | Muted autoplay: every beat readable in picture and type; loop-safe last frame; H.264 ≤ 5 Mb/s at 1080p, ≤ 15 MB, `+faststart` |
+| Click-to-play page film, keynote | 16:9, 20–60 s | The master. Sound on, the reveal can breathe |
 | Product Hunt | 16:9, ≤60 s | Muted-first: every claim on screen, hook by frame 15 |
 | X, LinkedIn | 1:1 or 4:5, 15–45 s | Captions carry it; headline ≥90 px; 4:5 keeps content in the central 1080 × 1080 |
 | Reels, TikTok, Shorts | 9:16, 15–30 s | Re-lay type 2–4 words per line; everything readable inside x 120–840, y 270–1210; Hyper/High pacing |
@@ -132,14 +149,14 @@ Build the master for the first destination; the others are recuts of the same be
 ## Good and bad
 
 - Bad: logo fade-in, "Introducing Acme", a feature list with icons, a stock-music swell, a logo for 1 s. Good: the cursor is already typing a request at frame 0, the answer builds, the send button floods the frame and contracts into the product name on the drop.
-- Bad: three features, each a new screenshot with a different transition. Good: one surface, three runs, the same card persisting and morphing between them.
+- Bad: three features, each a new screenshot with a different transition. Good: one surface, three runs, the same card persisting and morphing between them, each run framed by its own camera move and shorter than the last.
 - Bad: "Loved by teams everywhere" over a logo wall at second 3. Good: the real "4.9 ★ from 2,100 reviews" as its own beat after the demo.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Brand, copy, screenshots | `web-research` on the product's site, `save-asset` for real files | Ask the user; never invent a palette, claim or number |
+| Brand, copy, screenshots | `web-research` on the product's site, `save-asset` for real files | Ask the user; on "just make it", a representative UI and a wordmark, both flagged (Ask first); never invent a claim or number |
 | Narration | `pick-voice`, then `voiceover` | Music-led cut carried by on-screen lines |
 | Music | `music` | Per `sound-design`'s ladder; with nothing licensed, an SFX-led film |
 | Effects | `sfx` | Credited CC0 sounds, or the music's own transients |
@@ -154,10 +171,11 @@ Build the master for the first destination; the others are recuts of the same be
 2. `capture-frames` at frame 0 and frame 15: not a logo, not black, not a title card; the hook is readable by frame 15.
 3. The proposition is on screen or in the VO by the end of beat 2 (frame 240 at 30 s, 450 at 60 s).
 4. The reveal sits at 25–30% of the length; the 10–30f before it are visibly calmer (capture both) and the music drops out or thins there.
-5. Mute check: on captured frames alone (no audio), a stranger can say what the product does.
+5. Mute check: on captured frames alone (no audio), a stranger can say what the product does **and what kind of product it is** (app, web tool, device); an app film shows a screen or device.
 6. VO words ≤ the budget for the length; the last 60f are VO-free; spot-check two cuts that VO starts 3–8f after them.
 7. Every on-screen line meets its hold formula (capture its first legible frame and its exit's first frame).
 8. The end card's mark holds ≥75f with at most one ambient behaviour, and the music's button lands on it within 1 frame.
-9. Every number, logo and quote traces to something the user gave you.
-10. `ffmpeg` `ebur128` on the export: −14 LUFS ±1 integrated, true peak ≤ −1 dBTP.
-11. The `direction` self-critique passes (swap test fails for a competitor; rubric average ≥4, no axis below 3), and `validate` passes.
+9. Every claim, logo and quote traces to something the user gave you; illustrative UI and prop content are labelled as such in `VIDEO.md`; an invented motif is never called the logo.
+10. `ffmpeg` `ebur128` on the export: −14 LUFS ±1 integrated, true peak ≤ −1 dBTP. The file fits its destination (a landing-page hero ≤ 5 Mb/s with faststart; `direction`'s critique has the commands).
+11. The demo runs differ in framing and shorten; no stretch of more than 2.5 s without a change (`freezedetect` pass in the critique); the end card matches the brand hex with no grain.
+12. The `direction` self-critique passes (swap test fails for a competitor; rubric average ≥4, no axis below 3), and `validate` passes.
