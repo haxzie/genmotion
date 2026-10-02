@@ -1,234 +1,156 @@
 ---
 name: ugc-unboxing
-description: "The first-impression ad: a box opened on camera, hands in frame, the product revealed in stages. Covers the reveal choreography beat by beat, why the hands carry the shot and the face is optional, scale and packaging as the actual subject, the ASMR-adjacent sound design that holds retention, and what to do when there is no physical product (a software unboxing is the onboarding, and the script has to say so). Load with ugc-ad-foundations."
+description: "The first-impression ad: a box, hands in frame, the product revealed one layer per beat, with foley carrying the retention. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, the one-layer-per-beat rule, why hands beat a face, scale and packaging as the subject, a foley plan with levels and cuts on transients, the software version (an unboxing is the onboarding, and the script says so), and building the reveal from matched stills and camera moves on Three.js."
 ---
 
 # UGC unboxing
 
 A box, two hands, and a product that arrives in pieces. The format sells anticipation: the viewer stays because something is still covered.
 
+Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-craft` (moves, captions) and `sound-design` (levels). Frames at 30 fps; positions on 1080×1920.
+
 ## When to use
 
-Pick this when the request names an unboxing, a first impression, a "what's in the box", a haul, or a packaging reveal, and when the thing being sold has a physical form (or a first-run experience that behaves like one). The tell in the brief is a noun you could put on a table.
+- The request names an unboxing, a first impression, "what's in the box", a haul or a packaging reveal, and the product has a physical form (or a first-run experience that behaves like one).
+- The tell is a noun you could put on a table.
 
-Do not pick it when:
+Not this when:
 
-- The product is a workflow and the interesting part is the interface. That is `ugc-screen-demo`.
-- The point is the sound rather than the reveal. That is `ugc-asmr-product`.
-- Someone is telling you it changed their life. That is `ugc-testimonial`.
-- You have a before state and an after state. That is `ugc-before-after`.
+- The interesting part is the interface working: `ugc-screen-demo`.
+- There is a felt problem the product ends: `ugc-problem-solution`.
+- The user **filmed their own unboxing** and wants it cut, captioned and scored: `video-editing` (this skill's beat order and foley plan still apply as the edit plan).
 
-Load `ugc-ad-foundations` alongside this, always.
+## Ask first (only what the request does not answer)
 
-## The reveal choreography
+1. Do you have product photos or footage? (Real beats generated every time here.)
+2. What is the reveal moment, the thing people should see last?
 
-An unboxing is a strip tease with a return policy. Every beat removes exactly one layer, and the layer that is left is what buys the next three seconds.
+## The one-layer rule
 
-| Beat | Lands by | What comes off | Why it holds |
-| --- | --- | --- | --- |
-| Box in frame | 0.0s | Nothing | The sealed object is the hook. It is a question with a lid. |
-| Seal broken | 3.0s | Tape, sticker, shrink | The first irreversible act. Sound does most of the work. |
-| Lid off | 6.0s | The outer box | Reveals arrangement, not product. Tissue, foam, a card. |
-| Product lifted | 9.0s | The wrap | The first time the thing exists. Hold it against a hand. |
-| Turned and handled | 12.0s | Nothing, this is texture | Weight, finish, one detail nobody photographs. |
-| First use | 15.0s | The protective film | The product doing its one job for the first time. |
-| Verdict | 17.5s | Nothing | Two sentences, flat, looking at the product and not the lens. |
+Every beat removes exactly one layer, and what is still covered buys the next few seconds. Never two layers in one cut: the moment the viewer can see everything, the ad is over. In practice a layer that sits on screen longer than about 4 s (120f) with nothing changing loses people; cut a beat or add a move.
 
-Never remove two layers in one cut. The moment a viewer can see everything, the ad is over, and every second after that is a different ad you did not plan.
-
-**Stretching it.** At 15s, drop "turned and handled" and merge the verdict into the first use. At 45s, split "first use" into three separate uses and put a real beat of silence between them; that silence is where an unboxing gets its texture, and a 45s cut without one feels like a 20s cut read slowly.
-
-## The hands matter more than the face
-
-Cut the face if you have to choose. Three reasons, in order of how much they matter:
-
-1. **The hands are the viewer's proxy.** A first-person pair of hands is the closest a feed gets to the viewer holding the thing. A face is someone else holding it.
-2. **There is no casting problem.** Hands have no age, no accent and no implied endorsement. A generated pair of hands opening a box is not a person claiming anything.
-3. **There is no lipsync problem.** The narration is voiceover over hands, which means you can write the script last and change it without re-rendering a presenter.
-
-If a face does appear, it appears once, at the verdict, and it is reacting rather than presenting. Never open on a face in this format: a face on frame 0 with a box in the background is a product video, and the viewer sorts it as an ad before the seal breaks.
-
-## Scale and packaging are the subject
-
-The product is not the subject for the first nine seconds. The packaging is. Shoot it that way:
-
-- **Give a scale reference in every shot that contains the product.** A hand, a thumb, a desk edge, a coffee cup. A product photographed alone at an unknown size is a render, and renders read as ads.
-- **Shoot the unglamorous layers.** The tissue paper, the foam cutout, the little card. Those are the frames that convince, because a fake unboxing skips them.
-- **One detail nobody markets.** The weight of the lid. The magnet. The way the cable is coiled. Say one specific true thing about it: "it is heavier than it looks" outperforms "the build quality is incredible" every time, because the first one is an observation and the second one is copy.
-- **Keep the surface honest.** A bare desk, a rug, a kitchen counter with something else on it. A seamless white sweep is a studio, and a studio is an ad.
-
-## Sound is the retention device
-
-This format is ASMR-adjacent whether you intend it or not, and the sound is half of why people finish it. Build the sound first and cut the picture to it.
-
-| Moment | Sound | Note |
+| Layer | What comes off | Why it holds |
 | --- | --- | --- |
-| Seal broken | Tape tearing, one long pull | Generate it with `sfx`. This is the single most important cue in the ad. |
-| Lid off | Cardboard sliding on cardboard | Low, dry, short. |
-| Tissue | Paper crinkle | Quiet. If it is loud it reads as a foley library. |
-| Product lifted | Nothing, then a soft set-down | Silence under a reveal is a choice, and it works. |
-| Magnet or click | A single click | Cut the picture exactly on the transient. |
+| Sealed box | Nothing | The sealed object is the hook: a question with a lid |
+| Seal | Tape, sticker, shrink-wrap | The first irreversible act; the sound does most of the work |
+| Lid | The outer box | Reveals arrangement, not product: tissue, foam, a card |
+| Reveal | The wrap | The first time the thing exists; held against a hand |
+| Texture | Nothing | Weight, finish, one detail nobody photographs |
+| First use | The protective film | The product doing its one job |
+| Verdict | Nothing | Two flat sentences, looking at the product, not the lens |
 
-Every hard cut lands on a transient. If a cut has no sound under it, either move the cut or add the sound. A music bed, if you use one at all, sits low enough that the tape tear reads over it, and it must not be doing anything interesting at the reveal.
+## Direction defaults
 
-**Design for mute anyway.** The captions carry the verdict. The sound is a bonus for the half of the audience who have it on.
+| Line | Default |
+| --- | --- |
+| Style family | C (3D product hero) adapted to a real room: the product is the hero, but under available light on a real surface, never a glossy stage. B for the software version. Look: Native (Camcorder for a nostalgia angle) |
+| Energy curve | An anticipation staircase: hook 6 → seal 6 → lid 7 → a 15f breath of near-silence → **reveal 9 (the peak, at 30–45% of the length)** → texture and use 7 → verdict 4 |
+| Pacing | Medium: one layer per 90–120f; inside each, a creep or push so nothing holds 90f still |
+| Transitions | Workhorse: hard cut on a foley transient. Signature: the reveal wipe (the product still uncovering the box still behind a hard edge over 12f inCubic), used once |
+| Sound | SFX-led: foley carries it, literal density; VO sparse; music optional |
+| Memorable moment | The reveal frame: the product lifted against a hand after the breath |
 
-## When there is no box
+## Beat sheets
 
-Most software has no box, and the wrong instinct is to invent one. A fabricated package for a product that does not ship in a package is a lie the viewer catches in the first frame, because nothing about it looks handled.
+**30 s (900f)**
 
-**A software unboxing is the onboarding.** Say that out loud in the script, in the hook, in the first five words. "This doesn't come in a box, so here's the next best thing" is a legitimate hook and it earns the format instead of borrowing it.
+| # | Frames | Job | On screen | Sound | VO (words) |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0–90 | Hook | The sealed box on a real surface, a hand already entering at frame 0; creep running | Hand on cardboard at frame 1 | "This came on Tuesday." (4) |
+| 2 | 90–180 | Seal | Close on the tape, push-in; hard cut on the tear's transient (about frame 150) | Tape tear, one long pull | — |
+| 3 | 180–270 | Lid | Lid off: tissue, foam, the card; product still covered | Cardboard slide; tissue crinkle | "Packed like it's fragile." (4) |
+| 4 | 270–390 | Reveal (peak) | 270–285 breath (room tone only); 285: reveal wipe 12f; product lifted against a hand, held | Soft set-down on contact | "[Product name]." (2) |
+| 5 | 390–540 | Texture | The one detail, macro, off-centre; focus push 30f | A magnet click, a hinge, whatever it really sounds like | "It's heavier than it looks." (5) |
+| 6 | 540–720 | First use | The product doing its one job; no VO over the action | The product's own sound | — |
+| 7 | 720–900 | Verdict + CTA | Product at rest, hand withdrawing; CTA text ≥60f | Bed (if any) resolves | "I'd buy it again. Link's in my bio." (8) |
 
-The layers map cleanly:
+23 words: an unboxing comes in well under the 73-word budget, because the foley is the soundtrack.
+
+**15 s (450f)**: 0–60 sealed hook · 60–120 seal (cut on the tear) · 120–210 lid + 15f breath · 210–300 reveal (peak) · 300–375 first use · 375–450 verdict + CTA. ≤20 words.
+
+**45 s (1350f)**: 0–90 hook · 90–210 seal · 210–330 lid · 330–480 reveal (peak at about 345) · 480–630 texture · 630–810 first use · 810–840 a beat of silence · 840–1020 second use · 1020–1170 third use · 1170–1350 verdict + CTA. The silences between uses give the 45 s cut its texture; without them it feels like the 15 s cut read slowly.
+
+## Hook options
+
+**Curiosity gap** (the sealed box, "This came on Tuesday", "I don't know what's in here"), **Pattern interrupt** (the box dropped onto the desk on frame 0, the thud on frame 1), **Social proof** (a stack of the same box, only with a real number), and for software **Result** ("This doesn't come in a box, so here's the next best thing"). Never open on a face: a face with a box behind it sorts as a product video. `ugc-hooks` has the frame-0 builds.
+
+## Hands, scale and packaging
+
+- **Hands over a face.** First-person hands are the viewer's proxy; they carry no casting, accent or implied endorsement; and VO over hands can be rewritten without re-rendering a presenter. A face appears at most once, at the verdict, reacting rather than presenting.
+- **A scale reference in every shot with the product**: a hand, a thumb, a desk edge, a mug. A product alone at an unknown size reads as a render, and renders read as ads.
+- **Shoot the unglamorous layers**: tissue, foam, the little card. A fake unboxing skips them.
+- **One specific true detail** ("it's heavier than it looks") beats an adjective stack ("incredible build quality"); only what the user confirmed.
+- **An honest surface**: a desk, a rug, a counter with something else on it. A seamless white sweep is a studio.
+
+## Foley plan
+
+Build the sound first, then cut the picture to it: place every cue at its frame, note the transients, and land each hard cut on one. Levels per `sound-design` (sources normalised first: SFX to a −3 dBFS peak).
+
+| Moment | Sound | Level (linear / dB) |
+| --- | --- | --- |
+| Seal | Tape tearing, one long pull: the loudest effect in the ad | 0.85 (−1.4) |
+| Lid | Cardboard sliding on cardboard, low and dry | 0.6 (−4.4) |
+| Tissue | Paper crinkle, close and quiet | 0.45 (−7) |
+| Breath before the reveal | Room tone only, 15f | 0.05 (−26) |
+| Product set-down | Soft thud on the contact frame ±2f | 0.6 (−4.4) |
+| Magnet, click, hinge | A single click; cut exactly on its transient | 0.9 (−0.9) |
+| Music, if any | Instrumental, out of the way at the reveal | 0.5 under foley; 0.12 under VO |
+
+Every hard cut sits on a transient: a cut with no sound under it either moves or gets a sound. Prompt `sfx` with the sound, not the picture ("packing tape ripped off a cardboard box, close, dry, one-shot, 1 second"); generate 2–3 takes of the tear. Design for mute anyway: captions carry the verdict.
+
+## The software version
+
+Most software has no box, and inventing one is a lie the viewer catches on frame 0. **A software unboxing is the onboarding**, and the hook says so in its first five words: "This doesn't come in a box, so here's the next best thing."
 
 | Physical layer | Software equivalent |
 | --- | --- |
-| The sealed box | The install button, or the sign-up screen |
-| Breaking the seal | The first launch, the splash, the permission prompt |
-| Lid off | The empty state, before any data |
-| Product lifted | The first real thing you make in it |
-| First use | The moment it does the thing you came for |
+| Sealed box | The install button or the sign-up screen |
+| Seal | The first launch, the splash, the permission prompt |
+| Lid | The empty state, before any data |
+| Reveal | The first real thing you make in it |
+| First use | The moment it does the job you came for |
 | Verdict | Two flat sentences over the finished artifact |
 
-Shoot that as a screen recording and keep the hands: a real hand entering frame to tap a phone or push a trackpad puts the physical-reveal grammar back over a digital reveal, and that is why it works.
+Build the screens per `ugc-screen-demo` (rebuilt UI or a recording via `screen-capture`), and keep a real hand: a hand entering to tap a phone puts the physical grammar back over a digital reveal. Merch, hardware and printed kits are genuinely physical; use the real thing when the user has it.
 
-Merch, hardware peripherals and a printed onboarding kit are all genuinely physical. Use the real thing when the user has one.
+## Building it
 
-## The script scaffold
+You almost never have footage; build it from matched stills and moves.
 
-```markdown
-# Script
+- **Three stills, one prompt family**: `generate-image` the sealed box, the open box with the product still wrapped, and the product in a hand, with the same surface, light direction and hand description in every prompt (and the same seed when the model takes one) so they cut together. The user's photos via `save-asset` replace any of them.
+- **Fake the hand move with the camera**: a creep (+3%) or a focus push (30f) on a still, slightly off-axis, reads as a handheld reveal (`ugc-craft`).
+- **Short clips**: if a video model is connected (`fal`, `replicate`), 2–4 s handheld clips of the seal or the lift, prompted per `stock-and-broll`; still cut on the foley.
+- **Three.js** (default): each still is a plane sized from its real pixels (`three-assets`); moves are camera dollies (`three-camera`); the reveal wipe is the product plane revealed by an animated clipping plane or an alpha-map threshold over 12f inCubic, hard-edged, not a dissolve; captions in a camera-parented overlay (`three-type`). Keep every cue frame as a constant in `components/` and read it both for the cut and for `place-audio`.
+- **HyperFrames / React**: stills as images in wrappers the timeline scales; the reveal wipe as a clip-path or mask tween.
 
-## Hook (0.0 to 3.0s)
-[One sentence about the box, said flatly. Never "look what came in the mail today".]
-[If software: the line that admits there is no box.]
+Nothing in the composition is random or clock-driven: the reveal timing is authored.
 
-## Seal (3.0 to 6.0s)
-[Nothing, or one half-sentence. Let the tape carry it.]
+## Good and bad
 
-## Arrangement (6.0 to 9.0s)
-[One observation about how it is packed.]
-
-## Reveal (9.0 to 12.0s)
-[The product named, once. This is the only time the name is spoken mid-ad.]
-
-## Texture (12.0 to 15.0s)
-[The one specific true detail. Concrete noun, no adjective stack.]
-
-## First use (15.0 to 17.5s)
-[What it does, demonstrated. Do not narrate over the demonstration.]
-
-## Verdict + CTA (17.5 to 20.0s)
-[Two sentences. The second one is the CTA, said as a recommendation.]
-```
-
-Twenty seconds is roughly 50 spoken words at 2.5 words a second, and an unboxing should come in under that: leave room for the tape.
-
-## What you actually build
-
-You almost never have footage. Build it out of stills and moves.
-
-- **Product stills at three reveal stages.** `generate-image` for a sealed box, an open box with the product still wrapped, and the product in a hand on the same surface. Prompt the same surface, the same light and the same hand in all three so they cut together. If the user supplied photos, `save-asset` them and use those instead; real beats generated every time here.
-- **Fake the hand move with a camera move.** You do not need a hand to animate. A slow push-in on a still, with a slight off-axis drift, reads as a hand-held reveal. Keyframe scale and position, eased out over the move.
-- **Cut on the SFX.** Place the `sfx` clips on the timeline first, note their transient times, then set each still's start time to land on one. This is the whole trick of the format.
-- **A layer mask for the reveal.** A wipe or a scale-up of the product still over the box still, timed to 0.4s, is the cheapest convincing "lid off" you can build. Hard, not dissolved.
-- **For software:** a screen recording of the real onboarding is the asset. Put it in a device frame, push in on the empty state, and cut to the filled state. `ugc-screen-demo` has the device-frame grammar; borrow it by name, do not load it as a second format skill.
-- **Captions in the platform default look.** Read `ugc-craft` for the caption treatment.
-
-Nothing in the composition may be random or clock-driven. The reveal timing is authored, not sampled.
-
-## Failure modes
-
-| It goes wrong like this | Fix |
-| --- | --- |
-| The product is visible in frame 0, next to the box | Reshoot the first still with the box only. A visible product deletes the entire premise. |
-| The reveal is held too long, and the viewer leaves mid-anticipation | Anticipation decays after about four seconds. If a layer is on screen longer than that with nothing changing, cut a beat out. |
-| No scale reference, so the product reads as a render | Put a hand, a thumb or a known object in every product frame. |
-| Sound effects drift half a beat off the cuts | Place the SFX first and cut to them, never the reverse. Check with `capture-frames` at each transient. |
-| A fabricated box for a product that ships as a download | Switch to the onboarding mapping above and say the line about there being no box. |
-| Two layers come off in one cut | Split the cut. One layer per beat, always. |
-
-## Plan skeleton
-
-A scratch outline for the shot list above, in whatever form your project's own planning artifact takes:
-
-```markdown
----
-format: ugc-unboxing
-duration: 20s
-message: [The one thing the viewer should believe at 20s.]
-arc: sealed object > first irreversible act > arrangement > product > texture > use > verdict
-audience: [Who is scrolling. Be specific: not "everyone", not "gen z".]
-aspect: 9:16
-hook_family: object-in-hand
-sound_first: true
----
-
-## Frame 1: Sealed
-
-- duration: 3.0s
-- scene: The closed box on a real surface, hand entering frame at 1.2s. Available light.
-- voiceover: [The flat opening line.]
-- sfx: none until 2.6s, then the tape pull begins
-- caption: [The hook, burned in, five words or fewer.]
-
-## Frame 2: Seal
-
-- duration: 3.0s
-- scene: Close on the tape. Push in slightly. Cut on the tear transient.
-- voiceover: [Half a sentence, or nothing.]
-- sfx: tape tear, one long pull
-
-## Frame 3: Arrangement
-
-- duration: 3.0s
-- scene: Lid off. Tissue and foam, product still covered.
-- voiceover: [One observation about how it is packed.]
-- sfx: cardboard slide
-
-## Frame 4: Reveal
-
-- duration: 3.0s
-- scene: Product lifted against a hand for scale. Hold still.
-- voiceover: [The product named, once.]
-- sfx: silence, then a soft set-down
-
-## Frame 5: Texture
-
-- duration: 3.0s
-- scene: The one detail nobody markets. Macro, off-centre.
-- voiceover: [The specific true observation.]
-
-## Frame 6: First use
-
-- duration: 2.5s
-- scene: The product doing its one job. No narration over the action.
-- sfx: whatever the product actually sounds like
-
-## Frame 7: Verdict
-
-- duration: 2.5s
-- scene: Product at rest, hand withdrawing. End card or bare.
-- voiceover: [Two sentences. The second is the CTA, said as a recommendation.]
-- caption: [CTA text, above the bottom 20 percent.]
-```
+- **Bad**: the product visible on frame 0 beside the box. **Good**: only the sealed box, a hand already moving.
+- **Bad**: lid and wrap off in one cut. **Good**: lid at 180, a breath, the product at 285.
+- **Bad**: the product floating on white with no scale. **Good**: in a hand, on a desk with a mug.
+- **Bad**: a cut half a beat after the tear. **Good**: the cut on the tear's transient frame.
+- **Bad**: a fabricated box for a download. **Good**: "This doesn't come in a box" and the onboarding mapped layer by layer.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Product imagery | `save-asset` for the user's photos, `generate-image` for the rest | Build the whole reveal in typography and a silhouette. It is weaker but it ships. |
-| Reveal sound design | `sfx` | A music bed with hard cuts on its own transients. Never silence under a cut. |
-| Narration | `pick-voice` then `voiceover` | Caption-led and silent. This format survives mute better than most. |
-| A screen recording, for a software unboxing | The user's own capture, via `save-asset` | Generated UI stills, stated as mockups if they are not the real product. |
+| Product imagery | `save-asset` for the user's photos, `generate-image` for the rest | Typography and a silhouette; weaker, but it ships |
+| Foley | `sfx` | Credited CC0 foley via `web-research` + `save-asset`; never a silent cut |
+| Narration | `pick-voice` then `voiceover` | Caption-led and silent; this format survives mute well |
+| Short handheld clips | A video model through `fal` or `replicate` | Stills with camera moves |
+| Music | `music` | None: foley and room tone carry it |
 
 ## Checks before you finish
 
-1. **Frame 0 test.** `capture-frames` at frame 0. Is the product visible? If yes, the premise is dead. Reshoot the frame.
-2. **Layer test.** Capture one frame per beat. Exactly one thing came off between each pair. If two did, split the cut.
-3. **Scale test.** Every frame containing the product has a scale reference in it.
-4. **Transient test.** Capture the frame immediately before and after each cut. Each cut sits on a sound, not near one.
-5. **Mute test.** Read only the captions, start to finish. Does the reveal still make sense and does the CTA still land?
-6. **Honesty test.** If there is no physical product, the script says so in the first five words. No invented packaging, anywhere.
-
-Then your project's own check tool (`validate`), and only then say it is done.
+1. `capture-frames` at frame 0: no product visible; a hand or movement is.
+2. Capture one frame per beat: exactly one layer came off between each pair.
+3. Every frame containing the product has a scale reference.
+4. For each hard cut, capture the cut frame and the one before: the cue sheet has a transient on the cut frame (±1f).
+5. Capture the 15f before the reveal: nothing new arrives and only room tone plays.
+6. Read only the captions start to finish: the reveal and the CTA still land.
+7. Software version: the first five spoken words say there is no box; no invented packaging anywhere.
+8. Export measured: −14 LUFS ±1, true peak ≤ −1 dBTP, the tape tear the loudest effect.
+9. `validate` passes; then run `ad-qa` in full.

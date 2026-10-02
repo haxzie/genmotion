@@ -1,225 +1,149 @@
 ---
 name: ugc-screen-demo
-description: "The faceless screen-recording ad: an app or website doing one satisfying thing, narrated over the top. The highest-converting UGC format for software, because for software the interface is the ad. Covers the one-satisfying-thing rule, device frame versus full-bleed, cursor choreography, punch-ins on the moment of value, how to get real footage when there is none, on-screen text reading speed, and the result-before-steps ordering. Load with ugc-ad-foundations."
+description: "The faceless screen-recording ad for software: an app or website doing one satisfying thing, result first, a cursor that acts, narrated flatly and cut tight for a vertical feed. Covers the one-thing rule, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, full-bleed versus device frame and how far to magnify the UI, cursor choreography in frames, focus pushes on the moment of value, UI reading times, the sound plan, and how to build it on Three.js from a recording or a rebuilt UI."
 ---
 
 # UGC screen demo
 
-An app doing one thing, recorded, narrated flatly, cut tight. No face, no set, no B-roll. For a software product this is the format with the highest ratio of persuasion to production cost, because the thing you are selling is already a picture.
+An app doing one thing, shown result-first, narrated like a friend looking over your shoulder, cut tight. No face, no set. For software this is the cheapest persuasion there is, because the thing being sold is already a picture.
+
+Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers), `ugc-craft` (moves, captions) and `screen-capture` (getting footage in). Frames at 30 fps; positions on 1080×1920.
 
 ## When to use
 
-Pick this when the product is software and the request names a demo, a walkthrough, a "show it working", a feature clip, or an app ad. It is also the right answer when the user has a screen recording already and no idea what to do with it.
+- The product is software and the request is an ad, a "show it working" clip, a feature clip for TikTok, Reels or Shorts, or "make something from this screen recording".
+- The user has a screen recording and no idea what to do with it.
+- There is no recording at all: the UI is rebuilt in the scene, which is the normal case.
 
-Do not pick it when:
+Not this when:
 
-- The interface is not the point and the outcome is. Use `ugc-problem-solution`.
-- The pitch rests on a person's credibility. Use `ugc-testimonial`.
-- The product is physical. Use `ugc-before-after` or `ugc-unboxing`.
-- The user wants a structured feature tour for a landing page rather than a feed. Use `demo-walkthrough`, which is 16:9 and allowed to be slower.
+- The outcome matters more than the interface, or there is a felt pain to open on: `ugc-problem-solution`.
+- The claim lives in someone else's page (a competitor's pricing, a review) the presenter reacts to: `ugc-green-screen`.
+- A 16:9, slower, multi-step tour for a landing page or docs: `demo-walkthrough`. A store-page preview: `app-store-preview`. A shipped-feature announcement film: `announce-feature`.
+- The user brings their own **camera footage** to be cut (a founder talking, a vlog, a podcast): `video-editing`. A screen recording is still this skill.
+
+## Ask first (only what the request does not answer)
+
+1. What is the app's one-sentence payoff? (Offer your guess: "you paste a link and a finished video comes out".)
+2. Do you have a screen recording of the moment it pays off? If not, I will rebuild the screen.
 
 ## The one satisfying thing
 
-A screen demo shows **one** action. Not a tour, not a feature list, not an onboarding flow. One action, chosen because watching it is pleasurable: a long form collapsing into one click, a hundred rows sorting, a blank page filling with generated copy, a diff turning green.
+A screen demo shows **one** action, chosen because watching it is pleasurable: a long form collapsing into one click, a hundred rows sorting, a blank page filling with generated copy, a diff turning green. Say it out loud before building: "I paste a URL and a video comes out." If it takes two sentences, it is two ads (make two).
 
-Say the action out loud before you build. "I paste a URL and a video comes out." If it takes two sentences, it is two ads.
+Everything else in the interface is set dressing. Navigation the viewer never uses costs attention the one thing needs: crop it out or leave it unanimated.
 
-Everything else in the interface is set dressing. Navigation the viewer never uses, sidebars, account menus: all of it is noise that costs you attention you needed for the one thing.
+**Result before steps.** Frame 0 is the finished state, held 30–36f, then a hard cut back to the empty start. The viewer now watches the steps knowing where they lead. The second sight of the result is the resolution, held at least twice as long as the first.
 
-## Show the result before the steps
+## Direction defaults
 
-The instinct is chronological: open the app, click, wait, result. That ordering loses the viewer at "open the app", because nothing has happened yet and nothing promised it would.
-
-Invert it. Frame 0 is the **finished state**, held for under a second, then the cut back to the start. The viewer now watches the steps knowing where they lead, which is the only reason to watch steps at all.
-
-| Ordering | Retention shape |
+| Line | Default |
 | --- | --- |
-| Result, then steps, then result again | Strong hook, a dip in the middle, a payoff that closes the loop |
-| Steps, then result | Flat, then a cliff at 2s |
+| Style family | B, Soft-light SaaS, in 9:16: real UI magnified 2–2.5×, a cursor drives it. Look: Clean demo (Native for a phone app recorded on the phone) |
+| Energy curve | Social ad, front-loaded: result-hook at 8 by frame 15; micro-peaks on each state change; the **peak** where the output completes; calm CTA |
+| Pacing | High in the hook (18–30f per change), Medium through the work (30–50f) |
+| Transitions | Workhorse: hard cut on a click or a word. Signature: the focus push into the element that changes, and the cursor persisting at the same screen position across a cut |
+| Sound | VO-led (bed 0.12) or sound-off-first with SFX carrying it (bed 0.5); one click per interaction; a success tone on the peak |
+| Memorable moment | The frame the result appears, at the end of a focus push |
 
-The second sight of the result is not a repeat, it is the resolution. Hold it longer than the first.
+## Beat sheets
 
-## Device frame or full-bleed
+Each row is a beat in the `VIDEO.md` Beats table. VO budgets per `ugc-scripting`; a screen demo usually runs 15–20% under budget because the UI talks.
+
+**30 s (900f), web app, no face**
+
+| # | Frames | Job | On screen | VO (words) |
+| --- | --- | --- | --- | --- |
+| 1 | 0–75 | Hook | 0–36: the finished output, creep running; hook line in the hook band. 36: hard cut to the empty start, cursor parked | "This took nine seconds." (4) |
+| 2 | 75–180 | Setup | Cursor travels 22f, hesitates 8f, clicks the field; the URL types at 2f/char | "You paste the link in here." (6) |
+| 3 | 180–270 | Action | Click the primary button (press 4f/6f, ring 12f); focus push 30f onto the progress state | "Hit generate. It reads the page itself." (7) |
+| 4 | 270–480 | Demo | Output fills one element every 30–45f; cursor still; push holds | "Pulls the copy, the colours, the logo." (7) |
+| 5 | 480–600 | Payoff (peak) | Push releases over 24f to the whole result; success tone on 480; held ≥90f | "And that's the whole video." (5) |
+| 6 | 600–750 | Objection | Cursor to one control, one edit, visible change within 3f of the press | "Don't like a line? Change it." (6) |
+| 7 | 750–900 | CTA | Name, one-line promise, a tap on the button; CTA text legible ≥60f | "It's free to try. Link's in my bio." (8) |
+
+**15 s (450f)**: 0–60 hook (result 0–30, cut) · 60–180 action (cursor, click, focus push) · 180–360 work → payoff (result completes at about 300, push releases) · 360–450 CTA. ≤35 words.
+
+**45 s (1350f)**: 0–75 hook · 75–195 setup · 195–300 action · 300–570 work · 570–690 payoff · 690–930 a second change on the same result (still one action, shown flexing) · 930–1170 proof (a real number the user supplied, or the result in use where it ships) · 1170–1350 CTA. ≤110 words. Past 45 s the format wants a second action: that is `demo-walkthrough`.
+
+## Hook options
+
+Prefer, in order: **Result** (the finished output at frame 0, "This took nine seconds"), **Curiosity gap** (a half-built output, "Nobody told me you could do this in a browser"), **Pattern interrupt** (a cursor dragging the old way into the trash, "Stop."), **Direct callout** for retargeting. `ugc-hooks` has the frame-0 builds; give the hook its own scene so variants can swap it.
+
+## The screen: full-bleed or device frame
 
 | Choice | Use when | Cost |
 | --- | --- | --- |
-| Full-bleed (the UI fills the canvas) | Mobile app, vertical-native UI, or any time the text is small | Reads slightly less like a real recording |
-| Phone frame (a bezel drawn around the capture) | You want it to read as "on a phone", or the source is a 9:16 capture | Steals 15 to 20 percent of the height |
-| Desktop capture, cropped and punched into a 9:16 canvas | The product is a web app | You will lose the edges, so plan the crop before you record |
+| Full-bleed crop of the UI | Mobile app, vertical-native UI, or any time text is small. **Default** | Reads slightly less like "a recording" |
+| Phone frame around the capture | The source is a 9:16 phone capture and "on a phone" matters | Costs 15–20% of the height |
+| Desktop UI cropped and magnified into 9:16 | A web app | You lose the edges, so plan the crop around the one thing |
 
-Default to full-bleed for a mobile app, and to a punched-in desktop crop for a web app. A laptop mockup floating on a gradient is a 2019 SaaS code and reads as an ad instantly.
-
-Never letterbox a 16:9 recording into a 9:16 frame with bars. Crop into it and use camera moves to reach the parts you lost.
+Magnify until the smallest text that matters is **≥34 px** at 1080 wide: a desktop UI's 14 px body needs about 2.5×; a phone UI captured at @3x is already about 1×. Never letterbox a 16:9 recording into 9:16 with bars; crop and use focus pushes to reach what the crop lost. A laptop mockup floating on a gradient reads as a stock SaaS ad.
 
 ## Cursor choreography
 
-The cursor is the actor. It carries all the performance this format has, and a cursor that teleports is the single most common reason a screen demo feels fake.
+The cursor is the only actor in a faceless demo. A cursor that teleports is the most common reason a screen demo feels fake. Numbers from `motion-language`:
 
-- **It hesitates, then moves decisively.** A short pause before a click reads as a decision. A move with no pause reads as a machine.
-- **It arcs.** Human pointer movement is never a straight line. Ease the path, and overshoot the target slightly on fast moves.
-- **It slows into the target.** Deceleration over the last 60 to 80 pixels.
-- **It rests during reading.** When the viewer needs to read something on screen, the cursor stops moving entirely. Motion and reading compete.
-- **Clicks land on a beat.** Give every click a visible state change within 100ms, and a click sound. A click with no feedback reads as a broken build.
+- **Travel**: 16–26f; x on outCubic and y on inOutCubic, which gives a natural arc that decelerates into the target. Up to 9f for a quick hop between neighbours.
+- **Hesitate**: 6–10f still before every click. A pause reads as a decision.
+- **Click**: press 4f in (scale 0.88), 6f out; a ring from 0 to 48 px radius over 12f outCubic, fading. The UI's state change lands on the press frame or within 3f; the click SFX on the press frame.
+- **Rest while reading**: the cursor does not move while the viewer reads, and never during a focus push.
+- **Typing**: 2–3f per character, finishing 4f before the next press; caret solid while typing, blinking 8f on/off only when idle.
+- **Size**: 40–48 px tall at 1080 wide, with a soft shadow, so it survives the feed's compression.
 
-If the source recording has a jittery real cursor, hide it and animate a synthetic one. A drawn cursor you control beats a real one you cannot.
+A jittery real cursor in a recording: hide it (crop or cover) and animate a synthetic one along the recorded path's key points.
 
-## Punch-ins
+## Focus pushes and reading time
 
-The moment of value gets a punch-in. Use a seek-safe scale-and-translate on the capture layer: roughly 1.0 to 1.25 over 400 to 600ms, eased out, centred on the element that changes.
+The moment of value gets a **focus push** (`ugc-craft`): 30f inOutCubic, centred on the element that changes, to the zoom where its text is ≥34 px; hold while it is read; release over 24f on the consequence, or cut. Push in on the cause, hold, pull out on the result: the pull-back is what makes the result feel large. Never push onto something the VO has not named yet. One push per beat.
 
-Three rules:
+UI text on screen holds by `direction`'s formula, `max(30, 9 × words + 15)` frames from the frame it is legible. A typed value holds its typing time + 18f. A row of data meant to be scanned, not read: 45f with a push onto the one row that matters. A screen that needs more than 90f to read is the wrong screen: crop to the part that matters or replace it with one line of large type.
 
-1. One punch-in per moment, not per shot. Three zooms in fifteen seconds reads as a nervous edit.
-2. Punch **in** on the cause, hold, punch **out** on the consequence. The pull-back is what makes the result feel large.
-3. Never punch in on something the viewer has not been told to look at yet. The narration names it, then the camera moves.
+Dead time: any load or wait longer than 15f is cut (hard cut to the loaded state) or covered by a push plus one VO line about what is happening.
 
-## On-screen UI text
+## Sound plan
 
-Interface text is the thing agents most often make unreadable. The viewer reads at roughly 3 words a second when the text is incidental rather than the subject.
+Per `sound-design` and `ugc-craft`: frame 1 audible; a click 0.9 on every press frame, varied ±0.04 and alternating SFX lanes; typing ticks 0.3–0.45; a soft swish 0.5 on hard cuts or none; a success tone 0.6 on the payoff frame; room tone 0.03–0.05 under everything so silence never reads as a bug report. Bed 0.12 under VO, 0.5 with no VO, instrumental, 100–120 BPM. Strip the recording's own audio. Master −14 LUFS, ≤ −1 dBTP.
 
-| Text | Minimum on screen |
-| --- | --- |
-| A button label the narration names | 0.8s |
-| A short field value being typed | Typing time plus 0.6s |
-| A sentence of generated output | 1.2s plus 0.35s per word |
-| A row of data you want scanned, not read | 1.5s, with a punch-in on one row |
+## Building it
 
-If a screen needs more than about 2.5 seconds to read, it is the wrong screen. Crop to the part that matters, or replace it with a single line of large type.
+**From a recording**: bring it in with `save-asset`, then follow `screen-capture`: trim, crop to the canvas, and **encode the seek-safe master: VP9 WebM at the project fps, a keyframe every 15 frames, a 0.5 s tail**, because the renderer seeks every frame and the CLI cannot decode H.264. Crop in `ffmpeg` so focus pushes start from a clean 1.0.
 
-## The shot list
+**With no recording**: rebuild the screen in the scene. It is sharper, already the right aspect, animatable per element, and has no private data. Show only what exists in the product (claims rules in `ugc-ad-foundations`); placeholder avatars and thumbnails come from `generate-image`.
 
-Twenty seconds, 1080x1920, web app, no face.
+- **Three.js** (default): each UI panel is a plane with a canvas texture drawn at 2× (text with the product's fonts, loaded before drawing) or a screenshot plane; a recording is a video texture seeked per frame (`three-assets`). State changes swap or redraw a panel's texture on a given frame. The cursor is a small textured plane above the UI (highest render order, depth test off); the ring is a ring geometry scaled per frame. Focus pushes are an orthographic zoom in log space centred on the target (`three-camera`); captions sit in a camera-parented overlay (`three-type`) so pushes never move them. Keep the cursor path, press frames and push targets as constants in `components/` so the SFX placement reads the same numbers.
+- **HyperFrames**: the UI as elements in the scene's sub-composition, the cursor as an element tweened on the timeline, pushes as a tween on a wrapper; the recording as a `<video>` element.
+- **React**: rebuilt UI components; cursor and pushes from `interpolate` on the frame with the house eases from `@genmotion/motion`.
 
-| # | t | shot | on screen | said |
-| --- | --- | --- | --- | --- |
-| 1 | 0.0 to 0.8 | The finished result, full-bleed, already done | The rendered output, a small "done" state | "This took me nine seconds." |
-| 2 | 0.8 to 1.0 | Hard cut to the empty starting state | An empty input, cursor parked off to the side | (silence) |
-| 3 | 1.0 to 3.5 | Cursor arcs into the field, hesitates, clicks | Field focuses, caret blinks | "You paste the link in here." |
-| 4 | 3.5 to 6.0 | Typing, then the click on the primary action | The URL fills, button goes active | "Hit generate." |
-| 5 | 6.0 to 8.0 | Punch in 1.0 to 1.2 on the progress state | A progress indicator, then the first result frame | "It reads the page itself." |
-| 6 | 8.0 to 12.0 | The work happening, held, cursor still | Output filling in, one element at a time | "Pulls the copy, the colours, the logo." |
-| 7 | 12.0 to 14.5 | Punch out to full frame on completion | The finished composition, whole | "And that is the whole video." |
-| 8 | 14.5 to 17.0 | Cursor moves to a secondary control, one click | An edit, a small visible change | "Anything you do not like, you just change." |
-| 9 | 17.0 to 20.0 | Static end frame, product name, one line | Name, one-line promise, the handle | "Link's in the bio." |
+Captions in the Clean demo skin (`ugc-ad-foundations` → `references/frame-presets.md`), at the caption line y 1160, clear of the UI region being demonstrated.
 
-**Stretching it.** At 30s, extend shot 6 to show a second thing changing, and add a 3-second proof shot before the end frame. At 10s, keep shots 1, 3, 5, 7 and 9 only. At 45s, the format starts to want a second action, which means you are making a `demo-walkthrough` rather than an ad.
+## Good and bad
 
-## The script scaffold
-
-Write the script before you build anything. Narration runs at about 2.5 words a second, so a 20-second demo is 45 to 50 words total. Count them.
-
-```markdown
-# SCRIPT
-
-## Hook (0 to 3s, <= 8 words)
-[The result, stated as a fact. "This took nine seconds."]
-
-## Setup (3 to 6s, <= 8 words)
-[The single action, named in plain words. No feature names.]
-
-## Demonstration (6 to 14s, <= 20 words)
-[What the product is doing, as you would say it to a friend watching over
-your shoulder. Present tense. One clause per visible change.]
-
-## Turn (14 to 17s, <= 10 words)
-[The objection, pre-empted. Usually "but can I change it".]
-
-## CTA (17 to 20s, <= 8 words)
-[Recommendation-shaped. Never "Sign up today".]
-```
-
-## What you build
-
-The capture sits as a single timed clip on its own track, with everything else layered above it.
-
-**When there is a real recording.** Bring it in with `save-asset`. Trim, crop and reframe with `ffmpeg` into `assets/`, and place the result as a single timed clip. Do the crop in `ffmpeg` rather than with an on-canvas crop, so the punch-in scale starts from a clean 1.0.
-
-**When you can record it.** The `screen-capture` skill owns driving the interface and capturing it. Use it when the product is reachable on this machine.
-
-**When there is no recording at all.** Rebuild the interface directly in the scene. This is the normal case and it is not a compromise: a rebuilt UI is sharper than any capture, it is already the right aspect, and every element is animatable. Give the screen its own scene, then animate the state changes directly rather than playing back a video. Check your project's own component or asset library before hand-rolling a browser chrome, a code window or a terminal: they may already exist there.
-
-**The cursor.** A small absolutely-positioned SVG arrow with a drop shadow, tweened along a path. Add a scale-down-and-up on the click frame and a soft ring that expands once. Never animate it with a timer.
-
-**Sound.** A click per interaction from `sfx`, a low room tone under everything, and one soft confirmation tone on completion. Silence under a screen demo makes it feel like a bug report.
-
-## Failure modes
-
-**The tour.** Five features in fifteen seconds, none of them landing. Fix: delete four. The one that survives is the ad.
-
-**The unreadable screen.** A full desktop UI scaled into 1080 wide, where nothing can be read. Fix: crop to the working area, or rebuild the screen at 1.6x the real type scale.
-
-**The teleporting cursor.** It appears at the button rather than travelling to it. Fix: tween it in over 500 to 700ms with an ease and a pause before the click.
-
-**The dead middle.** A four-second loading state with nothing happening and nothing said. Fix: cut it, or cover it with a punch-in and one line of narration about what the product is doing behind the scenes.
-
-**The logo opening.** A brand card before the demo. Fix: delete it. The product's own interface is the brand.
-
-**Narration that reads the UI aloud.** "Then you click the Generate button." Fix: say why, not what. The cursor already says what.
+- **Bad**: five features in fifteen seconds. **Good**: one, shown completing; the other four deleted.
+- **Bad**: open the app, log in, navigate, click, wait 4 s, result. **Good**: result at frame 0, cut to the empty field at frame 36, three steps, the result again at frame 480 held for 4 s.
+- **Bad**: the whole desktop at 1080 wide, nothing readable. **Good**: the working panel magnified 2.5×, a push to 1.8× on the output line.
+- **Bad**: "Then you click the Generate button." **Good**: "Hit generate. It reads the page itself." (the cursor already shows the click).
+- **Bad**: a brand card before the demo. **Good**: the product's own UI is the brand; the name lands with the CTA.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Real footage | `save-asset` for the user's recording, or the `screen-capture` skill | Rebuild the interface in HTML. Often better. |
-| Trim, crop, reframe | `ffmpeg` on the shell PATH | Do the crop with a keyframed transform on the video layer. |
-| Narration | `pick-voice` then `voiceover` | A caption-led silent cut. This format survives mute better than any other. |
-| Punch-ins | A seek-safe scale/translate on the capture layer | A static wide shot, which costs you the payoff. |
-| Interaction sound | `sfx` | One music bed with no clicks, which reads flatter. |
+| Real footage | `save-asset` for the user's recording; `screen-capture` for trimming and the seek-safe re-encode | Rebuild the UI in the scene, often better |
+| Trim, crop, re-encode | `ffmpeg` | Use the recording uncropped on a plane and crop with the camera; still re-encode if at all possible |
+| Narration | `pick-voice` then `voiceover` | A caption-led silent cut; this format survives mute better than any other |
+| Interaction sound | `sfx` | Credited CC0 clicks via `web-research` + `save-asset` |
+| Music | `music` | No bed: clicks and room tone alone |
+| Placeholder content | `generate-image` | Initials and flat shapes, never a real person's photo |
 
 ## Checks before you finish
 
-1. `capture-frames` at t=0. Is the finished result on screen? If it is an empty app or a logo, the hook is gone.
-2. Capture the frame of every click. Is there a visible state change within the next 100ms?
-3. Capture four frames spread across the piece and read only the UI text. Can you read it at arm's length without squinting?
-4. Watch the cursor path frame by frame across one move. Does it arc, decelerate and pause?
-5. Mute it. Does the sequence still say what the product does?
-6. Check that nothing that matters sits in the top 12 or bottom 20 percent.
-7. Your project's own check tool (`validate`).
-
-## Plan skeleton
-
-A scratch outline for the shot list above, in whatever form your project's own planning artifact takes:
-
-```markdown
----
-format: 1080x1920
-duration: 20s
-message: [the one satisfying thing, in one clause]
-arc: Result → Empty state → Action → Work → Payoff → CTA
-audience: [who]
-surface: [web app | mobile app | desktop app]
----
-
-## Frame 1: Result first
-- duration: 0.8s
-- scene: The finished output, full-bleed, held still
-- voiceover: This took me nine seconds.
-- punch: none
-- source: [capture | rebuilt]
-
-## Frame 2: The empty state
-- duration: 2.7s
-- scene: Hard cut back to the start, cursor arcs in and clicks the field
-- voiceover: You paste the link in here.
-- cursor: rest 0.4s, arc 0.6s, click
-- source: [capture | rebuilt]
-
-## Frame 3: The action
-- duration: 4.5s
-- scene: Typing, then the primary click, punch in 1.0 to 1.2 on the progress state
-- voiceover: Hit generate. It reads the page itself.
-- punch: 1.0 to 1.2 over 500ms, centred on the button
-- sfx: click, soft whoosh
-
-## Frame 4: The work
-- duration: 6s
-- scene: Output filling in, cursor still, then punch out to full frame
-- voiceover: Pulls the copy, the colours, the logo. And that is the whole video.
-- punch: 1.2 to 1.0 over 600ms
-
-## Frame 5: End card
-- duration: 3s
-- scene: Static, product name, one-line promise, handle
-- voiceover: Link's in the bio.
-- cta: [spoken + on-screen + a cursor tap]
-```
+1. `capture-frames` at frame 0: the finished result is on screen (not an empty app, not a logo). At frame 45: the empty start state.
+2. Capture every press frame and press + 3f: the state change and the ring are visible by press + 3.
+3. Capture 5 consecutive frames in the middle of one cursor move and around one press: the cursor arcs, slows into the target, and is still for ≥6f before the press.
+4. Capture the first and last frame of every focus push: the target's text is ≥34 px at the end; the cursor and the caption did not move during it.
+5. Contact sheet (`ffmpeg`, 1 fps): no wait or load holds longer than 15f; no stretch of 90f without a change.
+6. Mute it: the captures alone say what the product does and what to do next.
+7. If a recording is used: `ffprobe` shows VP9, the project fps as both `r_frame_rate` and `avg_frame_rate`, and a keyframe every 15 packets (`screen-capture`'s check).
+8. Clicks sit on press frames (compare the cue sheet with the captures); the export measures −14 LUFS ±1.
+9. `validate` passes; then run `ad-qa` in full.

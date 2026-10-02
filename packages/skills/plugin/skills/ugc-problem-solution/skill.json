@@ -1,8 +1,8 @@
 {
   "id": "ugc-problem-solution",
   "title": "UGC problem and solution",
-  "description": "The PAS demo: open on the failure state with the product absent, agitate for no more than five seconds, turn, then demonstrate honestly and land on relief. The most reliable starting point for ecommerce and SaaS, and the format to default to when the brief does not name one. Covers the failure-state opening, how long agitation may run, the turn, the demonstration that has to be truthful, and the relief shot. Load with ugc-ad-foundations.",
-  "summary": "The PAS demo. Open on the failure state, agitate briefly, turn, demonstrate honestly, land on relief.",
+  "description": "The PAS ad and the default when a brief names a pain but no format: open on the failure state with the product absent, agitate one consequence for at most five seconds, turn on a hard cut with the sound dropping out, demonstrate honestly, and land on a relief shot that rhymes with frame zero. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds and the turn frame for each, hook options, the honest-demo rules, the sound plan, and building matched failure and relief frames on Three.js.",
+  "summary": "The PAS ad and the default: failure first with the product absent, one consequence, a hard turn by 7 s, an honest demo, a rhyming relief.",
   "kind": "style",
   "category": "UGC ads",
   "tags": [
@@ -28,18 +28,31 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "ad-qa"
+    },
+    {
+      "kind": "skill",
       "id": "ugc-ad-foundations"
     },
     {
       "kind": "skill",
       "id": "ugc-scripting"
-    },
-    {
-      "kind": "skill",
-      "id": "hyperframes-keyframes",
-      "engines": [
-        "hyperframes"
-      ]
     },
     {
       "kind": "skill",
@@ -96,7 +109,7 @@
     }
   ],
   "route": {
-    "deliverable": "A 10–45 second vertical ad: the pain, the product, the payoff",
+    "deliverable": "A 10–45 second vertical ad: the pain on screen, a hard turn, an honest demo, the relief",
     "inputs": [
       "brief"
     ],
@@ -111,27 +124,28 @@
       "purpose": "image",
       "model": "Gemini 2.5 Flash Image",
       "via": "generate-image",
-      "note": "Prompt the pair together so geometry matches."
+      "note": "Prompt the failure and relief as a pair so framing and light match."
     },
     {
       "purpose": "voice",
       "model": "ElevenLabs v3",
       "via": "voiceover",
-      "note": "Tired, not performative, through the agitation."
+      "note": "Tired, not performative, through the problem; a small lift on the turn."
     },
     {
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
-      "via": "sfx"
+      "via": "sfx",
+      "note": "The problem's own small sound, a swish, one resolving tone."
     }
   ],
   "triggers": [
-    "ad that shows the problem then my product",
-    "before and after style ad for my app",
-    "make an ad about the pain point we solve",
-    "standard tiktok ad for my product",
+    "ad that shows the pain point and then my product",
+    "make an ad about the problem we solve",
+    "standard TikTok ad for my product",
     "I don't know what format, just make me an ad",
-    "PAS script video"
+    "PAS script video for our product",
+    "problem, agitate, solve ad"
   ],
   "templates": [
     "gojiberry-launch-video"
@@ -139,6 +153,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🔁"
 }

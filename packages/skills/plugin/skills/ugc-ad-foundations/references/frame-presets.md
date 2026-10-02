@@ -1,56 +1,61 @@
 # The four looks
 
-Four design directions that cover almost every UGC ad. Each is a palette, a type spec, and a caption treatment, portable to whatever engine is building the scene. None of them requires a specific file format: carry the values the way this project already keeps its design decisions, whether that is a shared tokens file, a components/brand module, or consistent inline values repeated scene to scene.
+Four design directions that cover almost every UGC ad. Each is a palette, a type spec, a caption treatment and a build note. Read it when you choose the look for the Direction block. Caption geometry everywhere follows the one spec in `ugc-craft` (one line centred at y 1160 on 1080×1920, inside y 1110–1210); a look only changes the skin.
 
-## `ugc-native`
+Keep the chosen values in one module (`components/look.ts` on Three.js, shared tokens on HyperFrames or React) and read them in every scene.
+
+## Native
 
 The default. Reads as a phone recording, not a production.
 
-- **Palette**: near-black text on off-white or the subject's own footage; one accent colour used only for the caption highlight word, never for background fills.
-- **Type**: the platform's own system sans (SF Pro / Roboto stand-ins are fine), nothing with personality. Headlines are bold, body text is medium weight.
-- **Captions**: two to three words per card, centred, 60 to 70 percent down the frame. White text, a 6 to 8px black stroke, no background plate.
-- **Chrome**: none. No logo, no lower third, no watermark until the end card.
-- **Motion**: hard cuts, no dissolves. A caption card snaps in, it does not fade.
+- **Palette**: the footage's or stills' own colours. Text white; one accent used only on the active caption word, never as a background fill.
+- **Type**: a plain system-style sans (Inter, SF Pro or Roboto stand-ins), weight 700–800 for captions, 600 for anything else.
+- **Captions**: 2–3 words per group, 76–88 px, white fill, 8 px black stroke, no plate. Active word in the accent.
+- **Chrome**: none. No logo, lower third or watermark until the end card, if there is one.
+- **Motion**: hard cuts; caption groups pop in over 4f (scale 0.9 → 1, outCubic) and hard-kill at their end. One creep or drift on stills.
+- **Three.js**: captions are canvas-texture planes per word (`three-type`), stroke drawn into the canvas with `strokeText` before `fillText`; footage and stills are planes sized from real pixels (`three-assets`).
 
-## `ugc-bold-caption`
+## Bold caption
 
-Loud, fast, hook-led. For a cold-traffic opener or a listicle.
+Loud, fast, hook-led. For a cold-traffic opener.
 
-- **Palette**: high contrast. A single saturated accent (yellow, lime, hot pink) against near-black or near-white.
-- **Type**: a heavy, condensed display face for the caption word; body captions in the same family, lighter weight.
-- **Captions**: word-by-word, one to two words per card, oversized (12 to 16 percent of frame height), thick stroke or a solid colour block behind. The emphasis word in the accent colour, everything else in white or black.
-- **Chrome**: a small persistent counter or progress mark is acceptable for a listicle; nothing else.
-- **Motion**: every caption card lands with a hard snap and a slight overshoot. Punch-ins on emphasis words.
+- **Palette**: one saturated accent (yellow #FFE500, lime #00FF66 or the brand's) against near-black or near-white.
+- **Type**: a heavy condensed display face (Montserrat Black class), ALL CAPS or Title Case.
+- **Captions**: 1–2 words per group, 88–110 px, 10 px stroke or a solid accent block behind the active word; active word pops to 1.1 over 4f.
+- **Chrome**: nothing else on screen.
+- **Motion**: groups land on the word's start frame; eased punch-ins on stressed words (≤4 per 30 s, `ugc-craft`).
+- **Three.js**: the accent block is a rounded-rect plane behind the word plane, scaled with it; keep both in one group so they move together.
 
-## `ugc-clean-demo`
+## Clean demo
 
-Screen-recording-led. The interface is the star; the design gets out of the way.
+Screen-led. The interface is the star; the design gets out of its way.
 
-- **Palette**: neutral grey or off-white background behind the device frame, so the captured UI's own colours read true. No accent colour competing with the product's brand.
-- **Type**: restrained system sans, small, used only for the narration caption strip, not for decoration.
-- **Captions**: a single line, bottom third but clear of the true bottom edge, plain white on a translucent dark bar. No word-by-word animation; it would compete with the UI motion.
-- **Chrome**: a simple device frame (rounded rect, thin border, soft shadow) around the capture. A title bar or URL chip if it helps orient the viewer.
-- **Motion**: cuts and punch-ins on the interface itself carry the pacing; the caption strip stays still.
+- **Palette**: neutral off-white (#F5F5F2) or near-black stage behind the device or crop, so the product's own colours read true. No accent competing with the brand.
+- **Type**: restrained sans 600–700.
+- **Captions**: one line, sentence case, 64–72 px, white on a 60% black rounded bar, same y as every other look. No word-by-word bounce; it would compete with the UI motion.
+- **Chrome**: a device frame only if the capture is a whole phone screen (`screen-capture` has the build); otherwise full-bleed.
+- **Motion**: the UI moves (cursor, state changes, focus pushes); the caption bar stays still.
+- **Three.js**: the UI is either a video texture or rebuilt as canvas-texture planes; the caption bar is a plane in a camera-parented overlay so focus pushes do not move it.
 
-## `ugc-camcorder`
+## Camcorder
 
-Retro, handheld, deliberately degraded. For nostalgia, authenticity, or a pattern interrupt.
+Retro handheld, deliberately degraded. For nostalgia, a founder's "found footage" angle, or a pattern interrupt.
 
-- **Palette**: slightly desaturated, a warm or green colour cast, crushed blacks.
-- **Type**: a monospace or timestamp-style face for any on-screen text, echoing a camcorder overlay.
-- **Captions**: small, plain, positioned like a camcorder timestamp (a corner) or as a single centred line low in the frame, never the bold word-by-word style, which breaks the illusion.
-- **Chrome**: a timestamp overlay (`REC ● 00:14:22`), light film grain, occasional scan-line or chroma-bleed texture at transitions.
-- **Motion**: slight frame jitter, a soft vignette, cuts with a one-or-two-frame glitch rather than a clean snap.
+- **Palette**: desaturated about 15%, a warm or green cast, lifted blacks.
+- **Type**: a monospace timestamp face for any overlay.
+- **Captions**: smaller (56–64 px), plain white with a 4 px shadow-free stroke, same y as every other look.
+- **Chrome**: `REC ●` and a running timestamp top-left inside the readable area (x ≥ 120, y ≥ 270); film grain; a vignette.
+- **Motion**: 1–2 px frame jitter from a seeded hash of the frame index (never randomness), a 2f glitch on cuts instead of a clean snap.
+- **Three.js**: grain, vignette and jitter as one full-frame shader pass or a camera-parented plane with a per-frame seeded noise texture (`three-look`).
 
 ## Picking one
 
-Match the look to the format, not to taste alone:
-
-| Format tends to want | Look |
+| Format | Look |
 | --- | --- |
-| Testimonial, founder story, street interview | `ugc-native` |
-| Hook-heavy listicle, pattern-interrupt opener | `ugc-bold-caption` |
-| Screen demo, tutorial, app walkthrough | `ugc-clean-demo` |
-| Unboxing, day-in-the-life, nostalgia angle | `ugc-camcorder` |
+| `ugc-screen-demo` | Clean demo (Native for a mobile app recorded on the phone) |
+| `ugc-green-screen` | Native |
+| `ugc-unboxing` | Native, or Camcorder for a nostalgia angle |
+| `ugc-problem-solution` | Native; Bold caption for a cold-traffic cut |
+| A hook-only test or pattern-interrupt opener | Bold caption |
 
-A single ad uses one look throughout. Switching looks mid-ad is a code for "this was made by committee," which is exactly the ad-not-a-person problem `ugc-ad-foundations` exists to avoid.
+Switching looks mid-ad reads as "made by committee", which is the ad-not-a-person problem the format exists to avoid.

@@ -1,15 +1,15 @@
 {
   "id": "ugc-unboxing",
   "title": "UGC unboxing",
-  "description": "The first-impression ad: a box opened on camera, hands in frame, the product revealed in stages. Covers the reveal choreography beat by beat, why the hands carry the shot and the face is optional, scale and packaging as the actual subject, the ASMR-adjacent sound design that holds retention, and what to do when there is no physical product (a software unboxing is the onboarding, and the script has to say so). Load with ugc-ad-foundations.",
-  "summary": "Hands, a box, a staged reveal. Scale and packaging as the subject, with sound doing most of the work.",
+  "description": "The first-impression ad: a box, hands in frame, the product revealed one layer per beat, with foley carrying the retention. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, the one-layer-per-beat rule, why hands beat a face, scale and packaging as the subject, a foley plan with levels and cuts on transients, the software version (an unboxing is the onboarding, and the script says so), and building the reveal from matched stills and camera moves on Three.js.",
+  "summary": "Hands, a box, one layer per beat, a breath before the reveal, foley cut on transients. Software unboxes as its onboarding.",
   "kind": "style",
   "category": "UGC ads",
   "tags": [
     "ugc",
     "unboxing",
     "reveal",
-    "asmr",
+    "foley",
     "first-impression"
   ],
   "aspects": [
@@ -18,7 +18,7 @@
   ],
   "duration": {
     "minSeconds": 8,
-    "maxSeconds": 40
+    "maxSeconds": 45
   },
   "engines": [
     "hyperframes",
@@ -28,14 +28,27 @@
   "requires": [
     {
       "kind": "skill",
-      "id": "ugc-ad-foundations"
+      "id": "direction"
     },
     {
       "kind": "skill",
-      "id": "hyperframes-keyframes",
-      "engines": [
-        "hyperframes"
-      ]
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "ad-qa"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-ad-foundations"
     },
     {
       "kind": "skill",
@@ -94,7 +107,7 @@
     }
   ],
   "route": {
-    "deliverable": "An 8–40 second vertical ad that reveals a physical product stage by stage",
+    "deliverable": "An 8–45 second vertical ad that reveals a product one layer per beat, hands in frame",
     "inputs": [
       "brief"
     ],
@@ -109,32 +122,32 @@
       "purpose": "image",
       "model": "Gemini 2.5 Flash Image",
       "via": "generate-image",
-      "note": "Available light, a real surface, hands in frame."
+      "note": "Three matched stages: same surface, light and hand in every prompt."
     },
     {
       "purpose": "video",
       "model": "Veo 3.1",
       "via": "mcp:fal",
-      "note": "Short handheld clips of the reveal, if a connector is there."
+      "note": "Two-to-four-second handheld clips of the seal or the lift, if connected."
     },
     {
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "Tape peel, cardboard flex, paper rustle, a soft set-down."
+      "note": "Tape tear, cardboard slide, tissue crinkle, a soft set-down."
     }
   ],
   "triggers": [
     "unboxing video for my product",
-    "first impressions ad",
-    "show the packaging arriving",
-    "asmr unboxing tiktok",
-    "make an onboarding video that feels like an unboxing"
+    "first impressions ad with hands opening the box",
+    "what's in the box reveal for TikTok",
+    "packaging reveal video with satisfying sounds",
+    "make our onboarding feel like an unboxing"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "📦"
 }

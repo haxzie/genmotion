@@ -1,8 +1,8 @@
 {
   "id": "ugc-screen-demo",
   "title": "UGC screen demo",
-  "description": "The faceless screen-recording ad: an app or website doing one satisfying thing, narrated over the top. The highest-converting UGC format for software, because for software the interface is the ad. Covers the one-satisfying-thing rule, device frame versus full-bleed, cursor choreography, punch-ins on the moment of value, how to get real footage when there is none, on-screen text reading speed, and the result-before-steps ordering. Load with ugc-ad-foundations.",
-  "summary": "Faceless app demo with voiceover. One satisfying action, result first, a cursor that acts, punch-ins on the payoff.",
+  "description": "The faceless screen-recording ad for software: an app or website doing one satisfying thing, result first, a cursor that acts, narrated flatly and cut tight for a vertical feed. Covers the one-thing rule, direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds, hook options, full-bleed versus device frame and how far to magnify the UI, cursor choreography in frames, focus pushes on the moment of value, UI reading times, the sound plan, and how to build it on Three.js from a recording or a rebuilt UI.",
+  "summary": "Faceless app ad: one satisfying action, result first, a cursor that acts, focus pushes on the payoff, beat sheets at 15/30/45 s.",
   "kind": "style",
   "category": "UGC ads",
   "tags": [
@@ -30,18 +30,31 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "ad-qa"
+    },
+    {
+      "kind": "skill",
       "id": "ugc-ad-foundations"
     },
     {
       "kind": "skill",
       "id": "screen-capture"
-    },
-    {
-      "kind": "skill",
-      "id": "hyperframes-keyframes",
-      "engines": [
-        "hyperframes"
-      ]
     },
     {
       "kind": "skill",
@@ -105,7 +118,7 @@
     }
   ],
   "route": {
-    "deliverable": "An 8–45 second vertical ad where a creator demos the app on screen",
+    "deliverable": "An 8–45 second vertical ad of an app doing one thing, from a screen recording or a rebuilt UI",
     "inputs": [
       "screen-recording",
       "brief"
@@ -121,13 +134,19 @@
       "purpose": "voice",
       "model": "ElevenLabs v3",
       "via": "voiceover",
-      "note": "Pick a conversational voice, not a narrator."
+      "note": "A conversational voice, not a narrator; flat read."
     },
     {
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "UI click, soft whoosh, confirmation tone."
+      "note": "UI click, typing ticks, soft swish, one success tone."
+    },
+    {
+      "purpose": "music",
+      "model": "ElevenLabs Music",
+      "via": "music",
+      "note": "Minimal instrumental bed at 100 or 120 BPM, sits at 0.12 under VO."
     },
     {
       "purpose": "image",
@@ -137,12 +156,12 @@
     }
   ],
   "triggers": [
-    "make an ad from a screen recording of my app",
-    "vertical demo video for my SaaS",
-    "show my product actually working in 15 seconds",
-    "faceless tiktok ad for a web app",
-    "turn this screencast into a tiktok",
-    "app demo with a voiceover, no face"
+    "turn my screen recording into a TikTok ad",
+    "vertical demo ad for my SaaS",
+    "show my app actually working in 15 seconds",
+    "faceless ad for a web app with a voiceover",
+    "make a Reels ad from this screencast",
+    "app demo ad with a cursor, no face"
   ],
   "templates": [
     "prequel-launch",
@@ -151,6 +170,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🖥️"
 }

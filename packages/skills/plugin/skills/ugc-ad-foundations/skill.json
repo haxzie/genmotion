@@ -1,16 +1,17 @@
 {
   "id": "ugc-ad-foundations",
   "title": "UGC ad foundations",
-  "description": "The shared ground under every UGC ad: why creator-shot beats polished, the hook / body / CTA anatomy, the three-second rule and the retention numbers behind it, the visual codes that now read as an ad within half a second, platform specs and safe zones for TikTok, Reels, Shorts and Meta feed, the phone-shot frame presets, and the 3x3x3 variant matrix. Load it alongside any ugc-* format skill. Not a format on its own: pick one of those.",
-  "summary": "Hook, body, CTA. The three-second rule, platform safe zones, the phone-shot look, and the rules every UGC format inherits.",
+  "description": "The shared ground under every UGC-style social ad: the codes that read as an ad versus a person, hook / body / CTA anatomy with frame budgets per length, the one safe-zone and caption-position spec for 9:16, 4:5 and 1:1, the shared UGC numbers (change interval, VO budget, bed level, loudness), the four looks, hook variants, and the claims rules every format inherits. Load it with exactly one UGC format owner (screen demo, green screen, unboxing, problem-solution). Not a format on its own.",
+  "summary": "Shared ground for UGC ads: ad codes, hook/body/CTA in frames, one safe-zone spec, shared levels, looks, variants and claims.",
   "kind": "reference",
   "category": "UGC ads",
   "tags": [
     "ugc",
     "foundations",
-    "hook",
-    "retention",
-    "platform-specs"
+    "safe-zones",
+    "platform-specs",
+    "claims",
+    "social-ads"
   ],
   "aspects": [
     "9:16",
@@ -29,6 +30,18 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
       "id": "ugc-hooks"
     },
     {
@@ -36,23 +49,32 @@
       "id": "ugc-scripting"
     },
     {
+      "kind": "skill",
+      "id": "ugc-craft"
+    },
+    {
+      "kind": "skill",
+      "id": "ad-qa"
+    },
+    {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "The five QA checks are all frame captures."
+      "why": "The hook frame and the safe zones are judged on captured frames."
     }
   ],
   "models": [],
   "triggers": [
-    "how do I make a UGC ad",
-    "what makes a TikTok ad work",
-    "what are the safe zones for reels",
-    "how long should my social ad be",
-    "why do my ads look like ads"
+    "what makes a TikTok ad not look like an ad",
+    "where can text go on a Reels or TikTok video",
+    "how long should a social ad be",
+    "UGC ad structure: hook, body, call to action",
+    "make our ads feel creator-made instead of polished",
+    "which claims can a UGC ad make"
   ],
   "templates": [],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "📐"
 }

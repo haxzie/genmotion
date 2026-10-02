@@ -1,226 +1,143 @@
 ---
 name: ugc-problem-solution
-description: "The PAS demo: open on the failure state with the product absent, agitate for no more than five seconds, turn, then demonstrate honestly and land on relief. The most reliable starting point for ecommerce and SaaS, and the format to default to when the brief does not name one. Covers the failure-state opening, how long agitation may run, the turn, the demonstration that has to be truthful, and the relief shot. Load with ugc-ad-foundations."
+description: "The PAS ad and the default when a brief names a pain but no format: open on the failure state with the product absent, agitate one consequence for at most five seconds, turn on a hard cut with the sound dropping out, demonstrate honestly, and land on a relief shot that rhymes with frame zero. Covers direction defaults, beat sheets with frame budgets at 15, 30 and 45 seconds and the turn frame for each, hook options, the honest-demo rules, the sound plan, and building matched failure and relief frames on Three.js."
 ---
 
-# UGC problem solution
+# UGC problem-solution
 
-Problem, agitation, solution. The oldest shape in direct response and still the highest floor in UGC: it rarely produces the best ad in a test, and it almost never produces the worst.
+Problem, agitation, solution. The oldest shape in direct response and still the highest floor in UGC: it rarely makes the single best ad in a test and almost never the worst. That is why it is the default.
+
+Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-scripting` (PAS), `ugc-craft` (moves, captions) and `sound-design`. Frames at 30 fps; positions on 1080×1920.
 
 ## When to use
 
-Default to this when the brief names a pain, a frustration, a "people struggle with", or a competitor's shortcoming. Default to it also when the brief names no format at all and the product solves something specific.
+- The brief names a pain, a frustration, "people struggle with", or a competitor's shortcoming.
+- The brief names no format at all and the product solves something specific: default here.
 
-Do not pick it when:
+Not this when:
 
-- There is no real problem, only a preference. Manufactured pain is the most transparent thing in advertising. Use `ugc-listicle` or `ugc-screen-demo`.
-- The change is visual and the proof is the change itself. Use `ugc-before-after`.
-- The credibility has to come from a person rather than a demonstration. Use `ugc-testimonial`.
-- The problem is the entire joke. Use `ugc-skit`.
+- There is no real problem, only a preference. Manufactured pain is the most transparent thing in advertising: make a `ugc-screen-demo` of the one satisfying thing instead.
+- The claim lives in someone else's page the presenter reacts to: `ugc-green-screen`.
+- The format is the reveal of a physical thing: `ugc-unboxing`.
+- The user brings their own **filmed footage** (a testimonial, a talking head, a before-and-after shot on their phone) to be cut: `video-editing`, using this skill's beat order as the edit plan.
 
-## Open on the failure state, product absent
+## Ask first (only what the request does not answer)
 
-Frame 0 is the problem happening. Not a person describing the problem, not a title card naming it: the thing going wrong, on screen, with the product nowhere in shot.
+1. What is the specific pain the viewer has right now? (Offer your guess in their words.)
+2. What is the proof it works? (A real number, a real result, or "show it working" if there is none.)
+
+## The shape, and the turn frame
+
+| Part | Rule | Why |
+| --- | --- | --- |
+| Problem | Frame 0 is the failure **happening**, product absent, said flatly | The viewer recognises it before classifying it as an ad |
+| Agitation | One consequence, never more than 150f (5 s) | Past that it stops building tension and starts being unpleasant |
+| Drop | 10f of near-silence right before the turn | The breath that makes the turn land (`direction` Step 5) |
+| Turn | A hard cut and a line under 7 words; the product enters physically | The hinge the whole ad swings on |
+| Demonstration | The real thing, in real time or with a visible cut | Where the format is won or lost |
+| Relief | Frame 0's framing, resolved, held ≥30f before the CTA text | The rhyme is what makes it feel finished |
+
+**The turn frame: 90 at 15 s, 180 at 30 s, 210 at 45 s**, and never later than 210 (7 s) at any length. Holding the product back until the turn overrides `direction`'s "brand in context by 3–4 s" on purpose: write that into the Direction block's Idea or Transitions line so it reads as deliberate.
+
+**The turn step**: on the turn's cut, the incoming shot starts 8% brighter and at scale 1.04 and settles to normal over 4f outCubic. Nothing longer, and never a dissolve: abruptness is the grammar of a turn. Same person, same room; slightly brighter, slightly faster. If the turn sounds like a different video, it reads as the ad starting. The product never arrives on a brand name; the name comes at the CTA, once it has been earned.
+
+## Direction defaults
+
+| Line | Default |
+| --- | --- |
+| Style family | B (Soft-light SaaS) for software, with the failure rebuilt as real UI; C (3D product hero) adapted to a real room for a physical product. Look: Native (Bold caption for a cold-traffic cut) |
+| Energy curve | Problem 7 (the hook) → agitation 5 → 10f drop → turn 8 → demonstration 6–7 → **relief 9 (the peak)** → CTA 4 |
+| Pacing | High in the problem (≤36f shots), Medium in the demonstration (45–75f), one held shot for the CTA |
+| Transitions | Workhorse: hard cut on a word or a sound. Signature: the turn (hard cut + turn step + audio returning on the same frame); the relief is a match cut back to frame 0's framing |
+| Sound | VO-led (bed 0.12) or sound-off-first; a small unpleasant sound on the problem, silence before the turn, a resolving tone on the relief |
+| Memorable moment | The relief frame: the same shot as frame 0, the problem gone |
+
+## Beat sheets
+
+**30 s (900f), one person, one room, handheld**
+
+| # | Frames | Job | On screen | VO (words) |
+| --- | --- | --- | --- | --- |
+| 1 | 0–60 | Problem (hook) | A hand already pulling a knot of cables out of a bag, product absent | "Every single time." (3) |
+| 2 | 60–105 | Problem | Jump zoom to the person or hands, off-centre, flat | "Every bag I've ever owned." (5) |
+| 3 | 105–170 | Agitation | The consequence, not a second problem: digging at a security tray | "Four minutes at security, once." (5) |
+| — | 170–180 | Drop | Picture holds; bed and room tone cut | — |
+| 4 | 180–216 | Turn | Hard cut + turn step; a hand places the product into frame | "Then I got this." (4) |
+| 5 | 216–390 | Mechanism | Close, one continuous action | "Everything has a slot. That's the whole idea." (8) |
+| 6 | 390–570 | Demonstration | Packing it, cable by cable; any time compression is a visible cut | "Charger, dongle, the little one nobody can name." (8) |
+| 7 | 570–690 | Proof | The part that could fail, not failing | "Shake it. Nothing." (3) |
+| 8 | 690–790 | Relief (peak) | Frame 0's exact framing, resolved; resolving tone; held ≥30f before text | "[Four] seconds." (2) |
+| 9 | 790–900 | CTA | Product held loosely; the name, first time; CTA text ≥60f | "It's the [name] one. Link's in my bio." (8) |
+
+46 words of a 73 budget: the demonstration carries itself. Bracketed values come from the user.
+
+**15 s (450f)**: 0–45 problem (hook) · 45–80 agitation (one clause) · 80–90 drop · **90** turn (to 120) · 120–300 demonstration · 300–375 relief (peak) · 375–450 CTA. ≤35 words.
+
+**45 s (1350f)**: 0–75 problem · 75–200 agitation (≤150f) · 200–210 drop · **210** turn (to 250) · 250–450 mechanism · 450–750 demonstration with a second use · 750–870 objection ("I thought it'd be bulky") · 870–990 proof · 990–1170 relief (peak) · 1170–1350 CTA. ≤110 words.
+
+## Hook options
+
+**Pain** is the default (the failure on screen, said flatly: "Every single time."); **Pattern interrupt** when the failure is abrupt (a phone dying mid-call); **Contrarian** for warm audiences ("Stop buying organisers."); **Direct callout** only for retargeting. Never a person describing the problem ("Do you struggle with…?"), never a title card naming it, never a stock shot of someone looking stressed. `ugc-hooks` has the frame-0 builds.
 
 | Weak opening | Strong opening |
 | --- | --- |
 | A person saying "Do you struggle with tangled cables?" | A hand pulling a knot of cables out of a bag |
-| A title card: "Editing takes too long" | A timeline with 47 clips and a render bar at 6 percent |
-| A stock shot of someone looking stressed | A phone screen at 2 percent battery, at 4:12pm |
+| A title card: "Editing takes too long" | A timeline of 47 clips and a render bar at 6% |
+| Someone looking stressed at a laptop | A phone at 2% battery, at 4:12pm |
 
-The product being absent is load-bearing. If it is in the first frame, the viewer has classified the video as an ad before you have shown them anything.
+## The honest demonstration
 
-Say the problem flatly. Not performed, not bright. The way you would say it to someone in the room: "This happens every single time."
+- Show the product doing the **actual** thing, in real time or in a cut the viewer can reconstruct. A four-minute process shows the start, a visible cut with a caption ("4 min later"), and the end. A visible jump is trustworthy; a jump disguised as continuity is not.
+- No number, timeframe, rating or result the user has not given you: bracket it and tell them (claims rules in `ugc-ad-foundations`).
+- No outcome the product cannot produce, no speed-ramped process presented as real time.
+- A caveat the demonstration needs ("takes about a week") goes on screen; it reads as confidence.
+- A synthetic presenter is fine; one named as a specific real customer is not.
 
-## Agitation, and its five-second ceiling
+## Sound plan
 
-Agitation is the second consequence. The problem is the tangle; the agitation is missing the flight. It exists to move the viewer from "yes that happens" to "and it costs me something".
+Per `sound-design` and `ugc-craft`: frame 1 has the problem's own small unpleasant sound (a zip snagging, a buzz, a notification) at 0.5–0.7; bed 0.12 under VO, low and slightly flat in the problem; **the 10f drop** cuts bed and room tone; on the turn frame the bed returns (a brighter section, cued with the track's start offset to a downbeat) with a soft swish 0.5 if every hard cut has one; demonstration foley on its actions; a resolving tone 0.6 on the relief frame. Master −14 LUFS, ≤ −1 dBTP.
 
-**Never more than five seconds.** Past five seconds of dwelling on a problem the viewer has already agreed with, you are no longer building tension, you are being unpleasant, and the thumb moves. At a 15-second total, agitation gets two seconds. At 30 seconds it gets four. There is no length at which it gets more than five.
+## Building it
 
-One consequence, not three. "So I missed the deadline" is agitation. "So I missed the deadline and my boss was annoyed and I had to work the weekend" is a complaint.
+With the user's footage: `save-asset` each clip, trim and re-encode per `screen-capture` (VP9 WebM at the project fps, a keyframe every 15 frames, a 0.5 s tail) and lay the clips on the timeline.
 
-## The turn
-
-The turn is one cut and one sentence, and it is the hinge the whole ad swings on.
-
-- **It is a hard cut.** No dissolve, no wipe. The visual grammar of a turn is abruptness.
-- **The energy changes, once.** Slightly brighter, slightly faster, but still the same person in the same room. If the turn sounds like a different video, it reads as the ad starting.
-- **The product enters the frame physically.** A hand places it down, a tab opens, a box appears. Entering beats already being there.
-- **The line is short.** "Then someone showed me this." "So I tried the other thing." Under seven words.
-
-Never let the turn land on a brand name. The name comes later, once the thing has earned it.
-
-## The demonstration has to be honest
-
-This is where the format is won or lost, and where most agents cheat.
-
-Show the product doing the **actual** thing, in real time or in a cut that a viewer can reconstruct. If the process takes four minutes, show the start, mark the cut visibly, and show the end. A jump cut the viewer can see is trustworthy; a jump cut disguised as continuity is not.
-
-Rules that are not negotiable:
-
-- Do not state a number, a timeframe, a rating or a result the user has not given you. Bracket it in the script and say so in a line.
-- Do not show an outcome the product cannot produce.
-- If the demonstration needs a caveat ("takes about a week"), put the caveat on screen. It reads as confidence, and it converts better than the claim alone.
-- A synthetic presenter is fine. A synthetic presenter named as a specific real customer is not.
-
-## The relief shot
-
-The last visual is the problem's absence. Same frame as shot 1, same angle, same lighting, now resolved: the cables coiled, the timeline empty, the battery full. The rhyme is what makes the ad feel finished.
-
-Hold it for at least a second before the CTA text arrives. Relief needs a beat of nothing.
-
-## The shot list
-
-Thirty seconds, 1080x1920, one person, one room, hand-held.
-
-| # | t | shot | on screen | said |
-| --- | --- | --- | --- | --- |
-| 1 | 0.0 to 2.0 | The failure, mid-action, hand already in frame | The knot of cables, pulled out of the bag | "Every single time." |
-| 2 | 2.0 to 3.5 | Cut wider, the person, off-centre, flat delivery | Their face, unbothered, a little tired | "Every bag I have ever owned." |
-| 3 | 3.5 to 7.0 | Agitation: the consequence, not the problem | Digging through the bag at a gate, boarding sign behind | "Spent four minutes on this at security once." |
-| 4 | 7.0 to 8.0 | **The turn.** Hard cut. A hand places the product down | The product entering frame, no logo shot | "Then I got this." |
-| 5 | 8.0 to 13.0 | The mechanism, close, unbroken | Hands using it, one continuous action | "Everything has a slot. That is the whole idea." |
-| 6 | 13.0 to 19.0 | The demonstration, real time, no cheating | Packing it, cable by cable, in one take | "Charger, dongle, the little one nobody has a name for." |
-| 7 | 19.0 to 23.0 | The proof, the bit that could fail, not failing | Zipping shut, turning it over, nothing moves | "Shake it. Nothing." |
-| 8 | 23.0 to 26.5 | **Relief.** Shot 1's frame, resolved | The same bag, the same angle, one clean pull | "Four seconds." |
-| 9 | 26.5 to 30.0 | Direct to camera, product held loosely | Their face, the product in hand, no end card | "It's the [name] one. Link's in my bio." |
-
-**Compressing to 15s.** Keep 1, 4, 6, 8, 9. Agitation becomes a single clause inside shot 1. **Stretching to 45s.** Extend shot 6 with a second use case and add a four-second objection beat between 7 and 8 ("I thought it would be bulky").
-
-## The script scaffold
-
-At 2.5 words a second, a 30-second ad is 70 to 75 words. Write to the number.
-
-```markdown
-# SCRIPT
-
-## Problem (0 to 3.5s, <= 12 words)
-[The failure, stated flatly, as a fact about your life. Present tense.]
-
-## Agitation (3.5 to 7s, <= 10 words, NEVER past 5 seconds of runtime)
-[One consequence. What it cost. Not a second problem.]
-
-## Turn (7 to 8s, <= 7 words)
-["Then I found this." No brand name yet.]
-
-## Mechanism (8 to 13s, <= 14 words)
-[Why it works, in one clause. The idea, not the feature list.]
-
-## Demonstration (13 to 23s, <= 25 words)
-[Narrate only what is not visible. The footage carries the rest.]
-[Any number, timeframe or rating the user has not supplied goes in
- [brackets] and is flagged to the user, never invented.]
-
-## Relief (23 to 26.5s, <= 6 words)
-[The result, understated. Understatement is the tell of a real person.]
-
-## CTA (26.5 to 30s, <= 10 words)
-[Recommendation-shaped. Name the product here, for the first time.]
-```
-
-## What you build
-
-**With the user's footage.** `save-asset` each clip, trim with `ffmpeg` into `assets/`, and lay them out as timed clips on one track. Time the wrapper or the clip, never both.
-
-**With no footage at all**, which is the normal case, build the failure state as a designed frame rather than a fake photograph:
+With no footage, the normal case, build the failure as a designed frame rather than a fake photograph:
 
 | Beat | Build it as |
 | --- | --- |
-| A software failure | The real interface, rebuilt in HTML, in its broken state. Error toast, spinner at 6 percent, 47 unread. |
-| A physical failure | `generate-image` a still of the failure state, then a slow Ken Burns push (scale and drift over the hold). Generate the relief shot in the same prompt family so the two frames rhyme. |
-| The turn | A hard cut plus a 120ms brightness and scale step on the incoming clip. Nothing longer. |
-| The demonstration | A screen rebuild, or a sequence of three generated stills cut on the narration. Three honest stills beat one dishonest video. |
-| The relief | The same generated frame as the failure, re-prompted with the problem resolved. Match aspect, crop and light direction. |
+| A software failure | The real interface rebuilt in its broken state: an error toast, a spinner at 6%, 47 unread (`ugc-screen-demo` has the UI build) |
+| A physical failure | A `generate-image` still with a creep (+3%, `ugc-craft`); prompt the relief in the same prompt family, same seed if the model takes one |
+| The turn | A hard cut plus the turn step, nothing longer |
+| The demonstration | A screen rebuild, or three generated stills cut on the VO cues; three honest stills beat one dishonest video |
+| The relief | Frame 0's prompt with the problem resolved: same aspect, crop, camera height and light direction |
 
-**Sound.** The problem beat wants a small unpleasant sound (a zip, a buzz, a notification). The turn wants silence for 200ms, then the bed. Cutting the audio entirely at the turn is the cheapest and strongest trick this format has.
+- **Three.js** (default): stills are planes sized from real pixels (`three-assets`); the creep and jump zooms are camera moves (`three-camera`); the turn step is a brightness uniform on the incoming plane's material (or an additive white overlay plane at 8%) plus a 1.04 scale, both settling over 4f; the relief reuses frame 0's camera constants from `components/` so the match is exact. Captions in a camera-parented overlay (`three-type`).
+- **HyperFrames / React**: the same with a brightness filter tween over 4f on the incoming wrapper, and shared constants for the rhyming framing.
 
-## Failure modes
+## Good and bad
 
-**The invented statistic.** "Saves you 4 hours a week" appearing from nowhere. Fix: bracket it in the script and tell the user you need the real number.
-
-**Agitation that will not stop.** Eight seconds of problem before anything happens. Fix: cut to one consequence and move the turn earlier. Check the timestamp of the turn: it should be at roughly 25 percent of total runtime.
-
-**The product in frame 0.** Usually because the generated failure image was prompted with the product in it. Fix: re-prompt without it.
-
-**A turn that dissolves.** A crossfade at the hinge, which drains all the energy from it. Fix: hard cut, and change the audio on the same frame.
-
-**The dishonest demo.** A speed-ramped process presented as real time. Fix: show the cut. A visible "3 hours later" card is more persuasive than a seamless lie.
-
-**Relief that does not rhyme.** The last shot is a new angle, so the change does not read. Fix: reuse the exact framing of shot 1.
+- **Bad**: the product in frame 0 because the failure image was prompted with it. **Good**: re-prompted without it; the product enters on frame 180.
+- **Bad**: eight seconds of problem before anything happens. **Good**: one consequence, the turn on frame 180.
+- **Bad**: a crossfade at the turn. **Good**: a hard cut, the turn step, the bed returning on the same frame.
+- **Bad**: "saves you 4 hours a week" from nowhere. **Good**: "[N] hours a week" in the script and a line to the user asking for the real figure.
+- **Bad**: the relief shot from a new angle. **Good**: frame 0's exact framing, resolved.
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Failure and relief stills | `generate-image`, prompted as a matched pair | Build both beats as typography and rebuilt UI. |
-| The user's own footage | `save-asset`, then `ffmpeg` to trim | Generated stills with camera moves, which this format tolerates well. |
-| Narration | `pick-voice` then `voiceover` | Captions only. The turn still reads visually. |
-| The audio drop at the turn | `sfx` plus a silent beat | A hard cut alone, which is weaker but honest. |
-| Camera moves on stills | A slow push/drift (Ken Burns) on the still | Static frames, cut faster to compensate. |
+| Failure and relief stills | `generate-image`, prompted as a matched pair | Typography and rebuilt UI for both beats |
+| The user's footage | `save-asset`, then `ffmpeg` to trim and re-encode | Generated stills with camera moves, which this format tolerates well |
+| Narration | `pick-voice` then `voiceover` | Captions only; the turn still reads visually |
+| The problem sound, the swish, the relief tone | `sfx` | Credited CC0 sounds via `web-research` + `save-asset`; the drop alone still works |
+| Music | `music` | No bed; foley and the drop carry it |
 
 ## Checks before you finish
 
-1. `capture-frames` at t=0. Is the product visible? If yes, rebuild the shot without it.
-2. Find the turn's timestamp. Is it at or before 30 percent of the runtime? Is agitation under five seconds?
-3. Capture the frame either side of the turn. Is it a hard cut, with a visible energy change?
-4. Read the script and list every number, timeframe and claim. Can each one be sourced to the user? If not, bracket it.
-5. Capture the relief shot and shot 1 side by side. Do they share framing?
-6. Mute it and watch. Does problem, turn, solution still read?
-7. Your project's own check tool (`validate`).
-
-## Plan skeleton
-
-A scratch outline for the shot list above, in whatever form your project's own planning artifact takes:
-
-```markdown
----
-format: 1080x1920
-duration: 30s
-message: [the problem, and the one thing that ends it]
-arc: Problem → Agitation → Turn → Mechanism → Demo → Relief → CTA
-audience: [who has this problem]
-turn_at: 7s
----
-
-## Frame 1: The failure
-- duration: 3.5s
-- scene: The problem happening, hand already in frame, product absent
-- voiceover: Every single time.
-- product_present: false
-
-## Frame 2: The cost
-- duration: 3.5s
-- scene: One consequence of the problem, not a second problem
-- voiceover: Spent four minutes on this at security once.
-- agitation_seconds: 3.5
-
-## Frame 3: The turn
-- duration: 1s
-- scene: Hard cut. A hand places the product into frame.
-- voiceover: Then I got this.
-- transition_in: cut
-- audio: drop to silence for 200ms
-
-## Frame 4: Mechanism and demo
-- duration: 11s
-- scene: The product working, real time, the cut visible if there is one
-- voiceover: Everything has a slot. That is the whole idea.
-- claims: [any number here must be sourced to the user]
-
-## Frame 5: Proof
-- duration: 4s
-- scene: The bit that could fail, not failing
-- voiceover: Shake it. Nothing.
-
-## Frame 6: Relief
-- duration: 3.5s
-- scene: Frame 1's exact framing, resolved
-- voiceover: Four seconds.
-- rhymes_with: Frame 1
-
-## Frame 7: CTA
-- duration: 3.5s
-- scene: Direct to camera, product held loosely, no end card
-- voiceover: It's the [name] one. Link's in my bio.
-```
+1. `capture-frames` at frame 0: the failure is happening and the product is not visible anywhere.
+2. The turn's cut frame is ≤210 (90 / 180 / 210 for 15 / 30 / 45 s) and agitation lasts ≤150f; capture the frame before and after: a hard cut, the incoming frame brighter and at 1.04.
+3. The 10f before the turn: the cue sheet has no bed and no room tone there.
+4. Capture frame 0 and the relief frame side by side: same framing, camera height and light; the problem gone.
+5. List every number, timeframe and claim in the VO and on screen: each traces to the user or is bracketed and flagged.
+6. Mute it: problem, turn and solution still read from the captures.
+7. `validate` passes; then run `ad-qa` in full.

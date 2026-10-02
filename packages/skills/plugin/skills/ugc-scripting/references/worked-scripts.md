@@ -2,7 +2,7 @@
 
 The same imaginary product through all six frameworks, at 30 seconds and roughly 72 words each. The product: a tool that turns a written description into a finished video.
 
-Read these for shape, not for lines. Every specific here is invented and must be replaced with the user's own.
+Read these for shape, not for lines, when you are choosing a framework or a script feels shapeless. Every specific here ("eleven minutes", "forty launch videos") is invented and must be replaced with the user's own or bracketed. Times are seconds; multiply by 30 for frames.
 
 ---
 
@@ -58,15 +58,15 @@ Needs a visible transformation. The two states must be shot the same way or the 
 
 Technical product, technical audience. The risk is stopping at Advantage and never reaching Benefit.
 
-> **Hook (0.0 to 3.0)** It renders from HTML. That is the whole trick.
+> **Hook (0.0 to 3.0)** Every scene is code. That is the whole trick.
 >
-> **Feature (3.0 to 10.0)** Every scene is a real HTML file with a paused timeline on it.
+> **Feature (3.0 to 10.0)** Each scene is a real file that renders the same picture for the same frame, every time.
 >
 > **Advantage (10.0 to 19.0)** Which means the agent can read it, edit it, and check its own work, frame by frame, without guessing.
 >
 > **Benefit (19.0 to 26.0)** So when you say the headline is too small, it fixes the headline. Not the whole scene.
 >
-> **CTA (26.0 to 30.0)** Repo is in the bio if you want to see the markup.
+> **CTA (26.0 to 30.0)** Repo is in the bio if you want to see the code.
 
 ---
 

@@ -2,7 +2,9 @@
 
 Sixty-plus openings, grouped by family. Each row is the **line** and the **visual** it needs. Temperature is who it works on: cold (does not know the problem is solvable), warm (knows the problem, not the product), hot (knows the product).
 
-Swap every specific for the user's own. The detail is the whole point, and a borrowed detail is a generic one.
+Swap every specific for the user's own. The detail is the whole point, and a borrowed detail is a generic one. Every number in these lines is illustrative: a social-proof, authority or result line ships only with the user's real figure.
+
+Read it when you are choosing the line for a hook family you have already picked, or writing variants B and C.
 
 ---
 
@@ -67,7 +69,7 @@ Borrows somebody else's judgement. Only ever with a real number the user gave yo
 
 ## Contrarian
 
-Attacks what the viewer assumes. Highest variance in the library: it either doubles the hook rate or kills it. Always test it against a safer family.
+Attacks what the viewer assumes. The least predictable family in the library: it lands hard or not at all. Always test it against a safer family, never ship it alone.
 
 | Line | Visual | Temp |
 | --- | --- | --- |

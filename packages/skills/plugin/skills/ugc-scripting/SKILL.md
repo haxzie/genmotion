@@ -1,57 +1,62 @@
 ---
 name: ugc-scripting
-description: "Writing the body and the CTA of a short-form ad: six script frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the shape and the audience each one fits, the word-count math that makes a script fit its runtime, CTA construction that reads as a recommendation rather than a pitch, and how to structure the narration as labeled, timed lines. Load it when you are writing the middle of an ad. The opening belongs to ugc-hooks."
+description: "Writing the body and CTA of a short-form ad: the word budget per runtime and per section, six frameworks (PAS, AIDA, BAB, FAB, 4P, star-story-solution) with the audience each fits, the body's rules, CTAs that read as a recommendation, writing for text-to-speech (numbers, acronyms and names as spoken), and narration written as timed, cue-segmented lines the picture can cut against. Load it when writing or fixing the middle and end of an ad; the opening belongs to ugc-hooks."
 ---
 
 # UGC scripting
 
-A short-form script is not a shorter long-form script. It is one idea, said once, with the product as the turn.
+A short-form script is not a shorter long-form script. It is one idea, said once, with the product as the turn. The words decide the length, not the reverse.
+
+Frames are at 30 fps. VO pace and placement follow `direction` (→ `references/pacing.md`); this skill applies them to ads.
 
 ## When to use
 
-Load this when you are writing the body and close of an ad, when a user's script needs restructuring, or when a script does not fit its runtime. The opening three seconds belong to `ugc-hooks`; the edit rhythm belongs to `ugc-craft`.
+- Writing the body and close of a UGC or social ad, or restructuring a user's script.
+- A script does not fit its runtime, or "sounds like an ad".
+- Preparing lines for `voiceover` (pronunciation, cue segmentation).
 
-## The word-count math
+Not for: the first 1.5–3 s (`ugc-hooks`), the edit rhythm (`ugc-craft`), long-form narration for explainers (`explainer`). If the user's own recording already carries the words, `video-editing` cuts it; do not rewrite what someone said on camera.
 
-Narration runs at roughly 2.5 words per second, conversational, with the pauses a real person leaves. This is not a guideline, it is arithmetic: a script that overruns has to be cut, and cutting after the storyboard is written wastes a pass.
+## The word budget
+
+Narration runs at 2.5 words/s, conversational, with the pauses a real person leaves. The VO starts 5–8f in and ends ≥15f before the last frame, so `words ≤ 2.5 × (seconds − 0.7)`. A script that overruns gets cut, never read faster.
 
 | Runtime | Total words | Hook | Body | CTA |
 | --- | --- | --- | --- | --- |
-| 15s | 34 to 38 | 7 | 20 | 8 |
-| 30s | 70 to 75 | 7 | 50 | 15 |
-| 45s | 105 to 112 | 8 | 80 | 18 |
-| 60s | 140 to 150 | 8 | 110 | 22 |
+| 15 s (450f) | ≤35 | 6–7 | 20 | 8 |
+| 30 s (900f) | ≤73 | 7 | 50 | 14–16 |
+| 45 s (1350f) | ≤110 | 8 | 82 | 18–20 |
+| 60 s (1800f) | ≤148 | 8 | 115 | 22–25 |
 
-Subtract for anything that plays without narration: a reveal that needs three silent seconds costs eight words. Silence is a legitimate line and it is usually the strongest one in the ad.
-
-Write the word budget at the top of the script before writing a word of it.
+- Subtract for anything that plays without narration: a 3 s silent reveal costs 7–8 words. Silence is a legitimate line and often the strongest one.
+- Per line: a line of N words needs about `13 × N` frames and must end inside its own beat, unless it deliberately bridges a cut.
+- Write the budget at the top of the script before writing a word of it.
 
 ## The six frameworks
 
 | Framework | Shape | Fits | Avoid when |
 | --- | --- | --- | --- |
-| **PAS** Problem, Agitate, Solve | Name the failure, make it sting, turn | The default. Cold and warm traffic, any category | The problem is not one the viewer already feels |
-| **AIDA** Attention, Interest, Desire, Action | Hook, expand, want, act | Longer cuts, 45s and up, B2B and launch | Under 30s, where Interest and Desire collapse into one beat |
+| **PAS** Problem, Agitate, Solve | Name the failure, make it cost something, turn | The default: cold and warm traffic, any category | The problem is not one the viewer already feels |
+| **AIDA** Attention, Interest, Desire, Action | Hook, expand, want, act | 45 s and up, B2B, launch-adjacent ads | Under 30 s, where Interest and Desire collapse into one beat |
 | **BAB** Before, After, Bridge | Where you are, where you could be, how | Visible transformations, tools, habit products | The after state is abstract or invisible |
-| **FAB** Feature, Advantage, Benefit | What it has, what that does, what that means for you | Technical products to a technical audience | Consumer, where the feature is not the reason |
-| **4P** Picture, Promise, Prove, Push | Paint it, claim it, back it, ask | When you have real proof: numbers, names, a demo | You have no proof. Without Prove this is just a claim |
-| **Star, story, solution** | The person, what happened to them, what fixed it | Founder, testimonial, day-in-the-life | Faceless formats with no character to be the star |
+| **FAB** Feature, Advantage, Benefit | What it has, what that does, what it means for you | Technical products to a technical audience | Consumer, where the feature is not the reason |
+| **4P** Picture, Promise, Prove, Push | Paint it, claim it, back it, ask | When the user gave you real proof: numbers, names, a demo | No proof; without Prove it is a bare claim |
+| **Star, story, solution** | The person, what happened to them, what fixed it | A presenter or founder with a true story | Faceless formats with no character |
 
-Default to PAS. It is the most reliable starting point for ecommerce and SaaS, it works cold, and it fails gracefully: a weak PAS is still legible, where a weak AIDA is four disconnected fragments.
-
-`references/worked-scripts.md` has a full 30-second script in each framework, for the same imaginary product, so you can see how the same material shifts.
+Default to PAS: it works cold and fails gracefully (a weak PAS is still legible; a weak AIDA is four fragments). Each UGC owner names the framework it wants. `references/worked-scripts.md` has a 30 s script in every framework for the same product, plus where each one breaks; read it when choosing between two.
 
 ## The body's rules
 
-- **One benefit.** Not three. A short-form ad that lists features is an ad nobody finishes. Pick the one that would make the viewer stop scrolling if they only heard it.
-- **Demonstrate, do not describe.** Every claim in the body has a matching thing on screen at that second. If you cannot show it, cut it.
-- **The turn is a moment, not a paragraph.** One line, one cut, one sound. Agitation that runs past five seconds becomes complaining.
-- **Specifics beat adjectives.** "Eleven minutes" beats "fast". "Four hundred people" beats "lots of people". Never invent either: if the user has not given you a number, write the line without one.
-- **Say it the way a person says it.** Contractions, sentence fragments, one filler word at most. Read it aloud. If it sounds written, rewrite it.
+- **One benefit.** Pick the one that would stop the scroll if it were the only thing heard.
+- **Demonstrate, do not describe.** Every claim has a matching thing on screen in the same beat. If you cannot show it, cut it.
+- **The turn is a moment.** One line (under 7 words), one cut, one sound. Agitation stops by 5 s of runtime.
+- **Specifics beat adjectives, and are never invented.** "Eleven minutes" beats "fast" only if the user said eleven minutes. Otherwise write the line without a number, or bracket it ("[N] minutes") and tell the user. The claims rules are in `ugc-ad-foundations`.
+- **Say it the way a person says it.** Contractions, fragments, one filler at most. Read it aloud; if it sounds written, rewrite it.
+- **Narrate only what the picture cannot show.** "Then you click Generate" is the cursor's job; the VO says why.
 
 ## The CTA
 
-The CTA has to sound like a recommendation because everything before it was built to sound like a person. A pitch-shaped close breaks the character the previous twenty-five seconds paid for.
+Everything before the CTA was built to sound like a person; a pitch-shaped close breaks that character.
 
 | Reads as a recommendation | Reads as a pitch |
 | --- | --- |
@@ -60,46 +65,70 @@ The CTA has to sound like a recommendation because everything before it was buil
 | "I'd start with the template, personally." | "Visit our website to learn more." |
 | "If you make videos at all, just go look." | "Don't miss out on this limited offer." |
 | "This is the one I use now." | "Join thousands of satisfied customers." |
-| "Go make one and tell me it isn't faster." | "Transform your workflow today." |
 
-Reinforce it three ways at once, in the same two seconds: the spoken line, the on-screen text, and a visual cue (a tap, a cursor moving to a button, a hand pointing). One of the three alone is half a CTA.
+- Shown three ways in the same 2 s: the spoken line, on-screen text (legible ≥60f), and a visual cue (a tap, a cursor moving to a button, a hand pointing).
+- It occupies the last 3–5 s, never less than 2. A CTA in the final half second lands after the viewer has gone.
+- An offer or price only if the user supplied it; "link in bio" only for organic posts (a paid ad's CTA button is the platform's).
 
-The CTA occupies the last three to five seconds and never less than two. A CTA that lands in the final half-second is a CTA that lands after the viewer has gone.
+## Writing for text-to-speech
 
-## Structuring the narration
+A TTS voice reads exactly what is written. Write the VO as it should be **said**; the picture shows the exact figure.
 
-Write narration as a sequence of labeled, timed lines, not a paragraph of prose. Each line carries a label for the beat it belongs to, a time range, a delivery note, and the words themselves. Only the words are what gets fed to the voice; the label, time and delivery note are there so the audio and the picture can be cut against each other later. Keep it wherever this project keeps its plan, or as a scratch outline if it does not have one yet.
+| Written for the eye | Written for the voice |
+| --- | --- |
+| $1.9T | nearly two trillion dollars |
+| 10x faster | ten times faster |
+| 4.9★ (2,104 reviews) | four point nine stars, from about two thousand reviews (only if supplied) |
+| API, SDK, URL | A P I, S D K, U R L (spaced letters); acronyms said as words stay words (SaaS → sass) |
+| v2.0 | version two |
+| 3–5 min | three to five minutes |
+| 24/7 | twenty-four seven |
+| GenMotion, product names | spelled as they sound if the voice stumbles ("Gen Motion"); test once and listen |
 
-The shape looks something like this. Treat it as illustrative, not a required format; adapt the labels and layout to however this project already writes things down.
+- Punctuation is direction: a full stop is a pause, an em dash a shorter one, an ellipsis a trailing one. A comma in the wrong place is a breath in the wrong place.
+- One sentence per line; under 15 words per sentence. Long sentences flatten the read.
+- Delivery notes ("flat", "lift on the turn") go to the voice settings and to `VIDEO.md`, never into the spoken text.
 
-> **Voice:** warm, conversational, mid-20s, slight rasp
-> **Voice direction:** flat through the problem, lift only on the turn
-> **Budget:** 30s, 72 words
->
-> **Line 1, Hook (0.0 to 2.8)**, tired, like you are telling a friend
-> "Three hours. For fifteen seconds of video."
->
-> **Line 2, Problem (2.8 to 8.0)**, still flat
-> "And it is never the part I want to be doing."
->
-> **Line 3, Turn (8.0 to 9.2)**, the only lift in the whole read
-> "Then I tried describing it instead."
+## Lines as cues
 
-Keep the script's line numbers aligned to the shot list's frame or scene numbers. The audio and the picture are cut against each other, and a script whose lines do not map to frames cannot be timed.
+Write narration as labelled, timed lines, not a paragraph. Each line names its beat, its frame range, a delivery note and the words, and is **segmented on the cues the picture needs**, so each visual can arrive as the voice names it.
+
+```markdown
+Voice: warm, conversational, late 20s · Direction: flat through the problem, lift on the turn only
+Budget: 30 s, ≤73 words (written: 68)
+
+1 Hook      0–84f    tired, to a friend   "Three hours. For fifteen seconds of video."
+2 Problem   84–180f  still flat           "And it's never the part I want to be doing."
+3 Turn      180–216f the only lift        "Then I tried describing it instead."
+4 Demo      216–420f matter-of-fact       "Typed what I wanted — | it built the scenes — | I changed the headline twice."
+```
+
+- The `|` marks are cue points: the scene builds the matching visual on the frame that word starts (from the VO's word timings).
+- Generate one VO clip per line (or per beat), so a line can move without re-generating the rest; place each on track 0 with `place-audio` at its beat's start + 3–8f.
+- Line numbers match the beat table rows in `VIDEO.md`. A script whose lines do not map to beats cannot be timed.
+- If the user gave a script and said "verbatim", use it word for word: no restructuring, no TTS rewrites without asking.
+
+## Good and bad
+
+- **Bad**: "Our AI-powered platform offers 12 features to streamline your workflow." **Good**: "I typed one sentence. It built the whole video."
+- **Bad**: a 30 s script of 96 words, read at 3.2 words/s to fit. **Good**: 70 words, with the 3 s reveal left silent.
+- **Bad**: VO "It's 10x faster at $9/mo." **Good**: VO "ten times faster, for nine dollars a month", with "10× · $9/mo" on screen (both only if supplied).
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| The narration itself | `pick-voice` once, then `voiceover` | A caption-led silent cut. Write the script anyway: it becomes the caption track. |
-| The user's own script | Read it verbatim and ask nothing | If the brief says verbatim, do not restructure it, whatever the framework says |
-| Beat timing against picture | `project-overview` | Count it by hand at 2.5 words per second |
+| The narration | `pick-voice` once, then `voiceover` | A caption-led silent cut; the script becomes the caption track |
+| Word timings for cues | `voiceover` timings, or `transcribe` on the clip | 2.5 words/s, checked on captured frames |
+| Placing lines | `place-audio` | Edit the project's audio list by hand |
+| Beat timing against picture | `project-overview` | Read the beat table in `VIDEO.md` |
 
 ## Checks before you finish
 
-1. Count the words. Divide by 2.5. Compare with the runtime. Inside 10 percent or rewrite.
-2. Read the whole thing aloud, once, at pace. Anything you stumble on is a line to cut.
-3. Every claim in the body has something on screen at that second proving it.
-4. The CTA is spoken, written and shown, all three.
-5. No number, rating, timeframe or named person the user did not supply.
-6. This project's own check tool (`validate`) after the audio is placed.
+1. Count the words. `words ≤ 2.5 × (seconds − 0.7)`; each line fits its beat at 13 frames per word.
+2. Generate the VO and measure each clip's duration (`project-overview` or `ffmpeg`): no line runs past its beat's end frame.
+3. Listen once at pace: every number, acronym and name is said correctly; anything misread is rewritten as spoken.
+4. Every claim in the body has something on screen in the same beat proving it; every number traces to the user or is bracketed and flagged.
+5. The CTA is spoken, written (≥60f) and shown, in the last 3–5 s.
+6. Cue markers in the script match the frames where the visuals arrive (`capture-frames` at two cue frames).
+7. `validate` passes after the audio is placed; then `ad-qa`.

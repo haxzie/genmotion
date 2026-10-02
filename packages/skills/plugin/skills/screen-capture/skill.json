@@ -1,8 +1,8 @@
 {
   "id": "screen-capture",
   "title": "Screen capture",
-  "description": "Getting real app footage into a composition: what a usable capture looks like, the ffmpeg recipes for trimming, cropping, reframing to vertical, speeding up and extracting frames, how to build a device frame in HTML, and how to rebuild a UI from scratch when there is no recording at all. Load it alongside ugc-screen-demo, announce-feature or demo-walkthrough whenever the video has to show software actually working.",
-  "summary": "Real app footage into a composition: what to record, the ffmpeg recipes, device frames, and rebuilding a UI in HTML.",
+  "description": "Getting real app footage into a video safely: what to ask the user to record, probing a file, the seek-safe master (VP9 WebM at the project fps with a keyframe every 15 frames, because the renderer seeks every frame and the CLI cannot decode H.264), verified ffmpeg recipes for frame-accurate trims, 9:16 and 4:5 crops that output 1080x1920 and 1080x1350, speeding up a dead stretch, blurring private data and pulling stills, then full-bleed versus a device frame built in the scene, and rebuilding a UI when there is no recording. Load it whenever a video shows software working.",
+  "summary": "Real app footage, render-safe: what to record, the all-keyframe constant-rate master, 9:16 and 4:5 crops, scrubbing, device frames, rebuilds.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
@@ -10,7 +10,8 @@
     "ffmpeg",
     "device-frame",
     "product-demo",
-    "ui"
+    "ui",
+    "seek-safe"
   ],
   "aspects": [
     "9:16",
@@ -31,14 +32,7 @@
     {
       "kind": "capability",
       "id": "ffmpeg",
-      "why": "Trim, crop, reframe to vertical, speed up dead air, pull a still."
-    },
-    {
-      "kind": "skill",
-      "id": "hyperframes-core",
-      "engines": [
-        "hyperframes"
-      ]
+      "why": "Probe, conform to VP9 at the project fps with dense keyframes, trim, crop, speed up, scrub."
     },
     {
       "kind": "skill",
@@ -49,14 +43,14 @@
     },
     {
       "kind": "skill",
-      "id": "hyperframes-keyframes",
+      "id": "three-camera",
       "engines": [
-        "hyperframes"
+        "three"
       ]
     },
     {
       "kind": "skill",
-      "id": "three-camera",
+      "id": "three-type",
       "engines": [
         "three"
       ]
@@ -73,8 +67,13 @@
     },
     {
       "kind": "capability",
+      "id": "web-research",
+      "why": "The real product's fonts, colours and logo for a rebuilt UI."
+    },
+    {
+      "kind": "capability",
       "id": "capture-frames",
-      "why": "Legibility of interface text is judged by looking at a frame."
+      "why": "Freezes and the legibility of interface text are judged on rendered frames."
     }
   ],
   "models": [
@@ -86,12 +85,13 @@
     }
   ],
   "triggers": [
-    "turn my screen recording into a video",
-    "crop this desktop capture to vertical",
-    "how do I record a good demo",
-    "build a phone frame around this video",
-    "I don't have a recording, can you fake the UI",
-    "speed up the boring part of this capture"
+    "turn my screen recording into footage for the video",
+    "crop this desktop capture to 1080x1920",
+    "how should I record a good product demo",
+    "build a phone frame around this clip",
+    "no recording, rebuild the app's UI in the video",
+    "speed up the boring part of this capture",
+    "the recording stutters or freezes in the render"
   ],
   "templates": [
     "prequel-launch",
@@ -100,6 +100,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🎬"
 }
