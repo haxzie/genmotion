@@ -113,8 +113,9 @@ Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (f
 | impact | −4.1 dBFS | 1.2 s | on the contact / lock frame |
 | whoosh | −13.0 dBFS, loudest at 0.17–0.22 s | 0.4 s | `startFrame = cut − 6` |
 | pop | −10.2 dBFS | 0.08 s | text pop, arrival |
-| tick | −10.4 dBFS | 0.03 s | counter steps, anticipation |
-| chime | −9.0 dBFS | 1.7 s | success, sonic-logo button |
+| riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36` |
+| tick | −13.4 dBFS | 0.04 s | counter steps, anticipation |
+| chime | −10.1 dBFS | 2.2 s | success, sonic-logo button |
 
 Riser at 1.0 into the impact at 1.0 measured **9.2 dB** of contrast (riser's last 100 ms −21.5 dB RMS, impact's first 10 ms −12.3 dB RMS), and the sum peaks at −4.1 dBFS.
 
@@ -131,11 +132,14 @@ ffmpeg -f lavfi -i "anoisesrc=c=pink:r=48000:a=0.9:seed=5:d=0.4" -af "highpass=f
 # pop: 900 Hz blip falling in pitch, 2 ms attack
 ffmpeg -f lavfi -i "aevalsrc='0.5*min(t/0.002,1)*exp(-60*t)*sin(2*PI*(900*t-2500*t*t))':s=48000:d=0.08" -af "aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-pop.wav
 
-# tick: 30 ms high-passed click
-ffmpeg -f lavfi -i "anoisesrc=c=white:r=48000:a=0.3:seed=11:d=0.03" -af "highpass=f=2500,volume='exp(-250*t)':eval=frame,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-tick.wav
+# tick: 40 ms band-limited click (centred near 3.2 kHz; a full-band click up to 18 kHz reads as a test tone)
+ffmpeg -f lavfi -i "anoisesrc=c=white:r=48000:a=0.5:seed=11:d=0.04" -af "bandpass=f=3200:width_type=q:w=1.2,volume='exp(-180*t)':eval=frame,afade=t=in:d=0.001,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-tick.wav
 
-# chime: inharmonic bell partials (1 : 2.76 : 5.4) + a short room
-ffmpeg -f lavfi -i "aevalsrc='min(t/0.003,1)*(0.75*exp(-3*t)*sin(2*PI*880*t)+0.38*exp(-5*t)*sin(2*PI*2428*t)+0.2*exp(-8*t)*sin(2*PI*4752*t))':s=48000:d=1.6" -af "aecho=0.8:0.5:60|110:0.25|0.15,afade=t=out:st=1.4:d=0.2,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-chime.wav
+# chime: inharmonic bell partials (1 : 2.76 : 5.4), a long natural decay, no echo (an echo on the attack flams)
+ffmpeg -f lavfi -i "aevalsrc='0.35*min(t/0.004,1)*(0.75*exp(-2.2*t)*sin(2*PI*880*t)+0.38*exp(-4*t)*sin(2*PI*2428*t)+0.2*exp(-7*t)*sin(2*PI*4752*t))':s=48000:d=2.2" -af "afade=t=out:st=1.9:d=0.3,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-chime.wav
+
+# tonal riser for calm, precise briefs: two sines a fifth apart sweeping up, low-passed, 1.2 s (the noise riser above is for energetic ones)
+ffmpeg -f lavfi -i "aevalsrc='0.22*pow(t/1.2,2)*(sin(2*PI*(196*t+122*t*t))+0.5*sin(2*PI*(294*t+183*t*t)))':s=48000:d=1.2" -af "lowpass=f=2500,afade=t=out:st=1.19:d=0.01,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-riser-tonal.wav
 ```
 
 Variations stay safe if you change one thing at a time: the riser's length (`d`, and the `t/2` terms to `t/d`), the chime's base pitch (keep the 2.76 and 5.4 ratios; put it in the music's key when there is music), the pop's start frequency. Any new layer summed with `amix normalize=0` adds level: re-measure `max_volume` and keep it at or below −3 dBFS. A three-note sonic logo is three chimes at different pitches, 6–10 f apart, mixed down the same way.

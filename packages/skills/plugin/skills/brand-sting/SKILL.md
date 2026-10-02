@@ -41,7 +41,7 @@ Another owner fits better when:
 | **Reveal** | The mark is there but hidden; something uncovers it: a mask, a light sweep, an iris | A simple mark that needs no explaining | Nike guide: the swoosh clip-draws over 16f outSmooth with a 26 px lift |
 | **Transform** | Something else becomes the mark: a shape morphs, a UI element or the film's motif resolves into it | The film or the brand already has a motif that can plausibly become the logo | Codex: the writer blob swells and resolves into the mark; Gojiberry: a camera slam into a word, white flash, the mark pops |
 
-Transform has two extra rules. The thing before the mark must **read as itself on a still frame** (a compass needle is one continuous needle with a hub, not two spikes pinched at a point; check one frame at full resolution). And the moment it starts becoming the mark needs a **trigger beat**: a click, a glint, a snap to position, with its own sound. The trigger is the first frame of the build, never followed by a pause.
+Transform has two extra rules. The thing before the mark must **read as itself on a still frame** (a compass needle is one continuous needle with a hub, not two spikes pinched at a point; check one frame at full resolution). It must also read **as what it means**: a compass needle needs polarity (the north end solid or bright, the south shaded or outlined), or "finds north" cannot be seen. And the moment it starts becoming the mark needs a **trigger beat**: a click, a glint, a snap to position, with its own sound. The trigger is the first frame of the build, never followed by a pause.
 
 Pick one. A sting that builds, then reveals, then transforms is three stings.
 
@@ -50,10 +50,10 @@ Pick one. A sting that builds, then reveals, then transforms is three stings.
 - **Style family**: I (brand identity loop) by default: the brand's own colours on a plain field, a visible grid only if the brand uses one. C (3D product hero) for an extruded, glossy mark in a Three.js project. A (beat-cut) for a hype bumper cut to a track.
 - **Background**: the brand's hex, exact at the frame's centre and corners on the export (±2 levels). No vignette, no grain (`three-look`'s brand-identity row). A lift, if any, is a declared tint of the brand's own colour.
 - **Energy curve**: anticipation (3) → **hit (10) at 40–60% of the length** → settle and hold (4). **The breath is inside the build**: in the 6–10f before the lock, motion slows and the sound thins (the riser is the only thing growing), but something is always progressing. A still beat *before* the build is a stall, not a breath.
-- **Frame 0 is already moving**: the anticipation's motion has started by frame 15 (a ring part-drawn, a needle mid-swing), and it fills a deliberate part of the frame, not a speck in a large dead field.
+- **Frame 0 is already moving**: the anticipation's motion has started by frame 15 (a ring part-drawn, a needle mid-swing), and it fills a deliberate part of the frame (the subject spans at least 15% of the short edge), not a speck in a large dead field. Fill it with **motion**, not size: never start oversized and pull out, because a shrinking, calming subject drains the energy the build needs. The anticipation's energy rises into the trigger (a swing that tightens and quickens, a sweep that accelerates), and the build's first 10f change more than the anticipation's last 10f.
 - **Transitions**: none inside a sting; for an outro, the incoming film's last element persists into the build (transform shape).
 - **Sound**: the sonic logo, about 3 s: whoosh or riser into the lock (0.5–1.5 s) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. No VO, no bed.
-- **Memorable moment**: the lock frame itself: the last piece arrives, the hit sounds, everything stops.
+- **Memorable moment**: the lock frame itself, and it must be a **picture** event, not only a sound: the last piece arrives with an outCubic (not easing to nothing over 20f), a facet glint 6–10f long peaks on it, or a 1–2f flare. Even a calm sting has one; calm decides its size, not its absence. lock −1 → lock is the largest visual change of the last 10f.
 
 ## Frame budgets
 
@@ -73,7 +73,7 @@ Pick one. A sting that builds, then reveals, then transforms is three stings.
 ## Mark craft
 
 - **Size**: the symbol's larger dimension is 25–40% of the frame's short edge (270–430 px tall on 1920 × 1080; up to 60% of the width on 9:16, centred at 40–45% of the height). Clear space on every side ≥ the mark's cap height, or the brand's own clear-space rule.
-- **Horizontal lockup** (symbol + name side by side): the whole lockup is 55–70% of the frame width, the wordmark's cap height is 0.3–0.4× the symbol's height, and the gap between symbol and name is about 0.25× the symbol's height (0.75–1× the cap height). Centre the lockup optically as one unit, not the symbol.
+- **Horizontal lockup** (symbol + name side by side): the whole lockup is 55–70% of the frame width, the wordmark's cap height is 0.3–0.4× the symbol's height, and the gap between symbol and name is about 0.25× the symbol's height (0.75–1× the cap height). Centre the lockup optically as one unit, not the symbol. When the ranges collide (a long name such as a 9-letter uppercase wordmark), **lockup width wins**: keep it at 55–70%, take the symbol to 25–28% of the short edge, and set the wordmark one weight heavier (500 rather than 400) so it holds its own beside a dense symbol. A tracking-close on the wordmark anchors at the edge nearest the symbol, so the letters never travel into the gap.
 - **Real geometry**: copy the SVG paths verbatim. Recolour only to the brand's documented variants (full colour, one-colour, reversed).
 - **Landing ease**: marks land on the **gentle spring** (no overshoot) over 14–20f, scale 0.72–0.9 → 1, or a long-tail ease-out (outQuart or outExpo). Pieces that must visibly arrive *on* the lock frame land with outCubic: a long tail reads as arriving several frames early. Overshoot (1.06, outBack c1 1.28) only when the user chose playful, and only on the lock.
 - **Wordmarks**: letters 1.4–2f apart, each 4–10f; or a tracking close from +0.32em to the final tracking over 15f outCubic while the letters fade up (Gojiberry's wordmark). An uppercase wordmark settles at +0.08 to +0.16em (sentence-case ones at −0.01 to −0.03em); sizes and kerning per `three-type`.
@@ -104,7 +104,7 @@ SMP: Small pieces, one system.
 Idea: We show the modular mark as tiles that roll into place like a slot machine settling.
 Style family: I brand identity loop — the mark is modular, the grid is the brand
 Energy curve: 3 (tiles idle) → hit 10 at frame 72 → 4 hold
-Sound: sfx-led — tile clicks 0.45 alternating lanes from frame 0, riser 0.55 from 42 to 72, impact 0.9 on 72 (≥8 dB over the riser's top), three-note chime from 74, tail to 135
+Sound: sfx-led (riser texture matched to the Feeling: a filtered or tonal swell for calm, a noise riser for energetic) — tile clicks 0.45 alternating lanes from frame 0, riser 0.55 from 42 to 72, impact 0.9 on 72 (≥8 dB over the riser's top), three-note chime from 74, tail to 135
 Memorable moment: 64–72 — the last three tiles land 3f apart and the wordmark locks on the hit
 
 ## Beats
@@ -159,13 +159,13 @@ Memorable moment: 64–72 — the last three tiles land 3f apart and the wordmar
 1. `capture-frames` on the lock frame and the last frame: the mark is exact (paths, colours, proportions match the file, or the stand-in is flagged in `VIDEO.md`), unclipped, with clear space ≥ its cap height.
 2. The symbol's larger dimension measures 25–40% of the frame's short edge on the lock frame; a horizontal lockup is 55–70% of the width and centred as one unit.
 3. The lock sits at 40–60% of the length; capture lock −1, lock, lock +1: the last piece arrives exactly on the lock frame.
-4. Motion has started by frame 15, and a strip of every 4th frame from 0 to the lock shows no run of more than 10f where nothing changes. The build is ≥30f with staggered moves; a Transform's precursor reads as itself on one full-resolution frame.
+4. Motion has started by frame 15, the subject is not shrinking through the anticipation, and a strip of every 4th frame from 0 to the lock shows no run of more than 10f where nothing changes. The build is ≥30f with staggered moves; a Transform's precursor reads as itself on one full-resolution frame.
 5. Capture every frame of the build (or a strip of every 2nd): no moving element crosses a visible word.
 6. The hold after the lock is ≥45f with exactly one ambient behaviour; consecutive held frames of the export have PSNR > 45 dB (`ffmpeg -i a.png -i b.png -lavfi psnr -f null -`): the creep is there, but no grain boils.
-7. Sample the export's background at the centre and the four corners on the lock frame: each within ±2 levels of the brand hex.
+7. Sample the export's background at the centre and the four corners on the lock frame: each within ±2 levels of the brand hex (the export's YUV conversion alone can move a dark hex 1–2 levels; if a sample sits at −2, check the source frame from `capture-frames` before blaming the look).
 8. The impact's onset is within 1 frame of the lock frame: compare the cue's start frame on the timeline with the lock constant the animation uses, then on the export's waveform.
 9. Sound on: no silence over 0.5 s from frame 0 (`silencedetect=noise=-50dB:d=0.5` reports no `silence_start: 0`); the impact's 10 ms RMS is ≥8 dB above the riser's last 100 ms and the riser has no dip over 6 dB.
 10. The tail decays to silence before the last frame of a loop; the loop's first and last frames match.
 11. Overlay version: the key colour appears nowhere inside the mark; the keyed file shows a clean edge over black and over white.
-12. `ebur128` on the export: true peak ≤ −1 dBTP (a sting is short, so integrated loudness reads unreliably; check the impact does not clip with `volumedetect`).
+12. `ebur128` on the export: true peak between −1 and −3 dBTP, so the impact is as loud as it can safely be (a sting is under 6 s, so integrated loudness is advisory here and `sound-design`'s ±1 LU rule does not apply; if the hit peaks below −3 dBTP, raise everything together). Audio and video streams are the same length (`ffprobe` both): pad the tail with silence rather than end the audio early.
 13. The `direction` self-critique passes (a sting's Hook is judged on motion by frame 15); `validate` passes.

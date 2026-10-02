@@ -38,7 +38,7 @@ ffprobe -v error -show_entries format=bit_rate,size -of default=nw=1 export.mp4
 ffprobe -v trace export.mp4 2>&1 | grep -o "type:'\(moov\|mdat\)'" | head -2
 ```
 
-Freezes that touch (one's end is the next one's start) are one hold: add them up.
+A flagged range is a dead hold only if a strip of every 4th frame across it confirms nothing visible changes: a thin mark moving on a flat field (a sting's needle, a small cursor) can sit under the threshold while clearly moving. For stings and anything with a small subject on a flat ground, use per-frame PSNR between neighbours instead (above about 45 dB for 10f+ is still). Freezes that touch (one's end is the next one's start) are one hold: add them up.
 
 ## 2. The checklist
 

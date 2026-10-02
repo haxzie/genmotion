@@ -184,7 +184,7 @@ Default delivery: **−14 LUFS integrated, −1 dBTP** for everything online (Yo
 ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af ebur128=peak=true -f null -
 ```
 
-If integrated loudness is off by more than 1 LU, scale every clip volume by the difference, or re-master the export with a two-pass `loudnorm` (`linear=true`, always `-ar 48000` or it outputs 192 kHz; the video stream is copied). Commands in `references/mix-and-loudness.md`.
+Pieces under about 6 s (stings, bumpers) are the exception: judge them by true peak (−1 to −3 dBTP) rather than integrated loudness. Otherwise, if integrated loudness is off by more than 1 LU, scale every clip volume by the difference, or re-master the export with a two-pass `loudnorm` (`linear=true`, always `-ar 48000` or it outputs 192 kHz; the video stream is copied). Commands in `references/mix-and-loudness.md`.
 
 ## SFX
 
