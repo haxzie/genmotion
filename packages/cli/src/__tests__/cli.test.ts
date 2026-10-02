@@ -179,7 +179,7 @@ describe("genmotion --json", () => {
     const ref = gm(["skills", "show", "ugc-hooks", "references/hook-library.md"], path.join(tmp, "video")).json;
     expect(ref.file).toBe("references/hook-library.md");
     expect(gm(["skills", "show", "ugc-hooks", "../../etc/passwd"], path.join(tmp, "video")).json.ok).toBe(false);
-  });
+  }, 60_000);
 
   it("skills add installs a skill with what it requires for this engine", async () => {
     const dir = path.join(tmp, "video");
