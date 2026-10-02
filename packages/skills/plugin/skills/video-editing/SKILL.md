@@ -7,6 +7,8 @@ description: "Editing footage the user supplies into a finished video: a podcast
 
 The user brings footage; you bring the editor's judgement. The work splits in two on purpose: **ffmpeg does the editorial** (what is kept, in what order, at what size, sounding how) and produces one conformed picture file plus one clean dialogue file; **the project does the motion layer** (captions, titles, lower thirds, b-roll, punch-ins, transitions, end card) on top of it. Then you render and measure. Every frame count below is at 30 fps unless it says otherwise; a 24 fps project (most film and cinema-style footage) multiplies frame counts by 0.8 and keeps every time in seconds as it is. Edited footage has no style family (`direction`): the footage is the look, and the format's reference file sets the graphics.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - The user supplies camera footage or a recorded conversation and wants it edited: "edit my podcast into clips", "cut a trailer from this footage", "turn my talking head video into a TikTok", "remove the ums", "add captions to my clip", "make Shorts from my long video".

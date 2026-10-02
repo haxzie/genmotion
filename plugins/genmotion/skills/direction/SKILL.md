@@ -9,6 +9,8 @@ An agent that goes straight from request to scenes makes the median video: every
 
 All frame numbers are at 30 fps. At 60 fps double them; at 24 fps multiply by 0.8 and round (`references/pacing.md` has the hold table at 24, 30 and 60 fps).
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - Every new video, right after the router's Step 0 (`VIDEO.md` check) and before picking an owner skill.

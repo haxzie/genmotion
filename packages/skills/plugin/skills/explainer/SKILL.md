@@ -7,6 +7,8 @@ description: "The explainer video: a concept, a process, a comparison or a piece
 
 An explainer answers one question the viewer actually has. Everything in it either moves the viewer toward that answer or gets cut. The craft is mostly restraint: one idea per scene, each piece of the diagram arriving when the voice names it, the same objects recurring until the answer is obvious. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the mix from `sound-design`.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - "Explain how our sync engine works", "how vaccines work", "types of databases in 60 seconds", "visualise this data", "break down this process step by step", "why X matters".

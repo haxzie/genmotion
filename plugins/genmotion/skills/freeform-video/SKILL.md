@@ -7,6 +7,8 @@ description: "The fallback when no other skill owns the request: a custom video 
 
 Most requests fit a format skill. When none does, this is the default: a short film planned from first principles, with one idea developed beat by beat, rather than improvised scene by scene. The risk in this skill is the median video (a centred title fading up, a gradient, a stock swell), so the first job is to find an idea worth building. Frames at 30 fps. Read `direction` first, then this; moves come from `motion-language`, the mix from `sound-design`.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - Search ranked nothing clearly above the rest, or the top owners are about something else.

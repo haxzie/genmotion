@@ -9,6 +9,8 @@ A presenter stands in front of something the viewer can read and argues with it.
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-craft` (moves, captions) and `ai-presenter` when a face is generated. Frames at 30 fps; positions on 1080×1920.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - The brief hands you a **thing on a screen that carries the claim**: a competitor's pricing page, a one-star review, a thread asking exactly the user's question, a search result full of bad answers, a chart going the wrong way, a support reply.

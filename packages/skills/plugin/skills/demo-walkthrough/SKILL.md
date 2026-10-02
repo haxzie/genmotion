@@ -7,6 +7,8 @@ description: "The longer product tour, 60 to 180 seconds, for a viewer who chose
 
 The one format in the pack aimed at a viewer who already opted in: they clicked play to learn how the product works. That changes the rules. The hook matters less than orientation; pacing follows the task, not a retention curve; narration may say what is about to happen. What does not change: one thing at a time, magnified until it reads, every step shown. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the mix from `sound-design`.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - Onboarding videos, a help-centre "how to", a sales-enablement or investor demo, a product tour of 60–180 s.

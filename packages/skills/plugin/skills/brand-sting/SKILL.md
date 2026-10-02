@@ -7,6 +7,8 @@ description: "The logo sting, bumper, ident or brand reveal: 2 to 8 seconds, no 
 
 The shortest thing in the pack and the least forgiving: one mark, arriving well or badly, in a few seconds, with nothing to hide behind. A sting is half motion and half sound; the hit has to land on the frame the mark locks. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the sonic logo from `sound-design`.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - "Logo animation for our brand", an intro or outro bumper, a channel ident, a reveal for an event screen, a looping lockup.

@@ -7,6 +7,8 @@ description: "Funding rounds, ARR, GitHub stars, user and download counts, acqui
 
 A milestone video has no demo. The number is the content, and everything here exists to make one number land with weight, then say thank you. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the mix from `sound-design`.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - "We hit 10k GitHub stars", "celebrate our star count", "announce our Series B", "500,000 installs", "$10M ARR", "we got acquired".

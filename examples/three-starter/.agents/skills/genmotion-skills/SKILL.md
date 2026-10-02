@@ -7,6 +7,8 @@ description: "The router for GenMotion's creative pack: start here for any new v
 
 This pack says **what the video should be**: the idea, the format, the beat sheet, the motion and the sound. Your project's own authoring rules (its AGENTS.md) say how a scene is built. This skill is the router between the two.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - Any new video request, before planning anything.

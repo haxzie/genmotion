@@ -9,6 +9,8 @@ Problem, agitation, solution. The oldest shape in direct response and still the 
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-scripting` (PAS), `ugc-craft` (moves, captions) and `sound-design`. Frames at 30 fps; positions on 1080×1920.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 - The brief names a pain, a frustration, "people struggle with", or a competitor's shortcoming.

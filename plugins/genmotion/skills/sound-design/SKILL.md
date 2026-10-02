@@ -9,6 +9,8 @@ Half of what a viewer reads as "polish" is sound arriving on the right frame at 
 
 Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (the beat grid has its own 24 fps column). Times in seconds and milliseconds hold at any rate.
 
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+
 ## When to use
 
 Load it for any video that will have audio: motion promos, launches, explainers, brand stings, UGC and social ads, and edited footage (podcast clips, talking heads, trailers, Gen Z edits). Load it again when a user says the music is too loud, the voice is buried, the cuts feel off the beat, or the export is quiet or distorted.
