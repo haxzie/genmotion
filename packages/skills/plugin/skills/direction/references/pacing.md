@@ -97,7 +97,7 @@ Margins are the area that must hold every word, logo and face the viewer needs. 
 | TikTok in-feed | 13% (250 px) | 37% (710 px) | 11% (120 px) | 22% (240 px, the like/comment/share column) |
 | YouTube Shorts | use the TikTok margins as the safe superset | | | |
 
-- **One rule for all three**: keep everything readable inside x 120–840, y 270–1210. That is the TikTok right column plus the Reels top band plus the TikTok bottom band.
+- **One rule for all three** (unknown or multi-platform placement; a single named platform uses its own row above): keep everything readable inside x 120–840, y 270–1210. That is the TikTok right column plus the Reels top band plus the TikTok bottom band.
 - The hook line goes just below the top band (y 270–450). Offers and CTAs go centre or centre-left, never bottom-right.
 - Captions in vertical ads sit about 58–63% down the frame (caption block inside y ≈ 1110–1210), above the bottom UI band and below a face.
 - If the video also ships outside the platforms (a site, a store), the margins still do no harm.
