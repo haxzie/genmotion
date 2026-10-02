@@ -1,74 +1,167 @@
 ---
 name: three-look
-description: "The look of a Three.js video: lighting setups (product, dramatic, soft, neon), backgrounds and fog, palettes with one accent, materials that read on camera, glow and grain built from planes and shaders, and how to keep the look consistent across scenes. Load it when a Three.js scene looks flat, muddy, dark or cheap, or when setting the visual direction for a new video."
+description: "Building the look of a Three.js video: the colour pipeline (output colour space, which tone mapping for brand products versus cinematic scenes, what must opt out so brand hexes stay exact), a studio environment built from core three so metal and gloss read, lighting setups with intensities (product, neon, dramatic, soft, flat), materials that read on camera, a clip-space backdrop with radial lift, grain and vignette, glows, fog, banding, and line art that draws on and erases. Load it when setting a film's look, or when a Three.js frame looks flat, muddy, washed out, banded or cheap."
 ---
 
-# The look of a Three.js video
+# The look on Three.js: the how behind the style family
 
-A scene can be built correctly and still look amateur. Almost always it is the lighting, then the palette, then too many materials. This skill is the short list of setups that work.
+`direction` picks the style family and writes the palette into the Direction block (`references/style-families.md` there has each family's colours, type and finish). This skill turns that into a renderer, lights, materials and a background that look finished, the way GenMotion's 3D templates do. The most common reasons a Three.js frame looks cheap are, in order: the colour pipeline (washed-out brand colours, muddy darks), no environment for glossy materials, a flat fill behind the subject, and too many materials.
+
+Everything lives in one `components/look.ts`. Code: `references/color-and-light.md` (pipeline, environment, lights, materials), `references/backdrops-and-finish.md` (backdrop shader, glow, fog, grain, banding), `references/line-art.md` (strokes that draw on and erase). All of it compiles against three r185 and was checked on captured frames.
 
 ## When to use
 
-- Setting the visual direction at the start of a video.
-- A captured frame looks flat, muddy, too dark or plasticky.
-- Scenes look like they came from different videos.
+- Setting the visual build of a new Three.js film, right after the Direction block.
+- A frame looks flat, plasticky, too dark, muddy, washed out, or the brand colour looks wrong.
+- Metal renders black, gradients band in the export, or scenes look like different films.
+- A whiteboard, diagram, underline or gauge needs lines that draw themselves.
+
+Not for: choosing the family or palette (`direction`), type (`three-type`), camera (`three-camera`).
 
 ## One look file
 
-Put the palette, lights and shared materials in `components/look.ts` and import them everywhere:
-
 ```ts
-export const PALETTE = {
-  bg: "#07070c",
-  surface: "#14141c",
-  text: "#f4f4f7",
-  muted: "#8b8b99",
-  accent: "#c6f91e",
-} as const;
+export const LOOK = {
+  bg: "#07070c", bgLift: "#151826",          // ground + the same hue a few steps lighter
+  text: "#ededef", muted: "#8a8a93",         // 17:1 and 5.8:1 on the ground
+  accent: "#6e7bff",                          // the one brand colour: fills, glows, one word
+  exposure: 1.0,
+};
 ```
 
-One accent colour. Everything else is neutral. If the brand has colours, the accent is the brand colour and the rest stays neutral around it.
+- **One accent.** Everything else is neutral, tinted a degree toward the accent hue so the frame feels designed rather than grey. A second "punch" colour appears on exactly one word in the film's most important line.
+- The bright accent never carries small text; it is for fills, rays, glows and display type.
+- Contrast for words: ≥ 4.5:1 under 60 px, ≥ 3:1 at 60 px and above. On near-black, `#8a8a93` is the dimmest text allowed; on white, `#5e606a` (≈6:1). Text on footage or a glow sits on a scrim (0.45–0.65 opacity).
 
-## Lighting setups
+## The colour pipeline (decide it first)
 
-| Setup | Lights | Use for |
+The renderer is shared by every scene in the film, so **every scene** calls `colorPipeline(renderer, mode)` first; a scene that doesn't inherits the previous scene's settings.
+
+| Mode | Tone mapping | Pick it for |
 | --- | --- | --- |
-| **Product** | Key `DirectionalLight` 2.5–3.5 front-left high; fill 0.8–1.2 front-right low; rim 2–3 from behind; ambient 0.3 | Devices, logos, hero objects |
-| **Soft** | `HemisphereLight` (sky light, ground slightly darker) at 1.5 plus a weak key | Friendly explainers, pastel palettes |
-| **Dramatic** | One strong key from the side, ambient 0.1, dark background | Reveals, launches, serious tone |
-| **Neon** | Dark scene, no ambient, coloured `PointLight`s near the subject, emissive materials on key shapes | Tech, gaming, night |
+| `brand` | `NeutralToneMapping` | 3D products and marks in a brand colour: hue survives (measured: a lime mark stays lime) |
+| `cinematic` | `ACESFilmicToneMapping` | Night, drama, music video, where rolled-off highlights are the look (measured: the lime mark goes pale yellow; a flat `#6e7bff` fill shifts to `#8389e3`) |
+| `flat` | none | Films with nothing lit: kinetic type, UI, whiteboard, 2D compositors |
 
-A rim light from behind is what separates a subject from a dark background. Add one before you brighten anything else.
+- Output colour space sRGB; colour textures sRGB; data textures not.
+- **Opt out of tone mapping** (`toneMapped: false`, or a `ShaderMaterial`) for type, UI, screenshots, footage, flat logos, floods, wipes and flashes: anything that must hit an exact hex. A flood that is a few levels off the next scene's background flickers at the cut.
+- Exposure 0.9–1.2; fix brightness with exposure before adding lights.
 
-## Backgrounds and depth
+## Lights and environment
 
-- Set `scene.background` explicitly. The canvas is transparent.
-- Add `THREE.Fog` in the background colour so floors and far objects fade instead of ending in a hard line.
-- A large, dim gradient plane far behind the subject (a `CanvasTexture` of a radial gradient) gives depth for free.
-- Three depths: background, subject, a little foreground. A flat line-up of objects at one distance looks like a slide.
+| Setup | Recipe (`references/color-and-light.md` §4) | Families |
+| --- | --- | --- |
+| Product | `studioEnvironment()` + key 2.2 / fill 0.9 warm / rim 1.2 / ambient 0.5 | 3D product hero, brand sting |
+| Night / neon | ambient 0.7 violet, key 2.8, cyan rim 1.6, pink fill 1.2, fog | Music video, tech |
+| Dramatic | one side key 3–4, rim 2, ambient ≤ 0.15, dark room env | Reveals |
+| Soft | hemisphere 1.5 + weak key | Friendly explainers |
+| Flat | no lights; everything unlit | Type, SaaS UI, chat, whiteboard |
 
-## Materials that read
+- `studioEnvironment()` builds a grey room with four softbox panels and prefilters it with PMREM, once, in the builder: **metal and gloss without an environment render black or plastic.** This is the single biggest upgrade for any 3D object.
+- A rim light from behind separates a subject from a dark ground; add it before brightening anything.
+- Same light direction in every scene of the film.
 
-- `MeshStandardMaterial` with `roughness` 0.3–0.6 for most things. Fully glossy (0) or fully rough (1) both look cheap without an environment map.
-- `metalness` above 0.5 needs something to reflect. Without an environment, metal goes black. Keep it low unless you build a `PMREMGenerator` environment from a simple scene in the builder.
-- Reuse a handful of material instances. Twenty slightly different greys read as noise.
-- Emissive colour (`emissive` plus `emissiveIntensity`) is the cheap way to make an accent glow.
+## Materials
 
-## Glow and grain
+Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness 0.25–0.35, clearcoat 1. Polished metal: metalness 1, roughness 0.18–0.3, needs the environment. Matte: `MeshStandardMaterial` roughness 0.45–0.6. Type and UI: never lit (`three-type`). Extruded marks in three tones of the brand colour (face, bevel, side), with a bevel of 1–1.5% of their width. Reuse a handful of material instances across the film.
 
-- **Glow:** a soft radial-gradient `CanvasTexture` on a plane behind the object, additive blending (`blending: THREE.AdditiveBlending`, `depthWrite: false`). No post-processing pass is needed or available.
-- **Grain:** a full-screen plane in front of the camera with a `ShaderMaterial` that hashes UVs plus the frame number into noise at very low opacity. Seed it from `frame`, which keeps it deterministic.
-- **Vignette:** the same full-screen plane, darkening toward the edges.
+## Background, glow and finish
+
+- **Never a flat fill behind a subject.** The clip-space `backdrop()` gives a radial lift behind the subject, a 0.25–0.35 vignette and 1–2% grain that changes per frame, in one draw that ignores the camera.
+- **Glow** is an additive sprite with a soft radial texture behind one subject, breathing 1.2–2.2% at 0.2 Hz; no post-processing is available or needed.
+- **Fog** in the background colour so floors and far objects fade instead of ending in a line.
+- **Banding**: H.264 bands smooth dark gradients. Prefer radial lifts to linear gradients on dark grounds, keep the range small, and keep grain on.
+- Three depths per frame: background, subject, a little foreground.
+
+Family-by-family finish (paper, HUD, film overlay, dither): `references/backdrops-and-finish.md` §6.
+
+## Line art
+
+Diagrams, underlines, gauges and the whole whiteboard family use one ribbon whose vertices carry their position along the stroke; two uniforms (`uReveal`, `uErase`) draw it on and erase it back along its own path. Hand-drawn wobble comes from a seeded hash per line, two passes per stroke. Code and the board timing grammar: `references/line-art.md`.
+
+## Building a look, step by step
+
+1. Copy `LOOK` from the Direction block's palette. Pick the pipeline mode from the table.
+2. Add `colorPipeline`, `scene.background = LOOK.bg`, and `backdrop()` to every scene.
+3. If anything is lit: `studioEnvironment()` and the family's light setup, in a shared function every scene calls.
+4. Build the subject with at most three materials. Opt type, UI and cover layers out of tone mapping.
+5. Capture one frame per scene; compare them side by side before moving on.
+
+## A complete product look
+
+The 3D product hero set: brand tone mapping, the studio environment, the product lights, a lifted backdrop with grain, one glow, and an extruded mark in a glossy physical material. Compiled and captured; the lime holds.
+
+```ts
+import * as THREE from "three";
+import type { ThreeSceneContext, ThreeSceneUpdate } from "@genmotion/three-engine";
+import { fitCamera, PX } from "../components/stage";
+import { backdrop, colorPipeline, glow, glowTexture, LOOK, productLights, studioEnvironment } from "../components/look";
+import { extrudedMark } from "../components/logo";       // three-assets
+import { MARK_D } from "../components/brand";
+import { inOutSine, prog } from "../components/ease";
+
+export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
+  const { scene, camera, renderer, width, height, durationInFrames: D } = ctx;
+  colorPipeline(renderer, "brand", 1.0);                 // every scene, first
+  fitCamera(camera, height);
+  scene.background = new THREE.Color(LOOK.bg);
+  const bg = backdrop(width / height);
+  scene.add(bg.mesh);
+  studioEnvironment(renderer, scene);                    // gloss and metal need something to reflect
+  productLights(scene);
+  const mark = extrudedMark(MARK_D, 420, 70, new THREE.MeshPhysicalMaterial({
+    color: LOOK.accent, metalness: 0.2, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.15,
+  }), "hero-mark");
+  const halo = glow(glowTexture(), LOOK.accent, 7, "hero-glow");
+  halo.position.z = -1;
+  scene.add(halo, mark);
+  return ({ frame, time }) => {
+    bg.u.uFrame.value = frame;                           // grain varies per frame
+    mark.rotation.set(0.12, -0.45 + 0.6 * prog(frame, 0, D, inOutSine), 0); // 34 degree turn over the scene
+    halo.material.opacity = 0.5 + 0.1 * Math.sin(time * 2 * Math.PI * 0.2);  // breathe at 0.2 Hz
+    mark.position.y = 3 * PX * Math.sin(time * Math.PI * 0.5);               // float 3 px at 0.25 Hz
+  };
+}
+```
+
+## Look by style family
+
+| Family (`direction`) | Pipeline | Lights / env | Background |
+| --- | --- | --- | --- |
+| Beat-cut kinetic type | flat | none | Solid black or white; no grain |
+| Soft-light SaaS | flat | none (UI is unlit) | White/creme with a 3–5% radial lift |
+| 3D product hero | brand | product + studio env | White or near-black, lift, 1% grain, one glow |
+| One-shot film | flat | none | The world itself; 8% grain overlay, vignette 0.28 |
+| Chat-UI social | flat | none | The app's own colours, pixel-faithful |
+| Whiteboard | flat | none | Paper white; strokes are the texture |
+| Textured tactile | flat or cinematic | dramatic, if anything is lit | Dark HUD panels, dither, pixel-block wipes |
+| Music video | cinematic | night/neon, fog | Night gradient, film overlay with grain and vignette |
+| Brand guide | brand or flat | product for the 3D mark | The brand's own colour fields |
+| Milestone | flat or brand | product if the number is 3D | Dark, a glow behind the number |
+
+## Anti-patterns
+
+- **A different `toneMapping` (or none set) per scene**: the film changes colour at a cut.
+- **Brand colour through ACES**: the client's lime turns lemon. Use `brand` mode.
+- **Glossy metal with no environment**: black blobs.
+- **Ten slightly different greys**, or a material per mesh.
+- **Pure black (#000) grounds and pure white (#fff) type on them**: harsh and banding-prone; use `#07070c`–`#0b0b0c` and `#ededef`.
+- **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; grain at 1–2%.
+- **Text on a busy area without a scrim.**
 
 ## Requirements
 
 | Need | What | Fallback when it is missing |
 | --- | --- | --- |
-| Judging the look | `capture-frames`, one frame per scene | None. Lighting is only judged by looking |
+| Judging the look | `capture-frames`, one frame per scene, side by side | None: a look is judged by looking |
+| Palette and family | `direction` (Direction block) | Neutral ground + the brand's one colour as accent |
+| Brand colours from a site | `web-research` | Ask the user for hex values |
 
 ## Checks before you finish
 
-1. `capture-frames` on one frame per scene and compare them: same palette, same light direction, same background family.
-2. Nothing important is pure black or blown out to white.
-3. Text sits on a calm area with enough contrast. Fade or darken what is behind it if not.
-4. `validate` passes.
+1. Every scene calls `colorPipeline` and sets `scene.background`; one captured frame per scene, side by side, shows one palette, one light direction, one background family.
+2. The brand colour in a capture matches its hex within a couple of levels on flat fills, floods and logos (sample a pixel).
+3. Nothing important is pure black or clipped white; metal shows reflections, not black.
+4. Every line of text clears 4.5:1 (3:1 at ≥ 60 px) against what is actually behind it in the frame.
+5. A dark gradient frame from the export shows no visible steps.
+6. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.

@@ -1,14 +1,15 @@
 {
   "id": "three-camera",
-  "title": "Camera moves (Three.js)",
-  "description": "Camera language for Three.js scenes: push-ins, pull-backs, orbits, dolly-and-track, parallax layers, rack-focus by depth, path moves along a curve, and punch-in emphasis, each written as a pure function of the frame. Also how to frame a subject exactly for any aspect ratio and how to hand a camera move across a cut. Load it when a Three.js scene needs the camera to do something, or when a format skill asks for a punch-in, a zoom or a reframe.",
-  "summary": "Push-ins, orbits, path moves and punch-ins for Three.js scenes, framed exactly for any aspect.",
+  "title": "Camera (Three.js)",
+  "description": "Camera craft for Three.js scenes: a stage where 1 world unit is 100 composition px so sizes are exact in every aspect, a shared ease module (house curves, monotone spline, log-space zoom, drift that returns to rest), and recipes for push, pull, punch-in, orbit, keyed one-shot paths, curve fly-throughs, parallax, shake and fov punch, match-push into the next scene and carrying a move across a cut at speed. Load it when a Three.js scene needs the camera to do anything, or a subject must fill the frame exactly.",
+  "summary": "Exact framing in px, house curves and spline, and push, punch, orbit, keyed paths and matched cuts on a real camera.",
   "kind": "technique",
   "category": "Craft",
   "tags": [
     "camera",
     "threejs",
-    "motion"
+    "motion",
+    "framing"
   ],
   "aspects": [
     "16:9",
@@ -28,6 +29,13 @@
       "kind": "capability",
       "id": "capture-frames",
       "why": "A camera move is only checked by looking at its start, middle and end."
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "models": [],
@@ -37,12 +45,22 @@
     "fly the camera through the scene",
     "punch in on the key line",
     "the subject is too small in vertical",
-    "camera glides over the dashboard"
+    "the camera stops at every keyframe",
+    "zoom into the screen and cut to the app"
   ],
-  "templates": [],
+  "templates": [
+    "samsung-pay-fintech-app-launch-video",
+    "fintech-app-launch-video",
+    "p-doom-music-video",
+    "notchbrowser-app-launch-video",
+    "crypto-launch-video",
+    "moonlight-app-launch-video",
+    "types-of-databases",
+    "x-numbers-launch-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🎥"
 }
