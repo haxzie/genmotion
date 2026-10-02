@@ -85,6 +85,22 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     shell: null,
     fallback: "place sound files the user provides with `place-audio`, or leave the moment silent",
   },
+  music: {
+    label: "A music bed or score: generated, or found under a licence that allows the use",
+    desktop: null,
+    mcp: null,
+    shell: null,
+    fallback:
+      "use a track the user provides; or generate one through a connected music service (ElevenLabs, or Replicate/fal models) — offer it with `recommend-integration`; or find a CC0 or attribution-licensed track with `web-research`, fetch it with `save-asset` and credit it. Place it with `place-audio`. With none of these, carry the video on sfx and silence rather than an unlicensed song",
+  },
+  transcribe: {
+    label: "Words with timestamps from speech, for cutting footage by what is said",
+    desktop: null,
+    mcp: null,
+    shell: null,
+    fallback:
+      "run a local Whisper (`whisper-cli`/`whisper.cpp` or `whisper` with word timestamps) if your shell has one, or a connected speech-to-text service; otherwise cut on silences found with `ffmpeg` (`silencedetect`) and ask the user for the words that matter",
+  },
   "place-audio": {
     label: "Put music, narration or an effect on the timeline (`project.json`'s `audio`)",
     desktop: "an entry in `project.json`'s `audio` array (unique `id`, `file`, `track` 0-3, `startFrame`, `durationInFrames`, `volume`, fades)",

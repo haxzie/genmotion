@@ -44,6 +44,7 @@ export const SKILL_CATEGORIES = [
   "Social",
   "Brand",
   "Explainer",
+  "Editing",
   "Craft",
 ] as const;
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
@@ -104,6 +105,10 @@ export const SKILL_CAPABILITIES = [
   "voiceover",
   /** Whooshes, clicks, ambience. */
   "sfx",
+  /** A music bed or score: generated, or found under a licence that allows the use. */
+  "music",
+  /** Words with timestamps from speech, for cutting footage by what is said. */
+  "transcribe",
   /** Put a sound on the timeline: music, narration, effects. */
   "place-audio",
   /** Rank the skill pack against a request. */
