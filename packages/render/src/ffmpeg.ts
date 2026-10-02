@@ -278,12 +278,13 @@ export async function muxAudio(input: {
   });
 
   const labels = sources.map((_, i) => `[a${i + 1}]`).join("");
-  // A partial render takes the slice of the mix that plays under it.
+  // A partial render takes the slice of the mix that plays under it. `apad` then runs the mix out to
+  // `-t` with silence, so an audio track whose last clip ends early still matches the picture.
   const window_ = offsetSec > 0 ? `,atrim=start=${offsetSec.toFixed(3)},asetpts=PTS-STARTPTS` : "";
   await runFfmpeg([
     ...inputs,
     "-filter_complex",
-    `${filters.join(";")};${labels}amix=inputs=${sources.length}:duration=longest:normalize=0${window_}[aout]`,
+    `${filters.join(";")};${labels}amix=inputs=${sources.length}:duration=longest:normalize=0${window_},apad[aout]`,
     "-map", "0:v",
     "-map", "[aout]",
     "-c:v", "copy",
