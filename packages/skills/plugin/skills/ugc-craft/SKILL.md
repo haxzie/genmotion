@@ -51,7 +51,7 @@ Zoom interpolates in log space (`motion-language` → `references/easing.md`), c
 
 ## Captions: the one spec
 
-Captions are not optional: the feed is muted by default, and every spoken line is on screen. This is the caption spec every UGC skill cites.
+Captions are not optional: the feed is muted by default, and every spoken line is on screen. This is the pack's one spec for **word-timed captions over footage or a busy picture in a social feed**: every UGC skill and `video-editing` cite it, and `three-type`'s calmer caption numbers are for editorial and explainer captions on designed frames. Its heavy weight and stroke are the one sanctioned exception to the house type rule (weight ≤500, no outlined text), because these captions must read over a moving picture at phone size.
 
 | Property | Value | Why |
 | --- | --- | --- |
@@ -61,7 +61,8 @@ Captions are not optional: the feed is muted by default, and every spoken line i
 | Entrance | 4f pop, scale 0.9 → 1, outCubic; no fade-in, no slide | Matches `motion-language`'s two-frame pop family; anything slower reads as a title |
 | Active word | One highlight colour, plus a 1.1 scale pop over 4f on the stressed word only | One emphasis per group, one highlight colour per ad |
 | Size | 76–96 px at 1080 wide (Bold caption up to 110) | Readable at arm's length on a phone |
-| Weight and case | Heavy sans 700–900; sentence case, or ALL CAPS for Bold caption | |
+| Weight and case | Heavy sans 700–900; sentence case, or ALL CAPS for Bold caption | The house rule's one exception (above) |
+| Font | A face you ship and load: Inter's variable woff2 (covers 100–900) or the brand face, loaded with `three-type`'s `withFonts` before any caption texture is drawn | A family name alone silently falls back to a default sans in the export |
 | Stroke | 8 px black stroke (6–10), no drop shadow | A shadow vanishes on a busy frame; a stroke does not |
 | Position | One line centred at y 1160 on 1080×1920 (inside y 1110–1210); two lines grow upward to y 1040; never over the mouth or the line being read | `ugc-ad-foundations` shared numbers |
 | Text | Captions trim filler the voice says ("so I, uh, tried it" → "I tried it") but never change meaning | |
@@ -95,7 +96,7 @@ At most 2 SFX at once and none over a word that carries the claim; 3–8 cues pe
 
 ## Music
 
-- **A bed, not a soundtrack.** 0.12 (−18.4 dB) under VO; 0.5–0.6 when only SFX share it; 1.0 when it is the only thing. Instrumental only under any voice. Normalise the source first (`sound-design`).
+- **A bed, not a soundtrack.** Under a voice, `sound-design`'s bed row: 0.1–0.2, sitting 14–20 LU under the voice; 0.12 (−18.4 dB) for a dense track, up to 0.18 for a sparse one. 0.5–0.6 when only SFX share it; 1.0 when it is the only thing. Instrumental only under any voice. Normalise the source first (`sound-design`).
 - **Cut to it.** If there is a bed, hard cuts land on its beats; pick a tempo with whole frames per beat (90, 100, 120 or 150 BPM at 30 fps).
 - **Trend audio does not survive an export.** A trending sound is a platform-side attachment with platform-side licensing. Score with a licensed or generated bed (`music`, or `sound-design`'s ladder) and tell the user they can swap to a trending sound in the platform's editor; never rip one into the file.
 - **Drop it for the line that matters.** Cutting the bed under the single most important line is stronger than any SFX.
@@ -114,7 +115,7 @@ The last pass, and the one that decides whether it reads as a person or a render
 
 - **Bad**: every line gets a zoom, alternating in and out, plus a whoosh. **Good**: two punch-ins in 30 s, on the price and the result, each with nothing else moving.
 - **Bad**: a four-word caption fading in over 12f at the bottom of the frame. **Good**: two-word groups popping on each word's start frame at y 1160, hard-killed when the next group starts.
-- **Bad**: the music at 0.4 under the VO because "it's a good track". **Good**: 0.12 under the VO, back to 0.5 under the product moment, cut entirely for the CTA line.
+- **Bad**: the music at 0.4 under the VO because "it's a good track", or at 0.05 where nobody hears it. **Good**: 0.12 under the VO, back to 0.5 under the product moment, cut entirely for the CTA line.
 
 ## Requirements
 
@@ -133,5 +134,5 @@ The last pass, and the one that decides whether it reads as a person or a render
 3. Count the moves: eased punch-ins ≤4 per 30 s and ≥60f apart; no jump zoom followed by another zoomed shot.
 4. `capture-frames` at the start and end of each focus push: the target's text is ≥34 px at the end, and the caption did not move.
 5. Measure the export with `ffmpeg` (`ebur128=peak=true`): −14 LUFS ±1, true peak ≤ −1 dBTP; the first 0.1 s is not silent.
-6. Listen at every VO line: the bed clip is 0.12, and the claim line is clear.
+6. At every VO line the bed clip is within `sound-design`'s bed row (0.1–0.2 on normalised sources, 14–20 LU under the voice), and the claim line is clear.
 7. Then run `ad-qa`.

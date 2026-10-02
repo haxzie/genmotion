@@ -36,7 +36,11 @@ The export sums every clip with `amix normalize=0` and **no limiter or loudness 
 
 Make these before generating or fetching any audio, and write the answers into `VIDEO.md` under the Direction's sound plan.
 
-1. **Music or not.** Music-led promo (track at 1.0, no VO), VO-led (bed under VO), SFX-led (no music, dense literal sound), or speech only (podcast, talking head: no music under talk). Follow the `direction` energy curve: the track's build and drop must sit where the curve peaks.
+1. **Music or not.** Pick one mode and write it down, because the levels and who decides the cuts follow from it:
+   - **Music-led** (no voice: a promo, a text-led explainer, a music-led Gen Z edit): the track at 1.0 is the film. The music decides the cuts. Find its drop or dropout and put it on the film's breath, and its return on the peak frame (`direction`'s energy curve).
+   - **VO-led** (generated narration): a bed under the voice, per the ladder below. The voice decides the timing.
+   - **Over speech** (edited footage: talking head, podcast clip, UGC talk, a Gen Z edit of someone talking): the speech decides the cuts, because a beat-grid cut would land mid-word. The bed sits under the voice per the ladder, and drops to silence under the hook line and the payoff.
+   - **SFX-led** (no music, dense literal sound) or **speech only** (a full podcast episode: no music under talk).
 2. **Sync points.** List the 3–7 moments that matter: frame 1, the hook, the reveal, the logo, the CTA. For each pick one treatment: music event (drop, downbeat, button), `sfx`, silence, or nothing.
 3. **SFX density.** Literal (≈1 cue per second, every event makes a sound), punctuated (0.25–0.5/s, hero moments plus consistent cut treatment), or minimal (1–3 cues in the whole film, VO carries it).
 4. **VO.** Is there narration, whose voice (`pick-voice`, `voiceover`), and does it start +3 to +8 frames after each cut (house median +6) so the eye lands before the ear?
@@ -58,7 +62,8 @@ Most feeds autoplay muted. Captions and on-screen type must carry the meaning; s
 | Brand sting | a 2–4 s motif or riser into a hit | n/a | one gesture ending on a button |
 | UGC / social ad | trend-adjacent pop, hip-hop, house | 95–130 | energy on frame 1, then loop |
 | Trailer / teaser | hybrid orchestral, pulses, braams | 60–90 rising to 120–140 | three acts, silence, title hit |
-| Gen Z edit | phonk, drill, sped-up | 130–160 (or 65–80 half-time) | cut every beat or half bar |
+| Gen Z edit, music-led (no speech) | phonk, house, drill | 130–160 (or 65–80 half-time) | cuts on beats or half bars, not every beat for 30 s |
+| Gen Z edit over speech | lo-fi, house, phonk under talk | any | speech decides the cuts; the bed sits under it |
 | UI demo | minimal tech, soft house | 100–120 | steady, room for clicks |
 | Emotional brand film | piano, strings, ambient | 60–90 | one slow swell, long tail |
 
@@ -100,6 +105,7 @@ Cutting rules:
 - **Risers end exactly on the drop frame**, 1, 2 or 4 bars long.
 - **Edit the track only at phrase boundaries**, downbeat to downbeat, with a 30 ms crossfade (longer only for pads and tails). **Back-time the ending**: put the track's real button on the film's last frame first, then join from an earlier phrase. The button lands on the logo or CTA and the tail rings 1–3 s over the end card.
 - **Cue in with `startFrom`** so the first audible frame is a downbeat or a strong section, not the track's quiet intro (one house template starts its track at 17.05 s for exactly this).
+- **Peak alignment vs back-timing.** With one unedited stretch of a track you can land its drop on the peak frame *or* its button on the last frame, not both. The peak wins (it is the memorable moment). Then either edit the track (join from the drop's phrase to a phrase that ends on the button: the recipe below), or end on a 30–45 f fade on a bar line while the picture holds. A library track with no drop: search the onset dump below for a natural dropout followed by a hit, and cue the track so that hit lands on the peak frame.
 
 Edit to length with `ffmpeg` (inline, nothing saved as a script):
 
@@ -119,14 +125,15 @@ Each 10 ms row has a `pts_time` and an RMS level. Onsets are rows where the leve
 
 ### Level ladder
 
-These are the house levels from our templates, with each source normalised first (below) so the gains mean the same thing every time.
+These are the house levels, with each source normalised first (below) so the gains mean the same thing every time. **This is the pack's one level table**: owner skills cite it rather than carry their own bed numbers.
 
 | Layer | `volume` | dB | Why |
 |---|---|---|---|
-| VO | 1.0 | 0 | the anchor; nothing else wins against it |
-| Music alone (no VO, no SFX) | 1.0 | 0 | the track is the film |
+| VO or recorded speech | 1.0 | 0 | the anchor; nothing else wins against it |
+| Music alone (no voice): music-led promo, text-led explainer, music-led Gen Z | 1.0 | 0 | the track is the film; drop it on the breath, bring it back on the peak |
 | Music under SFX only | 0.5–0.6 | −6 to −4.4 | leaves room for hits |
-| Music bed under VO | 0.14–0.28 | −17 to −11 | 0.18 (−15 dB) is the default; speech-only formats go to 0.1 (−20) |
+| **Music bed under any voice** | **0.1–0.2** | **−20 to −14** | default 0.18 (−15) for a sparse bed under generated VO; 0.12 (−18) for a dense track (drums, bright synths) under recorded speech; a dense track low-passed at 6–8 kHz can sit at 0.16–0.2 |
+| Podcast clip | none, or 0.1 | −20 | talk carries it |
 | UI clicks / taps | 0.8–1.0 | −2 to 0 | short and bright, they cut through |
 | Impacts / slams | 0.7–0.85 | −3 to −1.4 | felt, not louder than VO |
 | Whooshes | 0.5–0.7 | −6 to −3 | air, not a hit |
@@ -136,6 +143,8 @@ These are the house levels from our templates, with each source normalised first
 
 `gain = 10^(dB/20)`; halving is −6 dB, ×0.7 is −3 dB. Full table in `references/mix-and-loudness.md`.
 
+**The bed rule, as a measurement:** the bed sits **14–20 LU under the voice**. More than 20 LU down is inaudible on a phone speaker (a −21 LU bed was judged "no music" in testing); less than 14 starts to mask consonants. With both sources normalised to −16 LUFS the gap is simply `−20·log10(volume)` (0.1 → 20, 0.12 → 18.4, 0.18 → 15, 0.2 → 14); with un-normalised sources it is `voice LUFS − (bed LUFS + 20·log10(volume))`. Low-pass a busy bed under talk (`lowpass=f=7000` when you normalise it) rather than burying it.
+
 **Normalise sources first**, because generated and library files arrive anywhere from −8 to −30 LUFS and a `volume` on an unknown file means nothing. VO and music to −16 LUFS, SFX to a −3 dBFS peak:
 
 ```
@@ -144,9 +153,11 @@ ffmpeg -i assets/vo-raw.mp3 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 48000 assets/v
 
 For an SFX, read `max_volume` from `ffmpeg -i in.wav -af volumedetect -f null -` and apply `volume=<−3 minus that>dB`.
 
+**One dense track that must carry the film alone** (music-led, no other clips) often cannot reach −14 LUFS by `volume` without its peaks passing −1 dBTP, and the export has no limiter. Pre-master the cued section with a two-pass `loudnorm` to `I=-14:TP=-1.5` (it may report `dynamic`, which is light limiting and fine here), then place it at 1.0. Commands in `references/mix-and-loudness.md`.
+
 ### Ducking
 
-House default: **no ducking**, a constant bed at 0.14–0.28 under VO. Duck only when the bed should come up to about 0.8 between lines (pauses of 1.5 s or more). Duck per sentence, never per word, or it pumps.
+House default: **no ducking**, a constant bed per the ladder (0.1–0.2) under the voice. Duck only when the bed should come up to about 0.8 between lines (pauses of 1.5 s or more). Duck per sentence, never per word, or it pumps.
 
 - **Split the bed** into clips at VO phrase boundaries on alternating lanes 1 and 3, overlapping 4–8 frames, fading down over 4–8 frames and back up over 10–20.
 - **Pre-render a ducked bed** with `ffmpeg` `sidechaincompress` (ratio 4–10, attack 20–80 ms, release 300–1000 ms) keyed by the VO laid out at its timeline positions; place the result at 1.0. Recipes in `references/mix-and-loudness.md`.
@@ -167,7 +178,7 @@ House default: **no ducking**, a constant bed at 0.14–0.28 under VO. Duck only
 
 Because the export has no limiter: keep every source peak at or below −3 dBFS; never stack a sub drop, a braam and a music drop at full gain on one frame (split the music clip and drop it 3–6 dB on the hit, or let the SFX carry it).
 
-Default delivery: **−14 LUFS integrated, −1 dBTP** (YouTube, TikTok, Reels, Shorts, web). Podcast feeds −16 LUFS; EBU broadcast −23; US broadcast −24 / −2 dBTP. Measure every export:
+Default delivery: **−14 LUFS integrated, −1 dBTP** for everything online (YouTube, TikTok, Reels, Shorts, web), music-led edits included: louder buys nothing once platforms turn it down. Podcast feeds −16 LUFS; EBU broadcast −23; US broadcast −24 / −2 dBTP. Measure every export:
 
 ```
 ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af ebur128=peak=true -f null -
@@ -192,10 +203,12 @@ Placement is frame-exact and comes from the same constants the animation uses (s
 
 **Layer hero hits**: a transient (snap, 2–5 kHz, carries on phones) + a body (thump, 100–500 Hz) + a tail (reverb, rumble, sub drop), transients on the same frame. A sub drop alone is inaudible on a phone.
 
+**A riser into a hit is a level relationship, not two volumes.** The ladder's gains assume peak-normalised files, but a riser's tail is dense and a hit is short, so riser 0.55 + impact 0.8 can leave the hit only 1–4 dB above the riser (measured), and it doesn't punch. Verify it: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser's 50 ms RMS rises with **no dip over 6 dB** before its end (commands in `references/sfx-cues.md`). If the hit is short of 8 dB, lower the riser (usually to 0.3–0.4), never raise the impact past the headroom. Sound-on pieces give the anticipation sound too (ticks, an air bed, a whoosh): **never open on more than 0.5 s of silence**.
+
 **Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. One sound per event that matters, not one per event. Treat hard cuts consistently: all get a quiet swish or none do. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
 
 **Getting them (`sfx`)**: describe the sound, not the picture: source, material, size, speed, envelope, tail, length, "one-shot", "no music". Use the model's own words: impact, whoosh, riser, braam, glitch, drone, ambience, loop. Set a duration (0.5–30 s) for anything timed, and loop mode for ambience. Generate 2–3 takes of hero sounds. Example: "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot, 0.6 seconds". Prompt library in `references/sfx-cues.md`.
-Fallback when `sfx` is unavailable: the user's files, CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited), or let the music's own transients mark the moment.
+Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited); **synthesised placeholders** made with `ffmpeg` (riser, impact, whoosh, pop, tick, chime: tested recipes with safe levels in `references/sfx-cues.md`), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine-and-noise sound reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting.
 
 ## Silence and endings
 
@@ -209,14 +222,16 @@ Fallback when `sfx` is unavailable: the user's files, CC0 sounds from Freesound 
 
 | Format | Music | SFX | VO and mix |
 |---|---|---|---|
-| Launch film | 110–128 BPM build-and-drop, drop on the reveal | 5–8 hero moments, swish per feature | bed 0.18–0.28 under VO, 1.0 when music-only |
-| Explainer | 90–110 sparse, no melody | UI clicks ≤ 1 per 2–3 s, room tone | VO +6 f after cuts, bed 0.14–0.22 |
-| Brand sting | a 3 s sonic logo or none | riser → impact on settle → tail | no VO |
-| UGC / social ad | 95–130 trend-adjacent | transient on frame 1, swish on every jump cut or none | bed 0.1–0.18 under talk |
+| Launch film | 110–128 BPM build-and-drop, drop on the reveal | 5–8 hero moments, swish per feature | bed per the ladder (0.18) under VO, 1.0 when music-only |
+| Explainer with VO | 90–110 sparse, no melody | UI clicks ≤ 1 per 2–3 s, room tone | VO +6 f after cuts, bed 0.18 |
+| Explainer, text-led (no VO) | music-led at 1.0, sparse, no lead melody | a cue on each reveal the diagram hinges on | dropout on the breath, return on the peak |
+| Brand sting | a 3 s sonic logo or none | riser → impact on settle → tail; sound under the anticipation too | no VO; hit ≥8 dB over the riser tail |
+| UGC / social ad | 95–130 trend-adjacent | transient on frame 1, swish on every jump cut or none | bed 0.12–0.2 under talk |
 | Trailer | three acts, accelerating | braams on act breaks, riser → silence → title hit | VO lines in the gaps |
-| Podcast clip | none under talk, optional 1–2 s sting | sparing pops on caption emphasis | dialogue −16 LUFS, deliver −14 for social |
-| Talking head | only on intro, b-roll and section stings | swish on graphics and zoom punches | bed 0.1 under speech |
-| Gen Z edit | 130–160 phonk or house, cut every beat | one generated meme-style hit per joke | push to −13 LUFS max |
+| Podcast clip | none under talk (or 0.1), optional 1–2 s sting | sparing pops on caption emphasis | dialogue −16 LUFS, deliver −14 for social |
+| Talking head | intro, b-roll and section stings; bed 0.12–0.2 if any | swish on graphics and zoom punches | bed out under the key line |
+| Gen Z edit over speech | lo-fi / house / phonk bed, 0.14–0.2, low-passed at 6–8 kHz | 3–6 cues per 30 s on interrupts (pop, whoosh, hit) | speech decides the cuts; bed out under the hook line and payoff |
+| Gen Z edit, music-led | 130–160 phonk or house at 1.0, cuts on beats or half bars | one hit per joke | −14 LUFS like everything else |
 | UI demo | none or 100–120 at 0.1 | a varied click per interaction, typing loop, success chime | room tone throughout |
 | Milestone | music-led at 1.0 | a tick per count step (0.45), impact when the number lands | no VO |
 
@@ -227,7 +242,7 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 | Need | Capability | Fallback |
 |---|---|---|
 | Music | `music` | the decision ladder above; with nothing licensed, no music |
-| Sound effects | `sfx` | user files or credited CC0 sounds; else music transients |
+| Sound effects | `sfx` | user files or credited CC0 sounds; else `ffmpeg`-synthesised placeholders (`references/sfx-cues.md`); else music transients |
 | Narration | `voiceover` (+ `pick-voice`) | the user's recording, or type carries the words |
 | Placing clips | `place-audio` | edit `project.json` `audio` or the HyperFrames `<audio>` elements |
 | Normalising, editing, measuring | `ffmpeg` | none: an unmeasured export is not finished |
@@ -239,8 +254,10 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 1. `ebur128` on the exported file reports integrated loudness within ±1 LU of the target (−14 LUFS by default) and true peak at or below −1 dBTP. Report both numbers to the user.
 2. No clipping: `volumedetect` `max_volume` below 0 dB.
 3. Every SFX is on its frame: render `capture-frames` at each cue's frame and the frame before; the visual event (contact, first pixel, press, cut) is visible on the cue frame and not before.
-4. The bed never masks the VO: at every VO line the bed clip is at most 0.28 (or ducked), and a listen at the loudest music section still gives clear consonants.
-5. Frame 1 is audible (a transient or a downbeat), and the last picture frame lands on the music's button or inside a fade that ends on a bar line.
-6. Big cuts sit on downbeats: for each, `(cutFrame − offset) ÷ framesPerBeat` is within 1 frame of a whole number.
-7. No clip runs past the film's end unless it is a deliberate tail, and no long bed ends abruptly.
-8. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, and none is NC, BBC RemArc, YouTube-licence-only or a rip.
+4. The bed sits 14–20 LU under the voice (from the normalised levels, or measured): never louder than 0.2 under a voice line on normalised sources, and never so low it disappears. In the export, the momentary loudness in a ≥1 s speech pause is above −35 LUFS when a bed is meant to be there.
+5. Frame 1 is audible (a transient or a downbeat): `silencedetect=noise=-50dB:d=0.5` on the export reports no `silence_start: 0`. The last picture frame lands on the music's button or inside a fade that ends on a bar line.
+6. Every riser into a hit: impact's first 10 ms RMS ≥8 dB above the riser's last 100 ms; no dip over 6 dB inside the riser (`references/sfx-cues.md`).
+7. Synthesised placeholder sounds are listed as placeholders in `VIDEO.md` and in your reply.
+8. Big cuts sit on downbeats: for each, `(cutFrame − offset) ÷ framesPerBeat` is within 1 frame of a whole number.
+9. No clip runs past the film's end unless it is a deliberate tail, and no long bed ends abruptly.
+10. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, and none is NC, BBC RemArc, YouTube-licence-only or a rip.

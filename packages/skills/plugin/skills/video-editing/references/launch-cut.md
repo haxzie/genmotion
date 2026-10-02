@@ -18,7 +18,7 @@ Read this when the user has real footage for a launch (a founder on camera, prod
 - The founder is there for credibility (why we built it). Cut them to **2–4 s soundbites between product visuals**; never more than 10 s on the talking head without product on screen.
 - Paper edit the founder's interview first: pick the 5–8 lines that carry problem → insight → promise. Ethics rule applies: no stitched claims.
 - **UI footage** (load `screen-capture`): recorded at 2× display resolution; clean (no notifications, real-looking data); focus pushes to the region of action at 1.5–2.5× (`ugc-craft`'s focus push); typing and loading speed-ramped (§8 stepped segments). Present it full-bleed or in a device frame or a floating rounded window with a soft shadow built in the scene.
-- Music: modern and upbeat, 110–128 BPM; the feature montage cuts on beats; under the founder the bed ducks to 18–25 dB below the voice.
+- Music: modern and upbeat, 110–128 BPM; the feature montage cuts on beats; under the founder the bed drops to `sound-design`'s bed row (0.12–0.2, 14–20 LU under the voice).
 - Captions burned in for social cutdowns (word pop per `ugc-craft`); a clean subtitle style or none on the website master.
 
 ## Apple-style (product-led, little talk)

@@ -44,7 +44,7 @@ Read this when the footage is a recorded conversation: an audio or video podcast
 ffmpeg -i host.wav -af "aresample=48000,asetnsamples=n=4800:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=edit/rms-host.txt" -f null -
 ```
 
-(tested: one `pts_time` + `RMS_level` pair per 0.1 s). The speaker per window is the loudest track. Switch only when the new speaker has led for ≥0.7 s **and** the current shot is ≥2.5 s old; insert the wide on overlap or when a shot exceeds your maximum. With a single mixed track, use the transcript's speaker labels (whisperX/pyannote) or listen and mark changes in the paper edit.
+(tested: one `pts_time` + `RMS_level` pair per 0.1 s). The speaker per window is the loudest track. Switch only when the new speaker has led for ≥0.7 s **and** the current shot is ≥2.5 s old; insert the wide on overlap or when a shot exceeds your maximum. With a single mixed track, use the transcript's speaker labels (whisperX/pyannote). Without labels, look: the 1 fps talk sheet (`ffmpeg-recipes.md` §2) shows whose mouth and hands move each second; mark the changes in the paper edit.
 
 The camera cut list then becomes the `concat` segments of the conform (§5), each segment from its camera's input, all at the same fps and size.
 
@@ -57,7 +57,7 @@ The camera cut list then becomes the `concat` segments of the conform (§5), eac
 
 ### Sound
 
-Dialogue chain per §7, target −16 LUFS integrated / −1 dBTP for podcast feeds (−14 if it is only published on YouTube). Music only in the ident, chapter stings and outro, 18–25 dB under any speech it overlaps. The rest per `sound-design`.
+Dialogue chain per §7, target −16 LUFS integrated / −1 dBTP for podcast feeds (−14 if it is only published on YouTube). Music only in the ident, chapter stings and outro; under any speech it overlaps, `sound-design`'s bed row. The rest per `sound-design`.
 
 ### Procedure
 
@@ -94,6 +94,15 @@ Score every candidate span 0–5 on each, and keep the top N:
 
 Search the transcript for "the secret", "nobody talks about", "the biggest mistake", "I've never told", numbers, and question → answer pairs; find laughter peaks in the waveform.
 
+**No transcript (the main skill's Step 3 policy applies first).** Without words you cannot score Hook or Payoff, so pick **units of conversation, not shots**, and say the pick is provisional:
+
+1. On the 1 fps talk sheet of the whole conversation (`ffmpeg-recipes.md` §2), mark every second the interviewer's mouth or hands move. Each run of guest speech between two interviewer turns is one candidate: a question → answer unit.
+2. **A camera change inside a monologue is not a boundary.** Multicam editors cut during answers as a matter of course (the wide every 30–90 s above), so the original edit's cut points say nothing about where a thought ends. In testing, a clip cut on the source's camera changes started and ended mid-answer.
+3. Rank the units by: length that fits the target (30–60 s), the guest facing a camera for most of it, visible energy (gestures, leaning in, laughter on the sheet and the RMS peaks), and loudness variation.
+4. **In point:** the guest's first syllable after the interviewer stops (the first speech onset in `silencedetect` after the question, minus 0.08 s). **Out point:** a pause of ≥0.5 s inside the last 10 s of the window, the longest one there. Trim to length by moving the out point back to an earlier ≥0.5 s pause, never by starting later.
+5. Check both boundaries (`ffmpeg-recipes.md` §11, In and out boundaries): 2 s either side. If the guest is still talking past the out point, move it or disclose a mid-answer excerpt.
+6. Prefer one continuous answer over a splice of sections you have not heard.
+
 ### Building a clip
 
 - **Start on the hook.** Cut any preamble ("So, yeah, I think…").
@@ -101,7 +110,8 @@ Search the transcript for "the secret", "nobody talks about", "the biggest mista
 - If context is missing, add one line of on-screen text or a 3–5 s host setup, not a voiceover.
 - Snap boundaries to sentence starts and ends. Tighten gaps to ≤150 ms (the breath trim in `ugc-craft` for the hook).
 - End right after the payoff line, or on a line that loops into the hook. No outro over 2 s.
-- Check frame 0: not a blink, not black, not mid-gesture. Pick the cover frame: a strong face, mouth closed.
+- Check frame 0: not a blink, not black, not mid-gesture, not inside a camera move, the face forward and on the column. If the source is mid-move or looking down, start 2–6 frames later.
+- Pick the cover frame: a strong face, mouth closed.
 
 ### 9:16 layouts from a horizontal recording
 
@@ -109,15 +119,20 @@ Search the transcript for "the secret", "nobody talks about", "the biggest mista
 |---|---|---|
 | Active-speaker crop | monologue, insight clips (the default) | a 9:16 crop per camera centred on that speaker (one x per locked-off camera); hard-switch on speaker change with the multicam hysteresis (≥1.5 s per shot); ease drifts over 8–12 frames |
 | Stacked split screen | exchanges, debates, reactions | two 1080×960 halves, the active speaker on top or a fixed A/B order; captions on the seam or in the lower half's lower third |
+| 4:5 or 1:1 plate with text bands | sources ≤720p or letterboxed, where a full-height crop would enlarge >2× | plate top at y 460, hook title above it, captions over its lower part (`ffmpeg-recipes.md` §6) |
 | Blurred letterbox | both people in one wide shot that can't be separated | 16:9 centred on a blurred, darkened fill, zoomed 1.2–1.5×; last resort |
 
-Crops by ffmpeg (§6) when the framing per camera is fixed; in the scene (`footage-in-scene.md`) when it moves. Keep the eyes on the upper-third line (y ≈ 500–750 of 1920).
+Crops by ffmpeg (§6) when the framing per camera is fixed; in the scene (`footage-in-scene.md`) when it moves. Keep the eyes on the upper-third line (y ≈ 500–750 of 1920). Measure the enlargement first (main skill, Step 7): a 9:16 crop of 720p is already 2.67×.
+
+**Use every angle of the guest the source gives you**, including a 9:16 crop of the wide: alternating the close angle and the wide-crop is a real camera change, which a jump zoom on one angle only imitates. When captions are absent, something must still change every 3–5 s: an angle switch, a jump zoom, or a slow 1.0 → 1.06 drift across a long segment.
 
 ### Graphics and sound for clips
 
 - Captions: word pop per `ugc-craft`, placed per `captions.md`.
-- Hook title: a 5–9 word claim at y 270–450 for the first 3–5 s, or persistent ("Why VCs pass on 99% of founders"). Optional small guest label: name + credential.
-- Music: optional, 25–30 dB under speech, never competing. SFX: at most one whoosh on the open and one pop on the key number.
+- Hook title: a 5–9 word claim at y 270–450 for the first 3–5 s, or persistent ("Why VCs pass on 99% of founders"). Optional small guest label: name + credential, ≥40 px (a 28 px credit is unreadable on a phone).
+- **No transcript: still ship a hook title.** Build it only from public facts (the guest, the show, the episode or file title, the topic if the metadata names it), as a question or a POV, never a quote: "How does a rocket CEO decide what to learn?" when the episode title is about learning; "POV: you get 40 seconds with <guest>" when nothing names the topic. Never a bare name label, and never words the guest may not have said. Record it in `VIDEO.md` as unverified.
+- End: a 1 s "Full interview: <show>" card earns its place when the licence asks for credit; otherwise end on the payoff.
+- Music: optional; `sound-design`'s podcast-clip row (none, or 0.1 low-passed). SFX: at most one whoosh on the open and one pop on the key number.
 - Loudness −14 LUFS / −1 dBTP.
 
 ### Procedure (clips)
