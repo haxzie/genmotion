@@ -1,14 +1,18 @@
 {
   "id": "freeform-video",
   "title": "Freeform video",
-  "description": "The fallback when no other skill owns the request: a custom video of any kind, such as an intro for a talk, a birthday clip, an abstract loop, a music visual, an event countdown or an internal update. Covers turning a vague request into a short plan (purpose, length, aspect, one-line message, three to six beats), picking a visual idea, and the craft rules every video shares. Load it when search finds no clear format match.",
-  "summary": "The fallback for anything without a format: a short plan, one visual idea, built well.",
+  "description": "The fallback when no other skill owns the request: a custom video of any kind, such as a birthday clip, a talk or event intro, an event countdown, an abstract loop, a visual for a song, an invitation, a quote card or an internal update. Covers a three-concept pitch before building, a five-line plan, per-format defaults (length, aspect, style family, energy curve, sound), the timing triad for every element, beat sheets for 10, 20, 30 and 60 seconds, loop and countdown rules, and frame-checked finishing. Load it when search finds no clear format match.",
+  "summary": "The fallback for anything without a format: three concepts, a five-line plan, one idea developed, built and checked well.",
   "kind": "workflow",
   "category": "Craft",
   "tags": [
     "custom",
     "general",
-    "fallback"
+    "fallback",
+    "personal",
+    "loop",
+    "countdown",
+    "intro"
   ],
   "aspects": [
     "16:9",
@@ -18,7 +22,7 @@
   ],
   "duration": {
     "minSeconds": 5,
-    "maxSeconds": 120
+    "maxSeconds": 180
   },
   "engines": [
     "hyperframes",
@@ -27,14 +31,41 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
       "kind": "capability",
       "id": "capture-frames",
       "why": "One frame per beat proves the plan made it to screen."
     },
     {
       "kind": "capability",
+      "id": "save-asset",
+      "why": "The user's photos, logos and song."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A track for the piece, legally sourced."
+    },
+    {
+      "kind": "capability",
       "id": "sfx",
-      "why": "A few hits on the key moments instead of silence."
+      "why": "Hits on the key moments instead of silence."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Loudness and the loop-point check."
     },
     {
       "kind": "skill",
@@ -56,32 +87,54 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-assets",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "route": {
-    "deliverable": "A custom video that fits no named format",
+    "deliverable": "A custom video that fits no named format, built around one developed idea",
     "inputs": [
       "brief"
     ],
     "priority": 100,
     "askFirst": [
       "Where will it play, and how long should it be?",
-      "What should someone feel or do after watching?"
+      "What should someone feel or do after watching?",
+      "What personal material is there: names, photos, a song?"
     ]
   },
   "models": [],
   "triggers": [
-    "make a cool intro for my talk",
     "a birthday video for my friend",
+    "make a cool intro for my talk",
     "an abstract looping visual",
     "countdown video for our event",
-    "a video for this song",
-    "make me a video"
+    "a visual for this song",
+    "make me a video",
+    "animated invitation for our party",
+    "a farewell video for a colleague"
   ],
-  "templates": [],
+  "templates": [
+    "p-doom-music-video",
+    "genmotion-brand-grid",
+    "dont-blink-gpt-6-astra",
+    "nike-brand-guide-video"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "✨"
 }

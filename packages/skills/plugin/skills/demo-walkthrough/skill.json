@@ -1,8 +1,8 @@
 {
   "id": "demo-walkthrough",
   "title": "Demo walkthrough",
-  "description": "The longer product tour, 60 to 180 seconds: chapter structure and signposting, the one-workflow-end-to-end rule over a feature tour, pacing for a viewer who chose to watch rather than one who has to be hooked, and when to break the material into a series instead of one long cut. Load it for onboarding videos, sales-enablement demos, or any tour too long for launch-playbook's 90-second ceiling.",
-  "summary": "The longer product tour, 60 to 180s: one workflow done end to end, chaptered, paced for a viewer who opted in.",
+  "description": "The longer product tour, 60 to 180 seconds, for a viewer who chose to watch: one real workflow done end to end instead of a feature tour, chapter shares and chapter cards, narration at 2.2 to 2.5 words a second that may orient ahead of a step, UI magnified 2 to 2.5 times, cursor and click timing, focus pushes, cutting dead waits, beat sheets for 60, 90, 120 and 180 seconds, the quiet sound plan, and when to split into a series. Load it for onboarding videos, sales or investor demos, and product tours too long for a launch film.",
+  "summary": "The 60–180 s product tour: one workflow end to end, chaptered, magnified until it reads, narrated for a viewer who opted in.",
   "kind": "workflow",
   "category": "Launch",
   "tags": [
@@ -10,7 +10,9 @@
     "onboarding",
     "walkthrough",
     "sales-enablement",
-    "long-form"
+    "long-form",
+    "tutorial",
+    "ui-demo"
   ],
   "aspects": [
     "16:9",
@@ -28,22 +30,54 @@
   "requires": [
     {
       "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
       "id": "screen-capture"
     },
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "The real, complete workflow footage the tour is built on."
+      "why": "The real recording or screenshots the tour is built on."
     },
     {
       "kind": "capability",
       "id": "voiceover",
-      "why": "Narration that can orient the viewer ahead of a step."
+      "why": "Narration that orients the viewer ahead of each step."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "A click per press, typing texture and a success chime."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "An optional minimal bed under the narration."
     },
     {
       "kind": "capability",
       "id": "project-overview",
-      "why": "Checking chapter share of the runtime against the plan."
+      "why": "Checking each chapter's share of the runtime against the plan."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Legibility of each acted-on label is a frame check."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Contact sheets to find dead waits, and the loudness check."
     },
     {
       "kind": "skill",
@@ -72,18 +106,26 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "route": {
-    "deliverable": "A 1–3 minute guided walkthrough of one product flow, start to finish",
+    "deliverable": "A 1–3 minute narrated walkthrough of one product workflow, start to finish, in chapters",
     "inputs": [
       "screen-recording",
       "url"
     ],
     "priority": 35,
     "askFirst": [
-      "Which flow should it walk through?",
-      "Do you have a screen recording, or should it be built from screenshots?"
+      "Which workflow should it walk through, start to finish?",
+      "Is there a screen recording, or should it be rebuilt from screenshots?",
+      "Who watches it: a new user, a buyer, or an investor?"
     ]
   },
   "models": [
@@ -100,12 +142,17 @@
     "sales demo video for investors",
     "walkthrough video of our workflow",
     "long form product tour",
-    "explain our whole product in a video"
+    "how-to video for setting up our app",
+    "help center tutorial video",
+    "step by step tutorial of our dashboard"
   ],
-  "templates": [],
+  "templates": [
+    "prequel-launch",
+    "claude-mcp-launch"
+  ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🎓"
 }

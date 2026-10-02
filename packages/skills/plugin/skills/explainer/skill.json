@@ -1,15 +1,17 @@
 {
   "id": "explainer",
   "title": "Explainer",
-  "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, with or without narration. Covers the one-question test, the four explainer shapes (how it works, why it matters, this vs that, by the numbers), one idea per scene, visual metaphors over bullet points, and pacing narration against motion. Load it for any request to explain, teach, break down or visualise something, rather than to sell or announce it.",
-  "summary": "A concept, process, comparison or number made visual in 30 seconds to 3 minutes.",
+  "description": "The explainer video: a concept, a process, a comparison or a piece of data made visual in 30 seconds to 3 minutes, narrated or text-led. Covers the one-question test, six shapes (how it works, why it matters, this vs that, by the numbers, listicle, story), a thesis and idea spine, one idea per scene with a named clarity device, reveal on the VO cue, the whiteboard scene grammar and board erase, VO word budgets and VO six frames after each cut, beat sheets for 30, 60, 90 and 180 seconds, and data-viz rules. Load it to explain, teach, break down or visualise something rather than sell it.",
+  "summary": "A concept, process, comparison or number made visual in 30 s to 3 min: one idea per scene, revealed on the VO cue.",
   "kind": "workflow",
   "category": "Explainer",
   "tags": [
     "explainer",
     "education",
     "diagram",
-    "data"
+    "data",
+    "whiteboard",
+    "narrated"
   ],
   "aspects": [
     "16:9",
@@ -27,9 +29,21 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
       "kind": "capability",
       "id": "web-research",
-      "why": "Facts behind the explanation."
+      "why": "Facts behind the explanation, with a source for every number."
     },
     {
       "kind": "capability",
@@ -38,8 +52,23 @@
     },
     {
       "kind": "capability",
+      "id": "transcribe",
+      "why": "Word timings of the VO, so each diagram part appears on its spoken cue."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A sparse bed under the VO and a button under the answer."
+    },
+    {
+      "kind": "capability",
       "id": "capture-frames",
-      "why": "Each metaphor has to read without the narration."
+      "why": "Each device has to read without the narration."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Measuring the export's loudness."
     },
     {
       "kind": "skill",
@@ -61,10 +90,24 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-assets",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "route": {
-    "deliverable": "A 30 second to 3 minute video that explains one concept, process, comparison or number",
+    "deliverable": "A 30 second to 3 minute video that answers one question about a concept, process, comparison or number",
     "inputs": [
       "brief",
       "script",
@@ -84,14 +127,17 @@
     "types of databases in 60 seconds",
     "visualise this data as a video",
     "an educational video about how vaccines work",
-    "break down this process step by step"
+    "break down this process step by step",
+    "whiteboard explainer with voiceover",
+    "why does this matter, in a short animated video"
   ],
   "templates": [
-    "types-of-databases"
+    "types-of-databases",
+    "gojiberry-launch-video"
   ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "🧠"
 }

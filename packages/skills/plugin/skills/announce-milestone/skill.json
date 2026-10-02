@@ -1,8 +1,8 @@
 {
   "id": "announce-milestone",
   "title": "Announce milestone",
-  "description": "Funding rounds, ARR, star counts, user counts, acquisitions: the number-hit choreography (a 1.2 to 1.6 second count-up, then hold, label after value), what actually earns a milestone video, the gratitude beat, and investor or customer logo walls. Load it when the ask is a number going up, with no feature to demonstrate. Not this skill when there is a product to show: use launch-playbook or announce-feature instead.",
-  "summary": "Funding, ARR, star counts, users. The count-up choreography, the gratitude beat, and what actually earns a video.",
+  "description": "Funding rounds, ARR, GitHub stars, user and download counts, acquisitions: one number made to land. Covers what earns a milestone video, the count-up choreography measured from GenMotion's stat templates (a 120 to 210 frame ease-out count, the 1.06 land punch, celebration within two frames, the payoff hold), the digit slot-roll variant, number formatting and honesty, the gratitude beat, logo walls, the tick-riser-impact sound design, and beat sheets for 10, 15, 20 and 30 seconds. Load it when the content is a number going up with no feature to demonstrate.",
+  "summary": "One number made to land: a 120–210f ease-out count, the 1.06 punch, celebration on the land, the gratitude beat.",
   "kind": "workflow",
   "category": "Announcement",
   "tags": [
@@ -10,7 +10,9 @@
     "funding",
     "metrics",
     "count-up",
-    "announcement"
+    "announcement",
+    "github-stars",
+    "celebration"
   ],
   "aspects": [
     "16:9",
@@ -18,7 +20,7 @@
     "9:16"
   ],
   "duration": {
-    "minSeconds": 15,
+    "minSeconds": 8,
     "maxSeconds": 30
   },
   "engines": [
@@ -28,19 +30,51 @@
   ],
   "requires": [
     {
+      "kind": "skill",
+      "id": "direction"
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
       "kind": "capability",
       "id": "voiceover",
-      "why": "The what-it-means and gratitude lines, when the cut is narrated."
+      "why": "The meaning and gratitude lines, when the cut is narrated."
     },
     {
       "kind": "capability",
       "id": "save-asset",
-      "why": "Real contributor, customer or investor logos."
+      "why": "Real contributor avatars and customer or investor logos."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "Ticks during the count, a riser into the land and an impact on it."
+    },
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A bright track whose downbeat the land falls on."
+    },
+    {
+      "kind": "capability",
+      "id": "web-research",
+      "why": "Checking a public count before it is shown."
     },
     {
       "kind": "capability",
       "id": "capture-frames",
-      "why": "The count-up hold and digit stability are judged by looking."
+      "why": "The ease, the land frame and digit stability are judged on captured frames."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Measuring the export's loudness."
     },
     {
       "kind": "skill",
@@ -72,15 +106,16 @@
     }
   ],
   "route": {
-    "deliverable": "A 15–30 second celebration of one number: users, stars, revenue, a funding round",
+    "deliverable": "An 8–30 second celebration of one number (stars, users, revenue, a funding round) that lands, then says thank you",
     "inputs": [
       "data",
       "brief"
     ],
     "priority": 25,
     "askFirst": [
-      "What is the number, and when was it hit?",
-      "Who is it thanking?"
+      "What is the exact number, and is it public?",
+      "Who is it thanking?",
+      "Where does it play: X or LinkedIn, a site, or Reels and TikTok?"
     ]
   },
   "models": [
@@ -92,21 +127,23 @@
     }
   ],
   "triggers": [
+    "we hit 10k github stars",
     "we just hit a funding milestone, make a video",
     "celebrate our star count",
     "announce our user count",
     "make a video about our ARR",
     "funding round announcement video",
-    "we got acquired, need a video"
+    "we got acquired, need a video",
+    "one million downloads celebration"
   ],
   "templates": [
-    "lovable-funding-announcement",
     "github-star-announcement",
-    "github-star-count-announcement"
+    "github-star-count-announcement",
+    "lovable-funding-announcement"
   ],
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "icon": "📈"
 }
