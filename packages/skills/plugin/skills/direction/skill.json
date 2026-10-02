@@ -1,0 +1,67 @@
+{
+  "id": "direction",
+  "title": "Direction",
+  "description": "Creative direction for any new video, read before choosing or building: turns a request into one proposition, an audience and placement (sound on or off, feed or site), an idea (we show X as Y), a style family, an energy curve, a pacing budget in frames, a transition grammar, a sound plan and one memorable moment, then writes the Direction block and a timed beat table into VIDEO.md. Ends with a scene-by-scene directing loop and a self-critique on captured frames. Read it first for every new video, and whenever a video feels generic, flat or rushed.",
+  "summary": "Decide what the film is before building it: proposition, idea, style, energy, pacing, transitions, sound, and a beat table.",
+  "kind": "reference",
+  "category": "Craft",
+  "tags": [
+    "creative-direction",
+    "planning",
+    "storyboard",
+    "pacing",
+    "critique"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 2,
+    "maxSeconds": 600
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "The self-critique pass is run on captured frames, not on the code."
+    },
+    {
+      "kind": "capability",
+      "id": "project-overview",
+      "why": "An existing video's scenes, timings and audio are read before re-directing anything."
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "plan the creative direction before building",
+    "what style should this video have",
+    "the video feels generic, give it an idea",
+    "write a treatment and a beat sheet",
+    "storyboard this video with timings",
+    "the pacing feels flat, where is the peak",
+    "critique these frames like an art director",
+    "is this too fast to read"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎬"
+}

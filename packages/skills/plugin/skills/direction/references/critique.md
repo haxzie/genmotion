@@ -1,0 +1,127 @@
+# Critique: the checklist and the rubric
+
+How to judge a video the way an art director would, from captured frames and the exported file. Use it for the self-critique pass at the end of `direction`, and whenever a user asks "is this good?" or a reviewer (you, another agent, a person) needs to score a cut. Judge the pixels, never the code.
+
+Contents: 1 What to capture · 2 The checklist · 3 The rubric (8 axes × 1–5) · 4 Turning scores into fixes · 5 Report format
+
+---
+
+## 1. What to capture
+
+`capture-frames` at:
+
+- frame 0 and frame 15 (the first half second decides a feed video);
+- the fully built frame and the last frame of every scene;
+- the first frame of every following scene (each cut is judged as a pair);
+- the 10–30f breath and the peak frame named in the Direction block;
+- the moment each on-screen line becomes legible and the last frame before it starts to leave (to measure the hold);
+- the final frame.
+
+Assemble them into a contact sheet with `ffmpeg` (a tile of the stills in order), so rhythm, palette drift and repeated layouts are visible at a glance. For sound, measure the export with `ffmpeg` (loudness and peaks, per `sound-design`) and listen to the cuts against the picture if you can.
+
+## 2. The checklist
+
+Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block says it is deliberate. **Polish** = fix if time allows.
+
+### Idea and story
+- [Blocker] The SMP is visible: someone who watches muted (feed) or listens without looking (VO explainer) can say it back.
+- [Blocker] Swap test: with the logo covered, the film could not belong to a competitor.
+- [Fix] Every beat traces to the SMP. A beat whose job you cannot name is cut, not decorated.
+- [Fix] The value claim lands by the second beat; everything after is evidence.
+- [Fix] The memorable moment exists at the frame the block says, and it comes from the idea, not from an effect.
+
+### Hook and first frame
+- [Blocker] Feed placements: the frame at 0.5 s already shows the hook. No fade from black, no empty frame, no logo-first card.
+- [Fix] Brand is present by 3–4 s in feed ads (a product shot, the UI or the mark in context), not only at the end.
+
+### Frame
+- [Blocker] Every word, logo and face that must be read is inside the safe zone for each aspect it ships in (9:16: inside x 120–840, y 270–1210).
+- [Fix] One focal point per frame; the eye knows where to go within 15f of each cut.
+- [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame.
+- [Fix] Hero and end-card frames leave negative space (content fills 40–60% of the frame).
+- [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal.
+
+### Type
+- [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible, and never more than 15 characters per second.
+- [Blocker] Contrast ≥ 4.5:1 for read text; the bright accent never carries small text.
+- [Fix] ≤ 2 type families; a size ratio ≥ 1.5× between levels; display tracking tightened (−0.02 to −0.045em).
+- [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers.
+- [Polish] No widows (a single word alone on the last line of a headline).
+
+### Motion
+- [Fix] Entrances decelerate, exits accelerate and are about 0.6× as long; nothing eases out into a cut.
+- [Fix] Not everything enters the same way: at least two entrance behaviours across the film, chosen by role.
+- [Fix] Staggers exist where siblings arrive (no lockstep), and stay under about 15f total for a group.
+- [Fix] Multi-key moves do not stop at each key (watch camera paths frame by frame for a stall).
+- [Fix] One ambient behaviour per held frame; holds share phase across words on a line.
+- [Fix] Overshoot is used for one role (a button, a badge, a stamp), not on everything; enterprise and luxury tones have none.
+- [Polish] Anticipation before big moves; settle after them.
+
+### Transitions
+- [Blocker] No plain crossfade between scenes.
+- [Fix] Every non-cut transition has a carrier visible in the frames either side of the cut, at matching position, size and colour.
+- [Fix] One signature family, one workhorse, hard cuts only where the block allows them.
+- [Fix] Camera drift has died before a matched cut (the two frames match, not "almost").
+- [Polish] One direction of travel for progress across the whole film.
+
+### Pacing and energy
+- [Blocker] The beat table's frame ranges sum to the video's length, and the export's duration matches.
+- [Fix] There is a breath before the peak and the peak is the most contrasting moment in the film.
+- [Fix] The beat interval matches the energy chosen (Hyper 8–14f, High 18–30f, Medium 30–50f, Calm 45–70f) and varies along the curve.
+- [Fix] No more than 3 s without meaningful change in feed formats.
+- [Fix] The logo holds 75–120f (10–30f only in beat-cut styles), with nothing new after the CTA.
+
+### Sound (when the film has any)
+- [Blocker] VO is intelligible over the bed; no clipping in the export.
+- [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; whooshes lead their move; impacts on the impact frame ±2f).
+- [Fix] Music starts and ends with the picture; a sonic resolve on the logo.
+- [Fix] Cuts sit on the music's beats where the film is music-led.
+
+## 3. The rubric
+
+Score each axis 1–5 from the frames and the export. Write one sentence of evidence per score ("frame 412: headline overlaps the TikTok right column").
+
+| Axis | 1 | 3 | 5 |
+| --- | --- | --- | --- |
+| **Idea** | A feature list; passes the swap test for any brand | One clear SMP, but shown generically | "We show X as Y" is visible in the frames; a memorable moment only this film could have |
+| **Hook** | Fade from black or a logo card; nothing at 0.5 s | A clear opening line by 1 s, but static | Motion and the core tension on screen by frame 15; you want to see the next second |
+| **Frame** | Several competing focal points; text in unsafe zones | Clean, safe, but centred-stack layouts in every scene | One focal point per frame, deliberate negative space, layouts vary by job, a disciplined palette |
+| **Type** | Unreadable holds or contrast; 3+ families | Readable and consistent, but flat hierarchy | Every line reads twice; strong hierarchy; type moves only where meaning needs it |
+| **Motion** | Linear or bouncy everywhere; the same fade-up on everything | Consistent easing, but uniform; some stalls or eases into cuts | One physics; entrances by role; staggers, settles and holds that breathe; no stalls |
+| **Transitions** | Crossfades or a new trick per cut | A consistent workhorse, but no signature or unmotivated wipes | A motivated signature at the turns; carriers match exactly across cuts |
+| **Pacing / energy** | Flat tempo; too fast to read or dead holds | A shape is visible, but the peak doesn't stand out | A clear curve: a breath, a peak at the planned frame, a calm resolve; intervals match the energy |
+| **Sound** | Missing where it was planned, clipping or mistimed | Levels fine, cues roughly placed | Cues land on their frames, the bed supports the VO, a sonic resolve on the logo |
+
+Mark Sound "n/a" for a deliberately silent film and average the other seven.
+
+**Ship bar**: no axis below 3, and an average of 4 or more. Any Blocker in the checklist overrides the score.
+
+## 4. Turning scores into fixes
+
+Fix the lowest axis first; an Idea of 2 is not rescued by Motion of 5.
+
+| Low axis | Usual cause | First fix |
+| --- | --- | --- |
+| Idea | The film describes features | Rewrite the memorable moment around the subject's own noun, number or UI; restate "We show X as Y" and rebuild the peak scene |
+| Hook | The film starts with setup | Move the strongest image to frame 0 and start it mid-motion; cut the first beat |
+| Frame | Everything centred; too many elements | Cut one element per frame; anchor to a grid edge; push secondary items to muted |
+| Type | Holds computed from the entrance, not legibility | Recompute holds with the formula; split long lines; raise contrast |
+| Motion | One entrance for everything; segmented multi-key moves | Assign entrances by role from `motion-language`; run multi-key paths through a monotone spline |
+| Transitions | A transition chosen per cut | Re-pick one signature and one workhorse; convert the rest to exit-then-cut |
+| Pacing | One interval end to end | Re-draw the curve; add the breath; tighten the cascade to the High interval |
+| Sound | Cues placed by eye | Re-place cues against frame numbers from the beat table; follow `sound-design` levels |
+
+Re-capture the same frames after fixing and re-score. Never report a score for frames you did not look at.
+
+## 5. Report format
+
+```markdown
+## Critique (<date>)
+Scores: Idea 4 · Hook 5 · Frame 4 · Type 3 · Motion 4 · Transitions 4 · Pacing 4 · Sound 4 → avg 4.0
+Blockers: none
+Fixed this pass: beat 5 headline held 36f → 60f; drift stopped before the 540 cut
+Left as deliberate: hard cut at 660 (on the drop)
+Frames checked: 0, 15, 75, 76, 180, 200, 262, 300, …, 899
+```
+
+Append it to `VIDEO.md` so the next session sees what was judged and why.

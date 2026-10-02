@@ -1,0 +1,69 @@
+{
+  "id": "motion-language",
+  "title": "Motion language",
+  "description": "GenMotion's house motion vocabulary, measured from its own templates, for every engine: entrance and exit timings and easing, word and character staggers, blur and rise distances, overshoot and springs, holds that breathe, easing formulas, camera grammar (push, pull, punch, orbit, drift) and the handoff catalogue (persisting element, flood, iris, match-push, flash-to-white, block wipe, morph, typewriter delete, whip, exit-then-cut, hard cut) with durations, build notes and the sound cue each pairs with. Load it before animating any scene.",
+  "summary": "The house motion vocabulary in frames: entrances, exits, easing, springs, holds, camera moves and handoffs.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "motion",
+    "easing",
+    "transitions",
+    "camera",
+    "kinetic-type",
+    "timing"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 1,
+    "maxSeconds": 600
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Timing, stalls and matched cuts are checked on frames either side of each move."
+    },
+    {
+      "kind": "skill",
+      "id": "three-transitions",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "the animation feels cheap or bouncy",
+    "which easing curve should I use",
+    "how long should this entrance take",
+    "make the motion feel smoother and more premium",
+    "the text animation feels generic",
+    "make the camera move feel intentional",
+    "make this scene hand off to the next one",
+    "the move stops and starts at every keyframe"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "〰️"
+}
