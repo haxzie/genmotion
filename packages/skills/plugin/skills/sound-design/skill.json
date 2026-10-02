@@ -1,0 +1,100 @@
+{
+  "id": "sound-design",
+  "title": "Sound design",
+  "description": "Music, sound effects and the voiceover mix for every kind of video in the pack: the four-decision sound plan, choosing and legally sourcing a track (user file, a connected generator, CC0 or CC BY libraries, or no music), the beat grid in frames and cutting to it, the level ladder in gain and dB, ducking, fades, SFX placement to the frame, silence as a beat, and measuring the export's loudness because the mix has no limiter. Load it whenever a video has sound.",
+  "summary": "Music sourcing, beat grid, SFX timing, the VO mix in gain and dB, ducking, and loudness checks on the export.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "sound-design",
+    "music",
+    "sfx",
+    "mixing",
+    "loudness",
+    "voiceover"
+  ],
+  "aspects": [
+    "9:16",
+    "1:1",
+    "4:5",
+    "16:9"
+  ],
+  "duration": {
+    "minSeconds": 2,
+    "maxSeconds": 600
+  },
+  "engines": [
+    "hyperframes",
+    "react",
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "music",
+      "why": "A bed or score, generated or found under a licence that allows the use."
+    },
+    {
+      "kind": "capability",
+      "id": "sfx",
+      "why": "Whooshes, impacts, clicks and risers placed on exact frames."
+    },
+    {
+      "kind": "capability",
+      "id": "place-audio",
+      "why": "Every clip goes on the timeline with frames, gain and fades."
+    },
+    {
+      "kind": "capability",
+      "id": "ffmpeg",
+      "why": "Normalise sources, edit music to length, and measure the export's loudness."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Each cue is checked against the frame its visual event lands on."
+    }
+  ],
+  "models": [
+    {
+      "purpose": "music",
+      "model": "ElevenLabs Music",
+      "via": "mcp:elevenlabs",
+      "note": "Exact length, instrumental mode, composition plans. Ask for a whole-frame BPM."
+    },
+    {
+      "purpose": "music",
+      "model": "Stable Audio",
+      "via": "mcp:fal",
+      "note": "Music or SFX up to minutes, flat price per generation."
+    },
+    {
+      "purpose": "sfx",
+      "model": "ElevenLabs SFX",
+      "via": "sfx",
+      "note": "Describe the sound, not the picture; set a duration; loop for ambience."
+    }
+  ],
+  "triggers": [
+    "add music to this video",
+    "find royalty-free background music",
+    "the music is too loud over the voiceover",
+    "sync the cuts to the beat",
+    "add sound effects to the transitions",
+    "mix the audio and fix the loudness",
+    "the export sounds quiet or distorted",
+    "where do I get music I'm allowed to use"
+  ],
+  "templates": [
+    "notchbrowser-app-launch-video",
+    "elevenlabs-voice-ai-launch",
+    "fintech-app-launch-video",
+    "instagram-chat-video",
+    "moonlight-app-launch-video"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🎚️"
+}
