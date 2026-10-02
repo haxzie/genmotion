@@ -141,6 +141,25 @@ ffmpeg -i assets/track.wav -filter_complex "[0:a]atrim=0:8,asetpts=PTS-STARTPTS[
 
 The output is 8 + (end − 24) − 0.03 s long. Use ½–2 beats of crossfade only when the joined material is pads or reverb tails, placed before the downbeat so the new transient stays intact. On the timeline the same edit is two clips of the file on tracks 1 and 3, overlapping 1 f with 1-frame fades; the pre-rendered file is more precise because a frame is 33 ms.
 
+### Beatless music (orchestral, ambient, drones): join by level and texture
+
+With no downbeats there is no grid to hide the join, and matching loudness alone is not enough: a join where the full band matched within 1.3 dB still read as a texture switch, because the strings' upper band fell away. Three rules:
+
+1. **Join inside a decay.** The out point is where a phrase or swell is falling away (the 50 ms RMS dropping over the last 0.3–0.5 s), never on a held climax or an attack; the in point starts on a sustain or a soft entry, never on an attack that the crossfade would smear.
+2. **Both sides within 3 dB in both bands.** Compare the 0.5 s RMS just before the out point with just after the in point, full band **and** above 4 kHz (the air and string wash that the ear tracks as "the same recording"). The upper band must not drop out across the join: within 6 dB side to side (a 20–30 dB fall is the switch you hear).
+3. **Crossfade 0.3–0.8 s, equal power** (`c1=qsin:c2=qsin`, because the two sides are uncorrelated and a linear fade dips about 3 dB in the middle), and place it under a picture transition (a cut, a wipe, a flood), so any residual change reads as motivated.
+
+```
+# 1. 50 ms RMS rows, full band and above 4 kHz: pick the out point (A) and the in point (B) from these
+ffmpeg -i assets/score.mp3 -af "aresample=48000,asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/rms-full.txt" -f null -
+ffmpeg -i assets/score.mp3 -af "highpass=f=4000,highpass=f=4000,aresample=48000,asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/rms-hf.txt" -f null -
+# 2. the join: A = 14.3 s (out), B = 68.8 s (in), 0.5 s equal-power crossfade
+ffmpeg -i assets/score.mp3 -filter_complex "[0:a]atrim=0:14.3,asetpts=PTS-STARTPTS[a];[0:a]atrim=start=68.8:end=84,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.5:c1=qsin:c2=qsin[out]" -map "[out]" -c:a pcm_s16le assets/score-edit.wav
+# 3. re-run step 1 on score-edit.wav and read the 0.5 s windows from 1 s before the join to 1 s after it (the join starts at A − d = 13.8 s)
+```
+
+Measured on a CC BY orchestral end-credits score (126 s, no beat): this join's 0.5 s windows across it stayed within 1.6 dB step to step in the full band, and the upper band went from −31.5 dB before to −29.5 dB after (no dropout). A join from 8 s into 26 s on the same track, chosen by full-band level alone (within 3 dB), measured fine in the full band but its upper band fell from −29 to −65 dB: the audible switch from a dense string wash to a thin texture. Delete the RMS files after. The output is A + (end − B) − d seconds long.
+
 ## Delivery loudness
 
 | Destination | Integrated | True peak |

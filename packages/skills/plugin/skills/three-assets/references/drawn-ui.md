@@ -1,6 +1,6 @@
 # Drawn UI: `components/ui.ts`
 
-For a product with no screenshots (`launch-playbook`'s "no screens" case, a demo before the app exists, a concept film), the app is **rebuilt** as flat canvas-drawn planes: a screen panel, a status bar, fields, chips, buttons, list rows, and grey bars for copy nobody needs to read. Each piece is drawn once at 2× into a canvas, put on an unlit plane that is never tone mapped (so the brand hex stays exact), and animated as a mesh. Tested by rendering: compiled against `three` r185 and captured at 1920 × 1080 (a 600 × 1000 px panel with every helper below, crisp at 2×).
+For a product with no screenshots (`launch-playbook`'s "no screens" case, a demo before the app exists, a concept film), the app is **rebuilt** as flat canvas-drawn planes: a screen panel, a status bar, fields, chips, buttons, list rows, and grey bars for copy nobody needs to read. Each piece is drawn once into a canvas at 2× its largest on-screen scale, put on an unlit plane that is never tone mapped (so the brand hex stays exact), and animated as a mesh. Tested by rendering: compiled against `three` r185 and captured at 1920 × 1080 (a 600 × 1000 px panel with every helper below, crisp at 2×).
 
 It needs `PX`/`RES` from `components/stage.ts` (`three-camera` `rig.md`) and `FONT`/`measure`/`slug` from `components/type.ts` (`three-type` `type-kit.md`). **Build every piece inside the scene's `withFonts(...)` builder**: canvas text drawn before the font file lands is drawn in a fallback face and never redrawn.
 
@@ -8,6 +8,7 @@ It needs `PX`/`RES` from `components/stage.ts` (`three-camera` `rig.md`) and `FO
 
 - **28 px floor where it is seen.** Sizes here are composition px at scale 1. A panel shown at scale `s` (a phone at 0.6 in a wide shot) shows its text at `size × s`: every glyph that is seen must clear 28 px on screen, so either draw at `28 / s` or more, or push in. Copy that cannot clear the floor is drawn as grey bars (`textBars`), never as tiny glyphs: text that cannot be read should not look like text.
 - **Draw at the size it is shown.** Never draw small and scale the plane up (soft edges); redraw at the new size instead, once, in the builder.
+- **Canvas resolution = 2 × the largest push it will see.** Every helper takes `res` (canvas px per composition px, default `RES` = 2, right for scale ≤ 1). A panel the camera pushes into at 2.5× is magnified 2.5× on screen, so draw it at `res = 2 * 2.5 = 5`, or its glyphs go soft at the end of the push. Keep a canvas side under 8192 px (`wPx * res`): past that, push into a separately drawn close-up plane instead.
 - **Generic chrome, the brand's colours, nothing the brief did not name.** It is illustrative UI: record it in `VIDEO.md` under "I assumed" as "illustrative UI, replace with real screens".
 - **One element per plane when it moves on its own** (a chip that flies out, a field that fills): the panel is the background, the moving parts are separate planes in a group with it.
 - **Transparent and depth-write off** (the helper sets both), and `onTop()` from `three-type` when 3D objects share the frame. Planes sort by the parent Group's `renderOrder` first (see `three-type` `type-kit.md` §4).
@@ -49,11 +50,11 @@ function font(g: G, size: number, weight = 500) {
   g.letterSpacing = "0px";
 }
 
-/** A flat, unlit plane whose content is drawn ONCE into a 2x canvas, in composition px. */
-export function canvasPlane(wPx: number, hPx: number, draw: (g: G, w: number, h: number) => void, name: string): Flat {
-  const canvas = new OffscreenCanvas(Math.ceil(wPx * RES), Math.ceil(hPx * RES));
+/** A flat, unlit plane whose content is drawn ONCE into a `res`x canvas, in composition px. res = 2 x the largest push scale. */
+export function canvasPlane(wPx: number, hPx: number, draw: (g: G, w: number, h: number) => void, name: string, res = RES): Flat {
+  const canvas = new OffscreenCanvas(Math.ceil(wPx * res), Math.ceil(hPx * res));
   const g = canvas.getContext("2d")!;
-  g.scale(RES, RES);
+  g.scale(res, res);
   draw(g, wPx, hPx);
   const tex = new THREE.CanvasTexture(canvas as unknown as HTMLCanvasElement);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -79,7 +80,7 @@ export function textBars(g: G, x: number, y: number, w: number, rows: number, co
 }
 
 /** The app's screen: background, rounded corners, an optional draw on top. */
-export function screenPanel(wPx: number, hPx: number, t: UiTheme, name: string, draw?: (g: G, w: number, h: number) => void, radius = 56): Flat {
+export function screenPanel(wPx: number, hPx: number, t: UiTheme, name: string, draw?: (g: G, w: number, h: number) => void, radius = 56, res = RES): Flat {
   return canvasPlane(wPx, hPx, (g, w, h) => {
     roundRect(g, 0, 0, w, h, radius);
     g.fillStyle = t.screen;
@@ -89,7 +90,7 @@ export function screenPanel(wPx: number, hPx: number, t: UiTheme, name: string, 
     g.clip();
     draw?.(g, w, h);
     g.restore();
-  }, name);
+  }, name, res);
 }
 
 /** Status bar drawn into a panel's canvas: time as type (>= 28 px), signal and battery as shapes. */
@@ -111,7 +112,7 @@ export function statusBar(g: G, w: number, t: UiTheme, time = "9:41", size = 30)
 }
 
 /** A labelled field: muted label above, value below, on a surface card. */
-export function field(labelText: string, value: string, wPx: number, t: UiTheme, opts: { labelSize?: number; valueSize?: number } = {}): Flat {
+export function field(labelText: string, value: string, wPx: number, t: UiTheme, opts: { labelSize?: number; valueSize?: number; res?: number } = {}): Flat {
   const ls = Math.max(28, opts.labelSize ?? 28);
   const vs = Math.max(28, opts.valueSize ?? 38);
   const h = Math.round(ls * 1.5 + vs * 1.5 + 12);
@@ -127,11 +128,11 @@ export function field(labelText: string, value: string, wPx: number, t: UiTheme,
     font(g, vs, 500);
     g.fillStyle = t.text;
     g.fillText(value, 26, 14 + ls * 1.35);
-  }, `field-${slug(labelText)}`);
+  }, `field-${slug(labelText)}`, opts.res);
 }
 
 /** A pill chip: filled (accent) or outlined; text centred, >= 28 px. */
-export function chip(text: string, t: UiTheme, opts: { size?: number; filled?: boolean; padX?: number } = {}): Flat {
+export function chip(text: string, t: UiTheme, opts: { size?: number; filled?: boolean; padX?: number; res?: number } = {}): Flat {
   const size = Math.max(28, opts.size ?? 30);
   const filled = opts.filled ?? true;
   const padX = opts.padX ?? Math.round(size * 0.9);
@@ -152,13 +153,13 @@ export function chip(text: string, t: UiTheme, opts: { size?: number; filled?: b
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(text, 2 + w / 2, 2 + h / 2 + size * 0.04);
-  }, `chip-${slug(text)}`);
+  }, `chip-${slug(text)}`, opts.res);
   m.userData.h = h;
   return m;
 }
 
 /** A primary button, full width of its column. */
-export function button(text: string, wPx: number, t: UiTheme, size = 34): Flat {
+export function button(text: string, wPx: number, t: UiTheme, size = 34, res = RES): Flat {
   const s = Math.max(28, size);
   const h = Math.round(s * 2.4);
   return canvasPlane(wPx, h, (g, w) => {
@@ -170,11 +171,11 @@ export function button(text: string, wPx: number, t: UiTheme, size = 34): Flat {
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(text, w / 2, h / 2 + s * 0.04);
-  }, `button-${slug(text)}`);
+  }, `button-${slug(text)}`, res);
 }
 
 /** A list row: a leading dot or icon square, a title, grey bars for the detail, a value on the right. */
-export function listRow(title: string, value: string, wPx: number, t: UiTheme, size = 32): Flat {
+export function listRow(title: string, value: string, wPx: number, t: UiTheme, size = 32, res = RES): Flat {
   const s = Math.max(28, size);
   const h = Math.round(s * 2.6);
   return canvasPlane(wPx, h, (g, w) => {
@@ -190,7 +191,7 @@ export function listRow(title: string, value: string, wPx: number, t: UiTheme, s
     g.fillText(value, w, h / 2 + s * 0.04);
     g.fillStyle = t.line;
     g.fillRect(0, h - 2, w, 2);
-  }, `row-${slug(title)}`);
+  }, `row-${slug(title)}`, res);
 }
 
 /** A baked soft shadow for a panel or paper prop (flat pipeline: no lights needed). */
@@ -213,6 +214,8 @@ const T: UiTheme = { screen: "#ffffff", surface: "#f2f3f5", text: "#16161a", mut
   accent: LOOK.accent, onAccent: "#ffffff", line: "#d9dae0" };
 const app = new THREE.Group();
 app.name = "app";
+const PUSH = 2.5;                                     // the deepest push this panel sees
+const res = 2 * PUSH;                                 // canvas px per composition px
 const panel = screenPanel(600, 1000, T, "app-screen", (g, w) => {
   statusBar(g, w, T);
   g.fillStyle = T.text;
@@ -220,12 +223,12 @@ const panel = screenPanel(600, 1000, T, "app-screen", (g, w) => {
   g.textBaseline = "top";
   g.fillText("New entry", 40, 110);
   textBars(g, 40, 700, w - 80, 3, T.line);            // copy nobody reads
-});
-const amount = field("Amount", "$48.00", 520, T);
+}, 56, res);
+const amount = field("Amount", "$48.00", 520, T, { res });
 amount.position.set(0, 210 * PX, 0.01);
-const tag = chip("Travel", T);                        // moves on its own: its own plane
+const tag = chip("Travel", T, { res });                       // moves on its own: its own plane
 tag.position.set(-120 * PX, 40 * PX, 0.02);
-const save = button("Save", 520, T);
+const save = button("Save", 520, T, 34, res);
 save.position.set(0, -360 * PX, 0.01);
 const shadow = softShadow(600, 1000, "app-shadow");
 shadow.position.z = -0.01;
@@ -239,6 +242,6 @@ A drawn panel inside a device frame: size the panel to the frame's inner screen 
 ## Checks
 
 1. `capture-frames` on the widest shot of the UI: every glyph shown clears 28 px on screen (measure a capital's height ÷ 0.727 for Inter); everything smaller is bars.
-2. Crisp edges at full resolution (drawn at the shown size, 2× canvas).
+2. Crisp edges at full resolution, including the last frame of the deepest push (canvas `res` = 2 × that push scale).
 3. The brand accent appears only on the primary action and the active chip; the rest is the theme's neutrals.
 4. Nothing is redrawn inside the frame callback; no text was drawn before the font loaded (the face matches the headlines).

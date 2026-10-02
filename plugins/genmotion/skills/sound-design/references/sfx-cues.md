@@ -157,3 +157,22 @@ ffmpeg -hide_banner -nostats -i out.mp4 -af silencedetect=noise=-50dB:d=0.5 -f n
 ```
 
 Replace `H` with the number (for a hit on frame 72 at 30 fps, `start=2.3:end=2.4` and `start=2.4:end=2.41`).
+
+### Synthesised ambient bed (a product that makes sound, no recording)
+
+For a launch or demo of a product whose output *is* sound (a soundscape or white-noise app, a sleep or meditation app, an ambient generator), the film plays that output for 2–4 s with the score ducked 10–12 dB under it (`launch-playbook`). With no recording from the user and no `music`/`sfx` to generate one, synthesise a placeholder: stereo brown noise low-passed to a soft rumble with a slow swell, under three slow sine pads (A2, E3, B3, a stacked fifth, slightly detuned left and right so it is wide), each breathing at its own rate (0.03–0.08 Hz, so nothing repeats inside the clip), faded 2 s in and 3 s out, normalised to −16 LUFS / −3 dBTP so it can sit at speech level in the foreground. Tested: 24.0 s, 48 kHz stereo, −16.7 LUFS integrated, LRA 4.3 LU, true peak −4.4 dBTP, energy below 1 kHz with nothing audible above about 6 kHz.
+
+```
+# ambient bed: brown noise (fixed seeds, one per channel) + three breathing sine pads, 24 s
+ffmpeg -f lavfi -i "anoisesrc=color=brown:amplitude=0.6:seed=11:duration=24" -f lavfi -i "anoisesrc=color=brown:amplitude=0.6:seed=23:duration=24" -f lavfi -i "aevalsrc=exprs='0.10*sin(2*PI*110*t)*(0.6+0.4*sin(2*PI*0.05*t))+0.07*sin(2*PI*164.81*t)*(0.55+0.45*sin(2*PI*0.07*t+1))+0.05*sin(2*PI*246.94*t)*(0.5+0.5*sin(2*PI*0.031*t+2))|0.10*sin(2*PI*110.3*t)*(0.6+0.4*sin(2*PI*0.05*t+0.5))+0.07*sin(2*PI*165.2*t)*(0.55+0.45*sin(2*PI*0.07*t+1.6))+0.05*sin(2*PI*247.4*t)*(0.5+0.5*sin(2*PI*0.031*t+2.7))':s=48000:d=24" -filter_complex "[0:a][1:a]amerge=inputs=2,lowpass=f=500,highpass=f=35,volume='0.75+0.25*sin(2*PI*0.08*t)':eval=frame[n];[2:a]lowpass=f=1200[p];[n][p]amix=inputs=2:normalize=0,afade=t=in:d=2,afade=t=out:st=21:d=3,loudnorm=I=-16:TP=-3:LRA=7,aresample=48000[out]" -map "[out]" -c:a pcm_s16le assets/placeholder-ambient-bed.wav
+```
+
+- **Variations, one at a time**: rain or "café" is pink noise band-passed 300–6000 Hz instead of brown (brighter, busier); "focus" is brown noise alone with the pads at half level; a darker sleep bed drops the pads an octave (55, 82.41, 123.47 Hz). Length is `d`/`duration` (20–30 s) with the out-fade's `st` at `d − 3`. Put the pads in the score's key when they play next to it (A minor here).
+- **Drive the picture from it.** One RMS row per film frame (1600 samples at 48 kHz = 1 frame at 30 fps), which you paste into a `components/` array the scene indexes by frame, so the drawn waveform or meter moves with what is heard:
+
+```
+ffmpeg -i assets/placeholder-ambient-bed.wav -af "aresample=48000,asetnsamples=n=1600:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/bed-env.txt" -f null -
+```
+
+  720 rows for 24 s; map dB to a 0–1 amplitude with `10^(dB/20)` and normalise to the loudest row. Delete the text file after.
+- It is a **placeholder** for the product's real output: name it `placeholder-…`, list it in `VIDEO.md` as "synthesised stand-in for <product>'s sound, replace with a real recording", and say so in your reply. A real 20–30 s capture from the user (or `music` prompted with the product's own description of its sound) replaces it 1:1.

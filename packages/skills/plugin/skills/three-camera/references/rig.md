@@ -31,6 +31,7 @@ export function fitCamera(camera: THREE.Camera, height: number, fovDeg = 50): nu
   const d = unitDistance(height, fovDeg);
   cam.position.set(0, 0, d);
   cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld(); // so project()/matrixWorld are right before the first render
   return d;
 }
 
@@ -213,6 +214,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 }
 ```
 
+- Each scene receives its own camera from the host, built fresh for that scene: nothing parented to it (an `overlay()` group, a light) and no position set in one scene survives the cut, so every scene calls `fitCamera` (or sets its camera) itself.
 - Lay everything out in composition px times `PX`. A headline 120 px tall at z = 0 is exactly 120 px on screen at the fitted distance, in 16:9 and 9:16 alike.
 - Anything at another depth scales by `D0 / (D0 − z)`: an object at z = +2 (towards the camera) appears `D0 / (D0 − 2)` times larger. Use it to place parallax layers on purpose.
 - `logLerp(D0, D0 / k, t)` is a zoom of k× on the z = 0 plane: apparent size goes as 1 / distance, so interpolate the distance's log.
