@@ -67,7 +67,7 @@ Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness
 
 ## Background, glow and finish
 
-- **Never a flat fill behind a subject.** The clip-space `backdrop()` gives a radial lift behind the subject, a 0.25–0.35 vignette and 1–2% grain that changes per frame, in one draw that ignores the camera.
+- **Never a flat fill behind a subject**, except brand identity. The clip-space `backdrop()` gives a radial lift behind the subject, a 0.25–0.35 vignette and 1–2% grain (display units, added after the colour-space conversion) that changes per frame, in one draw that ignores the camera. Brand identity (a sting, a logo end card, a brand guide) is the exception: the brand hex exact at centre and corners (±2 levels), no vignette, no moving grain.
 - **Glow** is an additive sprite with a soft radial texture behind one subject, breathing 1.2–2.2% at 0.2 Hz; no post-processing is available or needed.
 - **Fog** in the background colour so floors and far objects fade instead of ending in a line.
 - **Banding**: H.264 bands smooth dark gradients. Prefer radial lifts to linear gradients on dark grounds, keep the range small, and keep grain on.
@@ -132,6 +132,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Soft-light SaaS | flat | none (UI is unlit) | White/creme with a 3–5% radial lift |
 | 3D product hero | brand | product + studio env | White or near-black, lift, 1% grain, one glow |
 | One-shot film | flat | none | The world itself; 8% grain overlay, vignette 0.28 |
+| Brand identity (sting, end card) | flat | flat or product | The exact brand hex, no vignette, no grain or a static ≤0.5%; depth from the mark's own shading |
 | Chat-UI social | flat | none | The app's own colours, pixel-faithful |
 | Whiteboard | flat | none | Paper white; strokes are the texture |
 | Textured tactile | flat or cinematic | dramatic, if anything is lit | Dark HUD panels, dither, pixel-block wipes |

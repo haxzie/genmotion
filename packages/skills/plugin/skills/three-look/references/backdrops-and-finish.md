@@ -42,9 +42,11 @@ export function backdrop(aspect: number, base = LOOK.bg, lift = LOOK.bgLift) {
         vec3 col = mix(uLift, uBase, smoothstep(0.0, 1.0, r));
         vec2 q = vec2((vUv.x - 0.5) * uAspect, vUv.y - 0.5);
         col *= 1.0 - uVignette * smoothstep(0.35, 1.1, length(q));
-        col += (hash(gl_FragCoord.xy + uFrame * 17.0) - 0.5) * uGrain;
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
+        // Grain after the colour-space conversion, so uGrain is in display units (0.015 = ±2 of 255).
+        // Added before it, in linear light, the same value becomes ±10–25 levels on a dark ground: boiling noise.
+        gl_FragColor.rgb += (hash(gl_FragCoord.xy + uFrame * 17.0) - 0.5) * uGrain;
       }`,
   });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
@@ -117,7 +119,7 @@ Additive, `depthWrite: false`, `toneMapped: false`. One glow per subject; a glow
 
 ## 4. Grain, vignette, film finish
 
-- **Grain** 1–2% (`uGrain` 0.01–0.02 in the backdrop), varying per frame through `uFrame`. Over the whole frame (including the subject) use an overlay plane on the camera layer with the same hash at opacity 0.03–0.085, as the music video and one-shot templates do.
+- **Grain** 1–2% in display units (`uGrain` 0.01–0.02, added after `colorspace_fragment`), varying per frame through `uFrame`. Check it: two consecutive frames of a held shot should differ by no more than ±3 levels (PSNR above about 40 dB with `ffmpeg`'s `psnr` filter); more is visible boil that the platform's re-encode turns into crawling blocks. Brand-identity work (stings, end cards on a brand hex) uses no grain, or a static one (`uFrame` fixed), and no vignette. Over the whole frame (including the subject) use an overlay plane on the camera layer with the same hash at opacity 0.03–0.085, as the music video and one-shot templates do.
 - **Vignette** 0.25–0.35 at the corners. More reads as a filter.
 - **Scanlines, halftone, dither** belong to the textured families (retro-tech, editorial). Build them as a full-frame `ShaderMaterial` on the camera layer, cell size 4–26 px, from `gl_FragCoord` and the frame number: never from a random source.
 
