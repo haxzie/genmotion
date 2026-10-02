@@ -42,6 +42,10 @@
     },
     {
       "kind": "skill",
+      "id": "launch-taste"
+    },
+    {
+      "kind": "skill",
       "id": "screen-capture"
     },
     {
@@ -155,6 +159,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.1",
+  "version": "2.1.2",
   "icon": "📣"
 }

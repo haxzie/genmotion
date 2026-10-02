@@ -267,6 +267,10 @@
         },
         {
           "kind": "skill",
+          "id": "launch-taste"
+        },
+        {
+          "kind": "skill",
           "id": "screen-capture"
         },
         {
@@ -380,7 +384,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.1",
+      "version": "2.1.2",
       "icon": "📣",
       "source": "first-party"
     },
@@ -426,6 +430,10 @@
         {
           "kind": "skill",
           "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "launch-taste"
         },
         {
           "kind": "capability",
@@ -530,7 +538,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.0",
+      "version": "2.1.1",
       "icon": "📈",
       "source": "first-party"
     },
@@ -574,6 +582,10 @@
         {
           "kind": "skill",
           "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "launch-taste"
         },
         {
           "kind": "skill",
@@ -667,7 +679,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.0",
+      "version": "2.2.1",
       "icon": "📱",
       "source": "first-party"
     },
@@ -713,6 +725,10 @@
         {
           "kind": "skill",
           "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "launch-taste"
         },
         {
           "kind": "capability",
@@ -821,7 +837,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.0",
+      "version": "2.2.1",
       "icon": "✨",
       "source": "first-party"
     },
@@ -1241,6 +1257,10 @@
           "id": "sound-design"
         },
         {
+          "kind": "skill",
+          "id": "launch-taste"
+        },
+        {
           "kind": "capability",
           "id": "capture-frames",
           "why": "One frame per beat proves the plan made it to screen."
@@ -1333,7 +1353,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.1",
+      "version": "2.0.2",
       "icon": "✨",
       "source": "first-party"
     },
@@ -1424,6 +1444,10 @@
         {
           "kind": "skill",
           "id": "sound-design"
+        },
+        {
+          "kind": "skill",
+          "id": "launch-taste"
         },
         {
           "kind": "capability",
@@ -1548,8 +1572,76 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.3.0",
+      "version": "2.3.1",
       "icon": "🚀",
+      "source": "first-party"
+    },
+    {
+      "id": "launch-taste",
+      "title": "Launch taste",
+      "description": "Taste for motion-design launch, feature and brand films: how to choose the concept device and the style family that communicate this product's one idea, and how to give it restraint, contrast, a well-placed peak and sound that lands on the picture. A decision path from message to the one thing the viewer must feel, to device, style, motion personality and sound, with a style map (what each look says, what it suits and fails for), reusable concept devices, sound-to-picture rules and anti-patterns learned from real launch films. Read it with the owner skill.",
+      "summary": "Choose the device, style, motion personality and sound that make a launch film feel intentional, with the anti-patterns to avoid.",
+      "kind": "reference",
+      "category": "Launch",
+      "tags": [
+        "taste",
+        "launch",
+        "creative-direction",
+        "style",
+        "concept",
+        "sound-to-picture"
+      ],
+      "aspects": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ],
+      "duration": {
+        "minSeconds": 5,
+        "maxSeconds": 120
+      },
+      "engines": [
+        "hyperframes",
+        "react",
+        "three"
+      ],
+      "requires": [
+        {
+          "kind": "skill",
+          "id": "direction"
+        },
+        {
+          "kind": "skill",
+          "id": "motion-language"
+        },
+        {
+          "kind": "skill",
+          "id": "sound-design"
+        },
+        {
+          "kind": "capability",
+          "id": "capture-frames",
+          "why": "The taste test is run on captured frames: frame 0, the breath, the peak and the end card."
+        }
+      ],
+      "models": [],
+      "triggers": [
+        "make this launch video feel premium",
+        "what style should our launch film be",
+        "our launch video looks generic",
+        "give our product film a real concept",
+        "which visual style fits our announcement",
+        "the launch film has no peak or idea",
+        "make the sound land on the picture",
+        "art direct our feature announcement film"
+      ],
+      "templates": [],
+      "author": {
+        "name": "GenMotion"
+      },
+      "version": "1.0.0",
+      "icon": "🎯",
       "source": "first-party"
     },
     {
@@ -3509,5 +3601,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "6fe4ec4e"
+  "revision": "05e18da3"
 }

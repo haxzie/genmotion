@@ -80,6 +80,7 @@ The owner skill's own plan (shot list, script, cue sheet) goes in the body as yo
 Read the owner skill fully. Then load its `requires` that apply to this project's engine:
 
 - **Always**: `motion-language` (entrances, exits, easing, camera, handoffs) before the first scene, and `sound-design` (music, effects, VO mix, loudness) before placing any audio.
+- **Launch-type films** (a product launch, feature announcement, brand sting, milestone, store preview, or a freeform promo for a product or company): `launch-taste` before writing direction's Idea and Style family lines; it chooses the concept device, the look and the sound's role, and its taste test joins the self-critique.
 - **Foundations** for ads: `ugc-ad-foundations`, then `ugc-hooks`, `ugc-scripting` or `ugc-craft` when the owner says so.
 - **Techniques**, cross-cutting: `screen-capture`, `ai-presenter`, `stock-and-broll`, `ad-qa`.
 - **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them: a locked single-scene piece (most stings) skips `three-camera` unless the camera moves and `three-transitions` unless there is a handoff, a flash or an iris.

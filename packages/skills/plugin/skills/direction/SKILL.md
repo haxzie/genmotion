@@ -64,6 +64,8 @@ Now go back to the router and pick the owner. Then come back for Part B.
 
 Pick exactly one. The families are measured from GenMotion's own house style; `references/style-families.md` has each one's palette, type, motion, transition and sound signature with numbers. Read it before writing the Palette, Type and Motion lines of the Direction block.
 
+**Launch, feature, brand and milestone films**: read `launch-taste` first and let it drive this choice (and the idea in Step 3): its style map says which look communicates what and fails for which product, and maps each to a family letter below for the numbers.
+
 | Family | Pick it when | Signature |
 | --- | --- | --- |
 | A. Beat-cut kinetic type | Logo + copy only, music-led, hype | One word per card, black/white, hard cuts on an eighth-note grid, 8f per card |

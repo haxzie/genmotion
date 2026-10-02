@@ -1,0 +1,129 @@
+# Style map: which look says what
+
+The decision guide for direction's Step 4 on launch-type films. Each family below is a *taste* family: what the look communicates, which products and messages it suits and fails for, its motion and sound personality, and the failure that makes it look templated. The measured numbers (palette hexes, type sizes, timings, levels) live in `direction`'s `references/style-families.md`; each entry names the house family to take them from. Write both in the Direction block: `Style family: B Soft-light SaaS (taste: UI-led story film)`.
+
+Evidence markers: **[several]** = seen in 3+ films that worked or failed the same way; **[two]**; **[one]** = one clear example, treat as a strong hint.
+
+Contents: How to choose · Kinetic editorial type · UI-led story film · Maker's proof film · Product-as-instrument · 3D object hero · Data story / journey · Playful collage · Dark cinematic minimal · Terminal / retro · Component sizzle · Light or dark ground · Switching inside a film
+
+---
+
+## How to choose
+
+1. Start from the device (SKILL.md step 2), not the look. A device usually rules out half the families: "the invisible made felt" needs a story the viewer can follow (UI-led story, journey); "output as material" needs a surface that can carry output (3D object, collage); "many → one" works in almost any family.
+2. Then the audience's trust level: calm-trust products (finance, health, enterprise) lean light, still and slow; builder audiences tolerate dark, dense and technical; consumer and creator audiences reward warmth and play.
+3. Then the material you really have: screens → UI-led or maker's proof; output files → 3D object or collage; only a logo and copy → kinetic type or 3D object; data → journey.
+4. Reject any family whose "fails for" line describes this product, even if it looks good.
+
+## Kinetic editorial type
+
+- **Says**: a point of view, wit, confidence. "We have something to say."
+- **Suits**: manifestos, renames, positioning shifts, multi-audience platforms ("one sentence, swapped notation"), short teasers and changelog posts, and the first 3–4 s of almost any launch before it settles into another family.
+- **Fails for**: anything that must be *seen* working; long films (type alone tires by about 20 s without a picture to rest on); products whose value is visual.
+- **Motion personality**: words by line or word; per-letter only for the 2–3 words that matter. Holds long, swaps fast (a measured 2.3 s hold to a 5-frame swap felt exactly right [one]). Emphasis by scale (a tiny setup line over one huge word, about 4:1 [two]) and by one register switch (a single serif word in a sans film for the punchline [one]). When a swapped word changes width, the neighbouring words reflow smoothly so the sentence stays intact [one].
+- **Sound personality**: a soft tick per word change, or a beat grid the cards cut on; silence for one beat before the punch word.
+- **Classic failure**: a blur-dissolve between every card [two]; every line centred forever; the payoff card quieter and smaller than the setup [one]; an emoji or icon swapped into set type, which drags a foreign drawing style into the line [one].
+- **House**: A (beat-cut) when music-led and fast; B's type moves on a calm ground when it is a quiet opener.
+
+## UI-led story film
+
+- **Says**: "this fits into your day". Warmth, competence, ease.
+- **Suits**: consumer and productivity software; features that are felt in use, especially invisible ones (sync, offline, privacy, undo) told as "the invisible made felt".
+- **Fails for**: infrastructure without UI; hype launches; products whose value is spectacle or speed.
+- **Motion personality**: real interaction timing (typing, hovers, notifications arriving) at plausible speed; tight crops that fill the frame with the one region that matters; cut fast while the character is busy (0.5–0.9 s shots) and slow down for the resolution (4–5 s) [one, consistent with house B]. Exactly one move breaks the flat-screen grammar (a pull-back revealing the device, a push through a screen) and it is the feature's moment [one].
+- **Sound personality**: quiet; a soft tick locked to each card word or interaction; the single loudest moment on the feature's move (a measured swell of about +10 dB over the film's level, right on the move [one]).
+- **Classic failure**: the narrated landing-page tour, whole sections at web density with opacity fades [one, Weak]; captions that outrank the product; real browser chrome left in (profile names, other tabs) [one].
+- **House**: B; D when the story is one continuous world.
+
+## Maker's proof film
+
+- **Says**: "it's real, you can run it". Honesty, craft, low ego.
+- **Suits**: developer tools, libraries, renderers, generators; any product whose output can *be* the film ("the product makes the film").
+- **Fails for**: consumer emotion; anything where the narration cannot be the spine; products that cannot show output.
+- **Motion personality**: code re-set large with only the lines that matter, growing one line per spoken phrase [one]; a live value ticking where the concept is "a function of time" [one]; authored layers light and captured evidence dark, so the viewer always knows explanation from proof [one]; the transition surface that becomes the mark (a wipe panel collapsing into the logo) [one].
+- **Sound personality**: voice-led with a bed under it, or music-led with one sound per proof moment.
+- **Classic failure**: small, dense screen recordings entering on hard cuts; feature lists as text walls; VO pauses that became blank white frames; 98 s with no climax after the reveal [one].
+- **House**: B.
+
+## Product-as-instrument / abstract system
+
+- **Says**: precision, power, depth. "Serious engineering."
+- **Suits**: models, APIs, databases, infrastructure, security, data platforms, launch-week heroes; products with no UI of their own (the film invents an instrument vocabulary: brackets, rulers, crop marks, a live dot).
+- **Fails for**: consumer warmth; visual-first tools; "it's easy" messages.
+- **Motion personality**: stepped and digital (type-on, cells on and off, replacements rather than tweens) with exactly one organic counter-motion (a wave across a row of pins) [one]; a persistent frame element, such as a horizon rule at mid-height, carried through every section so hard changes still read as one film [one]; convergence staged literally (scatter → gather → collapse into the name) when the message is many → one [one]; the picture *simplifies* as the music climbs into the finale [one].
+- **Sound personality**: an electronic pulse with dynamics (not a wall); a stab or riser setting up the hero line, landed within a few frames of it; a real tail.
+- **Classic failure**: the floating "feature-tag cloud" around a centred phrase [two]; corner metadata nobody can read (version strings, frame sizes) [two]; a stock glitch flash not on the beat [one]; a different colour system per section, so "one product" is told in three palettes [one]; a loudness wall with no tail [one].
+- **House**: G (HUD variant).
+
+## 3D object hero
+
+- **Says**: tangibility, value, craft. "This is a thing worth having."
+- **Suits**: consumer products, fintech, devices; brand stings; milestones with a physical unit ("the unit becomes the quantity"); generative products whose output can fill the object ("output as material").
+- **Fails for**: workflow products (3D around flat content is decoration); more than one idea.
+- **Motion personality**: one material, one light, one move [two]. Entrances thrown and caught: fast, then a long ease-out tail, no bounce (about 25 frames in, 20 more to settle, measured on a sting that worked [one]); a lockup slammed from oversized to final size in about 16 frames with no overshoot, then dead still [one]. Long holds are carried by secondary motion *inside* the object (footage playing on it, micro-rotation), never by moving the background [one]. When the headline lands, the field behind it dims or vignettes [one]. A rigid grid of objects gets per-item phase so it shimmers instead of strobing (seeded, never random per run) [one].
+- **Sound personality**: whoosh on the entrance, a pad, a tonal hit on the lock, a decaying tail; two sync points can be enough [two].
+- **Classic failure**: the stock gold-metal-and-bloom look [one]; soft or upscaled textures on the object, which on a brand piece *is* the brand [one]; a long middle hold with nothing new [two].
+- **House**: C.
+
+## Data story / journey
+
+- **Says**: achievement, personal meaning, scale earned over time.
+- **Suits**: recaps, year-in-review, milestones, onboarding, "everything we shipped"; personalised films (put the person's identity in the first text and reuse that component).
+- **Fails for**: single-feature launches; films under about 15 s (the metaphor needs time to establish); trust-heavy products if the metaphor turns cartoonish.
+- **Motion personality**: each data point is a place, with one shared grammar for all of them so the viewer always knows how to read a shot [one]; transitions go *through* things (a planet's limb becomes a horizon, a grid becomes a constellation) instead of cutting [one]; the image lands first and its label 1–1.5 s later, so the fact confirms the picture [one]; counts ease out hard (most of the distance in the first third) and then hold still for seconds [two]; ranked reveals count down and save the biggest camera move for number one [one]; bookend with the hero object (launch at the start, land at the end) instead of an end card [one].
+- **Sound personality**: a steady beat-locked track as a floor, then **cut it on the hero number** and let a low tail carry the rest [one].
+- **Classic failure**: dashboard cards over a gradient; a linear camera pan for 15 s that never arrives anywhere [two]; every item popping the same way at a fixed interval, which reads as a page loading [two]; a mute film about music [one].
+- **House**: J (one number), or D (a camera journey through one world).
+
+## Playful collage / illustrative
+
+- **Says**: curiosity, craft, versatility, humour.
+- **Suits**: creative tools, identity reveals, social loops, community-voice pieces; "fixed silhouette, changing skin".
+- **Fails for**: brands that must look precise or technical; anything needing a feature explained.
+- **Motion personality**: the silhouette or frame stays fixed while the material changes; neighbours alternate light and dark so swaps of 4–5 frames stay legible [one]; the cadence tightens into the landing, and the landing transition is the slowest in the piece [one]; the ending breaks the series' style (clean digital after many textures) because the payoff of a series is a break from it [one].
+- **Sound personality**: a tick or shutter per swap; a soft hit on the landing.
+- **Classic failure**: generated imagery with mush, ghost shapes and pseudo-text [two]; a collage world abandoned after the opening [one]; a pasted cut-out with a fringed matte and no contact shadow [one]; thumbnail-preset lettering (white marker face, black stroke, drop shadow) [one].
+- **House**: G (paper variant).
+
+## Dark cinematic minimal
+
+- **Says**: drama, focus, seriousness.
+- **Suits**: model launches, developer brands, idents, landing-page hero loops behind type.
+- **Fails for**: bright feeds and small screens unless the focal point is genuinely bright; friendly consumer tone.
+- **Motion personality**: slow, constant, few events; one bright focal point; for a cliché subject, change the medium (1-bit dither, a point cloud, halftone) rather than adding effects [one]; crop the subject off three edges for scale without spectacle [one]; a hero loop moves at constant speed with no event so each repeat is invisible [one].
+- **Sound personality**: a filter opening over the runtime ("the music comes into focus"), anchored to the reveal, not mid-beat [one]; a real button at the end.
+- **Classic failure**: underexposure (a frame that averages near black on a phone) [one]; radial glow plus dust as the default "premium" backdrop [two]; a second or more of black at the head [two]; a dark film with no end button [one].
+- **House**: this is a ground, not a family. Apply it to A, C or G and keep that family's numbers; direction's "brand colours override a family's stage" rule covers it.
+
+## Terminal / retro
+
+- **Says**: builder credibility, tools for people who build, nostalgia.
+- **Suits**: CLIs, developer tools, open-source launches where the command is the call to action (make the command the biggest object on the end card, held 4 s or more [one]).
+- **Fails for**: mainstream audiences; anything needing warmth or colour.
+- **Motion personality**: typing at a believable rate with a solid caret; lit cells arrive hot (white) and cool to the brand colour, so energy visibly passed through [one]; teases that grow and accelerate toward the reveal.
+- **Sound personality**: keys, a low hum, one crack or hit on the reveal; for a lightning or flash device, the light-then-sound delay is a ready-made rhythm.
+- **Classic failure**: matrix-green glyphs on black at a few percent coverage [one]; identical teases at exact spacing [one]; a dead, static hold after the climax [one].
+- **House**: G (HUD variant), or A.
+
+## Component sizzle
+
+- **Says**: "a kit of parts that behave". Developer delight.
+- **Suits**: UI libraries, design kits, SDKs.
+- **Fails for**: outcome products (an assistant, a service, a platform).
+- **Motion personality**: a stable frame grammar (a label slot and a code-name chip in the same place every beat) [one]; one accent reserved for "the thing that changes" [two]; the timeline standing in for the input ("the timeline drives the input") [one]; a tiny real scene per demo, not abstract boxes [one].
+- **Sound personality**: cues on state changes; any lift anchored to the strongest reveal.
+- **Classic failure**: every beat the same length and weight [one]; abstract demos that show nothing to someone who doesn't already know the term [one]; no end button [one].
+- **House**: B on a dark ground, or A.
+
+---
+
+## Light or dark ground
+
+- **Light** reads as open, calm, trustworthy and product-first; it suits UI, finance, health, education, and any film that will sit on a light website. It needs depth from shadow and scale, not glow.
+- **Dark** reads as dramatic, technical and premium; it suits models, infrastructure and idents. It needs one bright focal point at all times; check frame 0 and the end card on a phone-sized capture.
+- **The product's own theme colour** beats both when it has one: the film and the UI become one object [one].
+
+## Switching inside a film
+
+- One family per film. A launch may open with 3–4 s of kinetic type, then settle into its main family; say so and keep each passage pure (direction's "Mixing families").
+- "Two worlds, one crossing" is the one deliberate exception: the old world and the new each get a look, and the film crosses once, visibly. Two worlds that are never reconciled, or four looks in sixty seconds, read as separate kits glued together [two].

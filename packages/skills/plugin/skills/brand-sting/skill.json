@@ -42,6 +42,10 @@
       "id": "sound-design"
     },
     {
+      "kind": "skill",
+      "id": "launch-taste"
+    },
+    {
       "kind": "capability",
       "id": "save-asset",
       "why": "The real logo file; without one, the name as a wordmark, never a redrawn mark."
@@ -148,6 +152,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.2.0",
+  "version": "2.2.1",
   "icon": "✨"
 }

@@ -4,6 +4,8 @@ The ten looks GenMotion's own templates are built in, measured from their source
 
 Moves named here (blurUp, pop, flood, iris, persisting element…) are defined with exact timings in `motion-language`.
 
+These families are *how* a look is built. For launch, feature, brand and milestone films, *which* look to choose is decided by `launch-taste`'s style map (`references/style-map.md` in that skill): it says what each look communicates, which products it suits and fails for, and names the family letter here that supplies the numbers. Where the two seem to differ, the style map decides the choice and this file decides the numbers. Its "dark cinematic minimal" is a ground, not a family: apply it to A, C or G under the brand-colour rule below.
+
 Two rules sit above every row:
 
 - **Type follows the house size table** in `three-type` (the design standards every project carries): hero 72–130 px, supporting 34–48, labels 28–34, uppercase eyebrows 28, nothing under 28 px, headline weight ≤ 500. Some templates were measured heavier or smaller; the rows below are already adjusted, and where anything here seems to differ, the table wins. The only type above 130 px is a single word or number that *is* the image (A's bleed punch word, J's hero number, a brand's wordmark lockup).

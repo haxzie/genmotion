@@ -43,6 +43,10 @@
       "id": "sound-design"
     },
     {
+      "kind": "skill",
+      "id": "launch-taste"
+    },
+    {
       "kind": "capability",
       "id": "capture-frames",
       "why": "One frame per beat proves the plan made it to screen."
@@ -135,6 +139,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "icon": "✨"
 }
