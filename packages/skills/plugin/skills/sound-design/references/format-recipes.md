@@ -32,9 +32,9 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 A muted-first launch, a calm hardware or data film, a film whose content is many sound events: the picture carries the meaning and sound is the reward for unmuting (SKILL.md, Sparse, picture-led films).
 
 - **Cues lead**: 5–20 designed cues on the film's events (a tone per unit, a tick per crossing, the hit on the peak, a 2–4 note sonic logo on the mark). Each cue's loudest 50 ms RMS sits **≥12 dB above the bed** (`mix-and-loudness.md`, Sparse mixes).
-- **Bed**: none, or an air bed at 0.05–0.15 low-passed at ≤ 4 kHz (`sfx-cues.md`'s ambient bed, brown noise alone). Take it out for the breath so the silence is real (room tone at −45 to −60 dBFS, not a riser filling it).
+- **Bed**: room tone or an air bed, low-passed at ≤ 4 kHz (`sfx-cues.md`'s ambient bed, brown noise alone), at about −32 LUFS momentary in the master and running through every hold, so the gaps read as space, not dropouts. Take it down only for the named breath (room tone at −45 to −60 dBFS, never digital zero, not a riser filling it).
 - **Many events**: one stem from the scene's event schedule with the many-events rules (`sfx-cues.md`, Many events); heroes (first, last, isolated) at full level.
-- **Master**: −16 to −18 LUFS integrated, ≤ −1 dBTP, LRA 4–14 LU (no stretch under −40 LUFS momentary for more than 2 s outside the named silence), with the computed-ceiling re-master (`mix-and-loudness.md`); −14 only when the cues are dense and energetic and still lead after it. Tell the user why it is quieter than −14 (platforms turn loud files down, not reliably quiet ones up).
+- **Master**: feeds (X, LinkedIn, Instagram, TikTok, YouTube Shorts, Kickstarter, Product Hunt) at **−14 LUFS integrated, ≤ −1 dBTP, LRA about 4–10 LU**, with room tone at about −32 LUFS momentary running through every hold and no hole of 0.3 s or more under −60 dBFS; recorded clicks and keys need the cue-stem recipe (`mix-and-loudness.md`, Mastering a sparse film of real transients), synthesised tones survive the computed-ceiling re-master. −16 to −18 LUFS only for a site hero, an autoplay-muted embed or a long-form player, where no louder neighbour plays next to it. The peak cue is the loudest event and the sonic logo sits ≥ 2 dB under it.
 
 ## Brand sting (2–8 s)
 

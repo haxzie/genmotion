@@ -44,6 +44,7 @@ Contents: blurUp · Glow-resolve · Smear-in · Rebus slot · riseMask · Mask p
 - By word. Duration 12f (12–14) outCubic, stagger 3f (hero 3–4, sub 2, slow slide-ins 5).
 - From y +0.5em (10–34 px), blur 10 px → 0 (heavy display type 14–34 px), opacity reaching 1 by about 35% of the move so the word is readable while it settles.
 - Exit: 6–8f inCubic, y −10 to −20 px, blur up to 10, all words together or stagger 1–2f.
+- **Landing on a hit**: the line's last word must be sharp on the hit frame, so start the first word `12 + 3 × (words − 1)` frames before the hit (a 4-word line: 21f early). Starting it on the hit, or 12f before, leaves the last word blurred on the peak frame (judged).
 - Not on calm-trust films, and not on every line of any film: blur in and blur out on every line is a template tell. Calm: the same timing and rise (y +0.3em, 14–16f) with blur 0, exit 7–9f fade + y −10 px.
 
 ### Glow-resolve (cards on a dark or gradient ground)

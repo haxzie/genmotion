@@ -1183,7 +1183,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.2",
+      "version": "1.4.3",
       "icon": "🎬",
       "source": "first-party"
     },
@@ -1700,7 +1700,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.5.1",
+      "version": "2.5.2",
       "icon": "🚀",
       "source": "first-party"
     },
@@ -1769,7 +1769,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.2.2",
+      "version": "1.2.3",
       "icon": "🎯",
       "source": "first-party"
     },
@@ -1839,7 +1839,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.1",
+      "version": "1.4.2",
       "icon": "〰️",
       "source": "first-party"
     },
@@ -2046,7 +2046,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.3.1",
+      "version": "1.3.2",
       "icon": "🎚️",
       "source": "first-party"
     },
@@ -3737,5 +3737,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "e3ef2330"
+  "revision": "1bae73dd"
 }

@@ -171,12 +171,13 @@ Measured on a CC BY orchestral end-credits score (126 s, no beat): this join's 0
 | Apple Podcasts | −16 LUFS ± 1 | ≤ −1 dBTP |
 | Podcasts general | −16 stereo / −19 mono | −1 dBTP |
 | Web or in-app autoplay | −14 to −16 | −1 dBTP |
-| Sparse, picture-led film (designed cues, no music or VO), any online destination | −16 to −18 LUFS (platforms turn loud files down, not reliably quiet ones up: it plays a little quieter and keeps its silences) | ≤ −1 dBTP, LRA 4–5 LU minimum, ≤ 12–14 LU when meant to be heard |
+| Sparse, picture-led film (designed cues, no music or VO) in a feed: X, LinkedIn, Instagram, TikTok, YouTube Shorts, Kickstarter, Product Hunt | −14 LUFS (feeds never turn a quiet file up; a −18 post plays 4 dB under its neighbours and its bed drops out on a phone) | ≤ −1 dBTP, LRA about 4–10 LU |
+| Sparse film on its own page: a site hero, an autoplay-muted embed, a long-form player | −16 to −18 LUFS (no louder neighbour; the silence is part of the design) | ≤ −1 dBTP, LRA 4–12 LU |
 | EBU R128 broadcast | −23 LUFS ± 0.5 | ≤ −1 dBTP |
 | ATSC A/85 (US broadcast) | −24 LKFS ± 2 | ≤ −2 dBTP |
 | Netflix | −27 LKFS ± 2, dialogue-gated | ≤ −2 dBTP |
 
-Default: −14 LUFS / −1 dBTP unless the user names another destination. Keep some dynamics: a short promo's loudness range (LRA) is typically 4–8 LU, so hits still land.
+Default: −14 LUFS / −1 dBTP unless the user names another destination. Keep some dynamics: a short promo's loudness range (LRA) is typically 4–10 LU, so hits still land; a wider LRA in a short feed film usually means a bed too low to hear and holes between cues, not designed dynamics.
 
 ## Measuring
 
@@ -228,7 +229,7 @@ ffmpeg -hide_banner -nostats -i out-master.mp4 -map 0:a -af ebur128=peak=true -f
 
 The grep prints `"normalization_type" : "linear"` (or `"dynamic"`) with the output loudness and true peak: record the type in `VIDEO.md`. `LRA=20` keeps loudnorm from treating a sparse film's wide range as a reason to compress; `latency=1` removes the limiter's 5 ms lookahead delay; `level=disabled` stops `alimiter` riding the gain itself. Delete `ln.json` after.
 
-Tested on ffmpeg 6.1 with three sparse picture-led exports (cue-led sound, no music or VO):
+Tested on ffmpeg 6.1 with three sparse picture-led exports (cue-led sound, no music or VO; synthesised tones, crest factor under about 12 dB, so not recorded clicks: those take the next section):
 
 | Source | Target | Ceiling | `normalization_type` | Result after AAC |
 |---|---|---|---|---|
@@ -241,12 +242,53 @@ The first source through the old fixed −4 dBFS limiter to −14 gave `dynamic`
 
 If it still reports `dynamic`: recompute `C` from the new measurement and rerun; on speech-led pieces a residual `dynamic` is acceptable (light limiting); on a music-led piece whose build matters, re-shape the music with the staircase recipe (SKILL.md, Pre-master what the SFX sit on) and export again. A linear master keeps the source's LRA, so an LRA under 3 LU after it was already in the mix: fix the bed, not the master.
 
+## Mastering a sparse film of real transients
+
+Recorded clicks, keys, taps and switch snaps carry a 15–27 dB crest factor (sample peak over the loudest 50 ms RMS; measured on the CC0 library's keys, mouse clicks and switch). A film of them has a peak-to-loudness ratio near 20 dB, and −14 LUFS at −1 dBTP allows 13, so something has to take 6–10 dB off the transients. The computed-ceiling recipe above does it badly on these files: its 5 ms attack lets a 2 ms click straight through, `loudnorm` falls back to `dynamic`, and on a 15 s test it landed at −16.3 LUFS (−18.6 without the per-cue trim) with true peak −0.2 dBTP. Two other traps: the integrated loudness of a sparse mix **jumps with the bed level**, because a bed within about 14 LU of the cues flips across the −10 LU relative gate (measured: the same 8-cue film at −14.2 LUFS with the bed at −32 and −20.5 LUFS with it at −30), and limiting the whole mix moves the cues relative to the bed every time you change the gain. So master the cues first and add the bed after:
+
+1. **Trim each hot cue before placing it.** Crest over 12 dB: a fast limiter at the loudest 50 ms RMS + 12 dB. It costs nothing audible on a click and stops one transient from setting the whole master's gain.
+2. **Build the cue stem without the bed** (export with the bed clip muted, `ffmpeg -i out.mp4 -vn -ar 48000 assets/cue-stem.wav`, or your own mix from the event schedule) at the role levels: peak cue loudest, logo ≥ 2 dB under it, repeated keys 15–18 dB under the hits (the limiter in step 3 narrows the gap between transients: keys placed 9 dB under the clicks came out 1.6 dB under on the master, placed 18 dB under they came out 4.6 dB under).
+3. **Master the stem alone**: linear gain, then a 4× oversampled sample-peak limiter at −2.5 dBFS (oversampling makes it a true-peak limiter; −2.5 leaves room for the AAC encode), measure, add 1.5× the shortfall, repeat until it reads −13.5 ± 0.3 LUFS (three or four passes). The digital silence between cues is below the absolute gate, so the reading is stable from pass to pass.
+4. **Add the room tone at −32 LUFS** under the whole film (brown noise band-passed 80 Hz–1.2 kHz, a fixed seed, 0.5 s fades) and run the same limiter. The bed costs about 0.5 LU, which is why step 3 aims at −13.5.
+5. **Measure the result**: −14 ± 1 LUFS, LRA 4–10 LU, true peak ≤ −1 dBTP, no hole ≥ 0.3 s under −60 dBFS (Sparse mixes, below), and the cue lead and hierarchy read on this file, not the pre-master mix. If adding the bed moved the integrated reading by more than 1 LU it has crossed the gate: take it down 2 dB and redo step 4.
+
+```
+# 1. trim one cue (repeat per file); crest = sample peak - loudest 50 ms RMS
+F=assets/click-mouse-1.wav
+P=$(ffmpeg -i $F -af astats=measure_perchannel=none -f null - 2>&1 | awk -F: '/Peak level dB/{v=$2} END{print v+0}')
+R=$(ffmpeg -v error -i $F -af "asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-" -f null - | awk -F= '/RMS_level/{if($2!="-inf"&&(m==""||$2+0>m))m=$2+0} END{print m}')
+LIM=$(awk -v p=$P -v r=$R 'BEGIN{c=p-r; printf "%.4f", 10^((c>12?r+12:p)/20)}')
+ffmpeg -y -v error -i $F -af "adelay=10:all=1,alimiter=limit=$LIM:attack=0.1:release=15:level=disabled:latency=1,atrim=start=0.01,asetpts=PTS-STARTPTS" assets/click-mouse-1-trim.wav
+# 3. master the cue stem alone
+TI=-13.5; TP="aresample=192000,alimiter=limit=0.75:attack=0.1:release=40:level=disabled:latency=1,aresample=48000"
+LU(){ ffmpeg -hide_banner -nostats -i $1 -af ebur128 -f null - 2>&1 | awk '$1=="I:"{v=$2} END{print v}'; }
+G=$(awk -v t=$TI -v i=$(LU assets/cue-stem.wav) 'BEGIN{print t-i}')
+for n in 1 2 3 4 5 6; do
+  ffmpeg -y -v error -i assets/cue-stem.wav -af "volume=${G}dB,$TP" assets/stem-master.wav
+  I=$(LU assets/stem-master.wav); echo "pass $n: +$G dB -> $I LUFS"
+  awk -v t=$TI -v i=$I 'BEGIN{exit !(i-t<0.3 && t-i<0.3)}' && break
+  G=$(awk -v g=$G -v t=$TI -v i=$I 'BEGIN{print g+1.5*(t-i)}')
+done
+# 4. room tone at -32 LUFS under the whole film (D = film length in s), same limiter, AAC
+D=15
+ffmpeg -y -v error -f lavfi -i "anoisesrc=color=brown:seed=7:amplitude=0.5:duration=$D:sample_rate=48000" -af "highpass=f=80,lowpass=f=1200,pan=stereo|c0=c0|c1=c0" assets/room-raw.wav
+BG=$(awk -v i=$(LU assets/room-raw.wav) 'BEGIN{print -32-i}')
+ffmpeg -y -v error -i assets/stem-master.wav -i assets/room-raw.wav -filter_complex "[1:a]volume=${BG}dB,afade=t=in:d=0.5,afade=t=out:st=$((D-1)).5:d=0.5[b];[0:a][b]amix=inputs=2:normalize=0,$TP" -c:a aac -b:a 192k assets/master.m4a
+# 5. measure, then mux onto the picture
+ffmpeg -hide_banner -nostats -i assets/master.m4a -af ebur128=peak=true -f null - 2>&1 | grep -A14 Summary | grep -E " I:|LRA:|Peak:"
+ffmpeg -y -i out.mp4 -i assets/master.m4a -map 0:v -map 1:a -c copy -movflags +faststart out-master.mp4
+```
+
+Tested on ffmpeg 6.1 with a 15 s mix of real CC0 files: 12 laptop keys in two runs (crest 16–19 dB, placed 9–10 dB under the hits), a mouse click, two taps, a switch click, a tick, a pop, a glass tink, a soft thud, a success chime + thud as the peak at 10.5 s and a low bell as the logo at 12.5 s. Stem passes −17.3 → −14.4 → −13.9 → −13.7 LUFS; the master: **−14.2 LUFS, LRA 7.1 LU, −2.0 dBTP after AAC**, room tone −32.1 LUFS momentary, no hole under −60 dBFS, every cue ≥ 15 dB over the room tone's RMS, the peak cue's loudest 50 ms 3.4 dB over the logo's. The same recipe on an 8-cue version of the film (one cue per 2 s) landed −13.9 LUFS but LRA 12.4: a film that sparse is too thin for a feed; add the product's own small sounds on its visible events, or let tails ring, rather than widening the master. Delete the intermediate files after.
+
+The per-cue trim is the cheap half: without it the same mix needed about 1.3 dB more limiting at the master and the keys and clicks lost more of their difference. Synthesised tones (crest under 12 dB) skip step 1.
+
 ## Sparse mixes: do the cues lead?
 
 For a picture-led film of designed cues over an air bed (SKILL.md, Sparse, picture-led films). Compare like with like: a cue's **loudest 50 ms RMS** against the bed's RMS in a cue-free stretch. Not the cue's sample peak: a noise bed's own sample peaks sit about 10 dB above its RMS, so a peak-versus-RMS reading passes a mix whose cues are only 5–8 dB over the bed (measured).
 
 ```
-# 50 ms RMS rows of the export (or of the mix before muxing)
+# 50 ms RMS rows of the master (not the pre-master mix: the limiter changes the lead)
 ffmpeg -v error -i out.mp4 -map 0:a -af "aresample=48000,asetnsamples=n=2400:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/w50.txt" -f null -
 # the bed: power-average of a cue-free window (here 3.0-4.0 s)
 awk -F'[:= ]+' '/pts_time/{t=$NF} /RMS_level/{if(t>=3.0&&t<4.0&&$NF!="-inf"){s+=10^($NF/10);n++}} END{printf "bed %.1f dB\n", 10*log(s/n)/log(10)}' assets/w50.txt
@@ -264,6 +306,14 @@ awk -F'[:= ]+' '/pts_time/{t=$NF} /r128.M/{if(t<0.4)next; v=$NF+0; if(v<-40){if(
 ```
 
 Every printed stretch is either the named silence in `VIDEO.md` (≤ 1.5 s of picture breath, or a sting's designed gap) or a fault: lift the bed under it, or give its visible events cues loud enough to read. Tested: a 4 s gap of near-silence between two tones printed `quiet 5.3-9.0 s`; on three sparse 29–30 s launch exports it printed one 2.2–2.5 s room-tone stretch on two of them and nothing on the third. It does not see an opening of isolated single-frame ticks over room tone (the meter rises on every tick): that is what the LRA ceiling catches, so read both. Delete `st.txt` after.
+
+**Holes** (the sub-second half): the 400 ms meter averages a short gap away, so a 0.8 s stretch of digital zero right after a payoff cue passes the 2 s rule and still sounds like a broken file (judged twice on one wallet film). List every hole of 0.3 s or more at digital zero or under −60 dBFS:
+
+```
+ffmpeg -hide_banner -nostats -i out.mp4 -map 0:a -af silencedetect=noise=-60dB:d=0.3 -f null - 2>&1 | grep -E "silence_(start|end)"
+```
+
+Pass: nothing printed outside the named silence (a sting's designed gap, a trailer's room-tone beat, which should itself sit at −45 to −60 dBFS RMS and so not print as zero). Tested: the cue stem of the 15 s test above printed 11 holes of 0.46–0.99 s between cues; the same stem with the −32 LUFS room tone added printed none. The fix is room tone through the hold and a cue tail left to ring, never a lifted master.
 
 The loop: export → `ebur128` → off by more than 1 LU or true peak above −1 dBTP? re-master as above (or scale every clip `volume` by the difference, ×1.12 per +1 dB, and pull the loudest overlapping clips down) → measure again.
 

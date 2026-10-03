@@ -14,12 +14,12 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 | Sub drop / boom | 30–60 Hz falling sine | the felt weight under a hit | on the hit; at most one per 10–20 s; pair with a mid-range hit (phones cannot play sub) |
 | Braam | huge low brass or synth blast | trailer act breaks, title card | on the cut, usually after silence |
 | UI click / tap / pop | very short, bright | cursor clicks, toggles, items appearing | on the press or appear frame (0 f, at most 1 f early); vary pitch or sample |
-| Typing | key clicks | text typed on screen | a loop at matching density, not one per character |
-| Notification / chime | short tonal | message in, success, counter done | on the appear frame; in the music's key if tonal |
+| Typing | key clicks | text typed on screen | a loop at matching density, not one per character; ≥ 6 dB under the hits (15–18 dB before a −14 master), first and last key full (SKILL.md, Many sound events) |
+| Notification / chime | short tonal | message in, success, counter done | on the appear frame; in the music's key if tonal; from the film's own family, ≥ 0.5 s decay on a success; no casino, cash-register, coin-jangle or game-reward chime for a calm-trust fintech or premium product (SKILL.md, Timbre fits) |
 | Glitch / stutter | bit-crush, stutters | glitch transitions, error states | on the glitch frames, short |
 | Shimmer / sparkle | high twinkle | logo shine, highlight sweep | spans the shine, quiet |
 | Foley | real actions (cloth, paper, tape, steps) | UGC, unboxing, product handling | exactly on the visible action |
-| Ambience / room tone | continuous bed | under VO-only or "silent" stretches, screen demos | whole scene, 20–30 dB under VO, seamless loop, fades 15–30 f |
+| Ambience / room tone | continuous bed | under VO-only or "silent" stretches, screen demos, every hold of a sound-on film | whole scene, 20–30 dB under VO (about −32 LUFS momentary in a −14 cue-led master), seamless loop, fades 15–30 f; no hole ≥ 0.3 s of digital zero |
 | Meme-style hits | boom, record scratch, airhorn | Gen Z / comedic edits only | on the punchline frame, one per joke; generate a look-alike, never use a rip |
 
 ## Timing table from the house templates
@@ -231,6 +231,8 @@ What each number does, so you can tune one at a time:
 | Heroes | first and last event at 0 dB, never thinned | the start and the land stay readable; add any event the picture isolates the same way |
 
 Tested on ffmpeg 6.1 with 80 events accelerating from 30 f apart to every 1–2 f: 56 voiced, peak −5.1 dBFS, 0.5 s RMS −28 to −24 dB on the sparse opening, a steady −30 to −31 dB through the densest run (a texture under the isolated hits, not a wall), and −25 dB on the final hero event. Pitch tied to state instead of phrase (rising with the jar's fill) is the same code with `semi` from the fill fraction (`12 * i / F.length`). A different source sound (a real coin foley, a `sfx` take) drops straight in: peak-normalise it to −6 dBFS first.
+
+**When the burst is the peak** (the whole set lands on the 10), the thinning above is right for the texture but wrong as the only layer: 57 snaps in 23 f thinned to 12 voiced clacks read thinner than the picture (judged). Keep the density as a gesture: for the burst's frames drop the thinning to 1 f (`f - last < 1`) and raise `maxVoices` to 6–8, so the roll stays dense, ramp its level up into the hit frame (its last 0.3 s about 3 dB over its start), and put one layered hero hit (transient + body + tail, `Layering a hero hit`) on the hit frame as the loudest 50 ms of the film.
 
 ## Speech-like murmur (placeholder)
 

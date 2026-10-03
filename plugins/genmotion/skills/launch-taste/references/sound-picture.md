@@ -36,6 +36,7 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 - **Pitch direction = meaning.** Rising for confirm, on, add, send, success; falling for cancel, off, remove, error. Every cue in an affirmative demo rose 8–17 semitones. [one]
 - **Register = weight.** The primary action lowest and roundest; light navigation highest and brightest; a state change with travel gets the widest sweep. [one]
 - **Tonal cues in the music's register** sit in the film's world; broadband sample-pack clicks sit on top of it. Choose by tone: a calm film wants round, nearly pure tones; an instrument film can take clicks and ticks. [one]
+- **Timbre = the product's tone.** One family of cues per film (glass, wood, soft plastic, a synth tone). A calm-trust fintech or premium product never gets a casino, cash-register, coin-jangle or game-reward chime unless the product is about coins or games: a payment success is a clean confirm tone a step above the film's earlier ticks, decaying ≥ 0.5 s. [two, as a fault]
 - **Visualise a sound as an echo of its source's shape** (a ripple the shape of the button that made it) so muted viewers "hear" it. [one]
 
 ## Making room
@@ -49,9 +50,10 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 
 - **Cut the music on the payoff.** A beat-locked track that stopped within a frame or two of the hero number landing, followed by a low pad with its high end closing, made the silence the exclamation mark. [one] Use it for numbers, reveals and "it's done" moments; do not use it on every chapter.
 - **Anchor the lift.** A filter opening, a +5 dB lift or a drop means something only on the strongest picture change; placed mid-beat it is noise. [one, as a fault]
+- **The peak is the loudest event, the sonic logo sits under it.** In every film, not only a trailer, the 10's cue has the loudest 50 ms and momentary reading, and the end card's sonic logo sits ≥ 2 dB under it, so the film resolves on the mark instead of climaxing there. A judged wallet film had its logo bell about 3 LU over the payoff cue, and the end card became the climax; a design-tool film had its typing louder than its hit. [two]
 - **Give the product name the sound, not the parent brand.** The best end sting was the product's own cue vocabulary turned into a rising four-note figure, landing on the product name; the org prefix arrived silently. [one]
 - **Tails, not hard stops.** Every film whose music was still at full level on the last frame felt cut off; every one with a 0.5–3 s decay or a button on the lock felt resolved. [several] (`sound-design` §Silence and endings has the recipes.)
-- **No silence by accident.** A silent head (4 s of typing with no ticks), a silent end card after the VO ends, or a sound feature announced with no sound, each read as unfinished. [several]
+- **No silence by accident.** A silent head (4 s of typing with no ticks), a silent end card after the VO ends, or a sound feature announced with no sound, each read as unfinished. [several] The short version counts too: two 0.8–0.9 s holes of digital zero right after a payoff cue read as a broken file [one]. Room tone (about −32 LUFS momentary in a −14 feed master) runs through every hold, and no hole of 0.3 s or more falls to digital zero or under −60 dBFS outside a named silence (`sound-design`).
 - **No long silent end card.** 8–10 s of silence under a held card felt dead; hold the CTA 2–4 s with a tail, then stop. [two]
 
 ## Music and the cut
@@ -59,7 +61,7 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 - A track at 120 BPM puts a beat every 15 frames and a bar every 60; arrivals on beats and big changes on bar lines lock picture to sound. The best music-led film cut within 1–5 frames of the grid but did not cut on every bar. [one]
 - A flat library track has no peak; give it one (`launch-playbook` §Sound) rather than accepting a flat wall.
 - An opening filter (dark and muffled, then full band) is a strong reveal arc if the full band arrives on the reveal. [one]
-- **A title-card interleave** (the social launch cut): cards land on beats (a card's first legible frame on the beat, not its first pixel), product beats carry the effects (a click on the press frame, coin or pop clusters on a burst, a soft hit when a swarm settles), and the URL card sits on the track's button or a decaying hit. Keep the cards themselves quiet (a soft tick at most) so the product's sounds read as the events. [several, from the social study]
+- **A title-card interleave** (the social launch cut): cards land on beats (a card's first legible frame on the beat, not its first pixel), product beats carry the effects (a click on the press frame, pop clusters on a burst, coins only when the product is about coins, a soft hit when a swarm settles), and the URL card sits on the track's button or a decaying hit. Keep the cards themselves quiet (a soft tick at most) so the product's sounds read as the events. [several, from the social study]
 
 ## Muted placements
 
@@ -73,4 +75,5 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 2. A sustained motion (a slide, a glide, a camera move under a tonal swell) has a sound of about the same length.
 3. Where the product or payoff leads, the bed's 0.5 s RMS sits ≥10 dB below its level either side (`ffmpeg` `astats` on the music stem).
 4. The last 1.5 s: the music is decaying or has hit its button; it is not at full level on the last frame.
-5. The export's LRA is above about 3 LU (a living mix), measured with `ffmpeg` `ebur128`.
+5. The export's LRA is above about 3 LU (a living mix) and, for a short feed promo, at most about 10 LU, measured with `ffmpeg` `ebur128` on a −14 LUFS master.
+6. The peak cue's loudest 50 ms RMS is the film's highest and the sonic logo's is ≥ 2 dB under it; `silencedetect=noise=-60dB:d=0.3` prints no hole outside the named silence.

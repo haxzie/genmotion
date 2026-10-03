@@ -43,6 +43,7 @@ hold_frames ≥ characters × 2                   // never faster than 15 charac
 
 Every other frame count in the pack is at 30 fps too: entrances, staggers, beats, holds that end a film. A 24 fps project (footage shot at 24 is kept at 24) multiplies each by 0.8 and rounds to the nearest whole frame, never below 1 (a 3f stagger is 2f, a 12f blurUp is 10f, a 75–120f logo hold is 60–96f).
 
+- **A card whose parts arrive in turn** (a name, then its descriptor; a number, then its unit line): count every word on the card and start the hold from the frame the **last** part is legible, because the viewer is still reading the descriptor when the name has long settled. A 1-word name with a 3-word descriptor arriving 20f later needs `9 × 4 + 15 = 51f` from the descriptor's legible frame, not 30f from the name's.
 - **Exceptions**: a 1–3 word line inside a rapid sequence may drop to 18f (0.6 s) — the house minimum before an exit starts — because the eye reads one or two words almost instantly. Cards in the beat-cut style hold 5–15f because they are rhythm, not reading. Anything shorter than its formula is texture: it may not carry the message.
 - **Subtitle standard** for comparison: 17 characters per second for adults, 13 for children, minimum 20f (0.83 s) per caption. Designed motion type competes with imagery, so it gets the more generous house formula.
 - **Test**: if you cannot read it twice in its hold, it is too fast.
