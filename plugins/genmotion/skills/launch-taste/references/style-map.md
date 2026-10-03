@@ -4,7 +4,9 @@ The decision guide for direction's Step 4 on launch-type films. Each family belo
 
 Evidence markers: **[several]** = seen in 3+ films that worked or failed the same way; **[two]**; **[one]** = one clear example, treat as a strong hint.
 
-Contents: How to choose · Kinetic editorial type · UI-led story film · Maker's proof film · Product-as-instrument · 3D object hero · Data story / journey · Playful collage · Dark cinematic minimal · Terminal / retro · Component sizzle · Light or dark ground · Switching inside a film
+The last six families come from the second study (twenty-two social-native launch films from X, the taste this skill aims at); the first ten from the first study and the house templates. Most short launches today are a title-card interleave whose product beats are drawn from one of the other families.
+
+Contents: How to choose · Kinetic editorial type · UI-led story film · Maker's proof film · Product-as-instrument · 3D object hero · Data story / journey · Playful collage · Dark cinematic minimal · Terminal / retro · Component sizzle · Title-card interleave · Prompt-led demo · Perspective UI showcase · Glossy icons and tokens · Gradient-light mood · Editorial documentary · Light or dark ground · Grounds that are not decoration · Switching inside a film
 
 ---
 
@@ -22,7 +24,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Fails for**: anything that must be *seen* working; long films (type alone tires by about 20 s without a picture to rest on); products whose value is visual.
 - **Motion personality**: words by line or word; per-letter only for the 2–3 words that matter. Holds long, swaps fast (a measured 2.3 s hold to a 5-frame swap felt exactly right [one]). Emphasis by scale (a tiny setup line over one huge word, about 4:1 [two]) and by one register switch (a single serif word in a sans film for the punchline [one]). When a swapped word changes width, the neighbouring words reflow smoothly so the sentence stays intact [one].
 - **Sound personality**: a soft tick per word change, or a beat grid the cards cut on; silence for one beat before the punch word.
-- **Classic failure**: a blur-dissolve between every card [two]; every line centred forever; the payoff card quieter and smaller than the setup [one]; an emoji or icon swapped into set type, which drags a foreign drawing style into the line [one].
+- **Classic failure**: a blur-dissolve between every card [two] (a blur or glow *entrance* by word is the current house idiom and fine; the tell is the same blur carrying every transition); every line centred forever; the payoff card quieter and smaller than the setup [one]; an emoji or icon swapped into set type, which drags a foreign drawing style into the line [one].
 - **House**: A (beat-cut) when music-led and fast; B's type moves on a calm ground when it is a quiet opener.
 
 ## UI-led story film
@@ -117,6 +119,67 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Classic failure**: every beat the same length and weight [one]; abstract demos that show nothing to someone who doesn't already know the term [one]; no end button [one].
 - **House**: B on a dark ground, or A.
 
+## Title-card interleave (social launch)
+
+- **Says**: "it's live, and here is why it matters", in the voice of a confident team, fast.
+- **Suits**: feature and product launches posted on X, LinkedIn or a feed under a message that carries the details; 8–30 s; 2–5 crisp facts; some UI or a product object. The most common shape in the collection [several].
+- **Fails for**: vague claims (the cards fill with clichés, and an all-cliché stack reads as parody [one, a parody that went viral]); a story that needs one long run; products with nothing to show between cards.
+- **Motion personality**: a card of 2–4 words built by word (blur or glow resolve, or a horizontal smear for a punch word), held by the hold formula, out on the motif's move; a product beat of 45–90f that enters already moving; one brand shape (arcs, a lens, a light band) or a rise-through carrying every cut [several]; the cards' size steady, one bleed word at most, spent on the product's own term [one]. A beat every 1–2 s.
+- **Sound personality**: a short track with a clear grid; cards land on beats, product beats carry the cues (clicks, coin hits, a pop on the payoff); the URL card on the button.
+- **Copy**: `SKILL.md` §The social launch cut, Copy rhythm.
+- **Classic failure**: small title type centred on a big dark ground (unreadable at feed size) [several]; cards that name features ("Wallet marketplace") instead of outcomes [two]; the product beats a whole dense dark screen [several]; a different transition per cut [two].
+- **House**: K.
+
+## Prompt-led demo
+
+- **Says**: "you ask, it's built". Capability without jargon.
+- **Suits**: AI app builders, agents on a canvas, assistants, search, any product driven by a typed request [several].
+- **Fails for**: products with no input box; requests that are boring to read.
+- **Motion personality**: the composer near full frame, the request typing at headline size (7–10% of frame height) with a solid caret, the tail words in the brand gradient [two]; the integrated source's icon flies in and docks as a chip as the request names it [one]; a weighted cursor presses send; a hard cut to the result already moving (a hover, a cursor mid-path), one action in it, back to the next request [two]. On a canvas tool, the tool's native notation (selection handles, named cursors, comments) is the graphic language, and one request bursts into a grid of variants a person then chooses from [one].
+- **Sound personality**: key ticks under the typing, a soft send, a whoosh into the result; the bed sits under it.
+- **Classic failure**: the request in small UI type with a marketing line over it; results shown as static screenshots; every result the same layout.
+- **House**: B for the results; K's cards between rounds when the film is short; a brand gradient as the frame around a neutral composer card keeps the brand on screen [one].
+
+## Perspective UI showcase
+
+- **Says**: "a professional tool, serious money, built with care".
+- **Suits**: trading and finance apps, dashboards, pro creative tools, anything whose dark UI is itself the asset [several].
+- **Fails for**: UI that cannot be magnified (the film turns into texture); calm-trust consumer products (it reads cold).
+- **Motion personality**: real screens on tilted planes (back-tilt 20–35°, or a steep side angle with captions in the space the angle opens), rising and pushing slowly (about 1.0 → 1.25× over a beat) with a coloured rim light behind the panel [several]; one panel sharp and the rest defocused by depth [two]; a fan of cards out of a container, or a floor of cards receding under the headline [one]; one control lifted out to poster scale for the decision [one].
+- **Sound personality**: low pulse, UI ticks, a whoosh per panel move.
+- **Classic failure**: a whole dense screen at feed size [several]; dark panel on dark ground with no rim or horizon light [two]; captions at 3% of frame height [one].
+- **House**: K or B on a dark ground; light the rims as C does.
+
+## Glossy icons and tokens
+
+- **Says**: "everything you use, in one place", or "this is fun money". Play and abundance.
+- **Suits**: integrations (the services as glossy app icons swirling around the product's mark), tokens and coins (a toggle that throws a stream of coins past the lens), apps replacing apps (rival tools as generic icons dropped in a bin), consumer fintech [several].
+- **Fails for**: calm-trust enterprise, health and luxury, where toy gloss reads as a game.
+- **Motion personality**: soft clearcoat plastic, rounded bevels, thick-rimmed coins; flights in wide arcs with real depth (objects pass in front of and behind the type), near ones larger and motion-blurred; escalation in three steps (a few → an orbit → a full field) for "thousands" [one]; seeded per-item phase so a swarm never strobes. One material family and one light for every object; a second studio look inside the film reads as a second film [one].
+- **Sound personality**: pops and coin clinks clustered on the burst, a whoosh on the arc, a soft hit when the swarm settles.
+- **Classic failure**: real third-party marks used as props without permission; a burst with no cause (nothing the viewer did released it); flat sprites with no depth.
+- **House**: C, soft-gloss variant.
+
+## Gradient-light mood
+
+- **Says**: craft, warmth, possibility. A brand film rather than a demo.
+- **Suits**: creative and AI tools for non-technical buyers; products whose output is colour or image (the output becomes the ground) [two].
+- **Fails for**: proof-first launches; dense UI.
+- **Motion personality**: a defocused organic gradient (it should feel like out-of-focus foliage or light, not a CSS blend) drifting slowly; the voice line in an italic display serif with a bloom, letters streaking in as light and resolving sharp [one]; glass panels with an inner edge glow rising through the words while they blur out [one]; inputs as small physical cards tossed onto a drop zone [one]; an AI wait as one calm orbit or scan beat ≤ 2 s.
+- **Sound personality**: airy pad, soft swells on the rise-throughs, few hard hits.
+- **Classic failure**: a static gradient doing all the work; neon gradients at full saturation behind small type; the mood never giving way to the product.
+- **House**: C's finish on B's UI; I for a brand reveal.
+
+## Editorial documentary
+
+- **Says**: lineage and conviction: "this is part of a bigger story".
+- **Suits**: a company or platform thesis, money with a history, a community drop, a teaser before the product exists [several].
+- **Fails for**: single features; and any film without the rights to its footage and photos (public figures, broadcasts, press front pages).
+- **Variants**: *archival serif* (warm macro footage under a small serif line; white cards for the old world, a black card for the turn; one italic stress word per card) [one]; *newsprint grit* (fast B&W macro shots of the old way under one sentence that builds across them, halftone on everything, a huge condensed number on torn paper that keeps ticking, the product's main button the only colour) [one]; *paper and daylight* (off-white paper with a soft window-and-leaf shadow, small photos popping in around a sentence built word by word, a count-up as payoff, a handwritten closing line) [one].
+- **Sound personality**: music-led; hard cuts on the beat; a typewriter or a single ring for the coda.
+- **Classic failure**: borrowed authority (clips of famous people) standing in for the product; fabricated headlines or testimonials; tiny narration type.
+- **House**: G (paper; or a newsprint variant: monochrome, halftone, one warm accent).
+
 ---
 
 ## Light or dark ground
@@ -124,6 +187,18 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Light** reads as open, calm, trustworthy and product-first; it suits UI, finance, health, education, and any film that will sit on a light website. It needs depth from shadow and scale, not glow.
 - **Dark** reads as dramatic, technical and premium; it suits models, infrastructure and idents. It needs one bright focal point at all times; check frame 0 and the end card on a phone-sized capture.
 - **The product's own theme colour** beats both when it has one: the film and the UI become one object [one].
+- **One flat saturated field** (an electric blue-violet, a neon green) is a third option for a playful brand: everything else neutral (white type, natural skin, glossy objects), and the field never changes [two].
+
+## Grounds that are not decoration
+
+The anti-patterns ban a radial glow centred on the canvas and a coloured glow pinned to a corner. These are the grounds the films that worked used instead [several]:
+
+- **Edge light**: light lives on the edges of things: a rim behind a tilted panel, a horizon glow rising from the bottom of the frame under the UI, a slowly rotating gradient outline around the one control that is active.
+- **A mesh or aurora gradient** of 3–4 colour points at low saturation on a dark ground, drifting slowly, grain-dithered so it never bands; its palette can shift once per section, and its brightest point sits under or behind the subject.
+- **A light ground with one gradient rising from the bottom** (white into the brand's mint, sky into clouds) for calm or friendly products.
+- **Daylight**: sky and clouds, or paper with a soft window-and-leaf shadow across it, for trust and warmth.
+- **A carried brand shape** (arcs, a lens, a band) that is both the ground and the transition.
+Build notes for each on Three.js: `three-look` `references/social-looks.md`.
 
 ## Switching inside a film
 

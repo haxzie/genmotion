@@ -11,7 +11,7 @@ It sits between `direction` (the process: proposition, idea, family, curve, beat
 
 > **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
 
-Where these principles come from: a study of twenty motion-design launch, feature, milestone and brand films (design-engineer launches, open-source tools and showcase pieces; no live action), graded strictly, plus GenMotion's own templates. Moves were learned only from the films that worked; the weak ones supplied the anti-patterns. The set was small, so the references mark which rules several films agree on and which rest on one precise example.
+Where these principles come from: two studies, plus GenMotion's own templates. The first was twenty motion-design launch, feature, milestone and brand films (design-engineer launches, open-source tools and showcase pieces; no live action), graded strictly. The second, and **the taste this skill aims at**, is a curated collection of twenty-two social-native launch films posted on X by product teams (AI builders, design tools, browsers, consumer fintech and trading apps, a parody): mostly 8–30 s, real UI made cinematic, type cards interleaved with product, glossy objects, light on edges. Where the two disagreed, the second won unless the point was correctness (legibility, rights, determinism). Moves were learned only from the films that worked; the weak ones supplied the anti-patterns. The references mark which rules several films agree on and which rest on one precise example.
 
 ## When to use
 
@@ -63,6 +63,13 @@ Pick the device before the look. These patterns recur in films that work; `refer
 | Change the medium, not the subject | The honest subject is a cliché (a globe, a galaxy, a network) |
 | Fixed silhouette, changing skin | Versatility |
 | Ranked countdown | Several results of different weight |
+| The prompt is the headline | The product is driven by typed input (an agent, a builder, search): the request, set at headline size, is the copy |
+| The control, lifted | One control is the feature (a field, a toggle, a bet button): lift it out of the UI to poster scale and let it morph or act |
+| The rebus line | A sentence whose key noun is its glyph (an icon, a coin, a token stack, a photo) sitting inline at cap height |
+| A tap releases the many | A small action unlocks abundance: the toggle throws coins, the click spills tokens |
+| Reveal, then redact | Privacy: show the exposure in a familiar place, then replay it masked |
+| Throw out the old tools | Replacing a category of tools: generic stand-in icons, physically discarded |
+| A history under one sentence | Weight and lineage: fast macro shots of the old way under one line that builds |
 
 Sketch three (from the product's own visual world, from the feeling, from an unexpected format) and keep the least obvious one that passes direction's swap test. A device that needs the voiceover (or a caption) to explain it is the wrong device.
 
@@ -89,8 +96,14 @@ Choose the look that best carries the device, not the one that looks most "premi
 | Dark cinematic minimal | Drama, focus | Model launches, idents, hero loops behind type | Bright feeds, friendly consumer tone | A ground, not a family: keep A, C or G's numbers on it |
 | Terminal / retro | Builder credibility | CLIs, open source where the command is the CTA | Mainstream audiences | G (HUD) or A |
 | Component sizzle | "Parts that behave" | UI kits, SDKs | Outcome products | B on dark, or A |
+| Title-card interleave | "It's live, here's why it matters", fast | Feature and product launches for X, LinkedIn and feeds, 8–30 s, with 2–5 crisp facts and some UI | Vague claims (the cards become clichés); films that need one long run | K |
+| Prompt-led demo | "Ask, and it's built" | AI builders, agents, search, anything driven by a request | Products with no input box | B (K's cards between runs) |
+| Perspective UI showcase | "Pro tool, serious money" | Trading, finance, dashboards, pro creative tools whose UI is the asset | UI that is dense at feed size and can't be magnified | K or B on a dark ground, C's light for rims |
+| Glossy icons and tokens | "Everything you use, here", play | Integrations, tokens, apps, consumer fintech, many → one | Calm-trust enterprise, health | C (soft gloss) |
+| Gradient-light mood | Craft, warmth, possibility | Creative and AI tools for non-technical buyers; output-as-material | Proof-first launches; dense UI | C ground on B's UI, or I |
+| Editorial documentary | Lineage, conviction, a thesis | Company and platform manifestos, money with history, community drops | Single features; any film without rights to its footage or photos | G (paper or newsprint) |
 
-Defaults when nothing else decides: an app with screens → UI-led story or maker's proof; no UI at all → instrument (serious) or kinetic type (opinionated); one number → data or 3D object; only a logo → 3D object or collage. The owner's own default family still wins ties.
+Defaults when nothing else decides: an app with screens → UI-led story or maker's proof (feed cut: title-card interleave); a typed-input product → prompt-led demo; no UI at all → instrument (serious) or kinetic type (opinionated); one number → data or 3D object; only a logo → 3D object or collage; tokens, coins or integrations → glossy icons and tokens. The owner's own default family still wins ties.
 
 ### 4. Motion personality
 
@@ -145,6 +158,21 @@ Every peak, whichever kind:
 - **The opening is fast, whatever the shape.** The device (or its first unit) is on screen and acting by frame 60. The first *run* of units (everything before the tightening) takes ≤ 2.5–3 s (75–90f), and between two units nothing visible stops for more than 1 s (30f): overlap the next unit's start into the last one's close. When a unit is a thin mark (a tick, a dot, a stroke, a small glyph), show the first one large (≥ 15% of the frame width) or make each unit's change cover ≥ 2% of the frame; a 100 px mark changing on a 1920 frame reads as a stall. **A duration claim** ("ready in 30 seconds", "set up in a minute") is shown compressed: the wait takes ≤ 75f of film, in visible steps or a time-skip (a readout jumping 0 → 6 → 18 → 30), never at a near-real rate; the number is the proof, not the wait.
 - **A camera move that carries the peak is under way on the hit.** Its ease-in starts 10–14f before the hit frame, so the hit shows the picture changing; a push ends with the subject in the centre third at ≥ 40% of frame height (never grown in place at the edge); a pull-back used as the broken rule scales about the focal element so the focal stays fixed while the world arrives; labels land after the move, and nothing in the moving world crosses a visible word (`three-camera`, Moves that carry the peak).
 
+## The social launch cut (8–30 s, posted under a message)
+
+Most launch films now play in a feed under a post that already carries the details. The film carries the feeling and one or two facts, fast. What the films that worked share [several]:
+
+- **Interleave cards and proof.** A type card of 2–4 words held by the hold formula `max(30, 9 × words + 15)` from legible (33f for two words, 51f for four), then a product beat (45–90f), then a card. Cards are the voice, product beats the proof; never two cards in a row without a reason (a setup/payoff split is the reason). The cut between them is carried by something in frame: one brand shape that opens and closes (an arc, a lens, a band of light), the panel rising through the words while they blur out, a defocus-through. A different wipe per cut is still a wipe zoo.
+- **One motif carries the film.** The best each own one look that survives every beat, transitions included: glowing rims on a dark ground, a brand gradient framing every prompt, one flat saturated field, paper in daylight, monochrome newsprint with one coloured button. Decide it with the style family, and put it in every beat.
+- **A beat every 1–2 s, the peak about 3 s.** An 8 s sting is object → claim → "now live" → URL. At 20–30 s: hook (≤ 2 s), 3–5 claim/proof pairs, the peak on a product beat, the URL card. Longer than 30 s needs acts (problem → reveal → demo), not more pairs.
+- **The opener moves from frame 0.** A kinetic opener counts as a hook when it is already in motion on frame 0 and resolves into a glyph or the product within 2 s (letters scatter and re-form around an inline link glyph; a typed request; a word built on an edge glow). A static "Introducing" card is still a template tell.
+- **Make the product cinematic, not flat.** Lift the one control that is the feature out of the UI onto a clean ground at poster scale; tilt a real screen in perspective with a rim light and push slowly; let a typed request be the headline. Magnify until every element that carries the argument is ≥ 40 px at 1080p; a whole dense dark screen at feed size is texture, the commonest failure in the collection.
+- **Copy rhythm.** Write cards, not sentences: "Now ___" (live, available, yours), a term per card with a full stop ("Fixed terms."), a contrarian opener ("We replaced …"), a setup and payoff split across two cards with the payoff brighter, a pronoun turn ("you" → "YOU", larger and heavier, on its own card), a number with its unit, the URL as the last card. One accent word per line, on the benefit noun, not the brand. At least half the cards say a fact only this product can say: a stack made only of launch clichés ("by design", "unstoppable", "available worldwide") reads as parody, and audiences now laugh at it.
+- **Let the glyph into the sentence.** The noun's own icon, coin, photo or a cycling stack of examples sits inline at cap height ("Trade [stack] anything"). It is drawn in the film's material and sized to the type, never a system emoji.
+- **Give it a physical payoff.** The best short films end their proof on something you can almost touch: coins thrown out of a toggle, confetti from the amount field, rival icons dropped in a bin, the bet button at poster scale with winnings ticking. A title is not a payoff.
+
+On Three.js the grounds, glows and glossy material are in `three-look` (`references/social-looks.md`), glow-resolve, smear and the rebus slot in `three-type` (`references/reveals.md` §13–15), and tilted UI, card fans and floors in `three-camera` (`references/moves.md` §14–15).
+
 ## Write it down
 
 Add these lines under direction's block in `VIDEO.md`, after `Idea:` and `Style family:`:
@@ -171,6 +199,8 @@ The choices are engine-neutral. On **Three.js** (the default) the device usually
 - Bad: every component demo two seconds long under a steady track. Good: the hero component gets twice the time, the minor ones a quick montage, and the music lifts on the hero's reveal.
 - Bad: a sound feature announced in silence, or under music. Good: the bed leaves on the first press, and each press is heard alone.
 - Bad: a dark, moody reveal with one second of black at the head. Good: something already moving and bright at frame 0, darkness used around it.
+- Bad: a 20 s feed film of six glow cards ("Introducing", "Seamless", "By design", "Available now") around one tilted, unreadable dashboard. Good: a kinetic opener that resolves into the feature's own control, three cards that each state a term, each followed by that control acting at poster scale, and a physical payoff before the URL card.
+- Bad: an AI builder demo with a marketing line over the editor. Good: the user's request types at headline size, the data source's icon docks into the composer as it is named, and the built result cuts in already moving.
 
 ## The taste test
 
@@ -187,6 +217,7 @@ Ask of the cut, on captured frames; any "no" is a note. The full anti-pattern li
 9. Does the bed step aside where the product or the payoff must be heard?
 10. Does it end by arriving: a button, a tail, a held lockup that is alive?
 11. Is there an element I would delete if I had to cut one? Delete it.
+12. For a feed cut: does one motif carry every beat and cut, can every argument-carrying element be read at a third of the frame's size, and does at least half the copy say something only this product can say?
 
 ## Requirements
 
@@ -210,4 +241,5 @@ Ask of the cut, on captured frames; any "no" is a note. The full anti-pattern li
 8. Where the product's sound or the payoff leads, the bed's 0.5 s RMS there sits at least 10 dB below its level either side (`ffmpeg` `astats` on the music stem), and every UI cue there starts on or up to 2 frames after its first changed frame, never before (the sound being sold is exposed, so it must read as caused).
 9. The last 1.5 s has a tail or a button (the music is not at full level on the last frame), and the end card holds with one ambient behaviour.
 10. Nothing from `references/anti-patterns.md` §Template tells is on screen.
-11. The owner's checks and direction's self-critique pass.
+11. A social launch cut (8–30 s): a 4 fps strip shows no beat longer than 3 s except the peak and the end card; frame 0 and frame 15 differ visibly; every type card meets the hold formula; on a 640 px-wide capture of each product beat, the element that carries its claim is legible; the cards that are not the URL or a "now live" line each state a fact from the brief.
+12. The owner's checks and direction's self-critique pass.
