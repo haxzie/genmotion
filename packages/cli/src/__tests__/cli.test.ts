@@ -110,6 +110,8 @@ describe("genmotion --json", () => {
     await fs.writeFile(path.join(dir, "assets", "music.mp3"), "");
     const added = gm(["audio", "add", "assets/music.mp3", "--at", "1s", "--duration", "3s", "--fade-out", "0.5s", "--name", "Music"], dir);
     expect(added.json).toMatchObject({ ok: true, clip: { file: "assets/music.mp3", track: 0, startFrame: 24, durationInFrames: 72, fadeOutFrames: 12, name: "Music" } });
+    // An offset into the file is kept to the millisecond, not snapped to a frame.
+    expect(gm(["audio", "set", "Music", "--from", "23ms"], dir).json).toMatchObject({ ok: true, clip: { startFrom: 0.023 } });
     const set = gm(["audio", "set", "Music", "--volume", "0.5", "--mute"], dir);
     expect(set.json).toMatchObject({ ok: true, clip: { volume: 0.5, muted: true, startFrame: 24 } });
     expect(gm(["audio", "set", "Music", "--volume", "9"], dir).json.ok).toBe(false);

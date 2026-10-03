@@ -49,8 +49,17 @@ function frames(input: string, fps: number): number {
   return parseDuration(text, fps);
 }
 
+/**
+ * An offset into the source file, in seconds. Not snapped to frames: the clip
+ * still starts on a frame, but trimming a sound to its transient (`--from 23ms`)
+ * is what lands the hit on that frame, and a 33 ms grid can't express it.
+ */
 function seconds(input: string, fps: number): number {
-  return frames(input, fps) / fps;
+  const match = /^(\d+(?:\.\d+)?)\s*(ms|s|f)?$/.exec(input.trim().toLowerCase());
+  if (!match) return frames(input, fps) / fps;
+  const value = Number(match[1]);
+  const unit = match[2] ?? "f";
+  return unit === "s" ? value : unit === "ms" ? value / 1000 : value / fps;
 }
 
 function volume(value: number): number {
