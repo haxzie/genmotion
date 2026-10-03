@@ -16,6 +16,7 @@ Two modules carry everything: `components/stage.ts` (units, fitting, a camera-lo
 - Two scenes cut on a matched framing (match-push), or a move must carry across a cut.
 - A camera path stops at every keyframe, or a zoom races then crawls.
 - The film reveals that what we watched was on a device's screen (pull back as the device closes in), or a spring needs a fixed length.
+- A real screen must look cinematic (tilted, rim-lit, rising, with the other panels out of focus), or a collection is shown as a fan of cards out of a container or a floor of cards receding under a headline (short social launches).
 
 Not for: choosing the move or its duration (`motion-language`), what sits in front of the lens at a cut (`three-transitions`), type that must survive a move (`three-type`).
 
@@ -62,6 +63,8 @@ Numbers from `motion-language`; recipes in `references/moves.md`.
 | Subject rig | Pose the layout (pivot + scale + tilt) instead of the camera | For flat UI gliding in 3D, where camera math gets awkward |
 | It was inside the device | Rig origin on the subject; device scaled `logLerp(coverScale(...), 1)` in x/y only, rig travels to the final framing, 45–60f | A plain pull-back lets the bezel into the close-up, or never covers the frame; `references/moves.md` §12 |
 | Push on a flat film | Scale a map group about the focus (`position = focus × (1 − k)`) | Labels and screen-px strokes keep their size; `references/moves.md` §13 |
+| Perspective UI showcase | A pivot posed per frame: back-tilt 20–35° easing to 10–20°, rise, apparent scale 1 → 1.25; each panel a two-texture plane (screen + pre-blurred twin) mixed by focus; an additive rim plane behind | Text on a panel tilted past ~20° is decoration; one panel sharp at a time; `references/moves.md` §14 |
+| Card fan / card floor | Fan: one arm per card pivoting below it at the container's mouth, staggered rise and spread; floor: a grid on a group tilted ~60°, sliding toward camera, far rows faded | Rotating cards about their own centres is a shuffle, not a fan; floor cards are never read; `references/moves.md` §15 |
 | Spring settle | `springIn(frame, start, dur, "gentle")` from the ease module | The preset's shape, settled exactly on `start + dur`; never re-derive the time scale |
 
 ## Moves that carry the peak
@@ -143,6 +146,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Textured tactile | Subject rig | Tilted glides over a dashboard; hard cut to flat close-ups |
 | Music video | Perspective, 48–75° | Shots of 3–4 s on bar lines; fov punch and shake on hits |
 | Milestone | Fitted | Creep on the number; punch 1.06 on the land |
+| Social title-card launch (K) | Fitted for cards; subject rig for product beats | Cards still (the type moves); product beats a slow push 1.0 → 1.25 on a tilted panel, a lifted control springing to poster scale, a fan or floor for collections |
 
 ## Anti-patterns
 

@@ -62,7 +62,7 @@ Rule: if the demo is visually strong on its own, demo-first. If the problem is m
 
 Write these into the Direction block in `VIDEO.md` (`direction` Step 4–9) unless the material says otherwise.
 
-- **Style family**: B (soft-light SaaS) for app or web UI; C (3D product hero) for consumer, fintech or physical-feeling products and when the project should look like Three.js; A (beat-cut kinetic type) for manifesto and when there is only copy and a logo; D (one-shot camera film) for a desktop or phone journey; I as a closing borrow for a brand-led company launch.
+- **Style family**: K (social title-card launch) for a feed or X cut of 8–30 s posted under a message, with B, C or the perspective UI showcase supplying its product beats (`launch-taste` style map); B (soft-light SaaS) for app or web UI; C (3D product hero) for consumer, fintech or physical-feeling products and when the project should look like Three.js; A (beat-cut kinetic type) for manifesto and when there is only copy and a logo; D (one-shot camera film) for a desktop or phone journey; I as a closing borrow for a brand-led company launch.
 - **Energy curve**: the peak's place is set by `launch-taste` step 7's kind of film, not by this skill. **Reveal-led** (the name or product is the news): quiet tease (3) → build (5) → **reveal (9–10) at 25–33%** → cascade (6–8, a micro-peak per run) → hero + name (8) → end card (3); the beat sheets below are laid out this way. **Accumulation or outcome** (a count, a fill, a build that completes): the two-peak shape, the name reveal at 25–33% as a secondary peak (≤ 7) naming what the viewer already watched, and the device's completion at 60–75% as the 10; move the breath to before the completion. A 10–30f breath before the 10: stillness, a music dropout, or black.
 - **Feed placements** (Instagram, LinkedIn, X, store autoplay, **a landing-page hero or homepage autoplay**, or a 16:9 master that also plays in a feed): the product in context (its icon, UI, device or the object itself) is on screen by 3–4 s and the mark is in frame by 4 s (a small header tag or the mark in a corner is enough), even when the reveal comes later; the reveal then names what the viewer has already been watching. Message lines ≥ 90 px and any label that carries the argument (a counter, a chip the hook depends on) ≥ 40 px at 1080p, because a feed shows the frame at about a third of its size; smaller labels are texture. The dead-hold limit is 1.5 s: a line whose hold formula runs longer holds, and the device acts during it.
 - **Pacing**: Medium (new information every 30–50f) for VO-led films; High (18–30f) in the feature cascade and for music-led films; Hyper (8–14f) only for an A-family montage passage.
@@ -102,6 +102,20 @@ Frames at 30 fps, laid on a 120 BPM grid (bar = 60f); snap boundaries to your tr
 
 VO: ≤30 words, or none. Music-led is the default at this length.
 
+### 8–20 s social cut (the title-card interleave, family K)
+
+The shape most launches posted on X and in feeds take (`launch-taste` §The social launch cut). The post carries the details; the film carries the feeling and two or three facts.
+
+| # | Frames | Job | Content | Typical motion | Sound |
+| - | - | - | - | - | - |
+| 1 | 0–45 | Hook | A kinetic opener already moving on frame 0 that resolves into the product's glyph or control, or the control acting | Glow-resolve or a scatter re-forming round an inline glyph; a typed request | Transient on frame 1 |
+| 2 | 45–100 | Claim + name | "Now ___" or the claim, the name or mark docked beside the product | Card by word, out on the ground's move | A beat per card |
+| 3 | 100–420 | 2–3 pairs | Card (a term or a fact, 2–4 words, hold formula) → product beat (45–90f: the control lifted, a tilted screen pushing, a typed request answered) | Rise-through or brand-shape pass between them; each product beat enters already moving | Effects on the product beats, quiet cards |
+| 4 | peak, 75–100f | Physical payoff | The control at poster scale with numbers ticking, a burst out of the toggle, the result landing | The biggest scale change of the film | The hit; the bed thins |
+| 5 | last 60–75f | URL card | Mark + URL (or platform line) | Card by word; one ambient behaviour | The button |
+
+An 8 s sting is beats 1, 2, 4 and 5 only (object → claim → "now live" → URL). At 25–30 s use three pairs and give the peak about 3 s. Never longer than one idea per pair.
+
 ### 30 s (900f), the default
 
 | # | Frames | Job | Content | Typical motion | Sound |
@@ -131,7 +145,8 @@ Hook 0–90 · problem or claim 90–450 (2–3 beats of 120f, proposition by 45
 
 ## Script and VO
 
-- Hook in **outcome language**, never inventory: "Invoices that chase themselves", not "12 new features". If the first line starts "Introducing" or "Welcome to", rewrite it (the typewriter-delete device is the exception: the word exists to be deleted).
+- Hook in **outcome language**, never inventory: "Invoices that chase themselves", not "12 new features". If the first line starts "Introducing" or "Welcome to", rewrite it. Exceptions: the typewriter-delete device (the word exists to be deleted), and in a social cut a kinetic opener that moves from frame 0 and resolves into the product's glyph or control within 2 s.
+- **Cards, not sentences, in a social cut**: "Now ___", one term per card with a full stop, a setup and payoff split across two cards, a number with its unit, the URL last; one accent word per card on the benefit noun; at least half the cards a fact only this product can say (`launch-taste` §The social launch cut).
 - One idea per line, written as cues ("You ask — it searches — it answers") so each visual can land as the voice names it.
 - VO starts 6f after the film starts and 3–8f after each cut (house median +6f); a line may pre-roll up to 45f to bridge a cut. Write numbers as spoken; the picture shows the exact figure.
 - Over budget: cut words, never speed up the read. Word counts within 10% of the beat sheet.
@@ -140,7 +155,7 @@ Hook 0–90 · problem or claim 90–450 (2–3 beats of 120f, proposition by 45
 
 ## Launch craft (numbers from the house templates)
 
-- **First frame**: the product doing something, a transformation already half-way, a number already moving, or the manifesto's sharpest line. Never a logo, a black card, a mission statement or a person about to speak.
+- **First frame**: the product doing something, a transformation already half-way, a number already moving, the manifesto's sharpest line, or (in a social cut) a kinetic opener already in motion. Never a logo, a black card, a static title card, a mission statement or a person about to speak.
 - **UI**: rebuild the real screens at true proportions and magnify the part that matters 2–2.5×; never paste a full screenshot flat. Camera pushes 1.7–3.8× onto the control that matters, 24–48f inOutCubic. Typing 2–3 frames per character with a solid caret. Click: press 4f in, 6f out, scale −8 to −15%, ring 8–14f.
 - **One demo is a run**: three or more beats on the same surface (input → response → result → benefit) joined by persisting elements. Single-shot features with a new layout each time read as a slideshow.
 - **Same surface, different framing**: each run gets its own camera move (push into the line being read, track to where it files, pull back to the result), and runs shorten as the viewer learns the pattern (for example 150 → 110 → 60f, the last a montage of several at once). Three runs with one locked framing read as one shot played three times.
@@ -191,7 +206,7 @@ Build the master for the first destination; the others are recuts of the same be
 ## Checks before you finish
 
 1. `VIDEO.md` has the Direction block and a Beats table whose frames sum to the length; the shape is named.
-2. `capture-frames` at frame 0 and frame 15: not a logo, not black, not a title card; the hook is readable by frame 15.
+2. `capture-frames` at frame 0 and frame 15: not a logo, not black, not a static title card (a kinetic opener visibly changes between the two captures and resolves into the product's glyph or control by frame 60); the hook is readable by frame 15.
 3. The problem or the proposition is on screen or in the VO by the end of beat 2 (frame 240 at 30 s, 450 at 60 s); a reveal-led film shows the proposition itself by then. Feed placements (a landing-page hero included): the product (icon, UI, device or object) is in frame by 3–4 s and the mark by 4 s (capture 120f). Capture frame 60: the device (or, for an accumulation, its first unit) is on screen and acting; no frame between 60 and the 10 shows a mark and name alone on an empty ground.
 4. The peak sits in `launch-taste` step 7's band for this kind of film (reveal-led: the reveal at 25–33%; accumulation or outcome: the completion at 60–75%, with any name reveal at 25–33% as the secondary peak); the 10–30f before the 10 are visibly calmer (capture both) and the music drops out or thins there. Neither peak is a line on a flat flood (the completed device holds ≥ 30f first), and the peak frame alone, with no audio, shows the turn. The 10's scale change is at least 2× any other move in the film; a camera-carried 10 differs visibly in scale between the hit frame and 2f before it, and a push's last frame has the subject in the centre third at ≥ 40% of frame height.
 5. Mute check: on captured frames alone (no audio), a stranger can say what the product does **and what kind of product it is** (app, web tool, device); an app film shows a screen or device.
