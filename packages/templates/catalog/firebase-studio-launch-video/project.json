@@ -1,0 +1,73 @@
+{
+  "name": "Firebase Studio \u2014 launch film",
+  "engine": "three",
+  "fps": 24,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-hook.ts",
+      "durationInFrames": 100,
+      "name": "Hook"
+    },
+    {
+      "file": "scenes/02-firebase.ts",
+      "durationInFrames": 53,
+      "name": "Firebase makes it possible"
+    },
+    {
+      "file": "scenes/03-infra.ts",
+      "durationInFrames": 95,
+      "name": "Global infrastructure / Zero DevOps"
+    },
+    {
+      "file": "scenes/04-platform.ts",
+      "durationInFrames": 70,
+      "name": "One platform to build & serve"
+    },
+    {
+      "file": "scenes/05-studio.ts",
+      "durationInFrames": 112,
+      "name": "Firebase Studio"
+    },
+    {
+      "file": "scenes/06-paths.ts",
+      "durationInFrames": 257,
+      "name": "Your app \u2192 Spark \u2192 Blaze"
+    },
+    {
+      "file": "scenes/07-quality.ts",
+      "durationInFrames": 149,
+      "name": "The app you prototype"
+    },
+    {
+      "file": "scenes/08-checkpoint.ts",
+      "durationInFrames": 115,
+      "name": "Prototype to production"
+    },
+    {
+      "file": "scenes/09-integrations.ts",
+      "durationInFrames": 29,
+      "name": "Platforms"
+    },
+    {
+      "file": "scenes/10-outro.ts",
+      "durationInFrames": 100,
+      "name": "Build what\u2019s next / Start today"
+    }
+  ],
+  "audio": [
+    {
+      "id": "soundtrack",
+      "file": "assets/soundtrack.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1080,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
