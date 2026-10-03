@@ -237,11 +237,11 @@ export function coin(d: number, body: THREE.Material, face: THREE.Texture | null
 
 ## 4. Motion ghosts for fast objects
 
-There is no motion-blur pass. Because every pose is a function of the frame, a fast object can carry 3 ghost copies posed a fraction of a frame earlier, transparent and fading: the near, fast objects of a swarm look blurred and the slow ones stay sharp.
+There is no motion-blur pass. Because every pose is a function of the frame, a fast object can carry 5 ghost copies posed a fraction of a frame earlier, transparent and fading, spanning about half a frame of travel (a 180° shutter): the near, fast objects of a swarm look blurred and the slow ones stay sharp. Fewer or wider-spaced ghosts read as a stepped stack of copies (tested: 3 ghosts a third of a frame apart on a coin moving ~60 px a frame).
 
 ```ts
 /** Ghost copies of `obj` (same geometry, transparent clones of its materials). Pose them with `poseAt`. */
-export function ghosts(obj: THREE.Object3D, n = 3, opacities = [0.35, 0.18, 0.08]) {
+export function ghosts(obj: THREE.Object3D, n = 5, opacities = [0.3, 0.22, 0.15, 0.09, 0.05]) {
   return Array.from({ length: n }, (_, k) => {
     const c = obj.clone(true);
     c.traverse((m) => {
@@ -263,7 +263,7 @@ export function ghosts(obj: THREE.Object3D, n = 3, opacities = [0.35, 0.18, 0.08
 /** Pose the object at `frame` and each ghost `step` frames earlier; hide ghosts when it moves < 6 px a frame. */
 export function poseWithGhosts(
   obj: THREE.Object3D, gs: THREE.Object3D[], frame: number,
-  poseAt: (o: THREE.Object3D, f: number) => void, PX: number, step = 0.33,
+  poseAt: (o: THREE.Object3D, f: number) => void, PX: number, step = 0.12,
 ) {
   poseAt(obj, frame);
   const a = obj.position.clone();

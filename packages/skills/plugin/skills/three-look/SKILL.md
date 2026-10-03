@@ -7,7 +7,7 @@ description: "Building the look of a Three.js video: the colour pipeline (output
 
 `direction` picks the style family and writes the palette into the Direction block (`references/style-families.md` there has each family's colours, type and finish). This skill turns that into a renderer, lights, materials and a background that look finished, the way GenMotion's 3D templates do. The most common reasons a Three.js frame looks cheap are, in order: the colour pipeline (washed-out brand colours, muddy darks), no environment for glossy materials, a flat fill behind the subject, and too many materials.
 
-Everything lives in one `components/look.ts`. Code: `references/color-and-light.md` (pipeline, environment, lights, materials), `references/backdrops-and-finish.md` (backdrop shader, glow, fog, grain, banding), `references/line-art.md` (strokes that draw on and erase). All of it compiles against three r185 and was checked on captured frames.
+Everything lives in one `components/look.ts`. Code: `references/color-and-light.md` (pipeline, environment, lights, materials), `references/backdrops-and-finish.md` (backdrop shader, glow, fog, grain, banding), `references/line-art.md` (strokes that draw on and erase), `references/social-looks.md` (the looks of short social launch films: a drifting mesh ground with a horizon glow, a travelling glow outline for the live control, soft-gloss app icons and coins, motion ghosts for fast objects, a daylight window shadow on paper). All of it compiles against three r185 and was checked on captured frames.
 
 ## When to use
 
@@ -15,6 +15,7 @@ Everything lives in one `components/look.ts`. Code: `references/color-and-light.
 - A frame looks flat, plasticky, too dark, muddy, washed out, or the brand colour looks wrong.
 - Metal renders black, gradients band in the export, or scenes look like different films.
 - A whiteboard, diagram, underline or gauge needs lines that draw themselves.
+- A short social launch (`direction`'s family K, soft-gloss C, editorial G): a ground with edge light instead of a centred glow, glossy icons or coins, a glowing outline on the control that is live, paper in daylight.
 
 Not for: choosing the family or palette (`direction`), type (`three-type`), camera (`three-camera`).
 
@@ -65,7 +66,7 @@ The renderer is shared by every scene in the film, so **every scene** calls `col
 
 ## Materials
 
-Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness 0.25–0.35, clearcoat 1. Polished metal: metalness 1, roughness 0.18–0.3, needs the environment. Matte: `MeshStandardMaterial` roughness 0.45–0.6. Type and UI: never lit (`three-type`). Extruded marks in three tones of the brand colour (face, bevel, side), with a bevel of 1–1.5% of their width. Reuse a handful of material instances across the film.
+Glossy plastic and coins: `MeshPhysicalMaterial` metalness 0.2–0.55, roughness 0.25–0.35, clearcoat 1. Soft toy-like gloss for app icons and tokens (soft-gloss C): `softGloss()` in `references/social-looks.md` (metalness 0.05, roughness 0.38, clearcoat 1 at 0.12, a little sheen) on rounded squircles and thick-rimmed coins. Polished metal: metalness 1, roughness 0.18–0.3, needs the environment. Matte: `MeshStandardMaterial` roughness 0.45–0.6. Type and UI: never lit (`three-type`). Extruded marks in three tones of the brand colour (face, bevel, side), with a bevel of 1–1.5% of their width. Reuse a handful of material instances across the film.
 
 ## Background, glow and finish
 
@@ -141,6 +142,9 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Music video | cinematic | night/neon, fog | Night gradient, film overlay with grain and vignette |
 | Brand guide | brand or flat | product for the 3D mark | The brand's own colour fields |
 | Milestone | flat or brand | product if the number is 3D | Dark, a glow behind the number |
+| Social title-card launch (K) | flat (brand if objects are lit) | none, or product for glossy objects | `meshGround()` with a horizon glow (dark), or white with the accent rising from the bottom; one `glowOutline()` on the live control |
+| Soft-gloss C (icons, tokens) | brand | product + studio env, rim on | One flat colour or one gradient; motion ghosts on fast objects |
+| Editorial G (paper, newsprint) | flat | none | Paper `backdrop` + `windowShadowTexture()`, or grey paper + halftone; one warm accent |
 
 ## Anti-patterns
 
@@ -154,6 +158,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; static grain at 1–1.5%.
 - **Grain added before `colorspace_fragment`, or a float hash that stripes under SwiftShader.** Copy the backdrop as written: integer hash, grain last.
 - **Text on a busy area without a scrim.**
+- **A full-chroma gradient blob behind small type**, or a mesh ground whose brightest point sits away from the subject: the ground outshouts the words. Points at 30–60% of the accent's chroma, brightest behind the subject.
 
 ## Requirements
 

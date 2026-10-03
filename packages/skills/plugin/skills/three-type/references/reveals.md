@@ -2,7 +2,7 @@
 
 The kinetic-type recipes from `motion-language` (`references/text-motion.md` has the numbers and the reading-time rules), written as frame-callback code over `components/type.ts` (`references/type-kit.md`) and `components/ease.ts` (`three-camera`). `D` is `durationInFrames`; `ink`, `accent`, `grey` are `THREE.Color`s built once; `tmp` is one scratch `THREE.Color`. `TYPE` is the table in SKILL.md plus the roles a recipe names: `wordmark` (the brand's face, sized by the lockup), `number` (the image-word, above 130 px), `caption` (28–48 px by spec) and `ui` (≥ 28 px where seen), all weight ≤ 500. Every `// builder` line runs inside the scene's `withFonts(ctx, [{ family: "Inter", url: interUrl }], () => { … })` builder (SKILL.md, A complete scene), so no texture is drawn in a fallback face; type that shares the frame with 3D objects is wrapped in `onTop()`. Every recipe was compiled and captured.
 
-Contents: 1 blurUp by word · 2 riseMask and mask push-up · 3 Per-character title with colour sweep · 4 Wordmark landing (mask rise, wipe-written) · 5 Two-pass ink and L→R sweep · 6 Typewriter · 7 Word-slot flip · 8 Scatter pops and beat cards · 9 Highlight and underline · 10 Count-up · 11 Captions and karaoke · 12 Exits
+Contents: 1 blurUp by word · 2 riseMask and mask push-up · 3 Per-character title with colour sweep · 4 Wordmark landing (mask rise, wipe-written) · 5 Two-pass ink and L→R sweep · 6 Typewriter · 7 Word-slot flip · 8 Scatter pops and beat cards · 9 Highlight and underline · 10 Count-up · 11 Captions and karaoke · 12 Exits · 13 Glow-resolve · 14 Smear-in · 15 Rebus slot
 
 ## 1. blurUp by word (the house default)
 
@@ -211,3 +211,95 @@ CUES.forEach((c, i) => setLabel(caps[i]!, { opacity: frame >= c.at && frame < c.
 ## 12. Exits
 
 Every non-carrier line leaves 6–9f inCubic (about 0.6× its entrance), along the axis it came in on, finished 4–8f before the cut; `prog(frame, D - 14, 7, inCubic)` in the recipes above. The handoff word, if any, has no exit (`three-transitions`).
+
+## 13. Glow-resolve (cards on a dark or gradient ground)
+
+The social launch card's entrance (`motion-language` text-motion, Glow-resolve): each word resolves from blur while a soft copy of it behind, in the accent, fades from a bright halo to a faint one. The halo is a second label with more blur room, drawn additively and a hair behind the word so it sorts first.
+
+```ts
+const TEXT = "Now live";
+const card = line(TEXT, TYPE.hero);                              // builder
+const halos = TEXT.split(" ").map((p, i) => {                    // builder: one soft copy per word
+  const h = label(p, { ...TYPE.hero, color: "#b79cff" }, "left", 48);   // 48 px of room for the halo's blur
+  h.material.blending = THREE.AdditiveBlending;
+  h.position.set(card.words[i]!.position.x, 0, -0.01);            // a hair behind: transparent sort draws it first
+  card.group.add(h);
+  return h;
+});
+onTop(card.group);
+// frame: 12f outCubic, 3f stagger, from y +0.3em, blur 12 -> 0; halo 0.6 -> 0.15 at 20 px
+card.words.forEach((w, i) => {
+  const p = prog(frame, 4 + i * 3, 12, outCubic);
+  const y = (1 - p) * -0.3 * TYPE.hero.size * PX;
+  w.position.y = y;
+  halos[i]!.position.y = y;
+  setLabel(w, { opacity: Math.min(1, p / 0.35), blur: (1 - p) * 12 });
+  setLabel(halos[i]!, { opacity: (0.6 - 0.45 * p) * Math.min(1, p / 0.2), blur: 20 });
+});
+```
+
+- The halo's blur stays ≤ 20–24 px: the kit's blur is a 7 × 7 box, so a wider halo shows its taps as ghost copies on thin strokes.
+- A halo on every word of a two-word card, or on the accent word only of a longer one; never on body text or captions. On a light ground skip the halo (additive light vanishes on white) and use plain blurUp.
+- Exit with the ground's move (`motion-language`, Rise-through, Brand-shape pass); when the card must leave alone, 6f opacity with blur 0 → 8 on both.
+
+## 14. Smear-in (one punch word)
+
+The word arrives stretched along its reading direction and snaps to shape: a horizontal-only blur plus a scale from the reading side. Set the kit's blur uniform directly, since `setLabel({ blur })` blurs both axes.
+
+```ts
+const punch = label("Unlimited", TYPE.hero, "left");            // builder: "left" puts the origin on the reading side
+punch.position.x = X0 * PX;                                      // X0: the word's left edge in px
+onTop(punch);
+// frame: 9f outQuart, scale x 1.5 -> 1 from the left edge, horizontal blur 14 -> 0, opaque by 40%
+const p = prog(frame, T, 9, outQuart);
+punch.scale.x = 1 + 0.5 * (1 - p);
+(punch.material.uniforms.uBlur!.value as THREE.Vector2).set(((1 - p) * 14) / punch.userData.wPx, 0);
+setLabel(punch, { opacity: Math.min(1, p / 0.4) });
+```
+
+Once per card, on the word that carries the claim. A centred word smears from its centre: build it with `label(text, style)` (centre origin) and scale about that.
+
+## 15. Rebus slot (a glyph inside the line)
+
+"Trade [stack] anything": a square glyph slot at cap height between two words, the words laid out around it, the stack rolling through its items and slowing onto the last. The glyphs are textures drawn once (the film's own illustrative glyphs; real marks only when the user supplies them).
+
+```ts
+const L = label("Trade", TYPE.hero, "left");                     // builder
+const R = label("anything", TYPE.hero, "left");
+const SLOT = TYPE.hero.size * 0.74;                              // ≈ cap height of a grotesque, px
+const GAP = TYPE.hero.size * 0.26;                               // ≈ a word space
+const glyphs = STACK.map((tex, i) => {                           // STACK: square glyph textures, sRGB, drawn once at 2×
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(SLOT * PX, SLOT * PX),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, depthWrite: false }),
+  );
+  m.name = `rebus-${i}`;
+  return m;
+});
+const lw = L.userData.w / PX, rw = R.userData.w / PX;
+const x0 = -(lw + GAP + SLOT + GAP + rw) / 2;                    // centre the whole line, slot included
+const slot = new THREE.Group();
+slot.add(...glyphs);
+L.position.x = x0 * PX;
+slot.position.set((x0 + lw + GAP + SLOT / 2) * PX, 0.02 * TYPE.hero.size * PX, 0);
+R.position.x = (x0 + lw + GAP + SLOT + GAP) * PX;
+const row = new THREE.Group();
+row.add(L, slot, R);
+onTop(row);
+const STEPS = [4, 4, 4, 4, 5, 8, 12];                            // frames per item, slowing into the last
+// frame: find the item that is up and how far into its 3f roll
+let t = frame - T0, k = 0;
+while (k < glyphs.length - 1 && t >= (STEPS[k] ?? 12)) { t -= STEPS[k] ?? 12; k++; }
+const r = frame < T0 ? 0 : outCubic(Math.min(1, t / 3));
+glyphs.forEach((g, i) => {
+  const cur = i === k, prev = i === k - 1 && r < 1;
+  g.visible = cur || prev;
+  g.position.y = (cur ? (1 - r) * -0.45 : r * 0.45) * SLOT * PX;   // in from below, out above
+  (g.material as THREE.MeshBasicMaterial).opacity = cur ? r : 1 - r;
+});
+```
+
+- Slot 0.9–1.1× the cap height; a glyph larger than the words turns one line into two images.
+- A single glyph (a coin, a link icon) instead of a stack: pop it in 10f (scale 0.6 → 1, no overshoot) 2–3f after the word before it, then let it spin slowly (one turn per 2–3 s) or hold.
+- Glyphs of different widths: lay the line out per item and lerp the words' x over 8f when the item changes, so the sentence never jumps.
+- On a 3D film the glyph can be the real object (a `coin()` or `squircleIcon()` from `three-look` `references/social-looks.md`), scaled so its face is the slot size; wrap the row in `onTop()` only if nothing must pass in front of the glyph.
