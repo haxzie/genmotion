@@ -143,8 +143,12 @@ pnpm changeset                        # describe a change to a published package
   scenes on demand — the renderer has no TSX compiler — and **Remix** ships
   the files to the desktop main process, which scaffolds a fresh project and
   writes them in. Every path in that bundle is re-validated on the desktop side
-  before it touches disk. The catalog test compiles and smoke-renders every
-  scene, so a template that rots fails CI.
+  before it touches disk. `AGENTS.md` and `README.md` are the two scaffold
+  files a template's own copy overrides on a remix: both are written about that
+  video, one for the remixer's coding agent and one for whoever lands on the
+  repo they publish (which is why a template's README carries the links back to
+  genmotion.dev). The catalog test compiles and smoke-renders every scene and
+  holds every template to a README, so a template that rots fails CI.
 - **Auth:** better-auth (magic link + Google/GitHub OAuth + organization
   plugin). Every product request is scoped to `organizationId`. The desktop app
   signs in through the device-authorization grant (`/api/auth/device/*`): it

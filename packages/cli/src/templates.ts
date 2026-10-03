@@ -76,8 +76,9 @@ async function fetchJson(url: string): Promise<unknown> {
 /**
  * Creates `dir` from a template — a catalog id or a local project folder. The
  * scaffold is written first (package.json, tsconfig, agent files: always
- * current), then the template's own scenes, components, assets and AGENTS.md
- * on top, then its timeline.
+ * current), then the template's own scenes, components, assets, AGENTS.md and
+ * README.md on top, then its timeline. Those last two are written *about* the
+ * template's video, so the template's copy is the one worth keeping.
  */
 export async function createFromTemplate(dir: string, template: string, name?: string): Promise<ProjectManifest> {
   const bundle = isLocal(template) ? await readLocalTemplate(template) : await fetchTemplate(template);

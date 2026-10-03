@@ -225,6 +225,45 @@ describe.each(ids)("%s", (id) => {
     expect(bundle.files.some((f) => f.path.startsWith("scenes/"))).toBe(true);
   });
 
+  // A template's README travels with a remix and overrides the scaffold's
+  // generic one (see `SCAFFOLD_OWNED` in the desktop app's `remix.ts`), so it
+  // is the page someone lands on when the user publishes their copy. These are
+  // the parts that make it worth landing on: it says what this video is, and
+  // it points back at the gallery, this template, and the docs. The dash rule
+  // is the house style for authored copy.
+  it("has a README that links back to the site", async () => {
+    const record = (await getTemplate(id))!;
+    const readme = await fs
+      .readFile(path.join(record.dir, "README.md"), "utf8")
+      .catch(() => null);
+    expect(readme, `${id} has no README.md — see .claude/skills/templates/readme-spec.md`).not.toBeNull();
+
+    const required = [
+      "https://genmotion.dev/templates",
+      `https://genmotion.dev/templates/${id}`,
+      "https://genmotion.dev/docs/quickstart",
+      "https://genmotion.dev/download",
+    ];
+    for (const link of required) {
+      expect(readme!, `${id}/README.md is missing ${link}`).toContain(link);
+    }
+    for (const tag of record.meta.tags) {
+      const slug = tag.toLowerCase().replace(/ /g, "-");
+      expect(
+        readme!,
+        `${id}/README.md doesn't link its "${tag}" category page`,
+      ).toContain(`https://genmotion.dev/templates/category/${slug}`);
+    }
+    expect(readme!.startsWith(`# ${record.meta.title}\n`)).toBe(true);
+    expect(/[—–]/.test(readme!), `${id}/README.md uses an em or en dash`).toBe(false);
+  });
+
+  it("ships its README on a remix", { timeout: 60_000 }, async () => {
+    const bundle = await buildRemixBundle((await getTemplate(id))!);
+    expect(bundle.files.some((f) => f.path === "README.md")).toBe(true);
+    expect(bundle.files.some((f) => f.path === "AGENTS.md")).toBe(true);
+  });
+
   it("has a poster", async () => {
     const stat = await fs.stat(templatePosterPath(id)).catch(() => null);
     expect(stat, `${id} has no poster.jpg — run \`pnpm poster ${id}\``).not.toBeNull();
