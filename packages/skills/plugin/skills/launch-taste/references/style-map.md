@@ -53,7 +53,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Motion personality**: stepped and digital (type-on, cells on and off, replacements rather than tweens) with exactly one organic counter-motion (a wave across a row of pins) [one]; a persistent frame element, such as a horizon rule at mid-height, carried through every section so hard changes still read as one film [one]; convergence staged literally (scatter → gather → collapse into the name) when the message is many → one [one]; the picture *simplifies* as the music climbs into the finale [one].
 - **Sound personality**: an electronic pulse with dynamics (not a wall); a stab or riser setting up the hero line, landed within a few frames of it; a real tail.
 - **Classic failure**: the floating "feature-tag cloud" around a centred phrase [two]; corner metadata nobody can read (version strings, frame sizes) [two]; a stock glitch flash not on the beat [one]; a different colour system per section, so "one product" is told in three palettes [one]; a loudness wall with no tail [one]; the device dropped after the reveal for a generic dashboard (funnel, retention curve, a wall of unlabelled sparkline tiles) that any analytics product could close on [one].
-- **House**: G (HUD variant).
+- **House**: G (HUD variant) on a dark ground. **The instrument vocabulary works on a light ground too** (paper or white, ink lines, one accent for the live state): take D's numbers for a one-shot over the instrument, or B's for UI-led runs, and keep the instrument's motion and sound personality. Light suits a product-first, calm or editorial brand, and stands apart from the default dark technical reel.
 
 ## 3D object hero
 

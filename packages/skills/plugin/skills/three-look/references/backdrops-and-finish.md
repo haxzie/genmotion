@@ -104,8 +104,21 @@ const bg = backdrop(width / height, LOOK.bg, LOOK.bgLift, height);   // LOOK.bg 
 scene.add(bg.mesh);
 // frame
 // grain stays static (uFrame 0); set bg.u.uFrame.value = frame only for moving grain (section 4)
-bg.u.uCenter.value.set(0.5 + 0.02 * Math.sin(time * 0.4), 0.55);  // the glow drifts 26–46 px
+bg.u.uCenter.value.set(SUBJECT_U + 0.02 * Math.sin(time * 0.4), SUBJECT_V);  // centred on the subject, drifting 26–46 px
 ```
+
+- **Centre the lift (and any glow) on the subject**, not the canvas: `uCenter` is in 0–1 screen units, so set it to the subject's screen point (project its world position, or `0.5 + x_px / width`, `0.5 + y_px / height`) and move it when the layout moves. A radial glow fixed at the canvas centre while the content sits in a left column is a template tell.
+- **Into a brand end card**: the card is the flat brand hex, so the film's lift, vignette and grain leave over the hand-off, ≥ 20f, never on one frame (a pop the eye catches on the calmest frame of the film). Fade lift and vignette together and keep the grain until the lift is gone, because a lift without dither bands after the encode:
+
+```ts
+// CARD = the end card's first frame; the finish is gone by CARD, grain last
+const k = 1 - prog(frame, CARD - 24, 24, inOutSine);                 // 1 = the film's finish, 0 = the flat card
+bg.u.uLift.value.lerpColors(BRAND_BG, LIFT, k);  // BRAND_BG, LIFT: THREE.Color, built once (uBase is the brand hex; if not, lerp it too)
+bg.u.uVignette.value = 0.3 * k;
+bg.u.uGrain.value = 0.015 * Math.min(1, k * 3);                      // dither holds until the lift is ~gone
+```
+
+  If the card must keep a lift (a brand whose card is a gradient), keep a static 1–2% grain on it for the whole hold; a smooth lift with no dither shows stepped rings at web bitrates.
 
 - It draws in clip space (`gl_Position = vec4(position.xy * 2.0, 0.9999, 1.0)`), so it fills the frame whatever the camera does, sits behind everything (`renderOrder −1000`, `depthTest: false`) and is never picked.
 - `uLift` is the background hue a few steps lighter, never a second hue: on `#07070c`, `#151826`; on white, a 3–5% grey or the accent at 6–10% for a tinted stage.

@@ -64,6 +64,15 @@ Numbers from `motion-language`; recipes in `references/moves.md`.
 | Push on a flat film | Scale a map group about the focus (`position = focus × (1 − k)`) | Labels and screen-px strokes keep their size; `references/moves.md` §13 |
 | Spring settle | `springIn(frame, start, dur, "gentle")` from the ease module | The preset's shape, settled exactly on `start + dur`; never re-derive the time scale |
 
+## Moves that carry the peak
+
+When a camera move *is* the film's peak (the 10 in `launch-taste`'s step 7), four rules, each learned from a judged film whose hit frame showed nothing:
+
+- **Pre-roll into the hit.** Start the move's ease-in 10–14f before the hit frame, so on the hit the move is visibly under way (about 40–60% of its peak speed), not leaving rest. For inOutCubic over `D` frames the speed on frame `p` after the start is `4 (p/D)²` of the peak (p ≤ D/2), so a 36f move started 12f early is at 44% on the hit; a 4f lean-in is about 5% and reads as a still frame with a headline on it. Code: `references/moves.md` §1.
+- **A push reframes.** It ends with the subject in the centre third of the frame and ≥ 40% of the frame's height (zoom ≥ 1.7× for a launch peak, per `launch-playbook`), lerping the camera's x/y with the zoom; a subject grown in place at the frame edge, with the rest of the frame empty, is not a push.
+- **A pull-back used as the broken rule scales about the focal element**, so the focal stays fixed on screen while the world arrives around it (`position = focus × (1 − k)`, `references/moves.md` §13; on a real camera, keep the look target on the focal and dolly along the line through it). A pull that slides the rows sideways and up is a re-layout, and it drags the world across its own labels.
+- **Labels land after the move settles**, and nothing in the moving world crosses a visible word: route it out of the headline band, or pass it under a feathered knockout (`three-type`, Layout).
+
 ## Keyframes that never stop
 
 The engine's `interpolate(frame, [0, 30, 60], [a, b, c], ease)` eases *each segment*, so the camera decelerates to a standstill at frame 30. For any value with three or more keys use `glide(keys, values)`: a monotone cubic through every key that never overshoots and keeps moving through interior keys (two equal values make a deliberate hold).
@@ -161,5 +170,6 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 3. Around each interior key of a keyed path, 5 consecutive frames show steady movement (no stall).
 4. For every matched cut, the last frame of N and the first of N+1 match in position and size of the carrier; drift is zero on both.
 5. Nothing reads while the camera is mid-move on its first appearance.
-6. An inside-the-device reveal: frame 0 of the move shows no bezel or screen edge (the whole ground around the subject is the screen's colour, matching the shot before to the pixel), and the last frame shows the whole device at its final size.
-7. No allocation, randomness or wall-clock timing in any frame callback; `validate` passes.
+6. A move that carries the peak: the hit frame and the frame 2f before it differ visibly in scale (the move is under way on the hit); the push's last frame has the subject in the centre third at ≥ 40% of frame height; a broken-rule pull-back keeps its focal element within a few px of the same screen point on its first, middle and last frame; a 4 fps strip of the move shows no world element crossing a visible word.
+7. An inside-the-device reveal: frame 0 of the move shows no bezel or screen edge (the whole ground around the subject is the screen's colour, matching the shot before to the pixel), and the last frame shows the whole device at its final size.
+8. No allocation, randomness or wall-clock timing in any frame callback; `validate` passes.

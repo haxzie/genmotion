@@ -23,7 +23,7 @@ First word 3–6f after the cut so the cut reads. Stagger × words ≤ ~18f; abo
 ## 2. riseMask and mask push-up
 
 ```ts
-const MASK = head.group.position.y - TYPE.hero.size * 0.75 * PX;   // just under the descenders
+const MASK = head.group.position.y - maskDepth("Ship the whole film", TYPE.hero) * PX; // under the lowest ink
 head.words.forEach((w, i) => {
   const p = prog(frame, i * 4, 13, outQuart);
   w.position.y = (1 - p) * -1.3 * TYPE.hero.size * PX;          // from a full line height below
@@ -53,13 +53,13 @@ Per character is for 2–3 key words in the whole film (a title, the product nam
 
 Two tested versions; both land the last letter **on** the lock frame, and neither ever shows a grey, half-opaque capital (a flat per-letter opacity ramp does, and reads as loading).
 
-**a. Rise through a caps mask, tracking close anchored at the symbol.**
+**a. Rise through a mask, tracking close anchored at the symbol.** The mask sits under the word's lowest ink (`maskDepth`): under the caps for an all-caps wordmark like this one, under the descenders for a name with a g, j, p, q or y, whose tails a caps-height mask would clip on every frame.
 
 ```ts
 const outQuad = (t: number) => 1 - (1 - t) ** 2;
 const mark = letters("GENMOTION", TYPE.wordmark);                // builder
 mark.group.position.set(NAME_X, NAME_Y, 0);                      // NAME_X = the edge beside the symbol
-const CAP_MASK = NAME_Y - TYPE.wordmark.size * 0.36 * PX;        // just under the caps (no descenders)
+const CAP_MASK = NAME_Y - maskDepth("GENMOTION", TYPE.wordmark) * PX; // just under the caps (no descenders)
 // frame: tracking +0.32em -> +0.12em over 15f outQuad, ending ON the lock (an uppercase wordmark settles
 // at +0.08 to +0.16em; sentence case at -0.01 to -0.03em). outQuad, not outCubic: a 15f outCubic has
 // 0.8% of its travel left for the last 3f, which reads as stopped; outQuad keeps 4%.

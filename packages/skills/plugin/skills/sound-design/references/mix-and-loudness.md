@@ -170,7 +170,7 @@ Measured on a CC BY orchestral end-credits score (126 s, no beat): this join's 0
 | Apple Podcasts | −16 LUFS ± 1 | ≤ −1 dBTP |
 | Podcasts general | −16 stereo / −19 mono | −1 dBTP |
 | Web or in-app autoplay | −14 to −16 | −1 dBTP |
-| Sparse, picture-led film (designed cues, no music or VO), any online destination | −16 to −18 LUFS (platforms turn loud files down, not reliably quiet ones up: it plays a little quieter and keeps its silences) | ≤ −1 dBTP, LRA ≥ 4–5 LU |
+| Sparse, picture-led film (designed cues, no music or VO), any online destination | −16 to −18 LUFS (platforms turn loud files down, not reliably quiet ones up: it plays a little quieter and keeps its silences) | ≤ −1 dBTP, LRA 4–5 LU minimum, ≤ 12–14 LU when meant to be heard |
 | EBU R128 broadcast | −23 LUFS ± 0.5 | ≤ −1 dBTP |
 | ATSC A/85 (US broadcast) | −24 LKFS ± 2 | ≤ −2 dBTP |
 | Netflix | −27 LKFS ± 2, dialogue-gated | ≤ −2 dBTP |
@@ -253,7 +253,16 @@ awk -F'[:= ]+' '/pts_time/{t=$NF} /RMS_level/{if(t>=3.0&&t<4.0&&$NF!="-inf"){s+=
 awk -F'[:= ]+' '/pts_time/{t=$NF} /RMS_level/{if(t>=4.5&&t<5.0&&(m==""||$NF+0>m))m=$NF+0} END{printf "cue %.1f dB\n", m}' assets/w50.txt
 ```
 
-Pass: every cue ≥ 12 dB over the bed. Measured on a film the bed swamped: bed −24.2 dB, cues −17.9 and −18.3 dB, a 6 dB gap. The fix is the bed (halve it twice: 0.5× is −6 dB), never the cues past the headroom. Then master per the table above and read LRA (≥4–5 LU passes). Delete `w50.txt` after.
+Pass: every cue ≥ 12 dB over the bed. Measured on a film the bed swamped: bed −24.2 dB, cues −17.9 and −18.3 dB, a 6 dB gap. The fix is the bed (halve it twice: 0.5× is −6 dB), never the cues past the headroom. Then master per the table above and read LRA: 4–5 LU minimum, and no more than about 12–14 LU for a film meant to be heard. Delete `w50.txt` after.
+
+**Dead air** (the other half of the range): print the momentary loudness (400 ms window) every 100 ms and list every stretch under −40 LUFS longer than 2 s. Use M, not the 3 s short-term S: S lags, so a 4 s gap of room tone between two cues shows as only about 1 s under −40 (tested), and S reads −120 for the first 3 s while its window fills.
+
+```
+ffmpeg -v error -i out.mp4 -map 0:a -af "ebur128=metadata=1,ametadata=print:key=lavfi.r128.M:file=assets/st.txt" -f null -
+awk -F'[:= ]+' '/pts_time/{t=$NF} /r128.M/{if(t<0.4)next; v=$NF+0; if(v<-40){if(s=="")s=t} else {if(s!=""&&t-s>2)printf "quiet %.1f-%.1f s\n",s,t; s=""}} END{if(s!=""&&t-s>2)printf "quiet %.1f s-end\n",s}' assets/st.txt
+```
+
+Every printed stretch is either the named silence in `VIDEO.md` (≤ 1.5 s of picture breath, or a sting's designed gap) or a fault: lift the bed under it, or give its visible events cues loud enough to read. Tested: a 4 s gap of near-silence between two tones printed `quiet 5.3-9.0 s`; on three sparse 29–30 s launch exports it printed one 2.2–2.5 s room-tone stretch on two of them and nothing on the third. It does not see an opening of isolated single-frame ticks over room tone (the meter rises on every tick): that is what the LRA ceiling catches, so read both. Delete `st.txt` after.
 
 The loop: export → `ebur128` → off by more than 1 LU or true peak above −1 dBTP? re-master as above (or scale every clip `volume` by the difference, ×1.12 per +1 dB, and pull the loudest overlapping clips down) → measure again.
 

@@ -45,6 +45,16 @@ ffprobe -v trace export.mp4 2>&1 | grep -o "type:'\(moov\|mdat\)'" | head -2
 2. If the shot has a camera drift or creep, the crop never reads frozen (a ±4 px drift alone defeats it), so the crop proves nothing either way: confirm on a **4 fps strip** of the range instead (`fps=4,scale=480:-2,tile=8x1`) and look for the moving part.
 3. A range is a dead hold only if the strip shows nothing visible changing. Small but real motion clears the meter's flag; it does not clear the viewer's sense of a stall, so a strip of 1.5–2 s where only a 60 px chip moves is still worth a larger move (Motion).
 
+**The strip is mandatory, for every flagged range, and you look at it.** A 1 fps contact sheet cannot show a 1.5 s stall (it has one or two tiles in it), so it neither confirms nor dismisses a flag. Save each strip and list them in the report:
+
+```sh
+# one strip per flagged range A..B seconds: 4 tiles per second, 8 per row (add a row per 2 s)
+mkdir -p strips
+ffmpeg -v error -ss 10.4 -to 14.8 -i export.mp4 -vf "fps=4,scale=480:-2,tile=8x3:padding=4" -frames:v 1 strips/hold-10.4.png
+# thin parts (a stroke, a dot, a ticking digit): the same strip on a full-resolution crop around them
+ffmpeg -v error -ss 10.4 -to 14.8 -i export.mp4 -vf "crop=640:360:400:300,fps=4,tile=8x3:padding=4" -frames:v 1 strips/hold-10.4-crop.png
+```
+
 Freezes that touch (one's end is the next one's start) are one hold: add them up. Adding a creep only to quiet the meter is not a fix; adding a move the viewer can see is.
 
 > **A confirmed dead hold is never "left as deliberate".** A freeze over the limit (1.5 s feed, 2.5 s elsewhere) outside the final end-card hold, or a hold whose only motion is a creep you cannot see on the 4 fps strip (a 3–6% scale over 2 s is invisible), is a Fix that must be fixed: shorten the hold, overlap the next beat's first motion into it, or add a move the viewer can see. Writing it under "Left as deliberate" does not clear it.
@@ -68,6 +78,7 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Blocker] Swap test: with the logo covered, the film could not belong to a competitor.
 - [Fix] **Covered-logo test, per beat**: cover the mark and the name on one frame from every beat, the proof beats included. Any beat that could close a competitor's film (a generic dashboard, a tile wall, a stock object such as a shield or a rocket on its own, a line on a flat colour) is rebuilt from the device; it usually means the device was dropped after the reveal.
 - [Fix] Every beat traces to the SMP. A beat whose job you cannot name is cut, not decorated.
+- [Fix] **Copy read**: each problem or tension line, read alone and muted, reads as the pain. If it could be the product's tagline (a promise, a boast), rewrite it.
 - [Fix] The value claim lands by the second beat; everything after is evidence.
 - [Fix] The memorable moment exists at the frame the block says, and it comes from the idea, not from an effect.
 
@@ -82,13 +93,14 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] One focal point per frame; the eye knows where to go within 15f of each cut.
 - [Fix] Palette discipline: background, ink, muted, one accent; the accent only on the focal element and the CTA; one punch colour per frame. One **semantic state colour** (error or threat red, for an attacker, a failure, a warning) may share frames with the accent if it is always paired with a shape or a label and never colours a message line.
 - [Fix] Hero and end-card frames leave negative space (content fills 40–60% of the frame). Measure the content group (the object, the lockup); a frame-edge element (a border, a ground line, a boundary drawn around the frame) is not content.
+- [Polish] Radial glows and lifts sit on the subject, not the canvas centre; the end card is the flat brand hex, or a lift that keeps its dither (no stepped rings in the export).
 - [Polish] At least two depth layers (background treatment, content, accents); no empty flat background unless the style is deliberately minimal or it is brand identity (a sting or end card on the exact brand hex).
 
 ### Type
 - [Blocker] Every message line holds for `max(30, 9 × words + 15)` frames after it is legible (30 fps; at 24 fps use `pacing.md`'s 24 fps column, `max(24, 7.2 × words + 12)`), and never more than 15 characters per second.
 - [Blocker] Contrast ≥ 4.5:1 for read text under 60 px (≥ 3:1 at 60 px and above), measured against what is actually behind it. A low-contrast accent (< 4.5:1 on its ground) never carries text under 60 px; a high-contrast accent eyebrow (yellow on near-black, about 13:1) passes.
 - [Fix] ≤ 2 type families; a size ratio ≥ 1.5× between levels; display tracking tightened (−0.02 to −0.045em).
-- [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers. The count is of message lines (headlines, captions, the line being said); a diagram's labels are capped separately (≤ 5 labelled parts, each label on its part, `explainer`).
+- [Fix] ≤ 7 words on screen at once in feed, ≤ 12 in explainers; the end-card lockup (name + tagline + platform or URL line) may carry up to 9 if it holds ≥ 90f and its line is ≥ 40 px in a feed. The count is of message lines (headlines, captions, the line being said); a diagram's labels are capped separately (≤ 5 labelled parts, each label on its part, `explainer`).
 - [Polish] No widows (a single word alone on the last line of a headline).
 
 ### Motion
@@ -98,7 +110,8 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] Multi-key moves do not stop at each key (watch camera paths frame by frame for a stall).
 - [Fix] One ambient behaviour per held frame; holds share phase across words on a line.
 - [Fix] Overshoot is used for one role (a button, a badge, a stamp), not on everything; enterprise and luxury tones have none.
-- [Fix] Nothing passes through read type: a moving element never crosses a word that is on screen, and a lockup (mark + name) moves as one group.
+- [Fix] Nothing passes through read type: a moving element never crosses a word that is on screen, and a lockup (mark + name) moves as one group. During a camera or world move (a pull-back, a truck), the world is routed out of the headline band or fades under a feathered knockout (≥ 40 px soft edge); a hard-edged patch, where a line stops dead beside the words, is the same fault. Labels in the moving world land after the move settles.
+- [Fix] A camera move that carries the peak is visibly under way on the hit frame (its ease-in started 10–14f before), and a push ends with its subject in the centre third at ≥ 40% of frame height.
 - [Polish] Anticipation before big moves; settle after them.
 
 ### Transitions
@@ -112,8 +125,9 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Blocker] The beat table's frame ranges sum to the video's length, and the export's duration matches.
 - [Fix] There is a breath before the peak (10–30f of picture, even when the music's dropout under it runs longer) and the peak is the most contrasting moment in the film. Its placement follows the owner (launch-type films: `launch-taste` step 7's band for the kind of film, which may be a name reveal early plus a later completion as the one peak).
 - [Fix] The peak reads with the sound off: the biggest picture change lands on the hit frame and the words change with it. No peak (name reveal or payoff line) is a line on a flat colour flood; the device completes on screen and holds ≥ 30f before any flood.
+- [Fix] Opening pace: the idea's device (or its first unit) is on screen and acting by frame 60; a run of repeated units reaches its first few in ≤ 2.5–3 s, and between two units nothing visible stops for more than 1 s. A duration claim ("ready in 30 seconds") is shown compressed (≤ 75f, in steps or a time-skip), not waited out. A name reveal on an empty ground mid-film (a mark and name with nothing of the device in frame) is a mid-film logo card: the film gets one logo card, at the end.
 - [Fix] The beat interval matches the energy chosen (Hyper 8–14f, High 18–30f, Medium 30–50f, Calm 45–70f) and varies along the curve.
-- [Fix, never deliberate] No dead holds: on the `freezedetect` pass above, any confirmed freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, or a standalone sting's ≥45f hold, is exempt; a mid-film logo card is not). A line held more than 2× its formula with nothing else changing is the same fault. A creep you cannot see on the strip is not change, and this item cannot be "left as deliberate".
+- [Fix, never deliberate] No dead holds: on the `freezedetect` pass above, any confirmed freeze longer than 1.5 s in a feed piece, or 2.5 s elsewhere, is a Fix (the final logo or end-card hold, 75–120f with its one ambient behaviour, or a standalone sting's ≥45f hold, is exempt; a mid-film logo card is not). **A line held at its formula is not a dead hold only if something visible changes during it** (the device acting, the next beat's first motion overlapping in, an ambient you can see on the 4 fps strip); in feeds, where a 4+ word line's formula runs past the 1.5 s limit, the line holds and another element acts, or the line is split. A line held more than 2× its formula is the same fault whatever else moves. A creep you cannot see on the strip is not change, and this item cannot be "left as deliberate".
 - [Fix] The logo holds 75–120f (10–30f only in beat-cut styles; a standalone sting follows `brand-sting`'s budget table, ≥45f), with nothing new after the CTA (a designed loop seam's last 15–25f, which grow frame 0 back, are exempt). Its one ambient behaviour is visible: if consecutive held frames measure as identical on a crop, the creep is too small (use 1%, or a flicker or light that fits the idea).
 
 ### Delivery
@@ -124,6 +138,8 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; whooshes lead their move; impacts on the impact frame ±2f).
 - [Fix] Music starts and ends with the picture; a sonic resolve on the logo.
 - [Fix] Cuts sit on the music's beats where the film is music-led.
+- [Fix] A film meant to be heard has a loudness range of about 4–14 LU, and outside its named silence the momentary loudness never sits under −40 LUFS for more than 2 s (`sound-design`, Sparse, picture-led films); the first 3 s of a sound-on film are audible.
+- [Fix] One intimate voice (a diary, a voice note, a private recording) is never stood in for by a crowd murmur: on-screen words plus a close breath or room tone, or the real line recorded close and dry with the bed out.
 
 ## 3. The rubric
 
@@ -184,6 +200,7 @@ Blockers: none
 Fixed this pass: beat 5 headline held 36f → 60f; drift stopped before the 540 cut
 Left as deliberate: hard cut at 660 (on the drop)   ← Fix or Polish items only; never a Blocker, a dead hold or an invisible creep
 Frames checked: 0, 15, 75, 76, 180, 200, 262, 300, …, 899
+Strips (4 fps) checked: strips/hold-10.4.png (first run of units: moving), strips/hold-18.3.png (fixed: next run overlaps in)
 ```
 
 Append it to `VIDEO.md` so the next session sees what was judged and why.
