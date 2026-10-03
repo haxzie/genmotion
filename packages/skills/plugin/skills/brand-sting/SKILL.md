@@ -7,7 +7,7 @@ description: "The logo sting, bumper, ident or brand reveal: 2 to 8 seconds, no 
 
 The shortest thing in the pack and the least forgiving: one mark, arriving well or badly, in a few seconds, with nothing to hide behind. A sting is half motion and half sound; the hit has to land on the frame the mark locks. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the sonic logo from `sound-design`.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -105,7 +105,7 @@ Pick one. A sting that builds, then reveals, then transforms is three stings.
 | Tonal button | 0–4f after the impact: 2–4 notes or a chord | 0.6–0.8 |
 | Tail | shimmer or reverb, 1–1.5 s, decaying to silence before the last frame | — |
 
-- **The anticipation has sound too** (ticks on a swing, an air bed, a soft tick as the search changes direction): with sound on, a sting never opens on more than 0.5 s of silence.
+- **The anticipation has sound too** (ticks on a swing, a tonal build, a soft tick as the search changes direction): with sound on, a sting never opens on more than 0.5 s of silence.
 - **Contrast**: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser has no internal dip over 6 dB. Per-clip volumes do not guarantee this (sources are normalised differently); measure it (`sound-design`'s `references/sfx-cues.md`) and pull the riser down 6–8 dB at its top if it fails.
 
 Generate with `sfx` or `music`, describing the sound, not the picture: "two warm synth notes rising for one second into a solid low hit with a bright three-note synth chime, ending in a soft shimmer, 3 seconds, one-shot, no music". Generate 2–3 takes and pick by ear on the lock frame. No sub drop if the sting precedes speech. For a loop, the tail must reach silence before the loop point.

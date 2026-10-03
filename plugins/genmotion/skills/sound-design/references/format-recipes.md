@@ -16,7 +16,7 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 - **Order**: write and place the VO first; music and SFX fit around it.
 - **Music**: 90–110 BPM, sparse, no lead melody. Bed 0.18 per the ladder (fade in 30, split near the end and fade out 45). Optional duck up to ≈ 0.7 in pauses ≥ 1.5 s.
 - **Cuts**: each section starts on a downbeat right after a VO pause; VO +6 f after each cut (house: 8 of 8).
-- **SFX**: light UI sounds, at most one per 2–3 s; room tone 0.03–0.05 if the bed drops out.
+- **SFX**: light UI sounds, at most one per 2–3 s; when the bed drops out, let the last cue's tail decay rather than filling the gap.
 - **Ending**: music button under the CTA.
 
 ## Text-led film with no VO (explainer, product story)
@@ -31,17 +31,17 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 
 A muted-first launch, a calm hardware or data film, a film whose content is many sound events: the picture carries the meaning and sound is the reward for unmuting (SKILL.md, Sparse, picture-led films).
 
-- **Cues lead**: 5–20 designed cues on the film's events (a tone per unit, a tick per crossing, the hit on the peak, a 2–4 note sonic logo on the mark). Each cue's loudest 50 ms RMS sits **≥12 dB above the bed** (`mix-and-loudness.md`, Sparse mixes).
-- **Bed**: room tone or an air bed, low-passed at ≤ 4 kHz (`sfx-cues.md`'s ambient bed, brown noise alone), at about −32 LUFS momentary in the master and running through every hold, so the gaps read as space, not dropouts. Take it down only for the named breath (room tone at −45 to −60 dBFS, never digital zero, not a riser filling it).
+- **Cues lead**: 5–20 designed cues on the film's events (a tone per unit, a tick per crossing, the hit on the peak, a 2–4 note sonic logo on the mark). Each cue's loudest 50 ms RMS sits **≥12 dB above any bed** (`mix-and-loudness.md`, Sparse mixes); only the hit and the sonic logo take the top two levels, and transition pings sit under the action cues they bracket.
+- **Bed**: none, or music or a tonal pad (`sfx-cues.md`'s ambient pad), shaped per section (out for the named breath, lighter after the peak). **Never synthesised noise, room tone or "air"**: it reads as wind or hiss on phones. Gaps read as space when every cue decays naturally (tails faded over 80–150 ms, the hit and chimes left to ring) and cues sit on the visible events.
 - **Many events**: one stem from the scene's event schedule with the many-events rules (`sfx-cues.md`, Many events); heroes (first, last, isolated) at full level.
-- **Master**: feeds (X, LinkedIn, Instagram, TikTok, YouTube Shorts, Kickstarter, Product Hunt) at **−14 LUFS integrated, ≤ −1 dBTP, LRA about 4–10 LU**, with room tone at about −32 LUFS momentary running through every hold and no hole of 0.3 s or more under −60 dBFS; recorded clicks and keys need the cue-stem recipe (`mix-and-loudness.md`, Mastering a sparse film of real transients), synthesised tones survive the computed-ceiling re-master. −16 to −18 LUFS only for a site hero, an autoplay-muted embed or a long-form player, where no louder neighbour plays next to it. The peak cue is the loudest event and the sonic logo sits ≥ 2 dB under it.
+- **Master**: feeds (X, LinkedIn, Instagram, TikTok, YouTube Shorts, Kickstarter, Product Hunt) at **−14 LUFS integrated, ≤ −1 dBTP, LRA about 4–10 LU**, measured on the final stereo file, with no tail cut off; recorded clicks and keys need the cue-stem recipe (`mix-and-loudness.md`, Mastering a sparse film of real transients), synthesised tones survive the computed-ceiling re-master. −16 to −18 LUFS only for a site hero, an autoplay-muted embed or a long-form player, where no louder neighbour plays next to it. The peak cue is the loudest event and the sonic logo sits ≥ 2 dB under it.
 
 ## Brand sting (2–8 s)
 
 - **Sequence**: a tonal build or ticks into the lock-up (0.5–1.5 s; a riser only if tonal, never a noise swell) → **impact on the settle frame** → tonal button (2–4 notes or a chord) → shimmer tail 1–1.5 s. About 3 s of sound.
 - **Source**: a music generator with a 3–5 s length, or `sfx` ("short bright three-note synth logo jingle, ending on a sustained chord, 2.5 seconds").
 - **Levels**: logo hit 0.9; no bed. No sub drop if the sting will precede speech.
-- **The anticipation has sound too** (ticks on the swing, an air bed, a tonal build): a sound-on sting never opens on more than 0.5 s of silence.
+- **The anticipation has sound too** (ticks on the swing, a tonal build): a sound-on sting never opens on more than 0.5 s of silence.
 - **Contrast**: the impact's first 10 ms RMS is ≥8 dB above the riser's last 100 ms, and the riser has no dip over 6 dB; lower the riser until it passes (`sfx-cues.md` has the measurement).
 - **Loop variant**: the last frame's sound must decay to silence before the loop point.
 
@@ -57,7 +57,7 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 - **Act 1**: quiet, emotional, 60–80 BPM, sparse hits.
 - **Act 2**: pulses and percussion, rhythm accelerating, a braam on each act break, each break a dropout.
 - **Act 3**: everything firing, hits on every cut, pulse 120–140.
-- **Title**: riser → **hard cut to 0.5–1.5 s of room-tone silence** (never digital zero) → title hit (braam + sub drop) → optional button (one last hit or joke).
+- **Title**: riser → **hard cut to 0.5–1.5 s of silence** (the riser's own tail decays into it over 80–150 ms, never a truncation) → title hit (braam + sub drop) → optional button (one last hit or joke).
 - **The climax peaks**: its last 2–3 s are the loudest and densest, carried by a riser into the hard stop, never a flat plateau that just stops.
 - **Loudness as a staircase**: automate the music's volume per act (0.6 → 0.85 → 1.0) and limit peaks only (SKILL.md recipe). Never `loudnorm` the whole cue: its `dynamic` fallback flattens the build. Measure each section's integrated loudness; it rises act by act.
 - **A score with no steady pulse** (orchestral, an end-credits cue): cut on phrases and swells, and take isolated hits from elsewhere in the track as separate clips for the title and end card.
@@ -73,7 +73,7 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 
 - Speech at −16 to −14 LUFS short-term. Music only on the intro, b-roll stretches and section stings (1–2 bars); bed 0.12–0.2 under speech when present (the ladder), out under the key line.
 - A pop or click on graphics, nothing on zoom punches or cuts; a boom on a rare emphasis joke.
-- Room tone continuous under cuts so jump cuts do not drop to digital zero.
+- Jump cuts in the recording are filled with that recording's own room tone (harvested from its quietest stretch, `video-editing`), never a synthesised one.
 
 ## Gen Z edit (7–45 s): two different films
 
@@ -95,7 +95,7 @@ Both: master −14 LUFS / −1 dBTP.
 ## UI demo / screen walkthrough (15–90 s)
 
 - No music, or minimal tech / lo-fi at 100–120 BPM at 0.1 under VO (0.5 with no VO).
-- **A click per interaction** on the press frame (0.8–1.0), varied in level ±0.04 and alternating tracks; screen transitions silent (or the click that caused them); a typing loop under text entry; a success chime on completion; room tone throughout.
+- **A click per interaction** on the press frame (0.8–1.0), varied in level ±0.04 and alternating tracks; screen transitions silent (or the click that caused them); a typing loop under text entry; a success chime on completion; every tail decays, no bed under the gaps.
 - Strip the recording's own audio before placing it.
 
 ## Milestone / stat announcement (6–20 s)

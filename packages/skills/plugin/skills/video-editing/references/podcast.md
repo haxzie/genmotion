@@ -23,7 +23,7 @@ Read this when the footage is a recorded conversation: an audio or video podcast
 - **Fillers:** remove isolated "um", "uh", "er" (about 60–80% of them, not all). Keep one where removing it causes a pitch or breath jump, or a visible jump on a single camera with no cutaway. Leave "like", "you know", "so" unless repeated 3+ times in a sentence.
 - **Crosstalk:** keep laughter, agreement and energy; cut false starts and overlapping restarts. On multitrack audio duck the non-speaker 6–10 dB rather than muting, unless their track bleeds noise.
 - **Retakes:** keep the last complete take.
-- **Every audio cut** gets a 10 ms fade each side (5–20 ms is fine). Lay room tone under gaps: record or harvest 5–10 s of the quietest stretch and loop it; never digital silence.
+- **Every audio cut** gets a 10 ms fade each side (5–20 ms is fine). Lay the recording's own room tone under gaps: harvest 5–10 s of its quietest stretch and loop it; never digital silence, never a synthesised noise.
 - **Levels:** speakers matched within 1 LU before the mix (`ebur128` per track, then gain).
 
 ### Multicam switching

@@ -20,12 +20,12 @@ Pick the table for the deliverable's length. **A 60 s or shorter cut has no full
 
 | Time | Frames | Beat | Average shot | Sound |
 |---|---|---|---|---|
-| 0–5 s | 0–120 | **Cold open**: the single most striking shot, one line in near-silence | 1–2 shots | room tone, the line 6–10 LU under Act 1's music |
+| 0–5 s | 0–120 | **Cold open**: the single most striking shot, one line in near-silence | 1–2 shots | the footage's own room tone, the line 6–10 LU under Act 1's music |
 | 5–15 s | 120–360 | **Light setup**: the world and the protagonist, one line, a first card | 2–2.5 s (48–60 f) | music enters sparse |
 | ~15 s | ~360 | **Turn**: a hit and 6–15 f of black (the drop) | one hit | music changes section |
 | 15–40 s | 360–960 | **Escalation**: conflict and stakes, cards between beats, 1–2 lines | 1.2–1.8 s (29–43 f), accelerating | layers build, risers into hits |
 | 40–50 s | 960–1200 | **Climax montage**: the fastest cutting, the best spectacle | 0.33–0.6 s (8–14 f) | music at its peak and still rising, hits on cuts; ends on a riser into a hard stop |
-| 50–51 s | 1200–1224 | **Designed silence**: 0.5–1 s of room tone, never digital zero | black or the last frame | room tone only |
+| 50–51 s | 1200–1224 | **Designed silence**: 0.5–1 s of the footage's own recorded room tone, never digital zero | black or the last frame | room tone only |
 | 51–54 s | 1224–1296 | **Title** on the biggest hit | hold 2–3 s | braam + sub, tail |
 | 54–58 s | 1296–1392 | **Button**: one last line, gag or scare | 1 shot | the line, then a tail |
 | 58–60 s | 1392–1440 | **End title / CTA**: the title with the date, platform, URL or "watch the full film" under it; a licence credit may sit on it. The title alone is not a CTA | 2 s card | tail rings out |
@@ -95,7 +95,7 @@ Contrast is the engine: the escalation only lands because of the quiet before it
 - Risers 2–8 s long, ending exactly on the hit frame.
 - Fast transitions get the hit on the cut or nothing; never a whoosh (`sound-design`'s ban).
 - Braams for the epic moments, sparingly.
-- **Designed silence**: 0.5–1 s of room tone before the biggest hit, never digital zero (it sounds like a dropout on headphones). Harvest it from the source's quietest stretch and drop it to −45 to −60 dBFS RMS (`ffmpeg-recipes.md` §7, room tone).
+- **Designed silence**: 0.5–1 s of room tone before the biggest hit, never digital zero (it sounds like a dropout on headphones). Harvest it from the source footage's own quietest stretch (never synthesise it: generated noise reads as wind or hiss) and drop it to −45 to −60 dBFS RMS (`ffmpeg-recipes.md` §7, room tone).
 - Dialogue: lines laid across cuts as J/L-cuts. When the footage is a finished film mix, the dialogue is not clean: lift lines per the main skill's Step 9 (finished mix, no stems), and keep a cold-open **line** 6–10 LU under Act 1's music, not above it. A cold open built on a **sound** (an impact, a roar, a feed hook's sync sound) is not a line: it sits at Act 1's level or above, or the hook plays near-silent.
 - **Pre-mix the trailer to one WAV.** The timeline has 4 lanes and one static volume per clip (`sound-design`), and a trailer has a dozen overlapping pieces with automated levels (bed staircase, lines, ducks, hits, sync sound, room tone). Build them in one ffmpeg graph (`-filter_complex_script`: per piece `atrim`, `asetpts=PTS-STARTPTS`, 10–50 ms `afade`s, `adelay=ms|ms` to its trailer time, levels as `volume='…':eval=frame` expressions; then `amix=inputs=N:normalize=0`, which sums without dividing, and `aresample=48000`; tested), master that, and place the one file at 1.0 on lane 0. Set the climax ramp before the limiter and measure after it: at least 1 LU of the staircase must survive the limiting.
 - Levels and the export check per `sound-design`; −14 LUFS online.

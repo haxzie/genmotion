@@ -8,7 +8,7 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 |---|---|---|---|
 | Whoosh / swoosh / swish | air movement | **never** (SKILL.md, the whoosh ban) | a move, wipe or cut gets the picture's own sound (a tap, a soft land on the settle, a tonal note on the beat) or nothing |
 | Soft land / thud | a low, short, padded contact | a panel, card or device settling after a move | on the settle frame (motion stops), ±1 f |
-| Riser / uplifter | rising pitch or noise, 1–8 s | into reveals, drops, title cards | **ends exactly on** the reveal; length 1, 2 or 4 bars |
+| Riser / uplifter | rising pitch (tonal, never a noise swell), 1–8 s | into reveals, drops, title cards | **ends exactly on** the reveal; length 1, 2 or 4 bars |
 | Downlifter / reverse | falling sweep | after a drop, a scene exit, "power down" | starts on the hit, decays across the next shot |
 | Impact / hit / slam | sharp transient + body | landing, text slam, logo lock, cut to black | transient on the contact frame, ±2 f |
 | Sub drop / boom | 30–60 Hz falling sine | the felt weight under a hit | on the hit; at most one per 10–20 s; pair with a mid-range hit (phones cannot play sub) |
@@ -19,7 +19,7 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 | Glitch / stutter | bit-crush, stutters | glitch transitions, error states | on the glitch frames, short |
 | Shimmer / sparkle | high twinkle | logo shine, highlight sweep | spans the shine, quiet |
 | Foley | real actions (cloth, paper, tape, steps) | UGC, unboxing, product handling | exactly on the visible action |
-| Ambience / room tone | continuous bed | under VO-only or "silent" stretches, screen demos, every hold of a sound-on film | whole scene, 20–30 dB under VO (about −32 LUFS momentary in a −14 cue-led master), seamless loop, fades 15–30 f; no hole ≥ 0.3 s of digital zero |
+| Recorded ambience | the place's own recorded sound (a street, a café) from the user's footage or a credited CC0 field recording, never synthesised noise | only when the picture shows that place | 20–30 dB under VO, fades 0.5–1 s; never a noise generator as "room tone" or "air" (SKILL.md, the noise-bed ban) |
 | Meme-style hits | boom, record scratch, airhorn | Gen Z / comedic edits only | on the punchline frame, one per joke; generate a look-alike, never use a rip |
 
 ## Timing table from the house templates
@@ -93,8 +93,6 @@ Pattern: what makes it + character + envelope + length + "one-shot" / "no music"
 | Glitch | "short digital glitch stutter, bit-crushed buzz with a data-error crackle" | 0.5 s |
 | Shimmer | "soft magical shimmer sparkle, high twinkling bells sweeping upward" | 1.5 s |
 | Paper / tape (UGC foley) | "packing tape ripped off a cardboard box, close, dry, one-shot" | 1 s |
-| Room tone | "quiet modern office room tone, faint air conditioning hum, no voices" | 10 s, loop |
-| Ambience | "light rain on a window, steady, no thunder" | 10 s, loop |
 | Comedic boom (meme-style) | "deep cinematic boom with heavy reverb, comedic punchline sting" | 1.5 s |
 | Sonic logo (no music service) | "short bright three-note synth logo jingle, uplifting, ending on a sustained chord" | 2.5 s |
 
@@ -106,22 +104,22 @@ In order: user-supplied files; CC0 / CC BY sounds from Freesound or Openverse fo
 
 ### Synthesised placeholders (tested)
 
-Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (fixed noise seeds), 48 kHz stereo WAV, and already carry their relative level with headroom, so **place them at `volume` 1.0** (not the ladder values, which assume −3 dBFS-normalised files). Where an owner skill gives its own lower placeholder levels (a sting's 0.55–0.9), expect the export to land near −5 dBTP; scale every clip together (×1.33) to reach the owner's −1 to −3 dBTP window. Over speech or music, pre-master the base layer to −3 dBTP first (SKILL.md). They are placeholders: a sine and noise read as test tones next to a designed sound. List them as placeholders in `VIDEO.md`, say so in your reply, and offer `sfx` (`recommend-integration`) to replace them.
+Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (fixed seeds for the two short noise transients, the impact's 30 ms snap and the 40 ms tick; never a noise bed), 48 kHz stereo WAV, and already carry their relative level with headroom, so **place them at `volume` 1.0** (not the ladder values, which assume −3 dBFS-normalised files). Where an owner skill gives its own lower placeholder levels (a sting's 0.55–0.9), expect the export to land near −5 dBTP; scale every clip together (×1.33) to reach the owner's −1 to −3 dBTP window. Over speech or music, pre-master the base layer to −3 dBTP first (SKILL.md). They are placeholders: a sine reads as a test tone next to a designed sound. List them as placeholders in `VIDEO.md`, say so in your reply, and offer `sfx` (`recommend-integration`) to replace them.
 
 | Sound | File peak | Length | Use |
 |---|---|---|---|
-| riser | −14.9 dBFS, rising monotonically (no 50 ms dip) | 2.0 s (1 bar at 120 BPM) | `startFrame = hit − 60` at 30 fps |
+| riser | −16.4 dBFS, rising monotonically (no 50 ms dip) | 2.0 s (1 bar at 120 BPM) | `startFrame = hit − 60` at 30 fps |
 | impact | −4.1 dBFS | 1.2 s | on the contact / lock frame |
 | pop | −10.2 dBFS | 0.08 s | text pop, arrival |
-| riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36`; place at **0.7** (its tail is denser than the noise riser's: at 1.0 it measured only about 7 dB under the impact) |
+| riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36`; place at **0.7** (its tail is denser than the long riser's: at 1.0 it measured only about 7 dB under the impact) |
 | tick | −13.4 dBFS | 0.04 s | counter steps, anticipation |
 | chime | −10.1 dBFS | 2.2 s | success, sonic-logo button |
 
-Riser at 1.0 into the impact at 1.0 measured **9.2 dB** of contrast (riser's last 100 ms −21.5 dB RMS, impact's first 10 ms −12.3 dB RMS), and the sum peaks at −4.1 dBFS.
+Riser at 1.0 into the impact at 1.0 measured **10.1 dB** of contrast (riser's last 100 ms −22.3 dB RMS, impact's first 10 ms −12.3 dB RMS), and the sum peaks at −4.1 dBFS.
 
 ```
-# riser: 220→880 Hz sine sweep + high-passed pink noise, t² / t³ swell, ends exactly at d (2 s)
-ffmpeg -f lavfi -i "aevalsrc='0.18*pow(t/2,2)*sin(2*PI*(220*t+165*t*t))':s=48000:d=2" -f lavfi -i "anoisesrc=c=pink:r=48000:a=0.25:seed=7:d=2" -filter_complex "[1:a]highpass=f=500,volume='pow(t/2,3)':eval=frame[n];[0:a][n]amix=inputs=2:normalize=0,afade=t=out:st=1.99:d=0.01,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-riser.wav
+# riser: two sines a fifth apart sweeping 220→880 Hz, t² swell, low-passed, ends exactly at d (2 s); tonal only, never a noise swell
+ffmpeg -f lavfi -i "aevalsrc='0.15*pow(t/2,2)*(sin(2*PI*(220*t+165*t*t))+0.5*sin(2*PI*(330*t+247*t*t)))':s=48000:d=2" -af "lowpass=f=3000,afade=t=out:st=1.99:d=0.01,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-riser.wav
 
 # impact: 30 ms high-passed noise snap + a 70→50 Hz body with fast decay
 ffmpeg -f lavfi -i "aevalsrc='0.45*exp(-6*t)*sin(2*PI*(70*t-10*t*t))':s=48000:d=1.2" -f lavfi -i "anoisesrc=c=white:r=48000:a=0.35:seed=3:d=1.2" -filter_complex "[1:a]highpass=f=1500,volume='exp(-120*t)':eval=frame[s];[0:a][s]amix=inputs=2:normalize=0,afade=t=in:d=0.002,afade=t=out:st=1.1:d=0.1,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-impact.wav
@@ -135,7 +133,7 @@ ffmpeg -f lavfi -i "anoisesrc=c=white:r=48000:a=0.5:seed=11:d=0.04" -af "bandpas
 # chime: inharmonic bell partials (1 : 2.76 : 5.4), a long natural decay, no echo (an echo on the attack flams)
 ffmpeg -f lavfi -i "aevalsrc='0.35*min(t/0.004,1)*(0.75*exp(-2.2*t)*sin(2*PI*880*t)+0.38*exp(-4*t)*sin(2*PI*2428*t)+0.2*exp(-7*t)*sin(2*PI*4752*t))':s=48000:d=2.2" -af "afade=t=out:st=1.9:d=0.3,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-chime.wav
 
-# tonal riser for calm, precise briefs: two sines a fifth apart sweeping up, low-passed, 1.2 s (the noise riser above is for energetic ones)
+# tonal riser for calm, precise briefs: two sines a fifth apart sweeping up, low-passed, 1.2 s (the 2 s riser above is for energetic ones)
 ffmpeg -f lavfi -i "aevalsrc='0.22*pow(t/1.2,2)*(sin(2*PI*(196*t+122*t*t))+0.5*sin(2*PI*(294*t+183*t*t)))':s=48000:d=1.2" -af "lowpass=f=2500,afade=t=out:st=1.19:d=0.01,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-riser-tonal.wav
 ```
 
@@ -164,25 +162,25 @@ awk -F'[:= ]+' -v h=2.0 '/pts_time/{t=$NF} /RMS_level/{if(t>=h-0.15&&t<h+0.1)pri
 
 Measured with the placeholder riser and impact, hit at 2.0 s: on the frame, the rows read −21.8, −21.3, −21.6, **−13.4**, −16.8 (the riser climbs straight into the hit); the same impact placed 4 f late reads −21.8, −21.3, −21.6, **−inf, −inf**, a hole on the landing frame that plays as a dropout. Fix by moving the hit (or the riser's `startFrame`), never by stretching a fade over the gap. Delete `w.txt` after.
 
-### Synthesised ambient bed (a product that makes sound, no recording)
+### Synthesised ambient pad (a product that makes sound, no recording)
 
-For a launch or demo of a product whose output *is* sound (a soundscape or white-noise app, a sleep or meditation app, an ambient generator), the film plays that output for 2–4 s with the score ducked 10–12 dB under it (`launch-playbook`). With no recording from the user and no `music`/`sfx` to generate one, synthesise a placeholder: stereo brown noise low-passed to a soft rumble with a slow swell, under three slow sine pads (A2, E3, B3, a stacked fifth, slightly detuned left and right so it is wide), each breathing at its own rate (0.03–0.08 Hz, so nothing repeats inside the clip), faded 2 s in and 3 s out, normalised to −16 LUFS / −3 dBTP so it can sit at speech level in the foreground. Tested: 24.0 s, 48 kHz stereo, −16.7 LUFS integrated, LRA 4.3 LU, true peak −4.4 dBTP, energy below 1 kHz with nothing audible above about 6 kHz.
+For a launch or demo of a product whose output *is* sound (a sleep or meditation app, an ambient generator), the film plays that output for 2–4 s with the score ducked 10–12 dB under it (`launch-playbook`). The real output comes first: a 20–30 s capture from the user, or `music` prompted with the product's own description of its sound. With neither, synthesise a **tonal** placeholder: three slow sine pads (A2, E3, B3, a stacked fifth, slightly detuned left and right so it is wide), each breathing at its own rate (0.03–0.08 Hz, so nothing repeats inside the clip), faded 2 s in and 3 s out. **No noise layer**: synthesised noise reads as wind or hiss on phones (SKILL.md, the noise-bed ban), so a white-noise or rain app needs the user's own recording of its output, never a generated stand-in. Tested: 24.0 s, 48 kHz stereo, −17.1 LUFS integrated, LRA 4.4 LU, peak −8.4 dBFS, nothing above about 1.2 kHz; raise it 1 dB at placement when it plays at speech level in the foreground.
 
 ```
-# ambient bed: brown noise (fixed seeds, one per channel) + three breathing sine pads, 24 s
-ffmpeg -f lavfi -i "anoisesrc=color=brown:amplitude=0.6:seed=11:duration=24" -f lavfi -i "anoisesrc=color=brown:amplitude=0.6:seed=23:duration=24" -f lavfi -i "aevalsrc=exprs='0.10*sin(2*PI*110*t)*(0.6+0.4*sin(2*PI*0.05*t))+0.07*sin(2*PI*164.81*t)*(0.55+0.45*sin(2*PI*0.07*t+1))+0.05*sin(2*PI*246.94*t)*(0.5+0.5*sin(2*PI*0.031*t+2))|0.10*sin(2*PI*110.3*t)*(0.6+0.4*sin(2*PI*0.05*t+0.5))+0.07*sin(2*PI*165.2*t)*(0.55+0.45*sin(2*PI*0.07*t+1.6))+0.05*sin(2*PI*247.4*t)*(0.5+0.5*sin(2*PI*0.031*t+2.7))':s=48000:d=24" -filter_complex "[0:a][1:a]amerge=inputs=2,lowpass=f=500,highpass=f=35,volume='0.75+0.25*sin(2*PI*0.08*t)':eval=frame[n];[2:a]lowpass=f=1200[p];[n][p]amix=inputs=2:normalize=0,afade=t=in:d=2,afade=t=out:st=21:d=3,loudnorm=I=-16:TP=-3:LRA=7,aresample=48000[out]" -map "[out]" -c:a pcm_s16le assets/placeholder-ambient-bed.wav
+# ambient pad: three breathing sine pads, detuned per channel, 24 s, no noise
+ffmpeg -f lavfi -i "aevalsrc=exprs='0.10*sin(2*PI*110*t)*(0.6+0.4*sin(2*PI*0.05*t))+0.07*sin(2*PI*164.81*t)*(0.55+0.45*sin(2*PI*0.07*t+1))+0.05*sin(2*PI*246.94*t)*(0.5+0.5*sin(2*PI*0.031*t+2))|0.10*sin(2*PI*110.3*t)*(0.6+0.4*sin(2*PI*0.05*t+0.5))+0.07*sin(2*PI*165.2*t)*(0.55+0.45*sin(2*PI*0.07*t+1.6))+0.05*sin(2*PI*247.4*t)*(0.5+0.5*sin(2*PI*0.031*t+2.7))':s=48000:d=24" -af "lowpass=f=1200,afade=t=in:d=2,afade=t=out:st=21:d=3,loudnorm=I=-16:TP=-3:LRA=7,aresample=48000" -c:a pcm_s16le assets/placeholder-ambient-pad.wav
 ```
 
-- **Variations, one at a time**: rain or "café" is pink noise band-passed 300–6000 Hz instead of brown (brighter, busier); "focus" is brown noise alone with the pads at half level; a darker sleep bed drops the pads an octave (55, 82.41, 123.47 Hz). Length is `d`/`duration` (20–30 s) with the out-fade's `st` at `d − 3`. Put the pads in the score's key when they play next to it (A minor here).
+- **Variations, one at a time**: a darker sleep pad drops the pads an octave (55, 82.41, 123.47 Hz); a brighter "focus" pad adds a fourth partial an octave up at half level. Length is `d` (20–30 s) with the out-fade's `st` at `d − 3`. Put the pads in the score's key when they play next to it (A minor here).
 - **Drive the picture from it.** One RMS row per film frame (1600 samples at 48 kHz = 1 frame at 30 fps), which you paste into a `components/` array the scene indexes by frame, so the drawn waveform or meter moves with what is heard:
 
 ```
-ffmpeg -i assets/placeholder-ambient-bed.wav -af "aresample=48000,asetnsamples=n=1600:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/bed-env.txt" -f null -
+ffmpeg -i assets/placeholder-ambient-pad.wav -af "aresample=48000,asetnsamples=n=1600:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/bed-env.txt" -f null -
 ```
 
   720 rows for 24 s; map dB to a 0–1 amplitude with `10^(dB/20)` and normalise to the loudest row. Delete the text file after.
-- **As an air bed under designed cues** (a picture-led film with no music), not the product's own sound: brown noise alone, low-passed at ≤ 4 kHz (here 500 Hz already), placed at 0.05–0.15 so every cue's loudest 50 ms sits ≥12 dB above it (`mix-and-loudness.md`, Sparse mixes). Air left bright up to 10–17 kHz reads as hiss as soon as a re-master lifts it.
-- It is a **placeholder** for the product's real output: name it `placeholder-…`, list it in `VIDEO.md` as "synthesised stand-in for <product>'s sound, replace with a real recording", and say so in your reply. A real 20–30 s capture from the user (or `music` prompted with the product's own description of its sound) replaces it 1:1.
+- **As a bed under designed cues** (a picture-led film with no music): the same pad, shaped per section (out for the breath, lighter after the peak), placed so every cue's loudest 50 ms sits ≥12 dB above it (`mix-and-loudness.md`, Sparse mixes). Never a noise bed or "air".
+- It is a **placeholder** for the product's real output: name it `placeholder-…`, list it in `VIDEO.md` as "synthesised stand-in for <product>'s sound, replace with a real recording", and say so in your reply.
 
 ## Many events: one stem from the scene's schedule
 
@@ -234,19 +232,13 @@ Tested on ffmpeg 6.1 with 80 events accelerating from 30 f apart to every 1–2 
 
 **When the burst is the peak** (the whole set lands on the 10), the thinning above is right for the texture but wrong as the only layer: 57 snaps in 23 f thinned to 12 voiced clacks read thinner than the picture (judged). Keep the density as a gesture: for the burst's frames drop the thinning to 1 f (`f - last < 1`) and raise `maxVoices` to 6–8, so the roll stays dense, ramp its level up into the hit frame (its last 0.3 s about 3 dB over its start), and put one layered hero hit (transient + body + tail, `Layering a hero hit`) on the hit frame as the loudest 50 ms of the film.
 
-## Speech-like murmur (placeholder)
+## Voices without words (a crowd, a room, a meeting)
 
-When a film needs the *sound* of people talking without words (a café, a meeting behind a product, a crowd reacting, an app whose output is speech before a real recording exists) and there is no `voiceover` or `sfx`: formant-filtered noise and a low buzz, gated into syllables at about 4 Hz with phrase breaks. It is unmistakably a placeholder (it reads as "voices through a wall"); name it `placeholder-murmur.wav`, list it in `VIDEO.md` as a stand-in, and replace it with a real recording or a `voiceover` take of the actual words when the film's meaning depends on them.
+When a film needs the *sound* of people talking without words (a café, a meeting behind a product, a crowd reacting): use a **recorded** walla or crowd clip, never a synthesised one. Get it with `sfx`, or find a CC0 / CC BY recording with `web-research` (Freesound, Openverse), download it with `save-asset`, check the licence on its own page and credit it in `VIDEO.md`; or a `voiceover` read of real lines. With none of these, carry the moment with on-screen words and leave the voices out: a noise-and-buzz "murmur" built from a generator reads as wind or voices through a wall, and is banned like any noise bed.
 
-**Never for one intimate voice** (a diary, a voice message to someone, a private recording, one person thinking aloud): a through-the-wall crowd reads as the opposite of private. Instead:
+**Never for one intimate voice** (a diary, a voice message to someone, a private recording, one person thinking aloud): a crowd reads as the opposite of private. Instead:
 
-- **With no `voiceover`**: the on-screen words carry the voice (the transcript, set in the speaker's own type), and the recording frames get a close, quiet presence: a breath or room tone close to the mic (brown noise high-passed at 120 Hz and low-passed at 3 kHz, about −34 dB RMS, 0.02 linear), fading in over 6–8f with the recording and out with it. Flag "the real recording goes here" in `VIDEO.md`.
+- **With no `voiceover`**: the on-screen words carry the voice (the transcript, set in the speaker's own type), and the recording frames get no stand-in sound under them (never a synthesised breath, room tone or noise): the bed drops 6–10 dB for them, so the quiet itself marks the recording. Flag "the real recording goes here" in `VIDEO.md`.
 - **With `voiceover`**: record the actual line, close and dry (no reverb, no room), placed at speech level per the ladder, with the bed out under it (duck 10–12 dB or stop it), because the product's sound is that one voice.
 
-```
-# 6 s murmur: pink noise + a 125 Hz voiced buzz (3 harmonics, slow pitch drift) through three formant bands (600 / 1400 / 2600 Hz),
-# syllables at ~4.2 Hz with jittered phase, a 0.37 Hz phrase swell, and a 0.5 s pause every 2.6 s
-ffmpeg -f lavfi -i "anoisesrc=c=pink:r=48000:a=0.5:seed=17:d=6" -f lavfi -i "aevalsrc='0.25*(sin(2*PI*(125*t+2.4*sin(2*PI*0.9*t)))+0.6*sin(4*PI*(125*t+2.4*sin(2*PI*0.9*t)))+0.4*sin(6*PI*(125*t+2.4*sin(2*PI*0.9*t))))':s=48000:d=6" -filter_complex "[0:a][1:a]amix=inputs=2:normalize=0,asplit=3[x][y][z];[x]bandpass=f=600:width_type=q:w=4[f1];[y]bandpass=f=1400:width_type=q:w=5,volume=0.7[f2];[z]bandpass=f=2600:width_type=q:w=6,volume=0.4[f3];[f1][f2][f3]amix=inputs=3:normalize=0,volume='max(0.05,pow(max(0,sin(2*PI*4.2*t+0.8*sin(2*PI*1.3*t))),1.4))*(0.65+0.35*sin(2*PI*0.37*t))*lt(mod(t,2.6),2.1)':eval=frame,afade=t=in:d=0.02,afade=t=out:st=5.8:d=0.2,loudnorm=I=-16:TP=-3:LRA=11,aresample=48000,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/placeholder-murmur.wav
-```
-
-Measured: −18.7 LUFS, true peak −6.0 dBTP; its 50 ms RMS swings between about −15 dB on a syllable and −37 dB between syllables, roughly every 0.24 s (4.2 Hz), with true silence in each phrase pause. Variations one at a time: syllable rate 3–5 Hz (`4.2`; slower reads calmer), a different speaker by moving the buzz (`125`: 100–110 lower, 180–220 higher) and the formants together by the same ratio, several voices by mixing two or three takes with different `seed`, buzz pitch and phrase period, each at 0.5–0.7. Under a VO or cues it is a bed: place it at 0.05–0.15 per the ladder (room tone / ambience), never at a level where the ear tries to understand it. In the foreground (the meeting or recording the product listens to, as a hook) place it at 0.5–0.7 so it sits under the film's hero cues: it must never be the loudest moment of the film, and when it stops, the room tone that follows starts 4–6 f before its tail ends (no digital zero between them).
+In the foreground (the meeting or recording the product listens to, as a hook) a recorded crowd sits at 0.5–0.7, under the film's hero cues; it never becomes a bed under VO or cues, and it ends on its own 0.2 s fade, never cut off.

@@ -7,7 +7,7 @@ Read this when the `music` decision ladder in SKILL.md gets past "the user's own
 1. The user's file or licence (a subscription library, a composer, a stock purchase).
 2. A connected generator (ElevenLabs Music; Stable Audio, MusicGen or Lyria through fal or Replicate). Offer one with `recommend-integration` when none is connected.
 3. A CC0 / CC BY track from a library, found with `web-research`, downloaded with `save-asset`, credited in `VIDEO.md`.
-4. No music: `sfx`, room tone, designed silence.
+4. No music: `sfx` with natural tails, designed silence (never a synthesised noise bed).
 
 ## Free and royalty-free libraries
 

@@ -79,11 +79,11 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     fallback: "use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type",
   },
   sfx: {
-    label: "Clicks, taps, chimes, ambience",
+    label: "Clicks, taps, chimes and other cues",
     desktop: "`generate_sfx`",
     mcp: null,
     shell: null,
-    fallback: "place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`), named as placeholders to the user; silence only where the skill allows it",
+    fallback: "place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`; tonal cues, never a noise bed, room tone or air), named as placeholders to the user; silence only where the skill allows it",
   },
   music: {
     label: "A music bed or score: generated, or found under a licence that allows the use",

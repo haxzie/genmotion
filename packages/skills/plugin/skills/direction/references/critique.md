@@ -136,15 +136,16 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 ### Sound (when the film has any)
 - [Blocker] VO is intelligible over the bed; no clipping in the export.
 - [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; soft lands on the settle frame; impacts on the impact frame ±2f).
+- [Blocker] Never synthesise noise as a bed, room tone, ambience or "air" (no noise generators under a film): on phones and headphones it reads as wind or hiss. A synthesised noise bed, room tone, ambience or air layer anywhere fails (`sound-design`'s noise-bed ban).
 - [Blocker] A whoosh, swoosh, swish or air-sweep anywhere fails (`sound-design`'s ban): transitions get the picture's own sound or none.
 - [Fix] Music starts and ends with the picture; a sonic resolve on the logo.
 - [Fix] Cuts sit on the music's beats where the film is music-led.
 - [Fix] A film meant to be heard has a loudness range of about 4–14 LU (4–10 for a short feed promo), and outside its named silence the momentary loudness never sits under −40 LUFS for more than 2 s (`sound-design`, Sparse, picture-led films); the first 3 s of a sound-on film are audible. A declared bed is heard: it sits around −32 LUFS momentary under the effects, not at −50, or the film plays as clicks over silence.
-- [Fix] No digital silence and no sub-second holes in a sound-on film outside a named silence: room tone runs through every hold, and `silencedetect=noise=-60dB:d=0.3` on the export prints no hole of 0.3 s or more at digital zero or under −60 dBFS (`sound-design`, Sparse mixes). A cue's tail is never cut off into zero.
+- [Fix] No abrupt cut-offs in a sound-on film: every cue's tail decays or fades over 80–150 ms, the hit and chimes ring into the next beat, and the 50 ms rows before each `silencedetect=noise=-60dB:d=0.3` start fall over 100–150 ms rather than dropping to −inf in one row (`sound-design`, Sparse mixes). A short silence after a decayed tail is fine.
 - [Fix] The peak cue is the loudest event in the film, in every film (not only trailers): its loudest 50 ms RMS and momentary reading are the film's highest, the sonic logo sits ≥ 2 dB under it, and repeated keys or ticks sit under the hits. A logo bell louder than the payoff, or typing louder than the hit, fails.
 - [Fix] Timbre fits the product's tone: no casino, cash-register, coin-jangle or game-reward chime in a calm-trust fintech or premium film unless the product is about coins or games; a payment success is a clean confirm tone from the film's own family with a ≥ 0.5 s decay.
 - [Fix] Feed delivery (X, LinkedIn, Instagram, TikTok, YouTube Shorts, Kickstarter, Product Hunt) is mastered to about −14 LUFS integrated, −1 dBTP, LRA about 4–10 LU; platforms never turn a quiet file up. −16 to −18 is only for a site hero, an autoplay-muted embed or a long-form player.
-- [Fix] One intimate voice (a diary, a voice note, a private recording) is never stood in for by a crowd murmur: on-screen words plus a close breath or room tone, or the real line recorded close and dry with the bed out.
+- [Fix] One intimate voice (a diary, a voice note, a private recording) is never stood in for by a crowd murmur: on-screen words with the bed dropped under the recording frames, or the real line recorded close and dry with the bed out.
 
 ## 3. The rubric
 

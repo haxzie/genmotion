@@ -7,7 +7,7 @@ description: "The router for GenMotion's creative pack: start here for any new v
 
 This pack says **what the video should be**: the idea, the format, the beat sheet, the motion and the sound. Your project's own authoring rules (its AGENTS.md) say how a scene is built. This skill is the router between the two.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -27,7 +27,7 @@ Read `direction` before choosing anything. Its Part A turns the request into a p
 
 ## Step 2: search
 
-Run `search-skills` with the user's own words for **what they want made**, in a short phrase ("animated logo for a coffee roastery", "vertical clip from our podcast"), not the whole brief pasted in: brand names, colours and platform details drown the words that pick the format. Each result shows its kind, its **deliverable** (what the user ends up with), the questions it asks first, and which of its needs this setup has. If no workflow or style skill is in the results, check the owner table in Step 3 before falling back to `freeform-video`.
+Run `search-skills` with the user's own words for **what they want made**, in a short phrase of the deliverable ("launch video", "animated logo for a coffee roastery", "vertical clip from our podcast"), not the whole brief pasted in (a maker who searched with the whole brief got `screen-capture` first): brand names, colours and platform details drown the words that pick the format. Each result shows its kind, its **deliverable** (what the user ends up with), the questions it asks first, and which of its needs this setup has. If no workflow or style skill is in the results, check the owner table in Step 3 before falling back to `freeform-video`.
 
 ## Step 3: pick exactly one owner
 
@@ -113,3 +113,4 @@ Nothing. This skill is the map.
 - `capture-frames` on the first frame and on each scene you touched, and you looked at them.
 - The owner skill's own checklist ran, and so did the self-critique in `direction`.
 - No whoosh, swoosh or swish anywhere in the mix (`sound-design`'s ban).
+- Never synthesise noise as a bed, room tone, ambience or "air" (no noise generators under a film): on phones and headphones it reads as wind or hiss. A bed is music, a tonal pad or nothing (`sound-design`).

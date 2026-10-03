@@ -9,7 +9,7 @@ Problem, agitation, solution. The oldest shape in direct response and still the 
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-scripting` (PAS), `ugc-craft` (moves, captions) and `sound-design`. Frames at 30 fps; positions on 1080×1920.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -63,7 +63,7 @@ Not this when:
 | 1 | 0–60 | Problem (hook) | A hand already pulling a knot of cables out of a bag, product absent | "Every single time." (3) |
 | 2 | 60–105 | Problem | Jump zoom to the person or hands, off-centre, flat | "Every bag I've ever owned." (5) |
 | 3 | 105–170 | Agitation | The consequence, not a second problem: digging at a security tray | "Four minutes at security, once." (5) |
-| — | 170–180 | Drop | Picture holds; bed and room tone cut | — |
+| — | 170–180 | Drop | Picture holds; bed cut | — |
 | 4 | 180–216 | Turn | Hard cut + turn step; a hand places the product into frame | "Then I got this." (4) |
 | 5 | 216–390 | Mechanism | Close, one continuous action | "Everything has a slot. That's the whole idea." (8) |
 | 6 | 390–570 | Demonstration | Packing it, cable by cable; any time compression is a visible cut | "Charger, dongle, the little one nobody can name." (8) |
@@ -97,7 +97,7 @@ Not this when:
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 has the problem's own small unpleasant sound (a zip snagging, a buzz, a notification) at 0.5–0.7; bed 0.12 under VO, low and slightly flat in the problem; **the 10f drop** cuts bed and room tone; on the turn frame the bed returns (a brighter section, cued with the track's start offset to a downbeat) and no transition sound (never a whoosh, per `sound-design`); demonstration foley on its actions; a resolving tone 0.6 on the relief frame. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 has the problem's own small unpleasant sound (a zip snagging, a buzz, a notification) at 0.5–0.7; bed 0.12 under VO, low and slightly flat in the problem; **the 10f drop** cuts the bed; on the turn frame the bed returns (a brighter section, cued with the track's start offset to a downbeat) and no transition sound (never a whoosh, per `sound-design`); demonstration foley on its actions; a resolving tone 0.6 on the relief frame. Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 
@@ -138,7 +138,7 @@ With no footage, the normal case, build the failure as a designed frame rather t
 
 1. `capture-frames` at frame 0: the failure is happening and the product is not visible anywhere.
 2. The turn's cut frame is ≤210 (90 / 180 / 210 for 15 / 30 / 45 s) and agitation lasts ≤150f; capture the frame before and after: a hard cut, the incoming frame brighter and at 1.04.
-3. The 10f before the turn: the cue sheet has no bed and no room tone there.
+3. The 10f before the turn: the cue sheet has no bed there.
 4. Capture frame 0 and the relief frame side by side: same framing, camera height and light; the problem gone.
 5. List every number, timeframe and claim in the VO and on screen: each traces to the user or is bracketed and flagged.
 6. Mute it: problem, turn and solution still read from the captures.

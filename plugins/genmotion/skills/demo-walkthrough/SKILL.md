@@ -7,7 +7,7 @@ description: "The longer product tour, 60 to 180 seconds, for a viewer who chose
 
 The one format in the pack aimed at a viewer who already opted in: they clicked play to learn how the product works. That changes the rules. The hook matters less than orientation; pacing follows the task, not a retention curve; narration may say what is about to happen. What does not change: one thing at a time, magnified until it reads, every step shown. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, the mix from `sound-design`.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -40,7 +40,7 @@ The most common failure is a feature tour: eight capabilities in ninety seconds,
 - **Energy curve**: a medium plateau with small steps at each chapter turn; the peak is **the result** (the thing the workflow produced) at about 80–90%. No hype peak.
 - **Pacing**: Medium, new information every 35–50f (the house UI demos measure 35–50f); a step is as long as it needs to be read, then not a frame longer.
 - **Transitions**: signature **persisting element**: the app window and the cursor carry through the whole film; the camera moves between regions instead of cutting. Workhorse: a focus push in (24–48f) and pull back (45–52f). Chapter turns: a chapter card or a colour-field push (8–23f). Hard cuts only to remove a wait.
-- **Sound**: VO-led. VO at 1.0; no music under narration, or a minimal 100–120 BPM bed at 0.1 (−20 dB); a varied click 0.8–1.0 on every press, a soft typing texture, a success chime 0.6 on the result; room tone 0.03–0.05 throughout so gaps never drop to digital silence.
+- **Sound**: VO-led. VO at 1.0; no music under narration, or a minimal 100–120 BPM bed at 0.1 (−20 dB); a varied click 0.8–1.0 on every press, a soft typing texture, a success chime 0.6 on the result; every cue and VO line ends on its own decay or a short fade, so gaps read as pauses; never a synthesised noise bed or room tone.
 - **Memorable moment**: the result: the finished report, the deployed site, the paid invoice, held on screen with the one line that names what was saved.
 
 ## Chapters
@@ -72,13 +72,13 @@ Each **step** is a run on the same surface: orient (the camera pushes to the reg
 
 | # | Frames | Job | On screen | VO (words) | Sound |
 | - | - | - | - | - | - |
-| 1 | 0–210 | Orientation | Empty dashboard, label "1 / 3 · Set up" | "Let's send your first invoice, start to finish, in about a minute." (12) | Room tone; VO at 6 |
+| 1 | 0–210 | Orientation | Empty dashboard, label "1 / 3 · Set up" | "Let's send your first invoice, start to finish, in about a minute." (12) | VO at 6 |
 | 2 | 210–480 | Step: new client | Push 36f to the client form at 2.3×; the name types at 2f/char | "Add the client. Name and email are all it needs." (10) | Clicks, typing |
 | 3 | 480–750 | Step: line items | Pull back 48f, push to the items table; two rows grow 11f each | "Add what you did, with a rate." (7) | Clicks |
 | 4 | 750–1020 | Step: schedule | Chapter label flips to "2 / 3 · Send"; the reminder toggle switches | "Turn on reminders, so you never chase it yourself." (9) | Toggle click |
 | 5 | 1020–1470 | Step: send | Cursor rests 8f on Send; press, ring, the preview card slides out | "Review, then send." (3) | Click 0.9 on the press |
 | 6 | 1470–1680 | **Result** | Cut to "Paid" landing on the same card, held 120f | "Three days later: paid. Automatically." (5) | Chime 0.6 on the land |
-| 7 | 1680–1800 | Next step | "Import your clients → Settings → Import" (6 → 69f) | — | Room tone |
+| 7 | 1680–1800 | Next step | "Import your clients → Settings → Import" (6 → 69f) | — | — |
 
 ## Narration
 
@@ -121,8 +121,8 @@ If "the one workflow" honestly has three answers, build three walkthroughs of 60
 | --- | --- | --- |
 | The real workflow | `save-asset` for the recording or screenshots; `screen-capture` for crop, scale and cursor recipes | Rebuild the UI from screenshots; never skip a step |
 | Narration | `pick-voice`, then `voiceover` | Chapter cards and on-screen step lines carry the structure |
-| Clicks, typing, chime | `sfx` | Credited CC0 UI sounds, or VO and room tone only |
-| A minimal bed | `music` | None; room tone |
+| Clicks, typing, chime | `sfx` | Credited CC0 UI sounds, or VO only |
+| A minimal bed | `music` | None |
 | Chapter-share check | `project-overview` | Add up the scene lengths from `project.json` |
 | Seeing it | `capture-frames` | None |
 | Loudness | `ffmpeg` | None |

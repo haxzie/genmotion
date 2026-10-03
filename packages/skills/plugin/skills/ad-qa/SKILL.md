@@ -95,7 +95,7 @@ ffmpeg -hide_banner -nostats -t 0.1 -i out.mp4 -vn -af astats=metadata=0 -f null
 
 - [Blocker] Integrated −14 LUFS ±1, true peak ≤ −1 dBTP, no clipping. Report both numbers.
 - [Blocker] VO intelligible at the loudest music section; the bed is 0.12 under VO (`sound-design` ladder).
-- [Fix] Frame 1 is audible (the first 0.1 s RMS is not near −inf); no unintended silences ≥0.3 s inside the ad (room tone under VO gaps).
+- [Fix] Frame 1 is audible (the first 0.1 s RMS is not near −inf); no unintended silences ≥0.3 s inside the ad and no cue or line cut off abruptly (tails decay or fade over 80–150 ms); no synthesised noise bed or room tone under gaps.
 - [Fix] SFX sit on their visual frames (tap on the press frame, impact ±2f); hard cuts are silent unless the picture makes a sound on them.
 - [Blocker] No whoosh, swoosh, swish or air-sweep anywhere in the ad, on cuts or anything else (`sound-design`'s ban): check the SFX file names, the generation prompts and the cue sheet.
 - Fix: scale clip volumes by the loudness difference, or re-master per `sound-design` → `references/mix-and-loudness.md`.

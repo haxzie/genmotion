@@ -11,7 +11,7 @@ Every command here ran on ffmpeg 6.1.1. Those marked **(render-tested)** were al
 - **`zoompan` is built for stills**: on video use `d=1`, set `fps`, and pre-upscale 2× or the motion stutters. Static punch-ins are better done per segment with `scale`+`crop`, or in the scene.
 - **Concat demuxer** needs identical codec, size, fps, timebase and audio layout, and adds ~20 ms of AAC priming per join. Use the concat *filter* for finals.
 - **The CLI's Chromium decodes no H.264/AAC.** Anything a scene shows must be VP9 WebM (§5).
-- **`anullsrc` is digital silence.** Under gaps use real room tone looped with `-stream_loop -1`.
+- **`anullsrc` is digital silence.** Under dialogue gaps use the footage's own recorded room tone looped with `-stream_loop -1`; never a noise generator (`sound-design`'s noise-bed ban).
 - **Font missing in libass** falls back silently; ship the TTF and pass `fontsdir`.
 - **Long filter graphs** overflow the command line: write them to a file and pass `-filter_complex_script edit/cut.filter`.
 
@@ -265,7 +265,7 @@ Tested on a whispered line under a film score: a flat +8 dB left the low band **
 - One high-pass is 12 dB/octave; voices sit above 150 Hz, scores and rumble below it, which is why the second pass matters.
 - Gain ≤ +6–8 dB. Above that the room and the score come up with the voice and the cut lurches.
 
-### Room tone (never digital zero)
+### Room tone from the footage itself (never synthesised)
 
 ```sh
 # find the quietest half-seconds of the source (lowest RMS first)

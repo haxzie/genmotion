@@ -9,7 +9,7 @@ A box, two hands, and a product that arrives in pieces. The format sells anticip
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-craft` (moves, captions) and `sound-design` (levels). Frames at 30 fps; positions on 1080×1920.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -61,7 +61,7 @@ Every beat removes exactly one layer, and what is still covered buys the next fe
 | 1 | 0–90 | Hook | The sealed box on a real surface, a hand already entering at frame 0; creep running | Hand on cardboard at frame 1 | "This came on Tuesday." (4) |
 | 2 | 90–180 | Seal | Close on the tape, push-in; hard cut on the tear's transient (about frame 150) | Tape tear, one long pull | — |
 | 3 | 180–270 | Lid | Lid off: tissue, foam, the card; product still covered | Cardboard slide; tissue crinkle | "Packed like it's fragile." (4) |
-| 4 | 270–390 | Reveal (peak) | 270–285 breath (room tone only); 285: reveal wipe 12f; product lifted against a hand, held | Soft set-down on contact | "[Product name]." (2) |
+| 4 | 270–390 | Reveal (peak) | 270–285 breath (the last foley's tail decays, then quiet); 285: reveal wipe 12f; product lifted against a hand, held | Soft set-down on contact | "[Product name]." (2) |
 | 5 | 390–540 | Texture | The one detail, macro, off-centre; focus push 30f | A magnet click, a hinge, whatever it really sounds like | "It's heavier than it looks." (5) |
 | 6 | 540–720 | First use | The product doing its one job; no VO over the action | The product's own sound | — |
 | 7 | 720–900 | Verdict + CTA | Product at rest, hand withdrawing; CTA text ≥60f | Bed (if any) resolves | "I'd buy it again. Link's in my bio." (8) |
@@ -93,7 +93,7 @@ Build the sound first, then cut the picture to it: place every cue at its frame,
 | Seal | Tape tearing, one long pull: the loudest effect in the ad | 0.85 (−1.4) |
 | Lid | Cardboard sliding on cardboard, low and dry | 0.6 (−4.4) |
 | Tissue | Paper crinkle, close and quiet | 0.45 (−7) |
-| Breath before the reveal | Room tone only, 15f | 0.05 (−26) |
+| Breath before the reveal | The last foley's tail only, then quiet, 15f | — |
 | Product set-down | Soft thud on the contact frame ±2f | 0.6 (−4.4) |
 | Magnet, click, hinge | A single click; cut exactly on its transient | 0.9 (−0.9) |
 | Music, if any | Instrumental, out of the way at the reveal | 0.5 under foley; 0.12 under VO |
@@ -143,7 +143,7 @@ Nothing in the composition is random or clock-driven: the reveal timing is autho
 | Foley | `sfx` | Credited CC0 foley via `web-research` + `save-asset`; never a silent cut |
 | Narration | `pick-voice` then `voiceover` | Caption-led and silent; this format survives mute well |
 | Short handheld clips | A video model through `fal` or `replicate` | Stills with camera moves |
-| Music | `music` | None: foley and room tone carry it |
+| Music | `music` | None: foley and its tails carry it |
 
 ## Checks before you finish
 
@@ -151,7 +151,7 @@ Nothing in the composition is random or clock-driven: the reveal timing is autho
 2. Capture one frame per beat: exactly one layer came off between each pair.
 3. Every frame containing the product has a scale reference.
 4. For each hard cut, capture the cut frame and the one before: the cue sheet has a transient on the cut frame (±1f).
-5. Capture the 15f before the reveal: nothing new arrives and only room tone plays.
+5. Capture the 15f before the reveal: nothing new arrives and only the last foley's tail decays.
 6. Read only the captions start to finish: the reveal and the CTA still land.
 7. Software version: the first five spoken words say there is no box; no invented packaging anywhere.
 8. Export measured: −14 LUFS ±1, true peak ≤ −1 dBTP, the tape tear the loudest effect.

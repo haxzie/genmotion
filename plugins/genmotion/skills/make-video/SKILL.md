@@ -17,7 +17,7 @@ GenMotion videos are folders of scenes (Three.js by default) listed in `project.
 GenMotion ships a skill pack: one skill per kind of video, plus craft skills (camera, type, transitions, look) for the engine.
 
 1. If `VIDEO.md` exists, it already names the skill. Load that one and carry on.
-2. Otherwise read the router, `genmotion-skills`, for the rules, then search: `search_skills` with the user's own words.
+2. Otherwise read the router, `genmotion-skills`, for the rules, then search with a short phrase for the deliverable, not the whole brief (`"launch video"`, `"animated logo for a coffee roastery"`: brand names, colours and platform details drown the words that pick the format): `search_skills` with that phrase.
 3. Pick **one** owner (a `workflow` or `style` result), ask only its missing `askFirst` questions, and write `VIDEO.md` as the router describes.
 4. Read the owner and the requirements search lists for this engine: `get_skill`.
 
@@ -50,7 +50,7 @@ Skills name what to do as backticked capability ids, never tool names. What each
 | `generate-image` | Generate artwork | not available — ask the user for the image, or build the visual from geometry and type instead |
 | `pick-voice` | Choose a narration voice | not available — ask the user which voice, or skip if there is no narration |
 | `voiceover` | Narration | not available — use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type |
-| `sfx` | Clicks, taps, chimes, ambience | not available — place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`), named as placeholders to the user; silence only where the skill allows it |
+| `sfx` | Clicks, taps, chimes and other cues | not available — place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`; tonal cues, never a noise bed, room tone or air), named as placeholders to the user; silence only where the skill allows it |
 | `music` | A music bed or score: generated, or found under a licence that allows the use | not available — use a track the user provides; or generate one through a connected music service (ElevenLabs, or Replicate/fal models) — offer it with `recommend-integration`; or find a CC0 or attribution-licensed track with `web-research`, fetch it with `save-asset` and credit it. Place it with `place-audio`. With none of these, carry the video on sfx and silence rather than an unlicensed song |
 | `transcribe` | Words with timestamps from speech, for cutting footage by what is said | not available — run a local Whisper with word timestamps if your shell has one (`whisper-cli` from whisper.cpp, or `whisper` from the openai-whisper Python package; installing one needs the user's go-ahead and a model download), or a connected speech-to-text service (ElevenLabs' connector transcribes; offer it with `recommend-integration`), or a transcript or subtitle file the user has. Without any of these, cut on silences found with `ffmpeg` (`silencedetect`); captions then need the words from the user, so ask once, even after "just make it" — never invent caption words |
 | `place-audio` | Put music, narration or an effect on the timeline (`project.json`'s `audio`) | `add_audio` (then `update_audio` / `remove_audio`) |

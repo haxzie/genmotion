@@ -27,7 +27,7 @@ Take the tempo from the music (`sound-design`); with no track yet, 120. With no 
 import * as THREE from "three";
 import { PX } from "./stage";
 import { clamp01, inCubic, inOutSine, lerp, outCubic, prog } from "./ease";
-import type { Label } from "./type";
+import { line, measure, type Label, type TypeStyle } from "./type";
 import { fade } from "./appui";
 
 /** easeOutExpo: the phone's rise and the sheet's slide (per-frame travel roughly halves). */
@@ -81,12 +81,14 @@ export function sheetPose(
 
 /**
  * The three-state button, measured: press squeezes 3f and releases 4f; the label swaps to the
- * spinner over 3f from the bottom of the press; the spinner holds 14f (0.47 s); the colour ramps to
- * success over 4f. Returns the frame the success state lands (sync the title and a sticker to it).
+ * spinner over 3f from the bottom of the press; the spinner is on screen `hold` frames in all (14 =
+ * 0.47 s, its fade-in included); the colour ramps to success over 4f, the labels gated at the ramp's
+ * midpoint with a 1f gap (stateButton), so "Saving…" and "Saved" never share a frame. Success lands
+ * at tap + 6 + hold (20f at the default): choose tap = bar - 20. Returns that frame.
  */
 export function buttonPose(btn: { set: (s: { press?: number; loading?: number; done?: number; spin?: number }) => void }, frame: number, tap: number, hold = 14) {
   const press = frame < tap + 3 ? prog(frame, tap, 3, outCubic) : 1 - prog(frame, tap + 3, 4, outCubic);
-  const loadAt = tap + 3, doneAt = loadAt + hold;
+  const loadAt = tap + 3, doneAt = loadAt + hold - 1;
   btn.set({
     press,
     loading: prog(frame, loadAt, 3),
@@ -103,6 +105,18 @@ export function toastPose(t: THREE.Object3D, frame: number, at: number, hold = 3
   offset(t, 0, -40 * (1 - pin));
   fade(t, pin * (1 - pout));
   return frame >= at && pout < 1;
+}
+
+/**
+ * The pill toast takes the header's slot: it pops in 0.9 -> 1 over 4f while the header (the navBar plane,
+ * or the row with the app's name) fades out under it in the same frames, and both swap back over 6f at
+ * `out`. The pill never sits on a visible app name.
+ */
+export function pillSwap(pill: THREE.Object3D, header: THREE.Object3D, frame: number, at: number, out = Infinity) {
+  const pin = prog(frame, at, 4, outCubic) * (1 - prog(frame, out, 6));
+  pill.scale.setScalar(lerp(0.9, 1, prog(frame, at, 4, outCubic)));
+  fade(pill, pin);
+  fade(header, 1 - pin);
 }
 
 /** Pill toast or sticker-like pop: scale 0.9 -> 1 and fade in over 4f outCubic. */
@@ -187,8 +201,103 @@ export function feedLayout(spec: { H: number; inset: number }, frameH = 1920, bl
   return { top, y: frameH / 2 - top - spec.H / 2, band: [Math.round(frameH * 0.14), top - 40] as const, safeY: coveredFrom - top - spec.inset };
 }
 
-/** Group y (px, y up) that puts screen row `screenY` at frame row `frameY` with the phone at `scale`: lift a low tap out of the covered band. */
+/** Group y (px, y up) that puts screen row `screenY` at frame row `frameY` with the phone at `scale`. For a push, prefer frameFor. */
 export const aimY = (spec: { Sh: number }, screenY: number, frameY: number, scale: number, frameH = 1920) => frameH / 2 - frameY - scale * (spec.Sh / 2 - screenY);
+
+/** The feed-safe box at 1080 x 1920 (direction's safe zone): read inside x 120-840 (TikTok's rail is right of 840), y 300-1210. */
+export const FEED_SAFE = { x0: 120, x1: 840, y0: 300, y1: 1210 } as const;
+
+/**
+ * Every push in a feed cut (a variety push, a tap push, the peak): the phone's scale and group x, y (px
+ * from the frame centre, y up: multiply by PX for ph.group.position) that put a named `block` of screen
+ * rows inside the feed-safe box. `block` is in screen px (top-left origin, what put() uses): its top and
+ * bottom rows, and its left and right (default: the kit's padded content). The scale is `want` capped by
+ * what fits the box, so a peak push is capped by its proof, not by drama. The phone moves as little as
+ * it can from `rest` (its rest group x, y, e.g. feedLayout's y) to bring the block in; with `below` (a frame
+ * row: the band's bottom) its top also stays under the band when the block allows, and `clear` says
+ * whether it did (when false, the band yields while the push holds).
+ */
+export function frameFor(
+  spec: { H: number; Sw: number; Sh: number },
+  block: { top: number; bottom: number; left?: number; right?: number },
+  want: number,
+  o: { rest?: { x: number; y: number }; below?: number; box?: { x0: number; x1: number; y0: number; y1: number }; frameW?: number; frameH?: number } = {},
+) {
+  const bx = o.box ?? FEED_SAFE, fw = o.frameW ?? 1080, fh = o.frameH ?? 1920;
+  const left = block.left ?? spec.Sw * 0.054, right = block.right ?? spec.Sw * (1 - 0.054);
+  const scale = Math.min(want, (bx.y1 - bx.y0) / (block.bottom - block.top), (bx.x1 - bx.x0) / (right - left));
+  let x = o.rest?.x ?? 0;
+  const L = fw / 2 + x + scale * (left - spec.Sw / 2), R = fw / 2 + x + scale * (right - spec.Sw / 2);
+  if (R > bx.x1) x -= R - bx.x1;
+  else if (L < bx.x0) x += bx.x0 - L;
+  const rowAt = (gy: number, sy: number) => fh / 2 - gy - scale * (spec.Sh / 2 - sy); // frame row of screen row sy
+  let y = o.rest?.y ?? 0;
+  const T = rowAt(y, block.top), B = rowAt(y, block.bottom);
+  if (B > bx.y1) y += B - bx.y1;
+  else if (T < bx.y0) y -= bx.y0 - T;
+  let clear = true;
+  if (o.below !== undefined) {
+    const top = fh / 2 - y - (scale * spec.H) / 2; // the device's top edge, frame row
+    if (top < o.below) {
+      const need = o.below - top, room = bx.y1 - rowAt(y, block.bottom);
+      y -= Math.min(need, room);
+      clear = need <= room;
+    }
+  }
+  return { scale, x, y, clear, rows: [rowAt(y, block.top), rowAt(y, block.bottom)] as const };
+}
+
+/**
+ * The feed layout's message band: one or two lines of copy (96 px, down to 92 if a line is wider than
+ * `maxW`, x 120-840 by default) centred in the band rows above the device, built word by word `step`
+ * frames apart (a half-beat) and yielded in place. It knows its own hold: `until(at)` is the earliest
+ * frame it may yield (direction's max(30, 9 x words + 15) from the frame its last word lands), and
+ * pose() never yields before it, however early `out` is asked for. `fits` is false when a line is still
+ * wider than `maxW` at 92 px: shorten the copy. `mark` draws an accent marker under one word once the
+ * line has landed.
+ */
+export function band(text: string[], o: { rows: readonly [number, number]; frameH?: number; size?: number; color?: string; accent?: string; mark?: string; maxW?: number; step?: number }) {
+  const fh = o.frameH ?? 1920, maxW = o.maxW ?? 720, step = o.step ?? 8;
+  const style = (size: number): TypeStyle => ({ size, weight: 500, color: o.color ?? "#0d0f12" });
+  const widest = (size: number) => Math.max(...text.map((l) => measure(l, style(size))));
+  let size = o.size ?? 96;
+  while (size > 92 && widest(size) > maxW) size -= 1;
+  const lines = text.map((s) => line(s, style(size), "left"));
+  const group = new THREE.Group();
+  group.name = "band";
+  const pitch = Math.round(size * 1.12), cy = fh / 2 - (o.rows[0] + o.rows[1]) / 2;
+  lines.forEach((l, i) => ((l.group.position.y = (cy + ((lines.length - 1) / 2 - i) * pitch) * PX), group.add(l.group)));
+  const words = lines.reduce((a, l) => a + l.words.length, 0);
+  const hold = Math.max(30, 9 * words + 15);
+  let marker: THREE.Mesh | null = null;
+  const plain = (s: string) => s.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+  lines.forEach((l, li) => l.words.forEach((w, wi) => {
+    if (marker || !o.mark || plain(text[li]!.split(" ")[wi] ?? "") !== plain(o.mark)) return;
+    const ww = w.userData.w as number, geo = new THREE.PlaneGeometry(ww, size * 0.36 * PX);
+    geo.translate(ww / 2, 0, 0); // grows from the word's left edge
+    marker = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: o.accent ?? "#ffd23f", transparent: true, depthWrite: false, toneMapped: false }));
+    marker.position.set(w.userData.restX as number, -size * 0.2 * PX, -0.01);
+    l.group.add(marker);
+  }));
+  const landed = (at: number) => at + (words - 1) * step + 5; // the last word has risen into place
+  const until = (at: number) => landed(at) + hold;
+  /** Build from `at`, yield at `out` (never before until(at)) over 6f. */
+  const pose = (frame: number, at: number, out = Infinity) => {
+    const o2 = 1 - prog(frame, Math.max(out, until(at)), 6);
+    let k = 0;
+    lines.forEach((l) => {
+      const times = l.words.map(() => at + k++ * step);
+      wordBuild(l, frame, times);
+      l.words.forEach((w, i) => fade(w, frame >= times[i]! ? o2 : 0));
+    });
+    const m = marker as THREE.Mesh | null;
+    if (m) {
+      m.scale.x = Math.max(0.001, prog(frame, landed(at), 8, outCubic));
+      fade(m, frame >= landed(at) ? 0.9 * o2 : 0);
+    }
+  };
+  return { group, lines, size, fits: widest(size) <= maxW, words, hold, landed, until, pose };
+}
 
 /** The sent chat bubble: appears `fromPx` below its slot (where the empty state was) and glides up in 9f outCubic. */
 export function bubbleGlide(b: THREE.Object3D, frame: number, at: number, fromPx = 460) {
@@ -242,20 +351,20 @@ export function blockGlide(frame: number, times: number[], pitchesPx: number[]) 
 | Event | Call | Frames from its start | Lands on |
 | --- | --- | --- | --- |
 | Phone first entry | `rise(frame, start)` | 0–12, outExpo, 840 px | Ends on the first downbeat |
-| Phone after a cut | `scaleIn(frame, cut)` | 0–9, 0.85 → 1, 25% → 100% | The cut is on a downbeat |
+| Phone after a cut (and after every full-bleed card) | `scaleIn(frame, cut)` | **scale 0.85 → 1 over 8–10f** (9 by default), opacity 25% → 100%, outCubic; start from 0.85, not 0.97: a 3% scale-in over 4f is invisible (judged) | The cut is on a downbeat |
 | Page build | `pageIn(key, frame, cut)` | only the 2–4 key blocks rise, 3f apart from cut − 2, 6f each, 16 px; the rest is there | ≥ 80% built on the cut frame (a 20-block stagger left a judged film's cut frame blank) |
 | Beat punch | `punch(frame, hits)` | +3.2%, halving, 0 by +6 | Downbeats where the UI changes |
 | Bar push | `creep(frame, barStart, barEnd)` | +3.9% linear, snap back 5f | Every held bar |
 | Sheet up / down | `sheetPose(sh, Sh, frame, in, out)` | up 11f outExpo; down 8f inCubic; page behind not dimmed (`{ scrim: 0.4 }` = 10% ink if it needs separation) | Up on a downbeat; down on a beat, so the next thing lands one beat later |
 | Radio fill | `fade(on, prog(frame, beat, 3))` | 3f | A beat |
 | Touch | `tapPose(tap, frame, tap)` | dot lands over the 6f before, presses on the tap frame, ring spreads 10f | The button's own tap frame |
-| Button | `buttonPose(btn, frame, tap)` | press 0–3, release 3–7, spinner from 3, holds 14, success 17–21 (colour mixed in OKLCH, through gold, never brown) | Choose `tap = bar − 21` so success lands on the downbeat, with a punch |
-| Feed push for a low tap | `aimY(spec, screenY, 1150, 1.15)` | 12f inOutCubic before the tap, back 12f after | Starts once the sheet settles and ends before the touch lands, so the control is above frame y 1210 when pressed |
+| Button | `buttonPose(btn, frame, tap)` | press 0–3, release 3–7; spinner fades in from 3 and is on screen 14f (4–17); success ramp 16–20, colour mixed in OKLCH (through gold, never brown), labels gated at its midpoint with a 1f gap (frame 18 shows neither) | Choose `tap = bar − 20` so success lands on the downbeat, with a punch |
+| Any push in a feed cut (a low tap, a variety push, the peak) | `frameFor(spec, block, want, { rest, below })` | 12f inOutCubic, back 12f after; the scale is `want` capped by the named block fitting y 300–1210, x ≤ 840 | Starts once the sheet settles and ends before the touch lands; the block (the control, the changing rows, the pill) is inside the box on the frame it matters |
 | Scan | `scanRow(frame, start, rows, perRow)` | lands a row every 6–10f, 4f glide | Each landing |
 | Sheet title swap | `fade(title[i], …)` | 3f crossfades at the spinner and at success | With the button |
 | Sticker | `stickerPose(st, frame, doneAt, fps)` | pop 0–4, settle 4–7, unwind 4–43 | The success frame |
 | Toast | `toastPose(t, frame, at, hold)` | in 0–4, hold 30–40, out 6 | One frame after the sheet clears |
-| Pill toast | `popIn(t, frame, at)` | 0.9 → 1 over 4f, under the status bar in a feed cut | With the success that caused it |
+| Pill toast | `pillSwap(pill, header, frame, at, out)` | 0.9 → 1 over 4f in the header's slot while the header fades out under it; back over 6f | With the success that caused it |
 | Typing | `input.set(typed(frame, start, 28, fps))` | 28 characters/s | Ends ≥ 4f before the send, on a beat |
 | Send | `bubbleGlide(b, frame, send + 3)` | empty state out 6f; bubble glides 9f | The send on a beat |
 | Status line | `fade(status, …)` | 15f | |
@@ -287,10 +396,10 @@ Get them through `sfx` (a library or generation); the names are examples of the 
 
 - the home page's greeting, chips and cards are in the safe rows; the "near you" row below is secondary;
 - the sheet stacks its list and the primary button **inline** (`k.stack`), not pinned to the screen bottom; the preview card goes under them, in the low rows;
-- one beat after the sheet lands, a 1.15× push (`aimY`) lifts the button to frame y 1150 while the band fades out; a touch presses it (`tapPose`), success lands on bar 2 with a punch, a pill toast under the status bar and a sticker on the **left** edge (the right edge is under TikTok's action rail);
+- one beat after the sheet lands, a push (`frameFor`, up to 1.15×) brings the proof block, from the pill's slot to the button, into y 300–1210 while the band yields; a touch presses it (`tapPose`), success lands on bar 2 with a punch, the pill toast in the header's slot and a sticker on the **left** edge (the right edge is under TikTok's action rail);
 - the sheet leaves on beat 9, the push eases back, the band's second line builds, the banner drops under the status bar.
 
-Every UI change is on the grid: the sheet on bar 1 with a punch, the radio on beat 6, success on bar 2, the sheet out on beat 9, the banner one beat-and-a-half later. `images/feed.png` is frames 20 and 140, `images/sheet-rising.png` frame 78, `images/toast.png` frame 175.
+Every UI change is on the grid: the sheet on bar 1 with a punch, the radio on beat 6, success on bar 2, the sheet out on beat 9, the banner one beat-and-a-half later. The push is `frameFor`'s: the block runs from the pill's header slot to the button, so the pill, the list and the button are all inside y 300–1210 on the success frame; the pill takes the header's slot and the header fades under it (`pillSwap`). The band is `band()`: it will not yield before its own hold. `images/feed.png` is frames 20 and 140, `images/sheet-rising.png` frame 78, `images/toast.png` frame 175.
 
 ![Frames 20 and 140: the band over the phone at rest; pushed in for the tap, button inline, pill toast at the top](images/feed.png) ![Frame 78: the sheet rising, the page behind not dimmed](images/sheet-rising.png) ![Frame 175: the banner after the sheet leaves](images/toast.png)
 
@@ -300,10 +409,10 @@ import type { ThreeSceneContext, ThreeSceneUpdate } from "@genmotion/three-engin
 import interUrl from "../assets/InterVariable.woff2";
 import { fitCamera, PX } from "../components/stage";
 import { prog, outCubic, inOutCubic, lerp } from "../components/ease";
-import { withFonts, line } from "../components/type";
+import { withFonts } from "../components/type";
 import { phone, punch, creep, stageBackdrop } from "../components/phone";
 import { appKit, fade, scenery, tile, sticker } from "../components/appui";
-import { beatGrid, rise, pageIn, sheetPose, buttonPose, toastPose, popIn, stickerPose, tapPose, wordBuild, feedLayout, aimY } from "../components/flows";
+import { beatGrid, rise, pageIn, sheetPose, buttonPose, toastPose, pillSwap, stickerPose, tapPose, feedLayout, frameFor, band } from "../components/flows";
 
 /** The 6 s demo in the 9:16 feed framing: a message band above, the phone bleeding off the bottom. */
 export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
@@ -322,16 +431,15 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const dusk = scenery(["#f3b48b", "#f7dcc0"], "#fff1c9", ["#a0664f", "#5b3a33"]);
     const fern = tile(T.tiles[4]!, "leaf", "#3fa36b");
 
-    // the message band: one line at 96 px in frame rows 269-582, above the device
-    const msg = (s: string) => line(s, { size: 96, weight: 500, color: "#0d0f12" }, "left");
-    const band = [msg("Save it once."), msg("Ready offline.")];
-    const bandY = (height / 2 - (feed.band[0] + feed.band[1]) / 2) * PX;
-    band.forEach((l) => ((l.group.position.y = bandY), scene.add(l.group)));
+    // the message band: one line at 96 px in frame rows 269-582, above the device; each knows its own hold
+    const bandA = band(["Save it once."], { rows: feed.band, frameH: height, mark: "once", accent: "#ffd23f" });
+    const bandB = band(["Ready offline."], { rows: feed.band, frameH: height });
+    scene.add(bandA.group, bandB.group);
 
     // home: the proof sits in the safe top rows; the lower rows carry secondary content
     const home = k.page("home");
-    k.put(home, k.navBar(null, "menu", "A"), 0, 0);
-    const greet = k.put(home, k.greeting(["Good morning, **Ana**.", "Where are we walking?"]), pad, k.pct(27));
+    const nav = k.put(home, k.navBar(null, "menu", "A"), 0, 0); // the header: the pill takes its slot
+    const greet = k.put(home, k.greeting(["Good morning, **Name**.", "Where are we walking?"]), pad, k.pct(27));
     const chips = k.chipRow(home, [{ label: "Nearby", icon: "pin" }, { label: "Shaded", icon: "leaf" }, { label: "Easy", icon: "route" }], pad, k.pct(48));
     k.put(home, k.section("Saved trails", "See all"), pad, k.pct(61.5));
     const cw = Math.round(k.S * 0.47), ch = Math.round(k.S * 0.62);
@@ -359,12 +467,13 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     k.put(sh.panel, tap.group, (k.Sw - tap.group.userData.wPx) / 2, below - btn.height / 2 - tap.group.userData.hPx / 2, 0.05);
     ph.ui.add(sh.group);
 
-    // top layer: the success pill and the banner both sit under the status bar (safe in a feed)
+    // top layer: the success pill takes the header's slot (centred on the header row, never over an app
+    // name); the banner drops under the status bar like a real notification (both safe in a feed)
     const top = new THREE.Group();
     top.position.set((-k.Sw / 2) * PX, (k.Sh / 2) * PX, 3);
     const pill = k.pillToast("Saved to Sunday walks");
-    k.put(top, pill, (k.Sw - pill.userData.wPx) / 2, k.pct(15));
-    const toast = k.put(top, k.toast("Fernway", ["Lakeside Loop is saved offline.", "Map and photos ready for Sunday."], fern), k.pct(2.7), k.pct(15));
+    k.put(top, pill, (k.Sw - pill.userData.wPx) / 2, k.sp.header - pill.userData.hPx / 2);
+    const toast = k.put(top, k.toast("Appname", ["Lakeside Loop is saved offline.", "Map and photos ready for Sunday."], fern), k.pct(2.7), k.pct(15));
     ph.ui.add(top);
 
     // the sticker goes on the LEFT edge in a feed cut: the right edge sits under TikTok's action rail
@@ -372,18 +481,20 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     ph.attach(st, -ph.spec.W / 2 - 18, ph.toDevice(0, k.Sh * 0.08 + k.pct(84))[1]); // beside the list's icon column, clear of text
 
     const grid = beatGrid(120, fps, 12); // 15f beats: bars at 12, 72, 132, 192
-    const SHEET = grid.bar(1), TAP = grid.bar(2) - 3 - 14 - 4, OUT = grid.beat(9), TOAST = OUT + 9;
-    const btnY = sh.top + below - btn.height / 2; // the button's centre, screen px
+    const SHEET = grid.bar(1), TAP = grid.bar(2) - 20, OUT = grid.beat(9), TOAST = OUT + 9; // buttonPose: success 20f after the tap
+    // the push keeps the whole proof inside the feed-safe box: from the pill in the header slot down to
+    // the button (screen px), at up to PUSH; frameFor caps the scale and moves the phone as little as it can
+    const aim = frameFor(ph.spec, { top: k.sp.header - pill.userData.hPx / 2, bottom: sh.top + below }, PUSH, { rest: { x: 0, y: feed.y } });
     return ({ frame }) => {
-      // push in before the tap so the button rises to frame y 1150 (the toast rows stay below y 270), ease back once the sheet leaves
+      // push in before the tap so the pill, the list and the button sit in y 300-1210, ease back once the sheet leaves
       const p = prog(frame, SHEET + 4, 12, inOutCubic) * (1 - prog(frame, OUT, 12, inOutCubic));
-      const zoom = lerp(1, PUSH, p) * (1 + Math.max(punch(frame, [SHEET, grid.bar(2)]), creep(frame, grid.bar(0), SHEET)));
+      const zoom = lerp(1, aim.scale, p) * (1 + Math.max(punch(frame, [SHEET, grid.bar(2)]), creep(frame, grid.bar(0), SHEET)));
       ph.group.scale.setScalar(zoom);
-      ph.group.position.y = (lerp(feed.y, aimY(ph.spec, btnY, 1150, PUSH, height), p) + rise(frame, 0, 600)) * PX;
+      ph.group.position.x = lerp(0, aim.x, p) * PX;
+      ph.group.position.y = (lerp(feed.y, aim.y, p) + rise(frame, 0, 600)) * PX;
 
-      wordBuild(band[0]!, frame, [0, 6, 12]);
-      fade(band[0]!.group, 1 - prog(frame, SHEET + 2, 6)); // the band yields while the phone fills the frame
-      wordBuild(band[1]!, frame, [OUT + 10, OUT + 16]);
+      bandA.pose(frame, 0, SHEET + 2); // yields while the phone fills the frame (never before its hold)
+      bandB.pose(frame, OUT + 10);
 
       pageIn([greet, ...chips, card1], frame, 6); // everything else on the home page is already there
       const showSheet = sheetPose(sh, k.Sh, frame, SHEET, OUT); // not dimmed, as measured
@@ -397,8 +508,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
       const doneAt = buttonPose(btn, frame, TAP);
       const t1 = prog(frame, TAP + 3, 3), t2 = prog(frame, doneAt - 4, 4);
       [1 - t1, t1 * (1 - t2), t2].forEach((o, i) => (fade(titles[i]!, o), fade(subs[i]!, o)));
-      popIn(pill, frame, doneAt);
-      if (frame >= OUT) fade(pill, 1 - prog(frame, OUT, 6));
+      pillSwap(pill, nav, frame, doneAt, OUT); // the header fades out under the pill, and back after
       stickerPose(st, frame, doneAt, fps, -1);
       if (frame >= OUT) st.scale.multiplyScalar(1 - prog(frame, OUT, 6, outCubic));
       const showToast = toastPose(toast, frame, TOAST, 40);
@@ -408,6 +518,21 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
   });
 }
 ```
+
+### The peak push, capped by its proof
+
+The same call aims the film's biggest move. Name everything the peak frame must show (here the pill in the header's slot down to the settle button) and ask for the drama you want; `frameFor` gives back the largest scale at which that block still fits y 300–1210 and x ≤ 840, and the position that gets it there with the least travel. `images/feed-peak.png` (right) is this at `want` 1.65: it came back at 1.21, because a block as wide as the kit's content (586 px at W 700) fits x 120–840 only up to about 1.23×; push further only onto a narrower block (the amount alone, one row).
+
+```ts
+const aim = frameFor(ph.spec, { top: k.sp.header - pill.userData.hPx / 2, bottom: below }, 1.65, { rest: { x: 0, y: feed.y } });
+// in the update: pre-roll 10-14f so the push is moving on the hit
+const p = prog(frame, HIT - 12, 12, inOutCubic);
+ph.group.scale.setScalar(lerp(1, aim.scale, p));
+ph.group.position.set(lerp(0, aim.x, p) * PX, lerp(feed.y, aim.y, p) * PX, 0);
+pillSwap(pill, nav, frame, HIT); // the header fades under the pill
+```
+
+![Left: the scanner's feed preset, the total above y 1210. Right: the peak push from frameFor](images/feed-peak.png)
 
 ## 6. A chat turn (tested)
 
@@ -440,7 +565,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const { pad } = k.sp;
     const page = k.page("chat");
     k.put(page, k.navBar(null, "back"), 0, 0);
-    const name = k.chip("Fernway", "spark");
+    const name = k.chip("Appname", "spark");
     k.put(page, name, (k.Sw - name.userData.wPx) / 2, k.pct(14.5));
 
     // empty state: one sticker, one line, quick prompts above the composer
@@ -451,7 +576,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     k.put(empty, k.textBlock("Ask about any trail near you.", k.type.sub, 400, k.T.muted, k.Sw - pad * 2, "center"), pad, k.pct(100));
     const prompts = k.chipRow(empty, [{ label: "Shady loops", tint: "#e5ecfb" }, { label: "Under 5 km" }], pad, k.Sh - k.pct(37));
     const q = "Which loop stays shaded after 3 pm?";
-    const composer = k.input(k.Sw - pad * 2, "Ask Fernway", q, { send: true });
+    const composer = k.input(k.Sw - pad * 2, "Ask Appname", q, { send: true });
     k.put(page, composer.group, pad, k.Sh - composer.height - k.pct(10));
 
     // the turn: bubble, a status line, the answer, result rows, follow-ups. Built bottom-up from the
@@ -503,18 +628,20 @@ Hold after the last word: at least `direction`'s hold formula for the answer's w
 
 ## 7. Stickers
 
-- **One per shot, matched to the content** (in a long film, one matched sticker per beat is also the cheapest frame-level change for the variety rule in `SKILL.md`) (a ribbon on save, a bubble on a message, a spark on an AI answer, a leaf for an outdoors app), 0.20–0.23 W, drawn by `sticker()` (original geometry, glossy; never a copy of an emoji set).
+- **One per shot, matched to the content** (in a long film, one matched sticker per beat is also the cheapest frame-level change for the variety rule in `SKILL.md`) (a ribbon on save, a bubble on a message, a spark on an AI answer, a leaf for an outdoors app, a receipt on a scan, a coin on a payment, a key on an unlock), 0.20–0.23 W, drawn by `sticker()` (original geometry, glossy; never a copy of an emoji set).
 - **Placement**: on the device's edge, overlapping it by at most the bezel plus the side padding (`ph.spec.inset + k.sp.pad`, about 0.08 W), beside empty space. `ph.attach(st, W / 2 + 18, y)` puts it on the right edge at `y` px from the device centre (`ph.toDevice(0, screenY)[1]` gives `y` for a screen row); it then punches and pushes with the phone. In a 9:16 feed cut use the **left** edge (`-W / 2 - 18`, `stickerPose(..., -1)`): the right edge is under TikTok's action rail.
 - **Motion** (`stickerPose`): pop from scale 0 to 1.08 in 4f, starting at −30° and from just inside the device edge, travelling outward and up; settle to 1 in 3f; unwind 15° over 39f (inOutSine); bob ±4 px at 0.35 Hz. No exit: it leaves with the cut, or shrinks out over 6f when the UI it sits beside changes.
 - **Openers and closers**: a cluster of 6 around a mark (1–2f apart, inner ring first, 0 → 1.1 → 1), or a burst of about 14 from the centre out to a ring over 6–8f (outBack) that then drifts outward and grows 2% during the hold. Place them from a fixed list of angles, never at random.
 
 ## 8. Chapter card (tested)
 
-A full-bleed card in the app's accent, exactly one bar, a hard cut in on the downbeat with the first word already there. Three centred lines: L1 at about 130 px, L2 at 0.65 × (88 px) with an inline icon leading it, L3 at 130 px; pitch about 145 px; the block re-centres as lines arrive. Cadence after the cut: L1's second word +4, the icon +10, L2's words +13 / +16 / +19, L3 at +30 (the third beat at 120 BPM), the rest holds. Out: the last 3 frames zoom to 1.15 and blur, then the cut to the phone, which scales in from 0.85. `images/chapter-card.png` is frame 40.
+A full-bleed card in the app's accent, a hard cut in on the downbeat with the first word already there, held by `direction`'s hold formula from its last word: this 7-word card is legible at about +39 and needs max(30, 9 × 7 + 15) = 78f after that, so it spans **two bars** (120f). A one-bar card fits only ≤ 3 words (legible by +10, 42f hold). Three centred lines: L1 at about 130 px, L2 at 0.65 × (88 px) with an inline icon leading it, L3 at 130 px; pitch about 145 px; the block re-centres as lines arrive. Cadence after the cut: L1's second word +4, the icon +10, L2's words +13 / +16 / +19, L3 at +30 (the third beat at 120 BPM), the rest holds. Out: the last 3 frames zoom to 1.15 and blur, then the cut to the phone, which scales in from 0.85. `images/chapter-card.png` is frame 40.
 
 The shape is the reference's "[Product] that / [icon] [verb phrase] / for you": adapt it to the brief ("[Product] / [icon] [does the thing] / [for whom, or when]"), keep only the middle line changing between cards, and follow each card with the shot that proves its verb. A last card can swap only its middle line (and icon) once per beat, four times, to list four features in one bar.
 
 ![Frame 40: the chapter card fully built](images/chapter-card.png)
+
+Render it as a 120f scene (two bars); `D` is read from the scene's own duration, so the exit lands on its last 3 frames either way.
 
 ```ts
 import * as THREE from "three";
@@ -526,7 +653,7 @@ import { withFonts, line, setLabel, type TypeStyle } from "../components/type";
 import { sticker, fade } from "../components/appui";
 import { wordBuild, blockGlide, popIn } from "../components/flows";
 
-/** Chapter card: "[Product] that / [icon] [verb phrase] / for you", one bar long, built on half-beats. */
+/** Chapter card: "[Product] that / [icon] [verb phrase] / for you", two bars long (its hold), built on half-beats. */
 export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
   const { scene, camera, durationInFrames: D } = ctx;
   fitCamera(camera, ctx.height);
@@ -537,7 +664,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const PITCH = 145;
     const block = new THREE.Group();
     scene.add(block);
-    const l1 = line("Fernway that", big, "left");
+    const l1 = line("Appname that", big, "left");
     const l2 = line("plans the loop", mid, "left");
     const l3 = line("for you", big, "left");
     const icon = sticker("leaf", 78, "#7fd99f");

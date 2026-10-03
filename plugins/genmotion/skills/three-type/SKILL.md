@@ -167,7 +167,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Whiteboard | Hand-written text revealed left to right by a soft x-wipe in its shader, 8–18f by width; left column at a 140 px margin |
 | Music video | Karaoke lines, sung word flashing the accent |
 | Milestone | `counter` with land punch; label above it in muted |
-| Social title-card launch (K) | One card of 2–4 words, 72–110 px (≥ 90 in a feed), glow-resolve by word, one accent word in a lighter tint of the accent, a smear-in for the punch word, a rebus slot when the noun has a glyph; captions beside tilted UI two-tone (key words ink 500, rest muted 400) |
+| Social title-card launch (K) | One full-frame card of 2–4 words: in a feed or social cut, **cap height 15–25% of the frame height** (≈ 160–270 px at 1080 tall; Inter's cap is 0.727 of the size, so a 220–370 px size; in 9:16 the width governs: one or two words a line, the longest line ≤ 85% of the frame width), one accent or bleed word; "full-frame" means the type fills the frame, not a small word on a black ground (cards at 7% of the height read as refined-small and lost a judged film its punch). Keep 72–110 px for captions and labels beside the product; glow-resolve by word, one accent word in a lighter tint of the accent, a smear-in for the punch word, a rebus slot when the noun has a glyph; captions beside tilted UI two-tone (key words ink 500, rest muted 400) |
 
 ## Anti-patterns
 

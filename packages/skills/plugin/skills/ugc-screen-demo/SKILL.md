@@ -9,7 +9,7 @@ An app doing one thing, shown result-first, narrated like a friend looking over 
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers), `ugc-craft` (moves, captions) and `screen-capture` (getting footage in). Frames at 30 fps; positions on 1080×1920.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -105,7 +105,7 @@ Dead time: any load or wait longer than 15f is cut (hard cut to the loaded state
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 audible; a click 0.9 on every press frame, varied ±0.04 and alternating SFX lanes; typing ticks 0.3–0.45; hard cuts silent (never a whoosh, per `sound-design`); a success tone 0.6 on the payoff frame; room tone 0.03–0.05 under everything so silence never reads as a bug report. Bed 0.12 under VO, 0.5 with no VO, instrumental, 100–120 BPM. Strip the recording's own audio. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 audible; a click 0.9 on every press frame, varied ±0.04 and alternating SFX lanes; typing ticks 0.3–0.45; hard cuts silent (never a whoosh, per `sound-design`); a success tone 0.6 on the payoff frame; every cue's tail decays naturally (faded over 80–150 ms, never cut off), so a gap reads as space, not a bug report; never a synthesised noise bed or room tone. Bed 0.12 under VO, 0.5 with no VO, instrumental, 100–120 BPM. Strip the recording's own audio. Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 
@@ -135,7 +135,7 @@ Captions in the Clean demo skin (`ugc-ad-foundations` → `references/frame-pres
 | Trim, crop, re-encode | `ffmpeg` | Use the recording uncropped on a plane and crop with the camera; still re-encode if at all possible |
 | Narration | `pick-voice` then `voiceover` | A caption-led silent cut; this format survives mute better than any other |
 | Interaction sound | `sfx` | Credited CC0 clicks via `web-research` + `save-asset` |
-| Music | `music` | No bed: clicks and room tone alone |
+| Music | `music` | No bed: clicks and their natural tails alone |
 | Placeholder content | `generate-image` | Initials and flat shapes, never a real person's photo |
 
 ## Checks before you finish

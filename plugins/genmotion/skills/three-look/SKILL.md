@@ -59,7 +59,8 @@ The renderer is shared by every scene in the film, so **every scene** calls `col
 | Flat | no lights; everything unlit | Type, SaaS UI, chat, whiteboard |
 
 - `studioEnvironment()` builds a grey room with four softbox panels and prefilters it with PMREM, once, in the builder: **metal and gloss without an environment render black or plastic.** This is the single biggest upgrade for any 3D object.
-- A rim light from behind separates a subject from a dark ground; add it before brightening anything.
+- A rim light from behind separates a subject from a dark ground; add it before brightening anything. **A hardware or object hero always gets one** (rim or a horizon light along its edge): a matte black product on a dark ground lit flat reads as a primitive, not a product (judged twice).
+- **A hardware hero is big and clear.** In every wide shot it is ≥ 20% of the frame height; in its hero frames nothing crosses its silhouette: whatever it attaches to (a rail, a wheel, a stand, a hand) is routed behind it or out of frame from the peak camera. Frame the peak camera first, then build the context around it (a lock at 6% of the height with its rail crossing its legs cost a judged film its hook and its peak).
 - Same light direction in every scene of the film.
 - **When the ground changes behind a lit object, the light changes with it, in the same frames.** An environment built for the old stage keeps reflecting the old room, so metal goes dark (tested: a titanium ring on a new warm-white ground rendered near-black). Swap `studioEnvironment()` for `followingEnvironment()` and lerp the key light over the ground's frames (`references/color-and-light.md` §7); check the hero material on both grounds.
 - A "product" that is flat printed matter (tickets, cards, paper) gains nothing from product lights: use the `flat` pipeline with a baked soft shadow plane under each piece, so its paper hex stays exact.
@@ -158,6 +159,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Glow, bloom-ish halos and grain on everything at once.** One glow per subject; static grain at 1–1.5%.
 - **Grain added before `colorspace_fragment`, or a float hash that stripes under SwiftShader.** Copy the backdrop as written: integer hash, grain last.
 - **Text on a busy area without a scrim.**
+- **A small, occluded or flat-lit hardware hero**: under 20% of the frame height in the wides, a prop crossing its silhouette at the peak, no rim. Fix the framing and the rim before the material.
 - **A full-chroma gradient blob behind small type**, or a mesh ground whose brightest point sits away from the subject: the ground outshouts the words. Points at 30–60% of the accent's chroma, brightest behind the subject.
 
 ## Requirements
@@ -173,7 +175,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 1. Every scene calls `colorPipeline` and sets `scene.background`; one captured frame per scene, side by side, shows one palette, one light direction, one background family.
 2. The brand colour in a capture matches its hex within a couple of levels on flat fills, floods and logos (sample a pixel).
 3. Nothing important is pure black or clipped white; metal shows reflections, not black. If the ground changes behind a lit object, capture before and 10f after the change: its mid-tones are as light or lighter on the new ground and its highlights still read.
-4. Every line of text clears 4.5:1 (3:1 at ≥ 60 px) against what is actually behind it in the frame.
-5. A dark gradient frame from the export shows no visible steps, and a 100% crop of a flat area shows even noise, no stripes. Every line that must read is ≥ 2 px on screen on its smallest frame (the end card after a scale-down included).
-6. Grain: two consecutive held frames of the export have PSNR > 45 dB (static grain) or > 40 dB (moving); brand-identity frames have none. The end card from the export, contrast-stretched, shows no stepped rings (flat hex, or a lift that kept its dither), and a 4 fps strip across the hand-off into it shows the finish fading over ≥ 20f, not popping. Every radial glow or lift sits on its subject in a captured frame of each layout. The export's bitrate fits its destination (`ffprobe … format=bit_rate`).
-7. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.
+4. A hardware or object hero: in every wide shot its height is ≥ 20% of the frame height (measure on a capture), its hero frames show its whole silhouette with nothing crossing it, and a rim or horizon light separates its edge from the ground.
+5. Every line of text clears 4.5:1 (3:1 at ≥ 60 px) against what is actually behind it in the frame.
+6. A dark gradient frame from the export shows no visible steps, and a 100% crop of a flat area shows even noise, no stripes. Every line that must read is ≥ 2 px on screen on its smallest frame (the end card after a scale-down included).
+7. Grain: two consecutive held frames of the export have PSNR > 45 dB (static grain) or > 40 dB (moving); brand-identity frames have none. The end card from the export, contrast-stretched, shows no stepped rings (flat hex, or a lift that kept its dither), and a 4 fps strip across the hand-off into it shows the finish fading over ≥ 20f, not popping. Every radial glow or lift sits on its subject in a captured frame of each layout. The export's bitrate fits its destination (`ffprobe … format=bit_rate`).
+8. No randomness or wall-clock timing in any shader input; grain and wobble come from the frame number and seeded hashes; `validate` passes.

@@ -313,7 +313,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
 
   tool(
     "search_skills",
-    "Find the GenMotion skill that owns this kind of video — launch, feature announcement, milestone, explainer, logo sting, app store preview, walkthrough, UGC ad formats, freeform — plus craft skills for the engine. Pass the user's request in their own words. Results show each skill's kind (pick one `workflow` or `style` as the owner), what it delivers, the questions it asks first, and which of its needs this setup has (with what to do instead when not).",
+    "Find the GenMotion skill that owns this kind of video — launch, feature announcement, milestone, explainer, logo sting, app store preview, walkthrough, UGC ad formats, freeform — plus craft skills for the engine. Pass a short phrase for the deliverable, in the user's words ('launch video for my new app', 'animated logo for a coffee roastery'), not the whole brief pasted in: brand names, colours and platform details drown the words that pick the format. Results show each skill's kind (pick one `workflow` or `style` as the owner), what it delivers, the questions it asks first, and which of its needs this setup has (with what to do instead when not).",
     {
       ...dirArg,
       query: z.string().min(2).describe("The user's request, in their words."),

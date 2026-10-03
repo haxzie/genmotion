@@ -566,8 +566,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
       icon(g, "spark", w / 2, h / 2, w * 0.56, "#ffffff");
     };
     const inScreen = k.put(page, k.plane(ic, ic, drawIcon, "app-icon"), pad, k.pct(19) - ic / 2);
-    k.put(page, k.textBlock("Fernway", k.type.section * 1.3, 700), pad + ic + k.pct(3), k.pct(19) - k.type.section * 0.85);
-    k.put(page, k.greeting(["Good morning, **Ana**.", "Where are we walking?"]), pad, k.pct(30));
+    k.put(page, k.textBlock("Appname", k.type.section * 1.3, 700), pad + ic + k.pct(3), k.pct(19) - k.type.section * 0.85);
+    k.put(page, k.greeting(["Good morning, **Name**.", "Where are we walking?"]), pad, k.pct(30));
     const lake = scenery(["#9cc7e8", "#e8eef0"], "#fff6d8", ["#5f8a7a", "#2f5a4c"]);
     k.stack(page, [k.imageCard(k.Sw - pad * 2, Math.round(k.S * 0.7), lake, "Lakeside Loop", "4.2 km · 1 h 20"), k.imageCard(k.Sw - pad * 2, Math.round(k.S * 0.7), lake, "North Shore", "3.4 km")], pad, k.pct(52));
     ph.ui.add(page);
@@ -579,7 +579,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const from = ph.toWorld(pad + ic / 2, k.pct(19)); // the phone is at rest here; pose it for LIFT first if it moves
     const to = new THREE.Vector3(0, 1.4, 0.02), END = 2.6; // the end card's mark: 2.6x, 140 px above centre
     ctx.scene.add(lifted);
-    const word = label("Fernway", { size: 96, weight: 500, color: "#0d0f12" });
+    const word = label("Appname", { size: 96, weight: 500, color: "#0d0f12" });
     word.position.set(0, -1.1, 0);
     ctx.scene.add(word);
     return ({ frame }) => {

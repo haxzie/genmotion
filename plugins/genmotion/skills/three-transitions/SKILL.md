@@ -30,8 +30,9 @@ Not for: choosing the handoff (`direction`, `motion-language`), the camera rig i
 | The carrier is pixel-identical across the cut | Both scenes import the carrier's pose, colour and size from `components/handoff.ts` and build it with the same factory; never retype a number |
 | Same picture means same rendering | Both scenes: same `fitCamera`, same `colorPipeline` mode, same lights, `scene.background` set; the carrier and cover layers `toneMapped: false` |
 | Drift dies before a matched cut | `restDrift` (zero at both ends) or drift × (1 − transition progress) |
-| Non-carriers gone 4–8f before the cut | Exit 6–9f inCubic from `D − 14`; the frame 3f before the cut shows only the carrier |
+| Non-carriers gone 2–8f before the cut | Exit 6–9f inCubic, clear by `D − 3` when nothing carries the cut (`D − 8` when a carrier stays); the frame 2f before the cut shows only the carrier or the ground |
 | Accelerate through the cut or land ≥10f early | Covers complete 2–5f before the cut and hold; camera carries use matching spline slopes (`three-camera`) |
+| **A cover lands on content** | At most **4 background-only frames per turn** (a flat ground or a closed cover with no word, no product, no carrier on it): the next card's first word is on screen the frame the cover closes (or resolves inside the closing iris), and the next shot opens out of the card's last legible frame. Never stack a full cover and an exit-then-cut gap on one turn. A judged film closed an iris to black, *then* began its card, and exited the card to black, *then* opened: 6–8 empty frames at each of five turns, 1.2 s of nothing in 20 s |
 
 ## One cover layer for the whole film
 
@@ -64,7 +65,7 @@ Floods, irises, wipes, block wipes and flashes are all one full-frame plane on t
 | Continuous loop | Spin or time from **film** frame | Same function, same film frame | carries §3 |
 | Rush into the lens | Camera to 0.35 from the object, last 14f inCubic, ground to white | Opens white | carries §4 |
 | Whip | Content flung out with sub-frame motion blur | Enters from the opposite side at the same speed | carries §5–6 |
-| Exit-then-cut | Everything leaves, clear 4–8f early | First element 3–6f after the cut | carries §7 |
+| Exit-then-cut | Everything leaves, clear 2–3f early | First element 1–2f after the cut (≤ 4 empty frames in all) | carries §7 |
 | Board erase | Strokes un-draw from `D − 18` over 10f, 8f blank | Identical blank paper | carries §8 |
 | New ground behind the subject (no cut) | The backdrop's `uFlood` disc grows out of the subject, behind it; environment and key light follow in the same frames; the subject scales or moves | — (one continuous shot) | `three-look` backdrops-and-finish §7, color-and-light §7 |
 
@@ -118,7 +119,7 @@ Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, 
 | Flash-to-white | ramp `D−6 … D` | decay 0–8 |
 | White wipe-up | `D−8 … D` | opens white |
 | Block wipe | `D−22 … D−2` | clears 0–20, entrances offset +12f |
-| Exit-then-cut | exits `D−14 … D−7` | first entrance at 3–6 |
+| Exit-then-cut | exits `D−10 … D−3` | first entrance at 1–2 |
 
 ## Building order for a multi-scene film
 
@@ -150,7 +151,7 @@ Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, 
 ## Checks before you finish
 
 1. For every cut, `capture-frames` on the last frame of N and the first of N+1: the carrier matches in position, size, rotation and colour (sample a pixel of floods; the values are identical).
-2. The frame 3f before each exit-then-cut shows background only; every cover completes 2–5f before its cut; every block wipe's first cells touch an on-screen object of their colour.
+2. Step through every turn: no more than 4 consecutive frames are background only (a flat ground or a closed cover with nothing on it), and no turn has both a full cover and an exit-then-cut gap; the frame 2f before each exit-then-cut shows background only; every cover completes 2–5f before its cut and the next card's first word is on it by the frame it closes; every block wipe's first cells touch an on-screen object of their colour.
 3. Parked carriers (an object waiting in a node, a card set aside) sit in a reserved slot that clears every label on the first and last frame of each scene; one larger than its parking spot is hidden while parked.
 4. Every handoff number exists once, in `components/handoff.ts`, imported by both scenes; continuous loops run on film frame and the scene-start table matches `project.json`.
 5. Cover planes are on the camera overlay, `toneMapped: false`, `pickable = false`.

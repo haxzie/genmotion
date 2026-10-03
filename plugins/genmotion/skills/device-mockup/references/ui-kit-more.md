@@ -20,13 +20,16 @@ Contents: 1 API · 2 Using it · 3 A scanner scene · 4 The module
 | `m.collection(w, [a, b, c, d], name, count)` | plane | Library card: 2 × 2 mosaic, count, two-line name |
 | `m.hero(art, height?)` | `{ group, card }` | Ambient blurred backdrop fading into the page, floating portrait card |
 | `m.steps(items, numbered?)` | planes | Accent numbered dots (or spark glyphs), bold lead-in, one plane per item |
-| `m.scanner(doc, rows, { aspect, hint })` | `{ page, set({ row, press }), rowY(i), shutter, doc }` | A dark camera page: the document lit in a frame, corner brackets, a scan line, a highlight on every row it has passed, a shutter. `set` per frame; `row` from `scanRow()` in `flows.ts` |
-| `paper(heading, rows, total?)` | `Art` | A placeholder receipt or form: centred heading, name left / amount right on the rows the scanner marks (`docRow(i, n)`), a bold total |
+| `m.scanner(doc, rows, { aspect, hint, top, bottom })` | `{ page, set({ row, press }), rowY(i), shutter, doc }` | A dark camera page: the document lit in a frame, corner brackets, a scan line, a highlight on every row it has passed, a shutter. `set` per frame; `row` from `scanRow()` in `flows.ts`. `top` (screen px) moves the document; `bottom` fixes its bottom instead of `aspect`: **in a 9:16 feed framing pass `{ top: k.pct(15), bottom: feed.safeY - k.pct(2) }`** so every row and the total stay above the platform's bottom band (the default 16% / 1.42 put the total at frame y ≈ 1464) |
+| `paper(heading, rows, total?)` | `Art` | A placeholder receipt or form: centred heading, name left / amount right on the rows the scanner marks (`docRow(i, n, w, h)`), a bold total. Sizes come from the width, so a short feed document keeps its 29 px rows |
+| `m.balances(people, { w, pattern, font })` | `{ group, amounts[], cells[][], cols, height }` | People with running amounts: avatar, name, a rolling amount (`amounts[i].set(v)`). Columns are measured and balanced: four people wrap to 2 × 2 instead of colliding in four squeezed columns |
+| `m.lineItem(w, item, amount, people)` | `{ group, dots[], height }` | A receipt line with its assignees: item left, amount right, avatar dots before the amount, one plane each (pop them in with `popIn`) |
 
 ## 2. Using it
 
 - **Chat**: `references/screen-flows.md` §6 is a full turn (typing, send, bubble glide, status line, a streamed answer, result rows, follow-ups) using `m.bubble`, `m.answer`, `m.resultRow` and `m.followUp`.
-- **Scanner**: the line lands on each row `perRow` frames apart (6–10f reads as "reading"; a 5-row receipt in 40f), every landing gets a short tonal blip (a soft tick or a glass "tink" a step up the scale per row; never a rising noise), then a touch on the shutter with a camera-shutter click, a white flash (`ph.set({ veil })` at 0.85, falling over 6f) and a punch. Then cut to what the scan produced: the rows, now data. The shutter sits low on the screen: in a 9:16 feed cut, push in so it is above frame y 1210, or let the scan finish on its own and skip the shutter.
+- **Scanner**: the line lands on each row `perRow` frames apart (6–10f reads as "reading"; a 5-row receipt in 40f), every landing gets a short tonal blip (a soft tick or a glass "tink" a step up the scale per row; never a rising noise), then a touch on the shutter with a camera-shutter click, a white flash (`ph.set({ veil })` at 0.85, falling over 6f) and a punch. Then cut to what the scan produced: the rows, now data. The shutter sits low on the screen: in a 9:16 feed cut, push in so it is above frame y 1210, or let the scan finish on its own and skip the shutter. In a feed cut the document itself goes in the safe rows: `m.scanner(doc, n, { top: k.pct(15), bottom: feed.safeY - k.pct(2) })`.
+- **Money and splits**: `m.lineItem` for each receipt line (its assignees pop in as dots), `m.balances` for the people and their running totals above it; a share moving from a line to a person is the dot's `rest` pose lerped to the person's avatar (both in page px through `put()`).
 - **Share sheet**: a `k.sheet` with `m.avatarRow` and an `m.actions` group; the check on the chosen person is a `k.listGroup` radio or a `k.pill`.
 - **Detail**: `m.hero` at the top of a page, then `k.textBlock` title and `m.steps`; scroll it with `k.scrollEdge` over the content group.
 
@@ -52,8 +55,8 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     ctx.scene.add(ph.group);
     const k = appKit(ph.spec);
     const m = moreKit(k);
-    const items: [string, string][] = [["Veg box", "£18.50"], ["Coffee beans", "£9.40"], ["Oat milk x3", "£5.85"], ["Pasta & sauce", "£7.60"], ["Cleaning", "£12.35"]];
-    const sc = m.scanner(paper("CORNER GROCER", items, ["Total", "£53.70"]), items.length, { hint: "Hold steady" });
+    const items: [string, string][] = [["Item one", "£18.50"], ["Item two", "£9.40"], ["Item three", "£5.85"], ["Item four", "£7.60"], ["Item five", "£12.35"]];
+    const sc = m.scanner(paper("SHOP NAME", items, ["Total", "£53.70"]), items.length, { hint: "Hold steady" });
     const tap = k.tapMark();
     k.put(sc.page, tap.group, sc.shutter.x - tap.group.userData.wPx / 2, sc.shutter.y - tap.group.userData.hPx / 2, 0.06);
     ph.ui.add(sc.page);
@@ -82,8 +85,15 @@ import { appKit, box, fade, fit, hex, icon, rgba, shade, text, wrap, type Art } 
 const TAU = Math.PI * 2;
 type Kit = ReturnType<typeof appKit>;
 
-/** Where row i of n sits down a scanned document, as a fraction of its height (paper() and scanner() share it). */
-export const docRow = (i: number, n: number) => 0.27 + (0.58 * (i + 0.5)) / n;
+/**
+ * Where row i of n sits down a scanned document w x h px (paper() and scanner() share it): the rows fill
+ * the space between the header block and the total, which are sized from the width, so a short, wide
+ * document (the feed preset) keeps its text size and only tightens the row pitch.
+ */
+export const docRow = (i: number, n: number, w: number, h: number) => {
+  const s = w * 0.058, a = s * 4.9, b = h - s * 3.1;
+  return a + ((b - a) * (i + 0.5)) / n;
+};
 
 /**
  * Placeholder document for a scanner: off-white paper with a centred heading, `rows` as name left /
@@ -92,20 +102,20 @@ export const docRow = (i: number, n: number) => 0.27 + (0.58 * (i + 0.5)) / n;
 export const paper = (heading: string, rows: [string, string][], total?: [string, string]): Art => (g, w, h) => {
   g.fillStyle = "#fbfaf6";
   g.fillRect(0, 0, w, h);
-  const ink = "#2b2825", size = w * 0.058;
-  text(g, heading, w / 2, h * 0.1, w * 0.075, 700, ink, "center");
-  text(g, "12 Mar  18:42", w / 2, h * 0.17, size * 0.85, 400, "#77716a", "center");
+  const ink = "#2b2825", size = w * 0.058; // every size from the width: a short document keeps its text size
+  text(g, heading, w / 2, size * 1.5, w * 0.075, 700, ink, "center");
+  text(g, "Date  00:00", w / 2, size * 2.75, size, 400, "#77716a", "center");
   g.fillStyle = "#cfc9c0";
-  for (let x = w * 0.08; x < w * 0.92; x += 14) g.fillRect(x, h * 0.215, 7, 2); // dashed rule
+  for (let x = w * 0.08; x < w * 0.92; x += 14) g.fillRect(x, size * 3.7, 7, 2); // dashed rule
   rows.forEach(([name, amt], i) => {
-    const y = h * docRow(i, rows.length);
+    const y = docRow(i, rows.length, w, h);
     text(g, name, w * 0.08, y, size, 500, ink);
     text(g, amt, w * 0.92, y, size, 500, ink, "right");
   });
   if (total) {
-    g.fillRect(w * 0.08, h * 0.885, w * 0.84, 2);
-    text(g, total[0], w * 0.08, h * 0.93, size * 1.1, 700, ink);
-    text(g, total[1], w * 0.92, h * 0.93, size * 1.1, 700, ink, "right");
+    g.fillRect(w * 0.08, h - size * 2.3, w * 0.84, 2);
+    text(g, total[0], w * 0.08, h - size * 1.25, size * 1.1, 700, ink);
+    text(g, total[1], w * 0.92, h - size * 1.25, size * 1.1, 700, ink, "right");
   }
 };
 
@@ -115,7 +125,7 @@ export const paper = (heading: string, rows: [string, string][], total?: [string
  * lists and a camera scanner. Same rules as the kit: drawn once, origin at the centre, put() places them.
  */
 export function moreKit(k: Kit) {
-  const { S, Sw, Sh, T, type, sp, pct, plane, card, roundPath, hairline } = k;
+  const { S, Sw, Sh, T, type, sp, pct, plane, card, roundPath, hairline, floor } = k;
   const more = {
     /** Share-sheet avatar row: gradient circles with an initial, names under them. */
     avatarRow(people: { name: string; color: string }[]) {
@@ -302,10 +312,14 @@ export function moreKit(k: Kit) {
      * brackets, a scan line that steps row by row, a highlight on each row it has passed, and a shutter.
      * set({ row, press }) per frame: `row` is the scan line's position in rows (0 = the first row's
      * centre, fractional values glide, below -0.5 or past the last row it hides); `press` 0..1 squeezes
-     * the shutter. The page's status bar is white (ink "light").
+     * the shutter. The page's status bar is white (ink "light"). `top` is the document's top (screen px,
+     * default 16% of the screen height); `bottom` fixes its bottom instead of `aspect` (the feed preset:
+     * `{ top: k.pct(15), bottom: feed.safeY - k.pct(2) }` keeps every row and the total above the
+     * platform's bottom band).
      */
-    scanner(doc: Art, rows: number, o: { aspect?: number; hint?: string } = {}) {
-      const dw = Math.round(Sw * 0.76), dh = Math.round(dw * (o.aspect ?? 1.42)), dx = Math.round((Sw - dw) / 2), dy = Math.round(Sh * 0.16);
+    scanner(doc: Art, rows: number, o: { aspect?: number; hint?: string; top?: number; bottom?: number } = {}) {
+      const dw = Math.round(Sw * 0.76), dx = Math.round((Sw - dw) / 2), dy = Math.round(o.top ?? Sh * 0.16);
+      const dh = Math.round(o.bottom !== undefined ? o.bottom - dy : dw * (o.aspect ?? 1.42));
       const page = k.page("scanner", (g, w, h) => {
         const gr = g.createRadialGradient(w / 2, dy + dh / 2, 0, w / 2, dy + dh / 2, h * 0.62);
         gr.addColorStop(0, "#4a453f");
@@ -325,7 +339,7 @@ export function moreKit(k: Kit) {
         doc(g, dw, dh);
         g.restore();
       }, "light");
-      const rowY = (i: number) => dy + dh * docRow(i, rows);
+      const rowY = (i: number) => dy + docRow(i, rows, dw, dh);
       const m = pct(2.5), arm = pct(8);
       k.put(page, box(plane(dw + m * 2 + 8, dh + m * 2 + 8, (g, w, h) => {
         g.strokeStyle = "#ffffff";
@@ -339,7 +353,7 @@ export function moreKit(k: Kit) {
           g.stroke();
         }
       }, "scan-brackets"), dw + m * 2 + 8, dh + m * 2 + 8), dx - m - 4, dy - m - 4);
-      const hlH = Math.round(((dh * 0.58) / rows) * 0.86);
+      const hlH = Math.round((rows > 1 ? docRow(1, rows, dw, dh) - docRow(0, rows, dw, dh) : dh * 0.3) * 0.86);
       const marks = Array.from({ length: rows }, (_, i) => k.put(page, box(plane(dw - pct(4), hlH, (g, w, h) => {
         g.fillStyle = rgba(T.accent, 0.16);
         g.fill(roundPath(0, 0, w, h, pct(1.4)));
@@ -388,6 +402,71 @@ export function moreKit(k: Kit) {
       };
       set({});
       return { page, set, rowY, shutter: { x: Sw / 2, y: sy + sd / 2 }, doc: { x: dx, y: dy, w: dw, h: dh } };
+    },
+
+    /**
+     * People with running amounts ("who owes what"): avatar, name, an amount that rolls (`amounts[i].set`).
+     * The columns are counted from the measured widths and then balanced, so four people never collide in
+     * four squeezed columns: they wrap to 2 x 2 (three to 3 x 1 when they fit, five to 3 + 2).
+     */
+    balances(people: { name: string; color: string; initial?: string }[], o: { w?: number; pattern?: string; font?: string } = {}) {
+      const w = o.w ?? Sw - sp.pad * 2, n = people.length;
+      const d = Math.max(pct(9.5), Math.round(floor * 2)), gap = pct(3), inner = pct(2.5);
+      const amtSize = Math.round(type.body * 1.15);
+      const amounts = people.map(() => k.counter(o.pattern ?? "£##.##", amtSize, { weight: 700, font: o.font, anchor: "left" }));
+      const amtW = Math.max(...amounts.map((c) => c.group.userData.wPx as number));
+      const nameW = Math.max(...people.map((p) => measure(p.name, { size: type.caption, weight: 500, tracking: 0 })));
+      const cellW = d + inner + Math.max(amtW, nameW) + gap;
+      let cols = Math.max(1, Math.min(n, Math.floor((w + gap) / cellW)));
+      const rowsN = Math.ceil(n / cols);
+      cols = Math.ceil(n / rowsN); // balanced: 4 at 3 columns becomes 2 x 2, never 3 + 1
+      const cw = w / cols, lineH = Math.round(type.caption * 1.35), ch = Math.max(d, lineH + Math.round(amtSize * 1.25)) + pct(3);
+      const group = box(new THREE.Group(), w, ch * rowsN);
+      group.name = "balances";
+      const at = (m: THREE.Object3D, x: number, y: number, pw: number, ph: number) => (m.position.set((x + pw / 2 - w / 2) * PX, (ch * rowsN / 2 - y - ph / 2) * PX, 0.002), group.add(m), m);
+      const cells = people.map((p, i) => {
+        const x = (i % cols) * cw, y = Math.floor(i / cols) * ch;
+        const av = plane(d, d, (g) => {
+          g.fillStyle = p.color;
+          g.beginPath();
+          g.arc(d / 2, d / 2, d / 2, 0, TAU);
+          g.fill();
+          text(g, (p.initial ?? p.name.split(" ").pop() ?? p.name).slice(0, 1).toUpperCase(), d / 2, d / 2, d * 0.46, 600, "#ffffff", "center");
+        }, `balance-avatar-${i + 1}`);
+        const tw = cw - d - inner - gap / 2;
+        const nm = plane(tw, lineH, (g) => text(g, fit(g, p.name, tw, type.caption, 500), 0, lineH / 2, type.caption, 500, T.muted), `balance-name-${i + 1}`);
+        const top = y + (ch - pct(3) - (lineH + amtSize * 1.25)) / 2;
+        at(av, x, y + (ch - pct(3) - d) / 2, d, d);
+        at(nm, x + d + inner, top, tw, lineH);
+        const c = amounts[i]!;
+        at(c.group, x + d + inner, top + lineH, c.group.userData.wPx as number, c.group.userData.hPx as number);
+        return [av, nm, c.group]; // one cell's planes, to stagger or pop together
+      });
+      return { group, amounts, cells, cols, height: ch * rowsN };
+    },
+
+    /**
+     * A receipt line: the item left, its amount right, and the people it is split between as small
+     * avatar dots before the amount (one plane each, so they pop in one by one with popIn).
+     */
+    lineItem(w: number, item: string, amount: string, people: { initial: string; color: string }[]) {
+      const rh = Math.max(pct(15), Math.round(floor * 2) + pct(5));
+      const group = box(new THREE.Group(), w, rh);
+      group.name = "line-item";
+      const amtW = Math.ceil(measure(amount, { size: type.body, weight: 600, tracking: 0 })) + pct(4.2);
+      const who = k.dots(people);
+      const dotsW = who.group.userData.wPx as number;
+      group.add(card(w, rh, (g) => {
+        const r = roundPath(0, 0, w, rh, pct(4.2));
+        g.fillStyle = T.surface;
+        g.fill(r);
+        hairline(g, r);
+        text(g, fit(g, item, w - amtW - dotsW - pct(4.2) * 2 - pct(3), type.body, 500), pct(4.2), rh / 2, type.body, 500, T.text);
+        text(g, amount, w - pct(4.2), rh / 2, type.body, 600, T.text, "right");
+      }, `line-${item}`, 0.05));
+      who.group.position.set((w / 2 - amtW - pct(2.5) - dotsW / 2) * PX, 0, 0.003);
+      group.add(who.group);
+      return { group, dots: who.items, height: rh };
     },
   };
   return more;

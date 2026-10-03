@@ -2,7 +2,7 @@
 
 The mobile app rebuilt as canvas-drawn planes that live inside the phone's screen: a type scale in proportion to the screen, a legibility floor, a layout helper, and the components most app films need. It extends `three-assets`' drawn UI (`components/ui.ts`: `canvasPlane`, `UiTheme`, the 28 px rule) and the `three-type` kit (`label`, `measure`, `setLabel`, `counter`) rather than repeating them. The parts fewer films need (a chat turn, share-sheet rows, a library card, a detail hero, step lists, a camera scanner) are a second module, `components/appmore.ts`, in `references/ui-kit-more.md`.
 
-Tested by rendering: compiled with strict TypeScript against `three` r185 and captured at 1080 × 1920 inside `components/phone.ts`. `images/home.png` is §3's page, `images/settle.png` §4's state change, `images/kit.png` components on the stage (button states, chips, banner, pill toast, a typing field, a list with radios, a bubble, a follow-up, the eight stickers, an avatar row).
+Tested by rendering: compiled with strict TypeScript against `three` r185 and captured at 1080 × 1920 inside `components/phone.ts`. `images/home.png` is §3's page, `images/settle.png` §4's state change, `images/kit.png` components on the stage (the receipt, coin and key stickers beside two older ones, `balances` wrapping four people to 2 × 2, a `lineItem` with its assignees, and the button across frames 15–20 after its tap: frame 18 shows neither label).
 
 It needs `components/stage.ts`, `components/type.ts` and `components/ui.ts`. Build everything inside `withFonts` (and `withImages` for photos): canvases drawn before the font lands are drawn in a fallback face and never redrawn.
 
@@ -12,7 +12,7 @@ Contents: 1 Rules · 2 API · 3 A full home page · 4 Rows that change state, an
 
 ## 1. Rules
 
-- **Sizes are % of the screen width S**, clamped to `floor / shown` px (28 by default). Pass `shown` (the smallest scale the phone is read at) and the kit enlarges small roles instead of letting them fall under the floor; then lose rows, never shrink text.
+- **Sizes are % of the screen width S**, clamped to `floor / shown` px (28 by default); the roles that sit on the floor (secondary, caption, chip) are drawn 2 px over it (30 px), because a 28 px caption measured about 26 px on a judged export. Pass `shown` (the smallest scale the phone is read at) and the kit enlarges small roles instead of letting them fall under the floor; then lose rows, never shrink text.
 - **Containers vs components.** A `page()` (and a sheet's `panel`) has its origin at its **top-left**, y down in px. Every component has its origin at its **centre** and carries its size in `userData.wPx/hPx`, so `put(container, component, x, y)` places the component's top-left at (x, y), and `stack()` puts a column of them `gap` apart and returns the y under the last (where an inline button goes). `put` also stores `userData.rest`, the pose every flow in `flows.ts` animates from.
 - **Drawn once.** Every component draws its canvas in the builder at `res` (2.2 default; 2 × the deepest push). Per frame you only move, scale, tint and fade. A state change is planes crossfaded (radio on/off, a row's states, sheet titles) or one white plane re-tinted (the button), never a redraw.
 - **One element per plane when it moves on its own**: chips in a row, list controls, each avatar dot, each follow-up, each word of a streamed answer.
@@ -20,6 +20,7 @@ Contents: 1 Rules · 2 API · 3 A full home page · 4 Rows that change state, an
 - **Colours are `#rrggbb`** in the theme: the kit mixes them. One accent; `selected` (checks and radios that are on) is ink by default, never the brand accent, because a coral or red check reads as an error; `success` is for a completed step only. The button's idle → success ramp is mixed in OKLCH with a lighter middle (coral → orange → gold → green), because two opaque planes crossfaded in sRGB pass through brown when the hues are far apart.
 - **A page entering on a cut is ≥ 80% built on its first frame**: `pageIn(key, frame, cut)` from `flows.ts` staggers only the 2–4 blocks that matter; the rest is there. Staggering a 20-block page 2f apart left a judged film's cut frame blank.
 - **Placeholder art is deterministic**: `scenery`, `blobs`, `tile` and `paper` are fixed drawings (no randomness), so every render is identical.
+- **Every sample string is a placeholder.** The app name ("Appname"), people ("Person A", "Person B"), shops ("Shop name"), items ("Item one") and amounts in these scenes are stand-ins, deliberately generic: replace every one with the brief's own world (its product, its users' names, its items and currency) before the first capture. Films that kept the samples looked like each other.
 - **Illustrative UI is labelled.** Rebuilt chrome in the brand's colours goes in `VIDEO.md` under "I assumed": "illustrative UI, replace with real screens".
 
 ## 2. API
@@ -44,14 +45,14 @@ Contents: 1 Rules · 2 API · 3 A full home page · 4 Rows that change state, an
 | `k.stateButton(w, { idle, loading, done })` | `{ group, set({ press, loading, done, spin }), height }` | Rounded rectangle (radius 4.5% S), not a pill; one white plane tinted `mixOklch(primary, success, done)`; pose it with `buttonPose` |
 | `k.tapMark(d?)` | `{ group, dot, ring }` | A touch: put its box centred on the control, pose it with `tapPose` on the press frame |
 | `k.sheet(top, { bg, handle, title, sub, close, scrim })` | `{ group, panel, scrim, top, contentY }` | `panel` is a container; it reaches past the screen bottom so no gap shows mid-slide; the scrim is the theme's ink (pass a warm dark on a warm ground) and stays at 0 unless `sheetPose` is given `scrim` |
-| `k.toast(app, [line1, line2], tileArt, when?)` | plane | Frosted banner, inset 2.7% S, top at 15% S (safe in a feed) |
-| `k.pillToast(msg)` | plane | Dark pill with a green check. Put it under the status bar (y = 15% S) in a 9:16 feed cut, bottom centre (0.31 S above the screen bottom) only when the device is whole on screen |
+| `k.toast(app, [line1, line2], tileArt, when?)` | plane | Frosted banner, inset 2.7% S, top at 15% S (safe in a feed); like a real notification it covers the header while it shows |
+| `k.pillToast(msg)` | plane | Dark pill with a green check. **The pill and the header are designed together**: it takes the header's slot (`y = k.sp.header − h / 2`, centred on the header row) while the header fades out under it (`pillSwap` in `flows.ts`), or, when the header must stay, it sits under it at 27% S over content that can be covered for its hold. Never on top of a visible app name or header icon. Bottom centre (0.31 S above the screen bottom) only when the device is whole on screen and nothing covers it |
 | `k.scrollEdge()` | plane | The page colour fading out under the status bar; put it above content that scrolls |
 | `fade(obj, o)`, `mixOklch(a, b, t)`, `rgba(c, a)`, `box(o, w, h)` | — | Opacity for planes, counters and labels; a perceptual colour mix; a tinted fill; give your own group a size for `put()` |
 | `icon(g, kind, cx, cy, size, color)`, `text(g, s, x, y, size, weight, color, align?)`, `wrap(...)`, `fit(...)`, `shade(c, t)` | — | Drawing helpers for your own components |
 | `scenery`, `blobs`, `tile`, `photo` | `Art` | Placeholder landscape, colour fields, pastel tile with a sticker, a loaded image cover-fitted |
 | `withImages(ctx, urls, build)` | update | Load images through `ctx.manager`, then build |
-| `sticker(kind, size, hue)`, `drawSticker(g, …)` | plane | Glossy original stickers: bubble, heart, spark, bolt, leaf, pin, flag, ribbon |
+| `sticker(kind, size, hue)`, `drawSticker(g, …)` | plane | Glossy original stickers: bubble, heart, spark, bolt, leaf, pin, flag, ribbon, receipt, coin, key |
 | `moreKit(k)` (`components/appmore.ts`) | more parts | `avatarRow`, `actions`, `bubble`, `answer`, `resultRow`, `followUp`, `collection`, `hero`, `steps`, `scanner`, and `paper` art: `references/ui-kit-more.md` |
 
 ## 3. A full home page
@@ -82,7 +83,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const dusk = scenery(["#f3b48b", "#f7dcc0"], "#fff1c9", ["#a0664f", "#5b3a33"]);
     const home = k.page("home");
     k.put(home, k.navBar(null, "menu", "A"), 0, 0);
-    const greet = k.put(home, k.greeting(["Good morning, **Ana**.", "Where are we walking?"]), pad, k.pct(27));
+    const greet = k.put(home, k.greeting(["Good morning, **Name**.", "Where are we walking?"]), pad, k.pct(27));
     const chips = k.chipRow(home, [{ label: "Nearby", icon: "pin" }, { label: "Shaded", icon: "leaf" }, { label: "Easy", icon: "route" }], pad, k.pct(48));
     k.put(home, k.section("Saved trails", "See all"), pad, k.pct(61.5));
     const cw = Math.round(k.S * 0.47), ch = Math.round(k.S * 0.7); // tall cards: the column reaches the composer
@@ -92,7 +93,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const rw = Math.round(k.S * 0.8);
     k.put(home, k.rowCard(rw, tile(T.tiles[4]!, "leaf", "#3fa36b"), "Shaded · 12 min away", "Fern Hollow", "2.1 km · easy"), pad, k.pct(153.5));
     k.put(home, k.rowCard(rw, tile(T.tiles[0]!, "pin", "#4f7be8"), "Lake · 20 min", "North Shore", "3.4 km"), pad + rw + k.pct(3.1), k.pct(153.5));
-    const ask = k.input(k.Sw - pad * 2, "Ask Fernway", "", { icon: "search" });
+    const ask = k.input(k.Sw - pad * 2, "Ask Appname", "", { icon: "search" });
     k.put(home, ask.group, pad, k.Sh - ask.height - k.pct(10));
     ph.ui.add(home);
     const key: THREE.Object3D[] = [greet, ...chips, card1]; // only these build; the rest is there on frame 0
@@ -130,18 +131,18 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const { pad } = k.sp;
     const face = (c: string, s: string): Art => (g, w, h) => ((g.fillStyle = c), g.fillRect(0, 0, w, h), text(g, s, w / 2, h / 2, h * 0.44, 600, "#ffffff", "center"));
     const page = k.page("settle");
-    k.put(page, k.navBar("Friday lunch", "back"), 0, 0);
+    k.put(page, k.navBar("Group name", "back"), 0, 0);
     k.put(page, k.textBlock("Still owed to you", k.type.sub, 400, k.T.muted, k.Sw - pad * 2, "center"), pad, k.pct(41));
     const owed = k.counter("£##.##", 104, { font: '"Inter Tnum"' }); // centred on the digits it shows
     k.put(page, owed.group, (k.Sw - owed.group.userData.wPx) / 2, k.pct(48));
     k.put(page, k.section("Split four ways"), pad, k.pct(70));
-    const who = k.dots([{ initial: "Y", color: "#4f7be8" }, { initial: "M", color: "#9b5de5" }, { initial: "K", color: "#2a9d6f" }, { initial: "L", color: "#d98a2b" }]);
+    const who = k.dots([{ initial: "Y", color: "#4f7be8" }, { initial: "A", color: "#9b5de5" }, { initial: "B", color: "#2a9d6f" }, { initial: "C", color: "#d98a2b" }]);
     k.put(page, who.group, k.Sw - pad - who.group.userData.wPx, k.pct(70));
     const amounts = [28.01, 18.61, 17.36];
     const list = k.stateList(k.Sw - pad * 2, [
-      { title: "Maya", lead: face("#9b5de5", "M"), states: [{ sub: "owes you", right: "£28.01" }, { sub: "paid just now", pill: "Paid" }] },
-      { title: "Kofi", lead: face("#2a9d6f", "K"), states: [{ sub: "owes you", right: "£18.61" }, { sub: "paid just now", pill: "Paid" }] },
-      { title: "Lena", lead: face("#d98a2b", "L"), states: [{ sub: "request seen", pill: "Pending", tone: "pending" }, { sub: "paid just now", pill: "Paid" }] },
+      { title: "Person A", lead: face("#9b5de5", "A"), states: [{ sub: "owes you", right: "£28.01" }, { sub: "paid just now", pill: "Paid" }] },
+      { title: "Person B", lead: face("#2a9d6f", "B"), states: [{ sub: "owes you", right: "£18.61" }, { sub: "paid just now", pill: "Paid" }] },
+      { title: "Person C", lead: face("#d98a2b", "C"), states: [{ sub: "request seen", pill: "Pending", tone: "pending" }, { sub: "paid just now", pill: "Paid" }] },
     ]);
     const btn = k.stateButton(k.Sw - pad * 2, { idle: "Request £63.98", loading: "Sending…", done: "All settled" });
     const below = k.stack(page, [list.group, btn.group], pad, k.pct(81));
@@ -150,11 +151,11 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const note = k.textBlock("Everyone pays you back in one tap.", k.type.caption, 400, k.T.muted, k.Sw - pad * 2, "center");
     k.put(page, note, pad, below + k.pct(4));
     // the lower rows: the receipt it came from, so the screen is filled to the home indicator
-    k.stack(page, [k.section("From"), k.rowCard(k.Sw - pad * 2, tile(k.T.tiles[1]!, "pin", "#e8573f"), "Receipt · 12 Mar", "Corner Grocer", "6 items · £86.40")], pad, below + k.pct(13));
+    k.stack(page, [k.section("From"), k.rowCard(k.Sw - pad * 2, tile(k.T.tiles[1]!, "pin", "#e8573f"), "Receipt · date", "Shop name", "6 items · £86.40")], pad, below + k.pct(13));
     ph.ui.add(page);
 
     const grid = beatGrid(120, ctx.fps, 0);
-    const TAP = grid.bar(1) - 3 - 14 - 4; // success on the bar
+    const TAP = grid.bar(1) - 20; // buttonPose: success lands 20f after the tap, on the bar
     const flips = [grid.beat(4) + 8, grid.beat(5), grid.beat(5) + 8]; // half a beat apart, after the request lands
     return ({ frame }) => {
       ph.group.scale.setScalar(1 + punch(frame, [grid.bar(1)]));
@@ -197,7 +198,7 @@ return withFonts(ctx, fonts, () => withImages(ctx, [shotUrl, photoUrl], ([shot, 
 
 ## 6. Stickers
 
-Original, procedural, glossy: each is a simple path (a speech bubble, a heart, a four-point spark, a bolt, a leaf, a map pin, a flag, a ribbon) filled with a top-light gradient, a darker inner rim, a soft bounce light at the bottom right, a specular highlight at the top left and a soft drop shadow. They are not copies of any emoji set: never trace or import one. Choose the sticker that matches the shot (a ribbon on save, a bubble on a message, a spark on an AI answer) and its hue from the film's palette. Motion: `stickerPose` in `flows.ts`.
+Original, procedural, glossy: each is a simple path (a speech bubble, a heart, a four-point spark, a bolt, a leaf, a map pin, a flag, a ribbon, a receipt with a torn edge, a coin, a key) filled with a top-light gradient, a darker inner rim, a soft bounce light at the bottom right, a specular highlight at the top left and a soft drop shadow; the receipt, the coin and the key carry an engraved detail (printed lines, an inner rim, a bow hole) in a darker shade of their hue. They are not copies of any emoji set: never trace or import one. Choose the sticker that matches the shot (a ribbon on save, a bubble on a message, a spark on an AI answer, a receipt on a scan, a coin on a payment, a key on a sign-in or an unlock) and its hue from the film's palette. Motion: `stickerPose` in `flows.ts`.
 
 ## 7. The module
 
@@ -440,7 +441,7 @@ export function withImages(ctx: ThreeSceneContext, urls: string[], build: (imgs:
 
 /* ------------------------------------------------------------ stickers */
 
-export type StickerKind = "bubble" | "heart" | "spark" | "bolt" | "leaf" | "pin" | "flag" | "ribbon";
+export type StickerKind = "bubble" | "heart" | "spark" | "bolt" | "leaf" | "pin" | "flag" | "ribbon" | "receipt" | "coin" | "key";
 const STICKERS: Record<StickerKind, string> = {
   bubble: "M20 22H80A12 12 0 0 1 92 34V62A12 12 0 0 1 80 74H44L26 88L29 74H20A12 12 0 0 1 8 62V34A12 12 0 0 1 20 22Z",
   heart: "M50 88C20 68 8 52 8 36A21 21 0 0 1 50 26A21 21 0 0 1 92 36C92 52 80 68 50 88Z",
@@ -450,6 +451,15 @@ const STICKERS: Record<StickerKind, string> = {
   pin: "M50 94C30 70 16 54 16 38A34 34 0 0 1 84 38C84 54 70 70 50 94Z",
   flag: "M20 8H28V94H20ZM28 12C46 4 62 22 84 14V54C62 62 46 44 28 52Z",
   ribbon: "M26 6H74A10 10 0 0 1 84 16V94L50 72L16 94V16A10 10 0 0 1 26 6Z",
+  receipt: "M24 6H76V90L69.5 84L63 90L56.5 84L50 90L43.5 84L37 90L30.5 84L24 90Z",
+  coin: "M50 8A42 42 0 1 1 50 92A42 42 0 1 1 50 8Z",
+  key: "M28 30A20 20 0 1 1 28 70A20 20 0 1 1 28 30ZM44 44H92V60H86V72H78V60H72V68H64V60H44Z",
+};
+/** Engraved detail drawn on the body (strokes in a darker shade of the hue), so a receipt, a coin and a key read as things. */
+const DETAIL: Partial<Record<StickerKind, { d: string; fill?: boolean }>> = {
+  receipt: { d: "M34 24H66M34 37H66M34 50H58M34 68H66" },
+  coin: { d: "M50 20A30 30 0 1 1 50 80A30 30 0 1 1 50 20ZM50 36L60 50L50 64L40 50Z" },
+  key: { d: "M22 44A6 6 0 1 1 22 56A6 6 0 1 1 22 44Z", fill: true },
 };
 
 /** A glossy, clay-like sticker drawn from simple geometry: body gradient, inner rim, specular, shadow. */
@@ -476,6 +486,17 @@ export function drawSticker(g: G, kind: StickerKind, cx: number, cy: number, siz
   g.globalAlpha = 0.35;
   g.stroke(p); // inner rim: half the stroke falls inside the clip
   g.globalAlpha = 1;
+  const det = DETAIL[kind];
+  if (det) {
+    const dp = new Path2D(det.d);
+    g.strokeStyle = g.fillStyle = shade(hue, -0.42);
+    g.globalAlpha = 0.6;
+    g.lineWidth = 5;
+    g.lineCap = "round";
+    if (det.fill) g.fill(dp);
+    else g.stroke(dp);
+    g.globalAlpha = 1;
+  }
   const bounce = g.createRadialGradient(72, 86, 0, 72, 86, 40);
   bounce.addColorStop(0, "rgba(255,255,255,0.28)");
   bounce.addColorStop(1, "rgba(255,255,255,0)");
@@ -529,13 +550,15 @@ export function appKit(screen: { Sw: number; Sh: number }, theme: AppTheme = APP
   const T = theme;
   const res = o.res ?? 2.2;
   const floor = (o.floor ?? 28) / (o.shown ?? 1);
+  // the roles that sit on the floor are drawn 2 px over it: a 28 px caption measured about 26 px on an export
+  const small = Math.ceil(floor + 2);
   const pct = (p: number) => Math.round((p * S) / 100);
   /** Type sizes in px: % of the screen width, never under the floor. */
   const type = {
     large: Math.max(floor, pct(8.8)), sheet: Math.max(floor, pct(6.6)), greet: Math.max(floor, pct(7.0)),
     detail: Math.max(floor, pct(6.1)), section: Math.max(floor, pct(4.6)), body: Math.max(floor, pct(4.8)),
-    card: Math.max(floor, pct(4.6)), sub: Math.max(floor, pct(4.2)), caption: Math.max(floor, pct(3.9)),
-    chip: Math.max(floor, pct(4.0)),
+    card: Math.max(floor, pct(4.6)), sub: Math.max(small, pct(4.2)), caption: Math.max(small, pct(3.9)),
+    chip: Math.max(small, pct(4.0)),
   };
   const sp = { pad: pct(5.4), gap: pct(2.5), cardGap: pct(3.1), section: pct(8.4), header: pct(19), content: pct(30) };
   const rad = { card: pct(4.7), list: pct(6), sheet: pct(7), toast: pct(6.7), button: pct(4.5), thumb: pct(3.4) };
@@ -893,11 +916,13 @@ export function appKit(screen: { Sw: number; Sh: number }, theme: AppTheme = APP
         const p = s.press ?? 0, l = s.loading ?? 0, d = s.done ?? 0;
         group.scale.set(1 - 0.04 * p, 1 - 0.03 * p, 1);
         bg.material.color.set(mixOklch(T.primary, T.success, d));
+        // the two labels never share a frame: loading is gone by the ramp's midpoint, done starts after it
+        const out = Math.min(1, Math.max(0, 1 - d / 0.5)), inn = Math.min(1, Math.max(0, (d - 0.5) / 0.5));
         fade(idle, 1 - l);
-        fade(loading, l * (1 - d));
-        fade(spinner, l * (1 - d));
+        fade(loading, l * out);
+        fade(spinner, l * out);
         spinner.rotation.z = -(s.spin ?? 0);
-        fade(done, d);
+        fade(done, inn);
       };
       set({});
       return { group, set, height: h };
@@ -968,7 +993,11 @@ export function appKit(screen: { Sw: number; Sh: number }, theme: AppTheme = APP
       }, "toast", 0.14, pct(3.5));
     },
 
-    /** Dark confirmation pill with a green check, bottom centre. */
+    /**
+     * Dark confirmation pill with a green check. It takes the header's slot (put it centred on the header
+     * row, y = sp.header - h / 2, and fade the header out under it: pillSwap in flows.ts), or sits under the
+     * header at 27% S; bottom centre only when the whole device is on screen.
+     */
     pillToast(msg: string) {
       const p = new OffscreenCanvas(4, 4).getContext("2d")!;
       font(p, type.sub, 600);

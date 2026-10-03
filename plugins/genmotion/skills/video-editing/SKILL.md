@@ -7,7 +7,7 @@ description: "Editing footage the user supplies into a finished video: a podcast
 
 The user brings footage; you bring the editor's judgement. The work splits in two on purpose: **ffmpeg does the editorial** (what is kept, in what order, at what size, sounding how) and produces one conformed picture file plus one clean dialogue file; **the project does the motion layer** (captions, titles, lower thirds, b-roll, punch-ins, transitions, end card) on top of it. Then you render and measure. Every frame count below is at 30 fps unless it says otherwise; a 24 fps project (most film and cinema-style footage) multiplies frame counts by 0.8 and keeps every time in seconds as it is. Edited footage has no style family (`direction`): the footage is the look, and the format's reference file sets the graphics.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -79,7 +79,7 @@ Pick one row, then read its reference file. Numbers are defaults; the reference 
 | Shorts / Reels / TikTok | `references/talking-head.md` | 20–45 s (≤60) | 1–3 s, varied | join ≈0.08 s | burned, 1–3 words | −14 LUFS |
 | LinkedIn | `references/talking-head.md` | 30–90 s | 4–8 s | join ≈0.2 s | burned sentence case + SRT | −14 LUFS |
 | Course / tutorial | `references/talking-head.md` | 3–10 min per lesson | follow the action, 5–20 s | never cut a step | SRT | −16 to −14 LUFS |
-| Trailer / teaser | `references/trailer.md` | teaser 30–90 s, trailer 1:30–2:30 | ASL 2–5 s → 8–14 f (24 fps) in the climax | designed silence (room tone) | title cards; film subtitles if dialogue is subtitled | −14 LUFS |
+| Trailer / teaser | `references/trailer.md` | teaser 30–90 s, trailer 1:30–2:30 | ASL 2–5 s → 8–14 f (24 fps) in the climax | designed silence (the footage's own recorded room tone) | title cards; film subtitles if dialogue is subtitled | −14 LUFS |
 | Launch cut | `references/launch-cut.md` | 60–120 s (crowdfunding 1:30–3:00) | 1–3 s on music, hero 3–6 s | join ≈0.13 s | burned on social cutdowns | −14 LUFS |
 | Gen Z / TikTok-native | `references/genz.md` | 15–45 s | 0.7–2 s, varied; interrupt every 2–4 s | join ≈0.08 s | burned, caps, 1–3 words | −14 LUFS |
 
@@ -142,7 +142,7 @@ Turn the paper edit into a cut list in **seconds**, snapped:
 
 Why ≥0.25 s inside a monologue: a tight speaker's shorter pauses buy 0.1–0.2 s each and cost a jump cut each, which turns the edit into a stutter; cut fewer, and get the density from picture steps (Step 6). The pads assume word times checked against the waveform: Whisper's can be 100–300 ms off, so snap each boundary to the nearest low-energy point first; on a silence map, pad from the silence edges.
 - Round every boundary to the **project** frame: `round(t × fps) / fps`, and give each segment its exact frame count `N = round((out − in) × fps)`.
-- 10 ms audio fades at every boundary (no clicks); room tone under gaps, never digital silence.
+- 10 ms audio fades at every boundary (no clicks); under dialogue gaps, the footage's own recorded room tone (harvested from its quietest stretch), never digital silence and never a synthesised noise.
 
 Then conform in **one** ffmpeg pass (recipes §5): per segment `trim` → `fps` → exact `N` frames (and `atrim` to `N / fps`), then `concat`, scale, a 0.5 s tail handle, VP9 with `-g 15` to `assets/edit.webm`, and the dialogue to `assets/edit-audio.wav` (48 kHz). Keep the cut list in `edit/cutlist.json` with each segment's source in/out and its new start, so captions and b-roll can be re-timed: `new_t = segment_start + (src_t − in)`.
 
@@ -278,7 +278,7 @@ All with `ffmpeg`/`ffprobe` (recipes §11):
 - [ ] Feed formats: with the calibrated threshold the density check prints no gap over 2.5 s, the rhythm varies (spread ≥2×, sd/mean ≥0.35), and the first visual event is by 1.0 s.
 - [ ] Captions: at three sampled words the highlighted word matches the audio frame; lines fit the safe zone for the platform; reading rate within `references/captions.md`.
 - [ ] No graphic covers a face; lower thirds only on first appearance, and none in 9:16 Gen Z / Shorts edits.
-- [ ] `silencedetect` finds no unintended gap over 1 s; there are no clicks at cuts (10 ms fades); joins follow the Step 5 pause table for the format; any designed silence is room tone (−45 to −60 dBFS RMS), never digital zero.
+- [ ] `silencedetect` finds no unintended gap over 1 s; there are no clicks at cuts (10 ms fades); joins follow the Step 5 pause table for the format; any designed silence is the footage's own recorded room tone (−45 to −60 dBFS RMS) or a decayed tail, never a synthesised noise.
 - [ ] Finished-mix sources: no denoise chain on them; every lifted line's speech band beats its low band.
 - [ ] Any bed sits on `sound-design`'s bed row (14–20 LU under the voice); placeholder SFX are labelled.
 - [ ] Integrated loudness within 1 LU of the format's target, true peak ≤ −1 dBTP.

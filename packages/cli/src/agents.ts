@@ -74,7 +74,7 @@ ${findProject}## 1. Pick the skill that owns this video
 GenMotion ships a skill pack: one skill per kind of video, plus craft skills (camera, type, transitions, look) for the engine.
 
 1. If \`VIDEO.md\` exists, it already names the skill. Load that one and carry on.
-2. Otherwise read the router, \`${ROUTER_SKILL}\`${options.standalone ? "" : " (installed beside this skill)"}, for the rules, then search: ${say("`search_skills` with the user's own words", 'npx @genmotion/cli skills search "<request>" --json')}.
+2. Otherwise read the router, \`${ROUTER_SKILL}\`${options.standalone ? "" : " (installed beside this skill)"}, for the rules, then search with a short phrase for the deliverable, not the whole brief (\`"launch video"\`, \`"animated logo for a coffee roastery"\`: brand names, colours and platform details drown the words that pick the format): ${say("`search_skills` with that phrase", 'npx @genmotion/cli skills search "<short phrase>" --json')}.
 3. Pick **one** owner (a \`workflow\` or \`style\` result), ask only its missing \`askFirst\` questions, and write \`VIDEO.md\` as the router describes.
 4. Read the owner and the requirements search lists for this engine: ${say("`get_skill`", "npx @genmotion/cli skills show <id>")}.${shell ? " `npx @genmotion/cli skills add <id>` also copies a skill and its requirements into this folder so later sessions have it." : ""}
 

@@ -67,7 +67,7 @@ Every synthetic take is **≤4 s (120f)**, then a cut: to a reframe, the product
 | The body still while the mouth moves | Cut on any gesture the model produces; add the `ugc-craft` creep (+3%) so the frame lives |
 | Eyes that never blink, or blink on a metronome | Cut before 120f |
 | Perfect, centred, still framing | The 40% offset, the creep, a reframe on the next take |
-| Audio cleaner than the room | Do not degrade the voice; cut shorter and add room tone at 0.03–0.05 |
+| Audio cleaner than the room | Do not degrade the voice; cut shorter and let the bed carry the gaps (never a synthesised room tone or noise) |
 | No hands ever | Cut to a hands-only product shot; nobody checks whether they are the same hands |
 | Teeth or tongue smearing | Regenerate from a closed-mouth portrait; shorter lines |
 

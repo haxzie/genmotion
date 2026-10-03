@@ -499,7 +499,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "generate_sfx",
     description:
-      "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For a click on a button, a soft land as a panel settles, a chime on a success, rain behind a scene. Never a whoosh, swoosh or swish: a transition gets the picture's own sound, or none. Describe the sound itself, not the picture — 'a soft padded thud, a card set down on felt, 0.5 seconds', 'rain on a window, steady, no thunder'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",
+      "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For a click on a button, a soft land as a panel settles, a chime on a success. Never a whoosh, swoosh or swish: a transition gets the picture's own sound, or none. Never a noise bed, room tone, ambience or 'air' under a scene: on phones it reads as wind or hiss. Describe the sound itself, not the picture — 'a soft padded thud, a card set down on felt, 0.5 seconds', 'a short glass tink, bright, dry'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",
     shape: {
       text: z
         .string()
@@ -515,7 +515,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       loop: z
         .boolean()
         .optional()
-        .describe("Ask for a seamless loop — ambience or a drone that runs under a whole scene."),
+        .describe("Ask for a seamless loop — a typing run or a tonal drone that runs under a scene. Never a noise bed or room tone."),
       filename: z.string().optional().describe('Preferred filename, e.g. "click-1.mp3"'),
     },
     async run(session, args) {
@@ -565,13 +565,13 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "search_skills",
     description:
-      "Find the GenMotion skill that owns this request. A skill is a recipe for a kind of video — a viral UGC ad format, a product launch, a feature announcement, a milestone — written by GenMotion's motion designers, with the shot list, the beat sheet and the failure modes already worked out. Call this FIRST on any new video request, before you plan or write anything, with what the user said in their own words rather than a keyword. It returns the best matches with the handle to read each one, and says which of their required integrations this machine actually has connected.",
+      "Find the GenMotion skill that owns this request. A skill is a recipe for a kind of video — a viral UGC ad format, a product launch, a feature announcement, a milestone — written by GenMotion's motion designers, with the shot list, the beat sheet and the failure modes already worked out. Call this FIRST on any new video request, before you plan or write anything, with a short phrase for the deliverable, in the user's words ('launch video for my new app', 'animated logo for a coffee roastery'), not the whole brief pasted in: brand names, colours and platform details drown the words that pick the format. It returns the best matches with the handle to read each one, and says which of their required integrations this machine actually has connected.",
     shape: {
       query: z
         .string()
         .min(2)
         .max(400)
-        .describe("The user's request, in their own words. Not a keyword."),
+        .describe("What the user wants made, as a short phrase in their words ('launch video for my new app'), not the whole brief."),
       kind: z
         .enum(["style", "workflow", "technique", "reference"])
         .optional()

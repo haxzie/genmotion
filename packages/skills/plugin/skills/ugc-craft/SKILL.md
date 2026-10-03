@@ -88,9 +88,9 @@ Platform skins (same geometry, different style):
 | UI tap or click | On the press frame, up to 1f early | 0.9 (−0.9) |
 | Caption pop (Bold caption only) | A soft tick on keyword groups, not every group | 0.45 (−7) |
 | Mark landing, product set-down | Pop or soft impact on the contact frame ±2f | 0.5–0.7 (−6 to −3) |
-| The turn | 10f of near-silence (bed and room tone cut), then everything returns on the cut | — |
+| The turn | 10f of near-silence (bed cut, the last tail decaying), then everything returns on the cut | — |
 | Result or success | One confirmation tone on the success frame | 0.6 (−4.4) |
-| Room tone under VO-only stretches | Continuous, never digital zero | 0.03–0.05 (−30 to −26) |
+| VO-only stretches | Each line ends on its own decay; never a synthesised noise bed or room tone under them | — |
 
 At most 2 SFX at once and none over a word that carries the claim; 3–8 cues per 30 s is the working range for a talking-style ad, about one per interaction for a screen demo.
 

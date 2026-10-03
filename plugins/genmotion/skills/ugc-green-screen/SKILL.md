@@ -9,7 +9,7 @@ A presenter stands in front of something the viewer can read and argues with it.
 
 Read `direction` first, then this, with `ugc-ad-foundations` (shared numbers, claims), `ugc-craft` (moves, captions) and `ai-presenter` when a face is generated. Frames at 30 fps; positions on 1080×1920.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -114,7 +114,7 @@ There is no background-removal capability: a cutout comes from a key colour, the
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 is the first word of the read; bed 0.12, instrumental, low energy (90–110 BPM) so the voice owns it; a soft pop 0.45 on each mark's completion frame (a marker squeak at 0.3 under the draw is optional); a tonal note 0.5 on the turn (or the bed's next section starting on that frame), every other cut silent, never a whoosh; room tone 0.03 under a still presenter. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 is the first word of the read; bed 0.12, instrumental, low energy (90–110 BPM) so the voice owns it; a soft pop 0.45 on each mark's completion frame (a marker squeak at 0.3 under the draw is optional); a tonal note 0.5 on the turn (or the bed's next section starting on that frame), every other cut silent, never a whoosh; under a still presenter the bed carries it (never a synthesised room tone or noise). Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 

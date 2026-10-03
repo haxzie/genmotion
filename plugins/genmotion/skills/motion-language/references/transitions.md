@@ -134,8 +134,8 @@ The single most used motivated handoff in the catalog (about 25 of them).
 
 ## 14. Elements exit, then cut (the workhorse)
 
-- **Duration**: each element leaves over 6–9f (inCubic), staggered 2–3f, finishing 4–8f before the cut.
-- **Build**: drift up 26 px + blur 10 + fade; or drop; or slide out along the axis it arrived on. The cut lands on an empty or near-empty frame (background only), and the next scene's first element arrives within 3–6f.
+- **Duration**: each element leaves over 6–9f (inCubic), staggered 2–3f, finishing 2–3f before the cut.
+- **Build**: drift up 26 px + blur 10 + fade; or drop; or slide out along the axis it arrived on. The cut lands on an empty or near-empty frame (background only), and the next scene's first element arrives within 1–2f: **at most 4 background-only frames per turn**. The house measured 4–8f clear plus a 3–6f entrance, 7–14 empty frames, which in a feed read as dropped frames (judged: 6–8 black frames at each of five turns).
 - **Three.js**: per-mesh opacity and position from the frame; nothing special.
 - **Use**: the default between VO beats; any cut without a natural carrier. 31% of all house cuts.
 - **Sound**: none; VO starts 3–8f after the cut.

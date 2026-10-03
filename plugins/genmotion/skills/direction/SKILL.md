@@ -9,7 +9,7 @@ An agent that goes straight from request to scenes makes the median video: every
 
 All frame numbers are at 30 fps. At 60 fps double them; at 24 fps multiply by 0.8 and round (`references/pacing.md` has the hold table at 24, 30 and 60 fps).
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -263,4 +263,4 @@ Run this on captured frames, not on the code; code that looks right often render
 9. The self-critique passed: no anti-slop item true, the swap test fails for a competitor, rubric average ≥4 with no axis below 3, and no Blocker open ("left as deliberate" never clears a Blocker). Every `freezedetect` flag has a saved 4 fps strip that you looked at before it was counted or dismissed (`references/critique.md` §1), and no confirmed dead hold is listed under "Left as deliberate".
 10. The export fits its destination (critique's Delivery blocker: a landing-page hero is ≤ 5 Mb/s at 1080p with faststart, and a loop's last frame and frame 0 measure PSNR ≥ 30 dB at 320 px).
 11. `validate` passes.
-12. No whoosh, swoosh, swish or air-sweep anywhere in the sound (`sound-design`'s ban): transitions carry the picture's own sound or none.
+12. No synthesised noise bed, room tone, ambience or air layer anywhere in the sound (`sound-design`'s ban: it reads as wind or hiss on phones), and no whoosh, swoosh, swish or air-sweep anywhere in the sound (`sound-design`'s ban): transitions carry the picture's own sound or none.

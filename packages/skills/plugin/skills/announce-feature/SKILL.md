@@ -7,7 +7,7 @@ description: "The 15 to 45 second feature announcement or changelog video, in th
 
 A feature announcement is small on purpose. One thing changed: name it, say why it matters in one line, show it working in the real interface, and point at where to find it. The viewer already knows the product; they need to see the new thing, not the company. Frames at 30 fps. Read `direction` first; moves come from `motion-language`, levels from `sound-design`.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the sound bans in `sound-design` (no whoosh; never a synthesised noise bed, room tone or "air", which reads as wind or hiss on phones). The checks at the end are a quality bar to clear, not a template to reproduce.
 
 ## When to use
 
@@ -130,7 +130,7 @@ Memorable moment: 180–240 — the poll grows into the thread and five votes ti
 | Real feature footage or screens | `save-asset`; `screen-capture` for cropping, scaling and cursor recipes | Rebuild the UI from the user's screenshots; never from a description alone |
 | Narration | `pick-voice`, then `voiceover` | On-screen lines carry it; this format survives mute |
 | Click and UI sounds | `sfx` | Credited CC0 UI sounds, or a music-only cut |
-| Music | `music` | No bed; clicks and room tone |
+| Music | `music` | No bed; clicks and their tails |
 | Seeing it | `capture-frames` | None |
 | Loudness, loop check | `ffmpeg` | None |
 | Direction, moves, mix | `direction`, `motion-language`, `sound-design` | — |

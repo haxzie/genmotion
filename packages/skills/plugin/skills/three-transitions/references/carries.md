@@ -161,7 +161,7 @@ The type kit's blur is isotropic; for a pure horizontal streak, give the shader 
 
 ## 7. Exit-then-cut (the workhorse)
 
-Per-mesh opacity and position from the frame; every element leaves 6–9f inCubic, staggered 2–3f, clear 4–8f before the cut; the next scene's first element arrives 3–6f after it. Nothing to build: the discipline is the transition. `capture-frames` 3f before the cut must show background only.
+Per-mesh opacity and position from the frame; every element leaves 6–9f inCubic, staggered 2–3f, clear 2–3f before the cut; the next scene's first element arrives 1–2f after it, so the turn shows **at most 4 background-only frames**. Nothing to build: the discipline is the transition. `capture-frames` 2f before the cut must show background only, and the frames from there to the first entrance number ≤ 4. Never put an exit-then-cut gap on a turn that also has a full cover: the empties add up.
 
 ## 8. Board erase
 
