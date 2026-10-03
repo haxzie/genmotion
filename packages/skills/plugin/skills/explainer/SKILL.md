@@ -143,7 +143,7 @@ Listicle: every item gets the same template and the same frame budget (±10%), n
 | Facts | `web-research` | Use only what the user gave you, and say so |
 | Narration | `pick-voice`, then `voiceover` | Text-led: on-screen lines carry the argument |
 | Word timings for reveals | `transcribe` | Estimate 13 frames per word from the line's start |
-| Bed and button | `music` | VO alone, every line ending on its own decay; text-led with no music: sparse synthesised cues (`sound-design`) and say so |
+| Bed and button | `music` | No track supplied → source one per `sound-design` Music and fit the beat table to its grid with `sound-design`'s `references/beat-sync.md`; VO alone, every line ending on its own decay; text-led with nothing sourceable: sparse synthesised cues (`sound-design`) and say so |
 | Pen, click sounds | `sfx` | None; VO carries it |
 | Seeing it | `capture-frames` | None |
 | Loudness | `ffmpeg` | None |

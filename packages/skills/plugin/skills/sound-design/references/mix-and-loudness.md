@@ -135,13 +135,13 @@ Tween the `<audio>` element's volume on the timeline: down over ~0.2 s before a 
 
 ## Music edits
 
-Join downbeat to downbeat at phrase boundaries with a 30 ms crossfade:
+Join downbeat to downbeat at phrase boundaries with a 30 ms crossfade **centred on both downbeats**. `acrossfade` overlaps the last `d` of A with the first `d` of B, so a plain cut at both downbeats moves B's downbeat `d` early (a frame at 30 ms): end A `d/2` past its downbeat and start B `d/2` before its own. Here A's out-downbeat is 8.000 s and B's in-downbeat 24.000 s:
 
 ```
-ffmpeg -i assets/track.wav -filter_complex "[0:a]atrim=0:8,asetpts=PTS-STARTPTS[a];[0:a]atrim=start=24,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.03:c1=tri:c2=tri[out]" -map "[out]" assets/track-edit.wav
+ffmpeg -i assets/track.wav -filter_complex "[0:a]asplit[x][y];[x]atrim=0:8.015,asetpts=PTS-STARTPTS[a];[y]atrim=start=23.985,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.03:c1=tri:c2=tri[out]" -map "[out]" assets/track-edit.wav
 ```
 
-The output is 8 + (end − 24) − 0.03 s long. Use ½–2 beats of crossfade only when the joined material is pads or reverb tails, placed before the downbeat so the new transient stays intact. On the timeline the same edit is two clips of the file on tracks 1 and 3, overlapping 1 f with 1-frame fades; the pre-rendered file is more precise because a frame is 33 ms.
+B's downbeat lands at 8.000 s of the output, exactly where A's would have been. Find the downbeats with `beat-sync.md`. Use ½–2 beats of crossfade only when the joined material is pads or reverb tails, placed before the downbeat so the new transient stays intact. On the timeline the same edit is two clips of the file on tracks 1 and 3, overlapping 1 f with 1-frame fades; the pre-rendered file is more precise because a frame is 33 ms.
 
 ### Beatless music (orchestral, ambient, drones): join by level and texture
 

@@ -1,50 +1,77 @@
 # Music sources: where a legal track comes from
 
-Read this when the `music` decision ladder in SKILL.md gets past "the user's own file": to pick a generator, recommend a connector, or search a free library. Researched 2026-10. **Prices and limits change often; verify on the vendor's page before quoting any of them to a user.**
+Read this when the `music` decision ladder in SKILL.md gets past "the user's own file": to search the free libraries (the default when nothing is connected), verify a licence, write the credit, pick a generator or recommend a connector. Sources and API shapes verified 2026-10-03; **licences, prices and limits change, so verify on the source's own page before relying on any of them.**
 
 ## The ladder, restated
 
 1. The user's file or licence (a subscription library, a composer, a stock purchase).
-2. A connected generator (ElevenLabs Music; Stable Audio, MusicGen or Lyria through fal or Replicate). Offer one with `recommend-integration` when none is connected.
-3. A CC0 / CC BY track from a library, found with `web-research`, downloaded with `save-asset`, credited in `VIDEO.md`.
-4. No music: `sfx` with natural tails, designed silence (never a synthesised noise bed).
+2. A generator that is **already connected** (ElevenLabs Music; Stable Audio, MusicGen or Lyria through fal or Replicate).
+3. **The default when nothing is connected: a CC0 / public-domain / CC BY track from the web**, searched with `web-research`, 2–3 candidates downloaded with `save-asset`, analysed with `ffmpeg` (`beat-sync.md`), the best fit credited in `VIDEO.md`. Do not stop to ask first: fetch, fit, and tell the user what you used and how to swap it.
+4. The web is unreachable or nothing fits: say which sources failed, ask the user for a track, and offer a generator with `recommend-integration` (ElevenLabs first).
+5. Last resort, said to the user as a fallback: an SFX-led film with natural tails and designed silence. Never a synthesised noise bed, and never a synthesised sine "beat" passed off as music (if you build a placeholder pulse to time the cut, label it a placeholder and replace it).
 
-## Free and royalty-free libraries
+## Write the brief first (1–2 lines in `VIDEO.md`)
 
-| Source | Licence | Programmatic access | Verdict |
+From the Direction: tempo range, energy and instrumentation, whether it needs a drop (and where the peak is in seconds), how it ends (a button, not a fade), the length needed (the film plus 2–3 s), instrumental if any voice. Example: *"110–125 BPM electronic, kick-driven, a clear drop for the reveal at ~8 s, a hard ending; 20 s; instrumental."* The search terms come from it (genre + mood + instrument + "instrumental").
+
+## Where to search, best first
+
+| # | Source | Licences to accept | How to query (with `web-research`) | What comes back | Notes |
+|---|---|---|---|---|---|
+| 1 | **Openverse** (indexes Jamendo, Freesound and Wikimedia Commons audio; not ccMixter) | `cc0`, `pdm`, `by` | `https://api.openverse.org/v1/audio/?q=<terms>&license=cc0,pdm,by&category=music&page_size=20&format=json` (keyless) | per result: `title`, `creator`, `license` + `license_version` + `license_url`, `foreign_landing_url` (the track's own page: verify there), `url` (a direct file: Jamendo MP3 or Freesound HQ preview), `duration` in **ms**, `genres`, `tags`, a ready-made `attribution` line, `waveform` | anonymous: 20 requests/min, 200/day, at most 240 results per query (response headers). Jamendo tags carry `instrumental` and `speed_low` … `speed_veryhigh`, a free tempo hint. The `length` filter is coarse (`medium` returned 4–8 min tracks): filter on `duration` yourself. For SFX drop `category=music` and add `source=freesound`. |
+| 2 | **Incompetech** (Kevin MacLeod) | CC BY 4.0 | the track page `https://incompetech.com/music/royalty-free/index.html?isrc=<ISRC>`; the whole catalogue as JSON at `https://incompetech.com/music/royalty-free/pieces.json` (large) | genre, length, feel, instruments, **tempo in BPM**, and the attribution code to paste verbatim; the MP3 carries a `TBP` BPM tag | well produced, clean buttons, very widely used: it can feel familiar |
+| 3 | **Free Music Archive** | only tracks marked CC BY, CC BY-SA (see below) or CC0 | search the site; open each track page | per-track licence badge | much of the catalogue is NC: check every track |
+| 4 | **ccMixter** "free for commercial use" (`dig.ccmixter.org`) | CC BY | web only | | was returning 502 on 2026-10-03; try it, move on if down |
+| 5 | **Mixkit** | Mixkit Stock Music Free License | web only, direct downloads | | commercial web, social and online ads, no attribution; not broadcast, games or physical media; the licence differs per item type, read the music one before use |
+| 6 | **Pixabay Music** | Pixabay Content License | web only (the API covers images and video) | | some tracks are registered with Content ID: **warn the user before a YouTube upload** |
+| 7 | Wikimedia Commons audio (through Openverse) | `pdm`, `cc0`, `by` | as row 1 without `category`, `source=wikimedia_audio` | | public-domain classical recordings: both the composition and the recording must be free |
+| SFX | **Freesound** | CC0, CC BY | through Openverse (row 1), keyless HQ previews; its own API needs a token | | previews are enough for SFX; reject CC BY-NC |
+| SFX | **Kenney** audio packs (Interface, UI, Impact, RPG …) | CC0 | kenney.nl (also mirrored on GitHub with the pack's `License.txt`) | | clean, consistent families of clicks, taps, impacts, glass |
+
+Reachability differs per machine. If a host is blocked, say so in one line and take the next row; a mirror of a known library (a GitHub repo that vendors Incompetech or Kenney files) is fine as a *download* source as long as the licence is verified on the original page.
+
+### Other sources (still valid, used less often)
+
+| Source | Licence | Access | Verdict |
 |---|---|---|---|
-| **Openverse** | aggregated CC and public domain (includes Jamendo, Freesound, ccMixter) | yes, keyless: `https://api.openverse.org/v1/audio/?q=<query>&license=cc0,pdm,by` (20 per page, 240 max anonymous); results carry creator and attribution text | the best first search for CC0 / CC BY music and SFX |
-| **Jamendo** | per-track CC (BY, BY-SA, BY-NC, ND); NC tracks need a paid Jamendo Licensing deal for commercial use | API v3 (`/tracks`, `client_id`, returns licence and download URL) | good if filtered to CC BY / CC BY-SA and credited |
-| **Free Music Archive** | per-track CC | old API is gone; web only | check each track's licence |
-| **ccMixter / dig.ccmixter** | "Free Music for Commercial Projects" is CC BY; much else is BY-NC | no documented API | good instrumental-for-video category, manual |
-| **Incompetech (Kevin MacLeod)** | CC BY 4.0 | direct MP3s, no API | usable with the verbatim credit below; widely recognised (overused) |
-| **Mixkit** | free licence: commercial web, social and online ads, no attribution; not broadcast, games or physical media | direct downloads | fine for web promos |
-| **Pixabay Music** | Pixabay Content License, commercial, no attribution | the official API covers images and video only | usable, but **some tracks are registered with Content ID** and draw YouTube claims; warn the user |
+| **Jamendo** directly | per-track CC (BY, BY-SA, BY-NC, ND); NC tracks need a paid Jamendo Licensing deal | API v3 (`/tracks`, `client_id`, returns licence and download URL) | Openverse already serves its CC BY tracks keyless; use the API only with a key |
+| **Freesound** directly | per sound CC0, CC BY, CC BY-NC | API v2: token for search and HQ previews, OAuth for originals; ~60 req/min, 2,000/day | only when Openverse lacks a sound |
 | **Uppbeat** | free plan needs a per-video credit code | no API | manual |
 | **Bensound** | free tier requires credit and **excludes ads** | no API | not for ads without a paid licence |
-| **Freesound** (SFX, loops) | per sound CC0, CC BY, CC BY-NC | API v2: token for search and HQ previews, OAuth for originals; ~60 req/min, 2,000/day | previews are usually enough for SFX; filter to CC0 / CC BY |
 | **Sonniss GDC bundles** (SFX) | royalty-free, commercial, no attribution, no AI training | direct downloads, no API | an excellent local SFX library the user downloads once |
 | **Epidemic Sound** (paid) | subscription | Partner API and an official MCP (beta): search, Soundmatch, beat detection, cut a track to a target duration, stems | the strongest option when a brand wants human-made music |
 
-### Do not use
+Suno has no public API (an invite-only partner programme was announced 2026-07) and Udio became a closed walled garden after its label settlements: never use either through an unofficial wrapper. The YouTube Audio Library's CC BY tracks are fine with credit; its "YouTube licence" tracks are for YouTube only.
 
-- **YouTube Audio Library** tracks under the "YouTube licence" anywhere but YouTube (its CC BY tracks are fine with credit). It is only reachable inside YouTube Studio anyway.
-- **BBC Sound Effects** in commercial work: the RemArc licence is personal, educational and research only.
-- Any **NC** (non-commercial) licence in a video that promotes a product.
-- **Commercial songs**, trending TikTok sounds on a brand account (those go through TikTok's Commercial Music Library, in-app only), and **soundboard rips** of meme sounds.
-- **Suno or Udio** through unofficial wrappers: Suno has no public API (an invite-only partner programme was announced 2026-07), and Udio became a closed walled garden after its label settlements.
+## Licence checks (before anything is placed)
 
-### Attribution formats
+- **Verify on the track's own page** (`foreign_landing_url`, the Incompetech or FMA page), never on a mirror, an aggregator's summary or a blog list. Tested: one GitHub mirror labelled a ccMixter track "CC-BY-NC" in one file and linked its source; another track carried "CC BY" in its text file and "CC-BY-NC-SA" in its metadata. Conflicts and unknowns are rejections.
+- **Accept** CC0, the public-domain mark and CC BY (any version, including ported ones such as `by/2.0/de`).
+- **Reject** NC (any commercial or promotional film), ND (CC 4.0 counts music synchronised to moving images as an adaptation, so an ND track cannot be cut to picture and shared), and **BY-SA for anything the user will not release under BY-SA** (the same rule makes the whole film an adaptation of the track). Reject no licence, "free for personal use", "royalty free" without terms, YouTube Audio Library "YouTube licence" tracks outside YouTube, BBC Sound Effects (RemArc: personal and educational only), commercial songs, soundboard rips, and unofficial Suno or Udio wrappers.
+- Lyrics under a voice are a rejection on taste, not licence: prefer results tagged `instrumental` and say in `VIDEO.md` that the track is instrumental per its page.
 
+## Candidates: pick 2–3, analyse, choose
+
+Pick by description, tags, the BPM hint and `duration` (long enough for the film, with a drop and a real ending). Download each with `save-asset` into `assets/` (`music-cand-1.mp3` …), run the detector in `beat-sync.md` on each, and choose the one whose section map matches the film's energy curve: a KICK-IN or UP bar where the peak goes, a quiet bar before it for the breath, a measured final hit for the end card. Delete the losers from `assets/` and say which you kept and why.
+
+## Credit formats
+
+- Openverse results carry an `attribution` field: use it as given, then add the source URL.
 - Incompetech: `"<Title>" Kevin MacLeod (incompetech.com) Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/`
-- Generic CC BY: `"<Title>" by <Creator> (<source URL>), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)`
+- Generic CC BY: `"<Title>" by <Creator> (<track page URL>), licensed under CC BY <version> (<license_url>)`
+- CC0 / public domain: no credit required; record it anyway for provenance.
 
-Write it into `VIDEO.md`:
+Record in `VIDEO.md` and tell the user where the credit must appear (description or end card):
 
 ```
+## Music
+Brief: <the 1–2 lines above>
+Track: "<Title>", <Creator> — <track page URL> — <licence + version>
+Grid: <BPM> (<f/beat>), first downbeat <s>, check <ms> median; drop bar <n> (<s>); button <s>
+Edit: <in/out points and joins>; pre-mastered <LUFS / dBTP>
 ## Credits
-- Music: "Title" by Creator — https://… — CC BY 4.0 — credit goes in the video description
-- SFX: generated with ElevenLabs (user's account)
+- Music: <exact attribution line> — in the video description
+- SFX: <pack or sound, creator, URL, licence>
 ```
 
 ## AI music generators

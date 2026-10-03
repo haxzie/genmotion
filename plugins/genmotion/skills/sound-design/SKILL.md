@@ -1,6 +1,6 @@
 ---
 name: sound-design
-description: "Music, sound effects and the voiceover mix for every kind of video in the pack: the four-decision sound plan, choosing and legally sourcing a track (user file, a connected generator, CC0 or CC BY libraries, or no music), the beat grid in frames and cutting to it, the level ladder in gain and dB, ducking, fades, SFX placement to the frame, silence as a beat, sparse picture-led films and many-event stems, and measuring and re-mastering the export's loudness because the mix has no limiter. Load it whenever a video has sound."
+description: "Music, sound effects and the voiceover mix for every kind of video in the pack: the four-decision sound plan, sourcing a track (the user's file, a connected generator, or by default a CC0 / CC BY track fetched from the web and verified), finding its beat grid, sections and button with ffmpeg and fitting the cuts to it, the level ladder in gain and dB, ducking, fades, SFX placement to the frame, silence as a beat, sparse picture-led films, and measuring and re-mastering the export's loudness. Load it whenever a video has sound."
 ---
 
 # Sound design
@@ -45,7 +45,7 @@ The export sums every clip with `amix normalize=0` and **no limiter or loudness 
 Make these before generating or fetching any audio, and write the answers into `VIDEO.md` under the Direction's sound plan.
 
 1. **Music or not.** Pick one mode and write it down, because the levels and who decides the cuts follow from it:
-   - **Music-led** (no voice: a promo, a text-led explainer, a music-led Gen Z edit): the track at 1.0 is the film. The music decides the cuts. Find its drop or dropout and put it on the film's breath, and its return on the peak frame (`direction`'s energy curve).
+   - **Music-led** (no voice: a promo, a text-led explainer, a music-led Gen Z edit): the track at 1.0 is the film. The music decides the cuts. Find its drop or dropout and put it on the film's breath, and its return on the peak frame (`direction`'s energy curve). With a sourced track, the detector's section map gives the drop, the dip and the button (`references/beat-sync.md`).
    - **VO-led** (generated narration): a bed under the voice, per the ladder below. The voice decides the timing.
    - **Over speech** (edited footage: talking head, podcast clip, UGC talk, a Gen Z edit of someone talking): the speech decides the cuts, because a beat-grid cut would land mid-word. The bed sits under the voice per the ladder, and drops to silence under the hook line and the payoff.
    - **Designed sound, picture-led** (no music and no VO: a muted-first launch, a calm hardware or data film carried by a handful of cues, or a film whose content is many sound events): the cues lead, any bed sits far under them, and the loudness target is lower (Sparse, picture-led films, below).
@@ -54,7 +54,7 @@ Make these before generating or fetching any audio, and write the answers into `
 3. **SFX density.** Literal (≈1 cue per second, every event makes a sound), punctuated (0.25–0.5/s, hero moments plus consistent cut treatment), or minimal (1–3 cues in the whole film, VO carries it).
 4. **VO.** Is there narration, whose voice (`pick-voice`, `voiceover`), and does it start +3 to +8 frames after each cut (house median +6) so the eye lands before the ear?
 
-**Order of work: VO → music → SFX → mix → measure.** VO timing fixes the music edit, the music grid fixes the cuts, the cuts fix the SFX.
+**Order of work: VO → music (source, analyse, choose) → beat table fitted to the track → SFX → mix → measure.** VO timing fixes the music edit, the music grid fixes the cuts, the cuts fix the SFX.
 
 ### Design for muted autoplay
 
@@ -83,16 +83,24 @@ Rules that hold everywhere: **instrumental under any voice** (lyrics fight speec
 
 ### Getting a track: the decision ladder (`music`)
 
-Go down the ladder and stop at the first rung that works. Read `references/music-sources.md` for the full library and service tables, licences and prices.
+Go down the ladder and stop at the first rung that works. Libraries, query URLs, licence checks and credit formats are in `references/music-sources.md`; the analysis and the fitting are in `references/beat-sync.md` (read it before writing a beat table for any track you did not generate at a known BPM).
 
-1. **The user's own file.** Ask once whether they have a track or a licence (Epidemic, Artlist, a composer). Put it in `assets/` and place it.
-2. **A connected generator.** ElevenLabs Music (exact length, instrumental mode, composition plans) through the `elevenlabs` connector, or Stable Audio / MusicGen / Lyria through `fal` or `replicate`. If none is connected, offer one with `recommend-integration` (ElevenLabs first: the same account covers voice and SFX). Prompt pattern:
+1. **The user's own file.** If the brief or the conversation already has a track or a licence (Epidemic, Artlist, a composer), put it in `assets/` and use it.
+2. **A generator that is already connected.** ElevenLabs Music through the `elevenlabs` connector, or Stable Audio / MusicGen / Lyria through `fal` or `replicate`. Prompt with: instrumental, genre and instruments, an exact whole-frame BPM (below), total length (the film plus 2–3 s), section timing, and the ending:
    > "Instrumental, no vocals. Upbeat electronic pop, 120 BPM, 4/4. 30 seconds: 4-bar soft intro, 8-bar build with rising synths, a drop at 0:12, steady groove, ending on a single hard hit with a 2-second tail (a button, no fade out)."
 
-   Always state: instrumental, genre and instruments, an exact BPM (pick one with whole frames per beat, below), total length (the film plus 2–3 s), section timing, and the ending. Generate 2 takes, pick by ear on the hero moment.
-3. **A licensed free library**, found with `web-research` and fetched with `save-asset`: Openverse audio filtered to `cc0,pdm,by`, Jamendo filtered to CC BY / CC BY-SA, Free Music Archive (check each track), Incompetech (CC BY 4.0, credit verbatim), Freesound for SFX (CC0 or CC BY only).
-   Do not use: YouTube Audio Library "YouTube licence" tracks outside YouTube; BBC Sound Effects in anything commercial (personal and educational licence); any NC licence in a commercial video; soundboard rips of meme sounds; commercial songs; unofficial Suno or Udio wrappers. Pixabay music is usable but some tracks are registered with Content ID, so warn the user before a YouTube upload. Brand accounts on TikTok add trending audio in-app from the Commercial Music Library.
-4. **No music.** Carry the film on `sfx` with natural tails and designed silence (a tonal pad at most, never noise). A clean SFX-led film beats an unlicensed song.
+   Generate 2 takes and pick on the hero moment.
+3. **Nothing connected: fetch a free, licence-clean track from the web. This is the default; do not stop to ask.**
+   1. **Brief.** From the Direction, 1–2 lines in `VIDEO.md`: tempo range, energy and instrumentation, whether it needs a drop (and where the peak falls), how it must end (a button), the length needed, instrumental if there is any voice.
+   2. **Search** with `web-research`, best first: Openverse (keyless API, `license=cc0,pdm,by`, `category=music`; results carry the creator, a ready-made attribution and a direct file URL), Incompetech (CC BY 4.0, BPM on every track page), Free Music Archive and ccMixter tracks marked free for commercial use, Mixkit (its own free licence), Pixabay Music (warn about Content ID before YouTube). **Verify each licence on the track's own page**, never a mirror or a list: accept CC0, public domain and CC BY; reject NC, ND, BY-SA (syncing music to picture makes the film an adaptation), and anything unknown or conflicting. Pick 2–3 candidates by description, tags, BPM and duration; download each with `save-asset` into `assets/`.
+   3. **Analyse** each candidate with `ffmpeg` and the inline detector in `references/beat-sync.md` (no installs): BPM, first downbeat, grid strength, drop candidates, the section map (intro, build, drop, breakdown) and the last strong hit (the button). Keep the one whose shape matches the film's energy curve; delete the others.
+   4. **Fit the picture to the track**, not the track to the picture: scene lengths in whole bars (beats for a montage), the peak on the drop's downbeat, the name reveal on a phrase start, cuts on bar downbeats, the end card on the track's measured button (back-timed: edit at phrase boundaries to reach it), and `startFrom` on a downbeat so frame 0 is a strong moment. Compute every beat from the exact BPM, never by adding rounded beats; put the cuts that carry the film on the measured transient's frame, never after it.
+   5. **SFX** go on visible events; where an event also sits on the grid (a tap on a beat), it takes the beat's frame, the hit a frame early rather than late. Sounds the available set lacks come from the same search (Freesound CC0 / CC BY through Openverse, Kenney's CC0 packs), credited the same way.
+   6. **Record** the source URL, creator, licence and the exact credit line in `VIDEO.md`, and tell the user where the credit must appear and how to swap the track.
+4. **The web is unreachable or nothing fits.** Say which sources failed (a blocked host, no licence-clean match), ask the user for a track, and offer a generator with `recommend-integration` (ElevenLabs first: the same account covers voice and SFX).
+5. **Last resort, named to the user as a fallback: no music.** A sparse SFX-led film with natural tails and designed silence (Sparse, picture-led films). Never a synthesised noise bed (the ban above), and never a synthesised beat passed off as music: a placeholder pulse built only to time cuts is labelled a placeholder in `VIDEO.md` and in your reply.
+
+Never use: YouTube Audio Library "YouTube licence" tracks outside YouTube; BBC Sound Effects in anything commercial; any NC licence in a video that promotes something; soundboard rips; commercial songs; unofficial Suno or Udio wrappers. Brand accounts on TikTok add trending audio in-app from the Commercial Music Library.
 
 **Credits.** Write a line into `VIDEO.md` for every audio file not generated by the user's own account: title, creator, source URL, licence, and the exact attribution text the licence demands. Tell the user where it has to appear (description or end card).
 
@@ -110,28 +118,22 @@ Go down the ladder and stop at the first rung that works. Read `references/music
 | 140 | 10.29 | 10.71 | 12.86 | 25.71 | 51.4 |
 | 150 | 9.6 | **10** | **12** | 24 | 48 |
 
-Whole-frame tempos at 30 fps: 60, 72, 90, 100, 120, 150, 180. When you generate music, ask for one of those so the grid sits on frames. Beat k lands at `round(offset + k × fps×60/BPM)`; round each beat from the exact value, never accumulate rounded beats (they drift a frame every few bars).
+Whole-frame tempos at 30 fps: 60, 72, 90, 100, 120, 150, 180. When you generate music, ask for one of those so the grid sits on frames. Beat k lands at `round(offset + k × fps×60/BPM)`; round each beat from the exact value, never accumulate rounded beats (they drift a frame every few bars). For the cuts that carry the film (the peak, the name reveal, the end card), measure the transient in that beat's window (`references/beat-sync.md`, the grid check) and use `floor(fps × transient)`, so the cut is never after the sound: plain rounding put one tested cut 35 ms late.
 
 Cutting rules:
 - **Big changes on beat 1 of a phrase**, ordinary cuts on beat 1 of a bar, montage cuts every beat. A visual hit may be 1 frame early, never late, because late sound reads as lag.
 - **Risers end exactly on the drop frame**, 1, 2 or 4 bars long.
-- **Edit the track only at phrase boundaries**, downbeat to downbeat, with a 30 ms crossfade (longer only for pads and tails); beatless music (orchestral, ambient) has no downbeats, so join it inside a decay, both sides within 3 dB in the full band and above 4 kHz, with a 0.3–0.8 s equal-power crossfade under a picture transition (tested recipe: `references/mix-and-loudness.md`, Beatless music). **Back-time the ending**: put the track's real button on the film's last frame first, then join from an earlier phrase. The button lands on the logo or CTA and the tail rings 1–3 s over the end card.
+- **Edit the track only at phrase boundaries**, downbeat to downbeat, with a 30 ms crossfade **centred on both downbeats** (end A `d/2` after its downbeat and start B `d/2` before its own, or B's downbeat lands `d` early: a frame at 30 ms; longer only for pads and tails); beatless music (orchestral, ambient) has no downbeats, so join it inside a decay, both sides within 3 dB in the full band and above 4 kHz, with a 0.3–0.8 s equal-power crossfade under a picture transition (tested recipe: `references/mix-and-loudness.md`, Beatless music). **Back-time the ending**: put the track's real button on the film's last frame first, then join from an earlier phrase. The button lands on the logo or CTA and the tail rings 1–3 s over the end card.
 - **Cue in with `startFrom`** so the first audible frame is a downbeat or a strong section, not the track's quiet intro (one house template starts its track at 17.05 s for exactly this).
-- **Peak alignment vs back-timing.** With one unedited stretch of a track you can land its drop on the peak frame *or* its button on the last frame, not both. The peak wins (it is the memorable moment). Then either edit the track (join from the drop's phrase to a phrase that ends on the button: the recipe below), or end on a 30–45 f fade on a bar line while the picture holds. A library track with no drop: search the onset dump below for a natural dropout followed by a hit, and cue the track so that hit lands on the peak frame.
+- **Peak alignment vs back-timing.** With one unedited stretch of a track you can land its drop on the peak frame *or* its button on the last frame, not both. The peak wins (it is the memorable moment). Then either edit the track (join from the drop's phrase to a phrase that ends on the button: the recipe below), or end on a 30–45 f fade on a bar line while the picture holds. A library track with no obvious drop: take the detector's biggest entry (an UP bar with KICK-IN, or a DOWN bar followed by an UP bar) as the peak's downbeat, and cue the track so it lands on the peak frame.
 
-Edit to length with `ffmpeg` (inline, nothing saved as a script):
-
-```
-ffmpeg -i assets/track.wav -filter_complex "[0:a]atrim=0:8,asetpts=PTS-STARTPTS[a];[0:a]atrim=start=24,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.03:c1=tri:c2=tri[out]" -map "[out]" assets/track-edit.wav
-```
-
-**Unknown BPM.** Prefer metadata or the BPM you generated with. Otherwise dump a low-passed energy curve and read the kick onsets:
+Edit to length with `ffmpeg` (inline, nothing saved as a script); here bars 5–10 of a 117 BPM track (downbeats 8.235 and 20.543 s) join bar 145 (295.416 s), which carries the button:
 
 ```
-ffmpeg -i assets/track.wav -af "lowpass=f=150,aresample=48000,asetnsamples=n=480:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/rms.txt" -f null -
+ffmpeg -i assets/track.mp3 -filter_complex "[0:a]aresample=48000,asplit[x][y];[x]atrim=8.220:20.558,asetpts=PTS-STARTPTS[a];[y]atrim=start=295.401,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.03:c1=tri:c2=tri[out]" -map "[out]" -c:a pcm_s16le assets/track-edit.wav
 ```
 
-Each 10 ms row has a `pts_time` and an RMS level. Onsets are rows where the level jumps 6 dB or more over the previous row; the first strong one after the intro is usually beat 1. BPM = 60 ÷ the median gap between onsets. Treat ×2 and ÷2 as the same answer and pick by genre (a 174 BPM track often reads as 87). Delete `rms.txt` after. On sparse or ambient music there is no trustworthy grid: cut on phrases and swells instead of forcing a metronome.
+**Find the grid** before cutting to any track you did not generate at a known BPM. Read the file's BPM tag first (`ffprobe -v error -show_entries format_tags=TBPM,TBP,bpm -of default=nw=1 assets/track.mp3`) and the library page's tempo, but treat both as hints: one page listed 121 for a file that measures 120. Then run the two-band envelope and the inline detector in `references/beat-sync.md` (one `ffmpeg` pass, a short `node` snippet, about 1 s of analysis): it reports the BPM (with the ×2 / ÷2 readings and a 3:2 check for swing), the first downbeat, a grid strength, drop candidates, a bar-by-bar section map and the last strong hit (the button). Tested on seven tracks with a published or reference tempo: six within 0.03 BPM (including a swung jazz track that plain autocorrelation read as 86.7 instead of 130); the seventh's page says 121 and the file measures 120. Confirm with the grid check there (median distance from each beat to its strongest transient **≤ 20 ms** on programmed drums; measured 2.5–19 ms on six such tracks, 22–43 ms for wrong grids, and on every track the right grid read lowest). A grid strength under 3.5 (orchestral, ambient, rubato) means no trustworthy grid: cut on phrases and swells and join inside decays, never force a metronome. Delete the envelope files after.
 
 ## Mix
 
@@ -271,7 +273,7 @@ Placement is frame-exact and comes from the same constants the animation uses (s
 **Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. Exception: a sting's anticipation ticks follow its swing (6 ticks in 1.2 s on a quickening swing is right); the owner's beat sheet wins there. One sound per event that matters, not one per event. Hard cuts are silent by default; a cut gets a sound only when something in the picture makes one (a press, a landing, the beat), and never a whoosh. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
 
 **Getting them (`sfx`)**: describe the sound, not the picture: source, material, size, speed, envelope, tail, length, "one-shot", "no music". Use the model's own words: impact, click, tick, chime, riser (tonal), braam, glitch, drone, ambience, loop. Set a duration (0.5–30 s) for anything timed, and loop mode for ambience. Generate 2–3 takes of hero sounds. Example: "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot, 0.6 seconds". Prompt library in `references/sfx-cues.md`.
-Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited); **synthesised placeholders** made with `ffmpeg` (riser, impact, pop, tick, chime: tested recipes with safe levels in `references/sfx-cues.md`; voices without words are always a recorded clip, never synthesised), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting. A product whose output is sound (a soundscape, a sleep or music app) gets its own 2–4 s in the film with the score ducked 10–12 dB under it; with no recording, `references/sfx-cues.md` has a tested tonal ambient pad (labelled a placeholder; never a noise bed) and the command that turns it into per-frame amplitude for the drawn waveform.
+Fallback when `sfx` is unavailable, in order: the user's files; CC0 / CC BY sounds from Freesound (through Openverse, keyless) or Kenney's CC0 packs via `web-research` + `save-asset`, licence verified on the sound's own page and credited; **synthesised placeholders** made with `ffmpeg` (riser, impact, pop, tick, chime: tested recipes with safe levels in `references/sfx-cues.md`; voices without words are always a recorded clip, never synthesised), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting. A product whose output is sound (a soundscape, a sleep or music app) gets its own 2–4 s in the film with the score ducked 10–12 dB under it; with no recording, `references/sfx-cues.md` has a tested tonal ambient pad (labelled a placeholder; never a noise bed) and the command that turns it into per-frame amplitude for the drawn waveform.
 
 ## Silence and endings
 
@@ -287,7 +289,7 @@ Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from 
 
 | Format | Music | SFX | VO and mix |
 |---|---|---|---|
-| Launch film | 110–128 BPM build-and-drop, drop on the reveal | 5–8 hero moments, a click or tonal note per feature | bed per the ladder (0.18) under VO, 1.0 when music-only |
+| Launch film | 110–128 BPM build-and-drop, drop on the reveal (a sourced track: on the detector's drop downbeat) | 5–8 hero moments, a click or tonal note per feature | bed per the ladder (0.18) under VO, 1.0 when music-only |
 | Explainer with VO | 90–110 sparse, no melody | UI clicks ≤ 1 per 2–3 s | VO +6 f after cuts, bed 0.18 |
 | Explainer, text-led (no VO) | music-led at 1.0, sparse, no lead melody | a cue on each reveal the diagram hinges on | dropout on the breath, return on the peak |
 | Brand sting | a 3 s sonic logo or none | riser → impact on settle → tail; sound under the anticipation too | no VO; hit ≥8 dB over the riser tail |
@@ -308,13 +310,13 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 
 | Need | Capability | Fallback |
 |---|---|---|
-| Music | `music` | the decision ladder above; with nothing licensed, no music |
+| Music | `music` | `web-research` + `save-asset` for a CC0 / CC BY track (the ladder's default); else ask the user or `recommend-integration`; last resort an SFX-led film, said to the user |
 | Sound effects | `sfx` | user files or credited CC0 sounds; else `ffmpeg`-synthesised placeholders (`references/sfx-cues.md`); else music transients |
 | Narration | `voiceover` (+ `pick-voice`) | the user's recording, or type carries the words |
 | Placing clips | `place-audio` | edit `project.json` `audio` or the HyperFrames `<audio>` elements |
-| Normalising, editing, measuring | `ffmpeg` | none: an unmeasured export is not finished |
+| Normalising, editing, measuring, finding the beat grid | `ffmpeg` (+ the detector in `references/beat-sync.md`) | none: an unmeasured export is not finished |
 | Checking sync | `capture-frames` | step through the preview at the cue frames |
-| Finding licensed audio | `web-research`, `save-asset` | ask the user for a file |
+| Finding licensed audio | `web-research`, `save-asset` (Openverse, Incompetech, FMA, ccMixter, Mixkit, Pixabay; Freesound and Kenney for SFX) | report the blocked sources, ask the user for a file, offer `recommend-integration` |
 
 ## Checks before you finish
 
@@ -324,10 +326,10 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 4. The bed sits 14–20 LU under the voice (from the normalised levels, or measured): never louder than 0.2 under a voice line on normalised sources, and never so low it disappears. In the export, the momentary loudness in a ≥1 s speech pause is above −35 LUFS when a bed is meant to be there.
 5. Frame 1 is audible (a transient or a downbeat; a sting's first motivated tick within 0.5 s also passes): `silencedetect=noise=-50dB:d=0.5` on the export reports no `silence_start: 0`. The last picture frame lands on the music's button or inside a fade that ends on a bar line.
 6. Every riser into a hit: impact's first 10 ms RMS ≥8 dB above the riser's last 100 ms; no dip over 6 dB inside the riser; and **no gap on the landing frame**: the 50 ms RMS rows from 0.1 s before the hit to the hit never fall below the riser's level by more than 6 dB (`references/sfx-cues.md`).
-7. Synthesised placeholder sounds are listed as placeholders in `VIDEO.md` and in your reply.
-8. Big cuts sit on downbeats: for each, `(cutFrame − offset) ÷ framesPerBeat` is within 1 frame of a whole number.
+7. Synthesised placeholder sounds are listed as placeholders in `VIDEO.md` and in your reply, including any placeholder pulse; no synthesised beat stands in for music unlabelled.
+8. Big cuts sit on downbeats: for each, `(cutFrame − offset) ÷ framesPerBeat` is within 1 frame of a whole number, and the peak, name and end-card cuts sit at or up to 1 frame before the measured transient, never after; on a track with drums the grid check (`references/beat-sync.md`) reads ≤ 20 ms median.
 9. No clip runs past the film's end unless it is a deliberate tail, and no long bed ends abruptly.
-10. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, and none is NC, BBC RemArc, YouTube-licence-only or a rip.
+10. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, verified on the track's own page (not a mirror), and none is NC, ND, BY-SA, BBC RemArc, YouTube-licence-only or a rip. A sourced track's brief, analysis (BPM, first downbeat, drop, button) and the rejected candidates are in `VIDEO.md`, and its section map matches the film's energy curve (peak on an UP / KICK-IN bar, end card on the measured last hit).
 11. A sparse, picture-led film: measured on the master, if there is a bed (music or a tonal pad), each designed cue's loudest 50 ms RMS is ≥12 dB above its RMS in a cue-free window and a beat bed's kick is ≥ 6 dB under the hit and ≥ 3 dB under the cues it shares beats with; the LRA is 4–10 LU for a feed promo (never over 12–14 for any film meant to be heard), measured on the final stereo file. No cue ends in an abrupt cut-off: on the waveform every tail decays or fades over 80–150 ms (`references/mix-and-loudness.md`, Sparse mixes, has the commands). The peak cue is the loudest 50 ms in the film and the sonic logo ≥ 2 dB under it. A film of many sound events was built as one stem from the scene's event schedule with the many-events rules, and the cue on its first and last event is audible above the texture.
 12. No whoosh, swoosh, swish or air-sweep anywhere in the mix (the ban above): check every SFX file name, every generation prompt and the cue sheet in `VIDEO.md`. No synthesised noise anywhere as a bed, room tone, ambience or air: no noise source in any `ffmpeg` graph or generation prompt for the film's bed.
 13. A music-led trailer keeps its build: integrated loudness per section rises act by act and the climax is the loudest; any designed silence follows a decayed tail, never a cue cut off mid-ring. In every film the peak cue is the loudest event and the sonic logo sits ≥ 2 dB under it.

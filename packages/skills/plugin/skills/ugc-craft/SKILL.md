@@ -123,7 +123,7 @@ The last pass, and the one that decides whether it reads as a person or a render
 | --- | --- | --- |
 | Word timings | `voiceover` timings, or `transcribe` | 2.5 words/s, checked with `capture-frames` |
 | Sound effects | `sfx` | Credited CC0 sounds via `web-research` + `save-asset`; or the bed's own transients |
-| Music | `music` | `sound-design`'s ladder; no music beats an unlicensed track |
+| Music | `music` | `sound-design`'s ladder: no track supplied → source a CC0 / CC BY one per `sound-design` Music and cut to its grid with `sound-design`'s `references/beat-sync.md`; no music beats an unlicensed track |
 | Trims, loudness | `ffmpeg` | None for loudness: an unmeasured export is not finished |
 | Moves | `motion-language`, `three-camera` on Three.js | Hard cuts between two framings of the same still |
 

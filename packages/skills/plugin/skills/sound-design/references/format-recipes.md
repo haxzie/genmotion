@@ -4,12 +4,12 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 
 ## Launch film (20–90 s)
 
-- **Music**: instrumental build-and-drop, 110–128 BPM (ask for 120: 15 f per beat). Drop on the product reveal.
+- **Music**: instrumental build-and-drop, 110–128 BPM (ask for 120: 15 f per beat; a sourced track keeps its measured BPM, frames computed from it: 117 BPM = 15.385 f/beat, `beat-sync.md`). Drop on the product reveal.
 - **Shape**: frame 1 transient → problem section sparse and low → riser 2–4 s (one or two bars) into the **drop on the reveal** → feature montage, a cut every 1–2 beats, each feature landing with a click or a tonal note on the bar → breakdown under the key line → logo on the last hit, 1–3 s tail.
 - **SFX**: 5–8 hero moments. A tap 0.8 on the press that starts each flood (or nothing), impact 0.7–0.85 on slams and the logo, click 0.9 on taps; no whooshes (SKILL.md, the ban).
 - **Levels**: music-only films at 1.0; with SFX 0.5–0.6; VO-led: bed 0.18 (the ladder's 0.1–0.2) with VO at 1.0, +3 to +8 f after each cut.
 - House examples: a fintech launch at music 0.55 with taps and impacts; a voice-AI launch with a sparse bed under VO and rings on the cuts the picture marks.
-- **No drop in the track?** Search the onset dump (SKILL.md, Beat grid) for a natural dropout followed by a hit and cue the track with `startFrom` so the hit lands on the reveal frame.
+- **No drop in the track?** Take the detector's biggest entry, or a DOWN bar followed by an UP bar (`beat-sync.md`), and cue the track with `startFrom` so it lands on the reveal frame.
 
 ## Explainer with VO (40–120 s)
 
@@ -22,7 +22,7 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 ## Text-led film with no VO (explainer, product story)
 
 - **Music-led at 1.0**: the track is the film. Sparse, no lead melody, so on-screen text stays the focus.
-- **Drop it on the breath, bring it back on the peak**: cue the track (`startFrom`) or edit it so a natural dropout sits on `direction`'s breath and the return lands on the peak frame. That alignment usually beats back-timing the ending (SKILL.md, Beat grid); end on a 30–45 f fade on a bar line under the held last card.
+- **Drop it on the breath, bring it back on the peak**: cue the track (`startFrom`) or edit it so a natural dropout (the detector's DOWN bar before an UP bar, `beat-sync.md`) sits on `direction`'s breath and the return lands on the peak frame. That alignment usually beats back-timing the ending (SKILL.md, Beat grid); end on a 30–45 f fade on a bar line under the held last card.
 - Sparse cues on the reveals the film hinges on (a tick as a packet crosses, a click on the key moment), never under every text line.
 - **Headroom**: with cues on top, pre-master the cued music to −15 LUFS / −3 dBTP, place cues at ≤0.7 (placeholders included), and re-master the export (SKILL.md, Headroom and loudness). A −1.5 dBTP bed with cues at 1.0 exported over −1 dBTP.
 - **Mid-phrase start**: aligning the dropout to the breath fixes `startFrom`, so frame 1 is mid-phrase. Fade in over ≥15 f and put a cue on frames 1–3.

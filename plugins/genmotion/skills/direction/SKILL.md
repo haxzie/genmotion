@@ -138,7 +138,7 @@ Keep one direction of travel for "progress" (left to right, or bottom to top) an
 
 Decide the shape here; `sound-design` decides levels, sources and the mix.
 
-- **Led by**: music (launch, sting, hype, music video: pick the track before the cut and cut to its grid) · VO (explainer, VO launch: write and generate the VO first, time picture to it) · sound-off first (feed: text carries it, music and effects reward sound-on viewers).
+- **Led by**: music (launch, sting, hype, music video: pick the track before the cut and cut to its grid; no track supplied → source one per `sound-design` Music and fit the beat table with `sound-design`'s `references/beat-sync.md`) · VO (explainer, VO launch: write and generate the VO first, time picture to it) · sound-off first (feed: text carries it, music and effects reward sound-on viewers).
 - **Density**: none, accents only (the peak, the logo), or literal (every on-screen event sounds; about one cue per second at most). An owner's own cue rules win over this general density: a sting's anticipation ticks may run several a second.
 - **Sonic logo**: what sounds when the mark lands (a hit, a chime, the track's button).
 - **Silence**: where the breath before the peak goes quiet.

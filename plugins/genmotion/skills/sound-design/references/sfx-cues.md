@@ -100,7 +100,7 @@ Pattern: what makes it + character + envelope + length + "one-shot" / "no music"
 
 ## Fallback without `sfx`
 
-In order: user-supplied files; CC0 / CC BY sounds from Freesound or Openverse found with `web-research` and downloaded with `save-asset` (credit CC BY in `VIDEO.md`); then **synthesise placeholders** with `ffmpeg` (below); then let the music's own transients mark the moment by cutting on them. Never a soundboard rip.
+In order: user-supplied files; CC0 / CC BY sounds from Freesound (its HQ previews are reachable without a key through Openverse, `source=freesound`) or Kenney's CC0 packs, found with `web-research`, licence verified on the sound's own page, and downloaded with `save-asset` (credit CC BY in `VIDEO.md`); then **synthesise placeholders** with `ffmpeg` (below); then let the music's own transients mark the moment by cutting on them. Never a soundboard rip.
 
 ### Synthesised placeholders (tested)
 

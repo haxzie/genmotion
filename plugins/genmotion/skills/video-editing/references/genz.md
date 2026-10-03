@@ -106,7 +106,7 @@ Restraint plus craft: clean captions with one highlight colour; fewer, purposefu
 - Heavy beat-sync template feel (every cut on every beat for 30 s).
 - Unrelated split-screen filler (gameplay under a talking head) to hold attention: platforms down-rank unoriginal content and viewers read it as low effort.
 - An AI voice over stock footage pretending to be a person.
-- Library jazz, ukulele or "corporate upbeat" beds: they read as 2010s YouTube. If that is all you have, use no bed and more sound design.
+- Library jazz, ukulele or "corporate upbeat" beds: they read as 2010s YouTube. If that is all you have, source a better one per `sound-design` Music (search by genre: phonk, house, lo-fi) before falling back to no bed and more sound design.
 - A corporate lower third (name bar + role line).
 - The frame laid out around captions that are not there (an empty lower 40%).
 
@@ -115,7 +115,7 @@ Restraint plus craft: clean captions with one highlight colour; fewer, purposefu
 1. Find the hook in the transcript: the most surprising or useful sentence. It goes first. No transcript: follow the main skill's Step 3 policy, prefer one continuous excerpt that ends on a falling, sentence-final pause over a splice of sections you have not heard, write a public-facts hook (above), and build the no-captions draft (above).
 2. Paper edit to 15–45 s: hook → stakes → 2–3 beats → payoff/loop.
 3. Conform with the Gen Z join padding (main skill, Step 5) (§5); stepped speed ramps where the footage drags.
-4. Decide the sound plan: over speech (bed under it) or music-led (beat grid first).
+4. Decide the sound plan: over speech (bed under it) or music-led (beat grid first: no track supplied → source one per `sound-design` Music and fit the cuts to its grid with `sound-design`'s `references/beat-sync.md`).
 5. Motion layer: hook text, word-pop captions, jump zooms or crop shifts on alternate segments, picture-only steps until no gap exceeds 2.5 s and the rhythm varies, 1–2 punch-ins (only where base × 1.12 ≤ 2.0), one flash at most, contrasting.
 6. SFX pass from the vocabulary (synthesised if need be), then the mix per `sound-design` (−14 LUFS).
 7. Measure: frame 0 has face + text and the first visual event is by 1.0 s; no pause over 0.25 s left between words (`silencedetect=noise=-45dB:d=0.25` on the dialogue WAV); the density check prints no gap and passes the variation thresholds; count the sounds per 30 s (3–8); the end card repeats or answers the hook.

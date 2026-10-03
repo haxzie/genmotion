@@ -163,7 +163,7 @@ Memorable moment: 64–72 — the last three tiles land 3f apart and the wordmar
 | --- | --- | --- |
 | The real mark | `save-asset` the logo file | The name as a wordmark; a described mark only as a flagged stand-in (Ask first) |
 | Brand colours, clear-space rules | `web-research` on the brand's site or guidelines | Ask the user rather than guessing |
-| The sonic logo | `sfx` or `music` | Credited CC0 hits; else `sound-design`'s synthesised placeholders (riser, impact, chime), named as placeholders; silence only if the sting sits inside an already-scored film |
+| The sonic logo | `sfx` or `music` | Credited CC0 hits, or a short CC0 / CC BY sting or button sourced per `sound-design` Music; else `sound-design`'s synthesised placeholders (riser, impact, chime), named as placeholders; silence only if the sting sits inside an already-scored film |
 | Placing the sound | `place-audio` | Edit the project's audio list by hand |
 | Alpha version, measuring | `ffmpeg` | Deliver the key-colour version and say it needs keying |
 | Seeing it | `capture-frames` | None |
