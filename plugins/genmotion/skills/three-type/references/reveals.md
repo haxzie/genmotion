@@ -227,18 +227,18 @@ const halos = TEXT.split(" ").map((p, i) => {                    // builder: one
   return h;
 });
 onTop(card.group);
-// frame: 12f outCubic, 3f stagger, from y +0.3em, blur 12 -> 0; halo 0.6 -> 0.15 at 20 px
+// frame: 12f outCubic, 3f stagger, from y +0.3em, blur 12 -> 0; halo 1 -> 0.45 at 16 px
 card.words.forEach((w, i) => {
   const p = prog(frame, 4 + i * 3, 12, outCubic);
   const y = (1 - p) * -0.3 * TYPE.hero.size * PX;
   w.position.y = y;
   halos[i]!.position.y = y;
   setLabel(w, { opacity: Math.min(1, p / 0.35), blur: (1 - p) * 12 });
-  setLabel(halos[i]!, { opacity: (0.6 - 0.45 * p) * Math.min(1, p / 0.2), blur: 20 });
+  setLabel(halos[i]!, { opacity: (1 - 0.55 * p) * Math.min(1, p / 0.2), blur: 16 });
 });
 ```
 
-- The halo's blur stays ≤ 20–24 px: the kit's blur is a 7 × 7 box, so a wider halo shows its taps as ghost copies on thin strokes.
+- The halo's blur stays 14–20 px: the kit's blur is a 7 × 7 box, so a wider halo shows its taps as a dotted grid round the strokes (faintly visible already at 16 px on a 100% crop; invisible at feed size). A halo under about 0.35 opacity disappears into the word (tested at 110 px).
 - A halo on every word of a two-word card, or on the accent word only of a longer one; never on body text or captions. On a light ground skip the halo (additive light vanishes on white) and use plain blurUp.
 - Exit with the ground's move (`motion-language`, Rise-through, Brand-shape pass); when the card must leave alone, 6f opacity with blur 0 → 8 on both.
 

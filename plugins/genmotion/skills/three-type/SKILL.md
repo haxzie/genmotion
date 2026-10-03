@@ -105,6 +105,9 @@ All in `references/reveals.md`, compiled and captured:
 | Highlight block, pen underline | a plane scaled from its left edge; a stroke (`three-look`) |
 | Count-up 40–48f / 120–210f, land punch 1.06 | `counter().set()`, group scale |
 | Captions, karaoke | phrase planes on the camera overlay; `kick()` pops |
+| Glow-resolve (social cards on dark): blurUp 12f + an additive halo copy 1 → 0.45 at 16 px | a second `label` per word with 48 px blur room, `AdditiveBlending`, a hair behind |
+| Smear-in (one punch word): scale x 1.5 → 1 from the reading side, horizontal blur 14 → 0, 9f | `label(…, "left")`, the `uBlur` uniform set on x only |
+| Rebus slot: a glyph at cap height inside the line, a stack rolling 3–5f per item, slowing on the last | `label`s either side of a square glyph plane (or a `three-look` coin or icon), laid out around the slot |
 
 ## Captions
 
@@ -164,6 +167,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 | Whiteboard | Hand-written text revealed left to right by a soft x-wipe in its shader, 8–18f by width; left column at a 140 px margin |
 | Music video | Karaoke lines, sung word flashing the accent |
 | Milestone | `counter` with land punch; label above it in muted |
+| Social title-card launch (K) | One card of 2–4 words, 72–110 px (≥ 90 in a feed), glow-resolve by word, one accent word in a lighter tint of the accent, a smear-in for the punch word, a rebus slot when the noun has a glyph; captions beside tilted UI two-tone (key words ink 500, rest muted 400) |
 
 ## Anti-patterns
 

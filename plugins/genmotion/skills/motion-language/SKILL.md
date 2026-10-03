@@ -45,7 +45,7 @@ Not for: what the film should say or look like (`direction`), levels and mixing 
 | Hero number | 12f | outSmooth | y +50 px, scale 0.94 → 1 | 10 px | — |
 | Chat bubble | 16f | spring m0.8 k165 c17 | scale 0.8 → 1 from the tail corner | 0–9 px | slot opens 12f before |
 | Headline slam (3D) | 14f | keys z 6 → 0, scale 0.7 → 1.04 → 1 | out of the lens | — | — |
-| Card word on a dark ground (glow-resolve) | 10–14f | outCubic | y +0.3em | 12 → 0 px, plus a soft glow copy 0.6 → 0.15 | 3–4f per word |
+| Card word on a dark ground (glow-resolve) | 10–14f | outCubic | y +0.3em | 12 → 0 px, plus a soft glow copy (16 px) 1 → 0.45 | 3–4f per word |
 | Punch word (smear-in) | 8–10f | outQuart | scale x 1.5 → 1 from the reading side | 14 → 0 px | — |
 | Lifted control (to poster scale) | 14–18f | spring gentle (no overshoot) | scale 1 → 2.5–4 about its own centre | 0 | — |
 

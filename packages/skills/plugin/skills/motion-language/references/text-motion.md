@@ -48,7 +48,7 @@ Contents: blurUp · Glow-resolve · Smear-in · Rebus slot · riseMask · Mask p
 
 ### Glow-resolve (cards on a dark or gradient ground)
 - By word, 10–14f outCubic, stagger 3–4f, from y +0.3em, blur 12 px → 0.
-- A soft copy of the word in the accent (or white) sits behind it, larger blur (24–40 px), opacity 0.6 → 0.15 over the same move and holding at 0.1–0.15, so the word settles with a faint halo. Only on the accent word, or on every word of a two-word card; never on body text.
+- A soft copy of the word in the accent (or white) sits behind it, drawn additively with a 14–20 px blur, opacity 1 → 0.45 over the same move and holding at 0.4–0.5, so the word settles with a soft halo (below about 0.35 the halo vanishes into the word). Only on the accent word, or on every word of a two-word card; never on body text.
 - Exit: rides the ground's move (the panel rising through, the brand shape closing); when a word must leave on its own, 6f fade with blur 0 → 8, not a mirrored glow-out.
 
 ### Smear-in (one punch word)

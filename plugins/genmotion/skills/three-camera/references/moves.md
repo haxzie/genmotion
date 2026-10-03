@@ -2,7 +2,7 @@
 
 Each move as a frame-callback fragment over the rig in `references/rig.md` (`fitCamera`, `PX`, and `components/ease.ts`). Durations and sizes are the `motion-language` camera grammar; this file only shows how to write them on a real camera. Everything is built once in the builder and set per frame; nothing allocates in the callback.
 
-Contents: 1 Push / pull · 2 Punch-in · 3 Orbit · 4 Keyed path (one-shot) · 5 Curve path · 6 Parallax and truck · 7 Match-push into the next scene · 8 Carry across a cut at speed · 9 Impact: shake, fov punch, slam · 10 Subject rig (move the layout, not the camera) · 11 Rack focus · 12 It was inside the device all along · 13 Push on a flat film as a view transform
+Contents: 1 Push / pull · 2 Punch-in · 3 Orbit · 4 Keyed path (one-shot) · 5 Curve path · 6 Parallax and truck · 7 Match-push into the next scene · 8 Carry across a cut at speed · 9 Impact: shake, fov punch, slam · 10 Subject rig (move the layout, not the camera) · 11 Rack focus · 12 It was inside the device all along · 13 Push on a flat film as a view transform · 14 Perspective UI showcase · 15 Card fan and card floor
 
 ## 1. Push / pull
 
@@ -255,3 +255,145 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 In a flat, diagrammatic film (a boundary on paper, a map, a UI with screen-space labels), a camera push also magnifies every label and changes every stroke width. Push a **map group** instead: `map.scale.set(k, k, 1)` and `map.position` set so the focus point stays put (`position = focus × (1 − k)`), with `k = logLerp(1, zoom, e)`. The labels and the overlay stay on the fitted camera at their true px; strokes drawn with a screen-px width (`three-assets` `outline()`, or line art with `uScale = k`) keep their weight. It is the same picture as a camera push for anything flat on z = 0, with none of its side effects.
 
 The same transform is **the pull-back that keeps its focal still** (the broken-rule pull where one unit becomes the whole field): `k` runs from the close-up zoom down to 1 in log space, `focus` is the focal element's position, and because `position = focus × (1 − k)` the focal sits on the same screen point on every frame while the rest of the world arrives around it. Labels that belong to the world fade out before `k` starts falling and back in after it settles.
+
+## 14. Perspective UI showcase (tilted screen, rim light, depth of field)
+
+The look of a pro tool's launch: a real screen on a tilted plane, rising and pushing slowly, a coloured rim of light behind it, and other panels out of focus by their depth. Pose the subject, not the camera (§10), so type on the fitted camera stays exact. Each panel is one plane with two textures, the screen and a pre-blurred twin, mixed by a per-panel focus value: the defocus is a texture lookup, so it costs nothing per frame and is the same on every machine. The twin is made by drawing the screen into a small canvas and back up with smoothing (no canvas filter needed).
+
+```ts
+/** A blurred twin of a UI canvas: down to 1/k and back up with smoothing ≈ a soft blur of ~k px. */
+export function blurredTwin(src: OffscreenCanvas, k = 10) {
+  const small = new OffscreenCanvas(Math.max(1, Math.round(src.width / k)), Math.max(1, Math.round(src.height / k)));
+  const s = small.getContext("2d")!;
+  s.imageSmoothingQuality = "high";
+  s.drawImage(src, 0, 0, small.width, small.height);
+  const out = new OffscreenCanvas(src.width, src.height);
+  const o = out.getContext("2d")!;
+  o.imageSmoothingQuality = "high";
+  o.drawImage(small, 0, 0, out.width, out.height);
+  return out;
+}
+
+/** A UI panel w × h px with a focus mix: uFocus 1 = sharp, 0 = the blurred twin. Unlit, exact colours. */
+export function focusPanel(screen: OffscreenCanvas, w: number, h: number, name = "panel") {
+  const tex = (c: OffscreenCanvas) => {
+    const t = new THREE.CanvasTexture(c as unknown as HTMLCanvasElement);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;                                           // stays crisp when tilted
+    return t;
+  };
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uSharp: { value: tex(screen) }, uSoft: { value: tex(blurredTwin(screen)) }, uFocus: { value: 1 }, uOpacity: { value: 1 } },
+    transparent: true,
+    toneMapped: false,
+    vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      varying vec2 vUv; uniform sampler2D uSharp, uSoft; uniform float uFocus, uOpacity;
+      void main() { vec4 c = mix(texture2D(uSoft, vUv), texture2D(uSharp, vUv), uFocus); gl_FragColor = vec4(c.rgb, c.a * uOpacity);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w * PX, h * PX), mat);
+  mesh.name = name;
+  return mesh;
+}
+
+/** A soft rounded-rect glow texture (the rim behind a panel), drawn once with canvas shadow blur. */
+export function rimTexture(w: number, h: number, r: number, blur = 40) {
+  const pad = blur * 2;
+  const c = new OffscreenCanvas(w + pad * 2, h + pad * 2);
+  const g = c.getContext("2d")!;
+  g.translate(-(w + pad * 4), 0);                               // the shape off-canvas, only its shadow lands
+  g.shadowOffsetX = w + pad * 4;
+  g.shadowBlur = blur;
+  g.shadowColor = "#ffffff";
+  g.beginPath();
+  g.roundRect(pad, pad, w, h, r);
+  g.fill();
+  const t = new THREE.CanvasTexture(c as unknown as HTMLCanvasElement);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return { tex: t, wPx: w + pad * 2, hPx: h + pad * 2 };
+}
+```
+
+```ts
+// builder: the hero panel, its rim, two background panels, all in one pivot posed per frame
+const hero = focusPanel(heroCanvas, 1400, 860, "ui-hero");
+const rim = rimTexture(1400, 860, 28, 48);
+const glowPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(rim.wPx * PX, rim.hPx * PX),
+  new THREE.MeshBasicMaterial({ map: rim.tex, color: "#78d090", transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+);
+glowPlane.position.set(0, 18 * PX, -0.05);                      // a little high and behind: light from the back edge
+const back = [focusPanel(sideCanvasA, 900, 600, "ui-back-a"), focusPanel(sideCanvasB, 900, 600, "ui-back-b")];
+back[0]!.position.set(-1150 * PX, 120 * PX, -3.2);
+back[1]!.position.set(1200 * PX, -80 * PX, -4.0);
+const pivot = new THREE.Group();
+pivot.add(glowPlane, hero, ...back);
+scene.add(pivot);
+// frame: rise and tilt up over the beat, a slow push 1.0 -> 1.25, focus by depth
+const e = prog(frame, 0, D, inOutSine);
+const enter = prog(frame, 0, 24, outCubic);
+pivot.rotation.x = -0.62 + 0.27 * enter + 0.05 * e;             // back-tilt ~36 deg easing to ~17 deg
+pivot.position.set(0, (-260 * (1 - enter)) * PX, D0 * (1 - 1 / (1 + 0.25 * e)));  // apparent scale 1 -> 1.25 (§10)
+hero.material.uniforms.uFocus!.value = 1;
+back.forEach((b) => { b.material.uniforms.uFocus!.value = 0; b.material.uniforms.uOpacity!.value = 0.85; });
+```
+
+- `D0` is the fitted camera distance from `fitCamera`; the z formula is §10's apparent scale.
+- **Back-tilt 20–35° on arrival, easing toward 10–20°** as the push brings the screen to reading angle; text on a tilted panel is decoration until it is under about 20°. A **steep side angle** (rotation.y 0.5–0.7) suits a screen with captions beside it: the captions sit in the empty side the angle opens, parallel to the camera.
+- **Focus by depth**: one panel sharp at a time. A rack between panels runs `uFocus` 1 → 0 on one while 0 → 1 on the other over 14–20f inOutCubic (§11), with a small push toward the new one. Sizes: everything that carries the claim on the sharp panel ≥ 40 px at 1080p after the tilt (magnify, or lift the control out, `launch-taste` §The control, lifted).
+- **The rim** is the accent at 0.4–0.6 opacity, additive, on a dark ground only; on light grounds use a soft dark shadow plane under the panel instead. The ground's brightest point (`three-look` `meshGround()`) sits behind the hero panel.
+- Draw the UI canvases with `three-assets`' drawn-UI helpers at 2×; the twin is made once in the builder.
+
+## 15. Card fan and card floor
+
+Two ways to show a collection (perks, partners, templates, plans) with depth instead of a tile wall. **The fan**: cards rise out of one container and spread about a shared pivot at its bottom centre, staggered. **The floor**: many cards on a plane tilted back ~60°, receding under a headline, sliding slowly toward camera and fading with depth.
+
+```ts
+// builder: CARDS are textured planes (each card drawn once at 2×), FOLDER is the container object
+const fanPivot = new THREE.Group();
+fanPivot.position.set(0, -260 * PX, 0);                          // the container's mouth
+CARDS.forEach((c, i) => { c.position.y = 300 * PX; fanPivot.add(c); }); // card centre above the pivot
+scene.add(FOLDER, fanPivot);
+const N = CARDS.length, SPREAD = 0.2;                            // radians between neighbours
+// frame: each card rises 18f outCubic, staggered 3f from the centre outward, then spreads
+CARDS.forEach((c, i) => {
+  const off = i - (N - 1) / 2;
+  const p = prog(frame, F0 + Math.abs(off) * 3, 18, outCubic);
+  const s = prog(frame, F0 + 10 + Math.abs(off) * 3, 16, outCubic);
+  c.position.y = (300 * p - 120 * (1 - p)) * PX;
+  c.position.z = 0.002 * i;                                      // fixed draw order, no z-fighting
+  c.rotation.z = -off * SPREAD * s;
+  (c.parent as THREE.Group).rotation.x = -0.18;                  // the whole fan leans back a little
+});
+```
+
+```ts
+// builder: the floor, a grid of COLS x ROWS cards on a group tilted back ~60 degrees
+const floor = new THREE.Group();
+floor.rotation.x = -1.05;
+floor.position.set(0, -330 * PX, -1.5);
+const tiles: THREE.Mesh[] = [];
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(330 * PX, 210 * PX),
+    new THREE.MeshBasicMaterial({ map: TILE_TEX[(r * COLS + c) % TILE_TEX.length]!, transparent: true, toneMapped: false }));
+  m.position.set((c - (COLS - 1) / 2) * 360 * PX, r * 240 * PX, 0);
+  m.name = `tile-${r}-${c}`;
+  floor.add(m);
+  tiles.push(m);
+}
+scene.add(floor);
+// frame: the floor slides toward camera 240 px over the beat; far rows fade into the ground
+floor.position.z = -1.5 + 2.4 * prog(frame, 0, D, inOutSine);
+tiles.forEach((m, k) => {
+  const row = Math.floor(k / COLS);
+  const fade = 1 - Math.min(1, Math.max(0, (row - 1.5) / (ROWS - 1.5)));
+  const pop = prog(frame, 4 + row * 3 + (k % COLS), 12, outCubic);  // rows arrive front to back
+  (m.material as THREE.MeshBasicMaterial).opacity = fade * pop;
+});
+```
+
+- The fan reads as "yours" because it comes out of one container; without the container it is a hand of cards. One card may then lift out of the fan toward camera and fill the frame to be read (the payoff).
+- The floor is "and many more": headline above it on the fitted camera, the floor below the headline band, never crossing it. Cards on the floor are not read; any card the argument needs is lifted out first.
+- Seeded per-card phase (`hash1`) for any idle bob, so a fan never moves in lockstep.
