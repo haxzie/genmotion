@@ -138,7 +138,8 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 - [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; whooshes lead their move; impacts on the impact frame ±2f).
 - [Fix] Music starts and ends with the picture; a sonic resolve on the logo.
 - [Fix] Cuts sit on the music's beats where the film is music-led.
-- [Fix] A film meant to be heard has a loudness range of about 4–14 LU, and outside its named silence the momentary loudness never sits under −40 LUFS for more than 2 s (`sound-design`, Sparse, picture-led films); the first 3 s of a sound-on film are audible.
+- [Fix] A film meant to be heard has a loudness range of about 4–14 LU, and outside its named silence the momentary loudness never sits under −40 LUFS for more than 2 s (`sound-design`, Sparse, picture-led films); the first 3 s of a sound-on film are audible. A declared bed is heard: it sits around −32 LUFS momentary under the effects, not at −50, or the film plays as clicks over silence.
+- [Fix] Feed delivery (X, Kickstarter, Reels) is mastered to about −14 LUFS integrated, −1 dBTP; platforms never turn a quiet file up.
 - [Fix] One intimate voice (a diary, a voice note, a private recording) is never stood in for by a crowd murmur: on-screen words plus a close breath or room tone, or the real line recorded close and dry with the bed out.
 
 ## 3. The rubric
@@ -189,7 +190,7 @@ npx @genmotion/cli render fix.mp4 --frames 150-239 --no-audio --json
 ffmpeg -i full.mp4 -i fix.mp4 -filter_complex "[0:v]trim=end_frame=150,setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];[0:v]trim=start_frame=240,setpts=PTS-STARTPTS[c];[a][b][c]concat=n=3:v=1[v]" -map "[v]" -map 0:a -c:a copy -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart spliced.mp4
 ```
 
-If the fix moves timing (a beat starts earlier), the audio cues move with it: re-render in full instead. A partial render uses the same renderer and settings, so the seams are invisible; check the two frames either side of each seam.
+If the fix moves timing (a beat starts earlier), the audio cues move with it: re-render in full instead. A partial render uses the same renderer and settings, so the seams are invisible; check the two frames either side of each seam. Then re-measure the exact file you deliver (freezes, loudness, cue onsets): a fix that never reached the delivered file did not happen.
 
 ## 5. Report format
 

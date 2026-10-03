@@ -41,6 +41,8 @@ From the proposition, pick which the viewer leaves with. **Understand** ("it tur
 
 **Feel-led films need a someone.** A trace of the person the feeling belongs to (a hand, a name in their own writing, their desk, their street) or of the outcome object (the thing saved for, the trip booked, the shelf finally stocked) is on screen by the second beat, because a feeling with nobody in the frame reads as a gauge.
 
+**A claim about effort or physics is shown, not written.** "By hand", "one tap", "no tools", "in seconds", "magnetic": the picture proves it. Show the hand or fingertip doing the one action, a count of the elapsed seconds beside it, the snap or seat that only a magnet makes. If the claim lives only in a caption, the film reads as automatic, or as any rival's.
+
 Then write the still-image test in one line: "As a still, this would lose ___." If the blank is empty, go to step 2 before anything else.
 
 ### 2. The concept device

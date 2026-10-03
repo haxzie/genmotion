@@ -1183,7 +1183,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.0",
+      "version": "1.4.1",
       "icon": "🎬",
       "source": "first-party"
     },
@@ -1769,7 +1769,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.2.0",
+      "version": "1.2.1",
       "icon": "🎯",
       "source": "first-party"
     },
@@ -3737,5 +3737,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "f2ffe02a"
+  "revision": "74b409f2"
 }
