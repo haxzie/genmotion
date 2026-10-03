@@ -4,7 +4,7 @@ A concept device is the "as Y" in direction's "We show X as Y": the visual mecha
 
 Evidence markers: **[several]**, **[two]**, **[one]** as in `style-map.md`.
 
-Contents: Choosing · The product makes the film · The invisible made felt · One fixed sentence, swapped notation · Many → one · Output as material · The unit becomes the quantity · The journey · The edit of old → new · The timeline drives the input · Two worlds, one crossing · The brand becomes the UI · Change the medium, not the subject · Fixed silhouette, changing skin · Ranked countdown · Devices that are not devices
+Contents: Choosing · The product makes the film · The invisible made felt · One fixed sentence, swapped notation · Many → one · Output as material · The unit becomes the quantity · The journey · The edit of old → new · The timeline drives the input · Two worlds, one crossing · The brand becomes the UI · Change the medium, not the subject · Fixed silhouette, changing skin · Ranked countdown · The prompt is the headline · The control, lifted · The rebus line · A tap releases the many · Reveal, then redact · Throw out the old tools · A history under one sentence · A collection fanned from a container · Devices that are not devices
 
 ---
 
@@ -117,15 +117,72 @@ Contents: Choosing · The product makes the film · The invisible made felt · O
 - **Build**: one shared grammar per rank; each rank 3 s or so; number one gets the most contrast.
 - **Goes wrong**: all ranks given equal weight; number one revealed first.
 
+## The prompt is the headline [several]
+
+- **When**: the product is driven by a typed request: an app builder, an agent, an assistant, a search or query box.
+- **Examples**: an analytics agent whose launch is three questions typed at headline size, each answered by a chart that cuts in already drawing; a recipe app whose film is a fridge photo dropped into the composer and the request "dinner for four, no oven".
+- **Build**: the composer near full frame; the request types at 7–10% of frame height with a solid caret, the last few words in the accent or brand gradient; when the request names a source or tool, its icon flies in and docks as a chip in the composer (the dock is the integration); a weighted cursor presses send; hard cut to the result already moving, one action in it; repeat with the same grammar, each round adding one fact (what it reads, where it runs, what comes back). A provocative question typed into a search box over live data is the same device as a hook [one].
+- **Goes wrong**: the request in small UI type with a marketing line on top; results as static screens; four rounds that each say "it builds an app".
+
+## The control, lifted [several]
+
+- **When**: one control *is* the feature (a URL field, a toggle, a schedule button, the bet button), or the decision is one tap.
+- **Examples**: a domain field lifted onto black at headline size, typed into, turning "available", becoming the publish button, then a progress pill, then the published card, one glowing outline carried through every step; a buy button blown up to fill the frame with winnings ticking above it as the cursor presses.
+- **Build**: show the control in context once (its real screen, briefly), then lift it out onto the film's ground at poster scale; let it act or morph through each step of the flow as one persisting object; a slowly rotating gradient outline or edge light marks it as live; the reward comes out of the control that triggered it (confetti from the amount field).
+- **Goes wrong**: the control lifted but static; a different object at each step, so no continuity; the outline glow left on everything.
+
+## The rebus line [several]
+
+- **When**: a sentence's key noun has a glyph the viewer knows (the asset, the integration, the person, the tool), or "any X" needs breadth in one glance.
+- **Examples**: "Pay in [coin] anything" with the coin spinning inline; "Works with [stack]" where the stack cycles through six tool icons in a second; "One [photo] person" with a small archival photo at cap height.
+- **Build**: a glyph slot inside the line, sized to the cap height (0.9–1.1×), with the words reflowing around its width; a stack cycles with a short vertical roll (3–5f per item), slowing on the last; the glyph is drawn in the film's own material (the same gloss, the same palette), never a system emoji. Recipe on Three.js: `three-type` `references/reveals.md` §15.
+- **Goes wrong**: an emoji in set type (a foreign drawing style); a glyph larger than the words, so the line breaks into two images; a stack cycling so fast nothing is recognised.
+
+## A tap releases the many [two]
+
+- **When**: a small action unlocks abundance (a toggle, a click, a slide gives access to thousands of tokens, all your apps, every file).
+- **Examples**: a currency toggle tapped and a stream of coins arcing out of it past the lens; a mouse click spilling token icons that orbit the hand and then fill the frame.
+- **Build**: the cause is visible and small (the control at readable size, the click pressed); the release starts on the press frame; objects fly in wide arcs with depth (passing in front of and behind the type), motion blur only on the near ones; escalate a few → an orbit → a field for "thousands"; seeded per-item phase and timing.
+- **Goes wrong**: a burst with no cause; flat sprites; the swarm covering the claim it illustrates.
+
+## Reveal, then redact [one, Good]
+
+- **When**: privacy, confidentiality, "only you can see it" (payroll, wallets, browsing, messages).
+- **Examples**: payment notifications popping up all over a sunny office until the room is full of them, then the same picture replayed with every amount turned to asterisks; a list of recipients whose names blur out one by one as a switch is flipped.
+- **Build**: the exposure in a familiar place first (the viewer must feel "everyone can see that"); the line names the problem; the *same* picture replays masked, so the only change is the privacy; carry the masked state into every later proof beat. A related material move for a sting: a solid object dissolving into a dotted, wireframe version with a scan band passing through it ("there, but not visible") [one].
+- **Goes wrong**: a padlock or shield as the hero (the stock noun); the masked state dropped after the device beat.
+
+## Throw out the old tools [one, Exemplary]
+
+- **When**: the product replaces a category of tools, or positions against incumbents.
+- **Examples**: a search field typing "We replaced", then three generic app icons lining up beside the words and dropping into a trash can.
+- **Build**: the rivals as *generic stand-in* icons in the film's material (never real marks); the line typed as the icons arrive; a physical discard (gravity, a bin, a sweep off the edge); their failures shown as the toasts and refusals the viewer knows; the reveal as the one coloured, textured frame of the film, then a new ground for the product act.
+- **Goes wrong**: real competitor logos (impersonation and a legal risk); mocking instead of showing the pain.
+
+## A history under one sentence [one, Exemplary]
+
+- **When**: the launch claims lineage or weight (a payments network, a new kind of company, "the next chapter").
+- **Examples**: a ledger product's film opening on fast black-and-white macro shots (engraving on a banknote, a tape reel, a radio mast, rails at speed) while one small line types across them.
+- **Build**: 0.4–1 s shots cut on the beat, all in one treatment (monochrome, halftone or one grade); one sentence building word by word across the shots, so the montage reads as one thought; the product enters in the same treatment, and its key button is the only colour. Shoot or source nothing you lack rights to.
+- **Goes wrong**: stock footage in mixed grades; the sentence too small to read at feed size; the product never arriving.
+
+## A collection fanned from a container [one]
+
+- **When**: the news is a set (perks, partners, templates, plans) the viewer now owns or can unlock.
+- **Examples**: reward cards fanning up out of a translucent glass folder; templates sliding out of a binder into a fan.
+- **Build**: one container object in the film's material; the cards fan with staggered rotation about a common pivot; then a floor of many cards receding in perspective under the headline for "and more"; one card lifted and read large.
+- **Goes wrong**: cards too small to read anything on; the floor used without the fan (a tile wall).
+
 ---
 
 ## Devices that are not devices
 
 These look like ideas and are not; each failed in at least one study film.
 
-- "Introducing [name]" on a gradient, then features. (A sentence, not a device.)
+- "Introducing [name]" on a gradient, then features. (A sentence, not a device.) A kinetic opener is different when it moves from frame 0 and resolves into the product's glyph or control within 2 s (`SKILL.md` §The social launch cut); the word is then a beat inside a device, not the idea.
 - A logo that draws its own outline at uniform speed, for no reason the stroke means. [one]
 - A glitch or a lens flare as the reveal. [two]
 - A feature-tag cloud orbiting a centred phrase. [two]
 - A meme cut-out interrupting the product. Fine for an in-joke post, never for a launch. [one]
 - A replica of another brand's look. Never. [two]
+- A stack of launch clichés ("and fixed it", "by design", "unstoppable", "available worldwide") as the cards. It is so recognisable that a parody built only from it went viral. [one]

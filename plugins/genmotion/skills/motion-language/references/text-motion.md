@@ -38,11 +38,27 @@ A move that makes text unreadable is wrong however good it looks. These rules co
 
 ## 3. Recipes
 
+Contents: blurUp · Glow-resolve · Smear-in · Rebus slot · riseMask · Mask push-up · Word-slot flip · Per-character title · Colour sweeps · Typewriter · Scatter pops · One word per card · Words carried in · Karaoke · Wordmark landing · Caption grows into a headline · Underline and highlight
+
 ### blurUp (the house default for energetic films)
 - By word. Duration 12f (12–14) outCubic, stagger 3f (hero 3–4, sub 2, slow slide-ins 5).
 - From y +0.5em (10–34 px), blur 10 px → 0 (heavy display type 14–34 px), opacity reaching 1 by about 35% of the move so the word is readable while it settles.
 - Exit: 6–8f inCubic, y −10 to −20 px, blur up to 10, all words together or stagger 1–2f.
 - Not on calm-trust films, and not on every line of any film: blur in and blur out on every line is a template tell. Calm: the same timing and rise (y +0.3em, 14–16f) with blur 0, exit 7–9f fade + y −10 px.
+
+### Glow-resolve (cards on a dark or gradient ground)
+- By word, 10–14f outCubic, stagger 3–4f, from y +0.3em, blur 12 px → 0.
+- A soft copy of the word in the accent (or white) sits behind it, larger blur (24–40 px), opacity 0.6 → 0.15 over the same move and holding at 0.1–0.15, so the word settles with a faint halo. Only on the accent word, or on every word of a two-word card; never on body text.
+- Exit: rides the ground's move (the panel rising through, the brand shape closing); when a word must leave on its own, 6f fade with blur 0 → 8, not a mirrored glow-out.
+
+### Smear-in (one punch word)
+- The word arrives stretched along its reading direction: scale x 1.5 → 1 anchored on the reading side, blur 14 → 0, opacity 0 → 1 by 40%, 8–10f outQuart. Reads as speed, not as softness.
+- Once per card, on the word that carries the claim; a whole line smeared is a blur transition again.
+
+### Rebus slot (a glyph inside the line)
+- A glyph slot sized to the cap height (0.9–1.1×) sits between words; the words either side are laid out around its width.
+- A single glyph pops in 10f (scale 0.6 → 1, no overshoot) 2–3f after the word before it, or spins slowly (a coin, one turn per 2–3 s).
+- A stack cycles through its items with a vertical roll, 3–5f per item, the last two slower (8f, then 12f), landing on the item the line is about; when the glyphs differ in width, morph the slot's width over 8f so the sentence never jumps.
 
 ### riseMask
 - Words rise from below an invisible baseline mask: y 100% → 0 of the line height, 13f outQuart, stagger 4f. No blur needed: the mask edge is the effect.
@@ -129,6 +145,8 @@ A move that makes text unreadable is wrong however good it looks. These rules co
 - One emphasised word per line: the accent colour, a heavier weight, or a size step. Never all three, never two emphasised words.
 - The film's punch colour appears on one word in the film's most important line, not on every line.
 - Emphasis gradient text by character (warm orange → amber) for one phrase at most.
+- Two-tone captions: the key words in ink at 500, the rest in muted at 400, in one line (a caption beside a tilted product screen, a benefit line). The weight carries the emphasis, so no colour is needed.
+- The pronoun turn: the word that addresses the viewer jumps a size step and a weight step on its own card ("you" → "YOU"), once per film.
 - The brand accent is for fills, rules, glows and display type. Under 60 px it may carry a short label only if it clears 4.5:1 on its ground; a low-contrast accent (< 4.5:1) never carries small text.
 
 ## 6. Numbers

@@ -45,8 +45,11 @@ Not for: what the film should say or look like (`direction`), levels and mixing 
 | Hero number | 12f | outSmooth | y +50 px, scale 0.94 → 1 | 10 px | — |
 | Chat bubble | 16f | spring m0.8 k165 c17 | scale 0.8 → 1 from the tail corner | 0–9 px | slot opens 12f before |
 | Headline slam (3D) | 14f | keys z 6 → 0, scale 0.7 → 1.04 → 1 | out of the lens | — | — |
+| Card word on a dark ground (glow-resolve) | 10–14f | outCubic | y +0.3em | 12 → 0 px, plus a soft glow copy 0.6 → 0.15 | 3–4f per word |
+| Punch word (smear-in) | 8–10f | outQuart | scale x 1.5 → 1 from the reading side | 14 → 0 px | — |
+| Lifted control (to poster scale) | 14–18f | spring gentle (no overshoot) | scale 1 → 2.5–4 about its own centre | 0 | — |
 
-**Which headline entrance**: blurUp is the default only for energetic families and personalities (A, B, C, confident premium, playful). Calm-trust films (finance, health, enterprise, luxury, calm C) rise and fade with no blur. Give evidence lines a second, plainer entrance than message lines, so the film has two entrance roles; never the same blur in and blur out on every line (a template tell). Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px travel with a 5f word stagger. Long text arrives by line or word, never by character: `references/text-motion.md` has the kinetic-type recipes and the reading-time rules every one of them obeys.
+**Which headline entrance**: blurUp is the default only for energetic families and personalities (A, B, C, confident premium, playful). Calm-trust films (finance, health, enterprise, luxury, calm C) rise and fade with no blur. Give evidence lines a second, plainer entrance than message lines, so the film has two entrance roles; never the same blur in and blur out on every line (a template tell). Heavy display type can take blur 18–34 px. Slow slide-ins use 140–420 px travel with a 5f word stagger. Short social launch cards on a dark or gradient ground (family K) use glow-resolve as the message entrance and a smear-in for the one punch word; the cards' *exits* ride the ground's move rather than a matching blur-out. Long text arrives by line or word, never by character: `references/text-motion.md` has the kinetic-type recipes and the reading-time rules every one of them obeys.
 
 **Order of arrival is order of importance.** The first thing to move after a cut is the focal point. Offset the first entrance 3–6f from the cut so the cut itself reads. Exception: a card or title that **lands on a hit** (a trailer card, a beat card, a word on a music hit) is fully legible on the hit frame: pre-roll its entrance so it completes on the hit, or put it on hard; a blur still clearing on the hit frame misses the hit.
 
@@ -170,6 +173,9 @@ Choose one signature and one workhorse per film (`direction` Step 7). House usag
 | Colour-field push / panel wipe | 8–23f inOutCubic | Field owns the last frame; next scene carries momentum (46 px → 0 over 16f) | Chapters, palette changes | Whoosh 0.5–0.7 (−6 to −3.1) from push start |
 | Card morph | 18–28f inOutCubic | Card lerps to an overscanned full frame; labels fade 2.4× faster | Opening an example into its scene | Soft whoosh 0.5 (−6) or none |
 | Typewriter delete | 2–2.4 f/char type, 2.1 delete | Same slot, width reserved | "Introducing" → the name | Key ticks 0.3–0.45 (−10.5 to −6.9) |
+| Rise-through | 18–24f outSmooth | The next beat's panel rises from below through the card while the card's words blur 0 → 12 px and fade over its first 10f; no cut | A type card into a product beat (family K) | Soft whoosh 0.5 (−6) from the rise's start |
+| Brand-shape pass | 10–16f inOutCubic close, 10–16f open | A large soft brand shape (an arc, a lens, a light band) closes over the frame and opens on the next beat; the same shape every time, in the film's ground colours | Every cut of a short social film | Swell 0.5 (−6) on the close, nothing on the open |
+| Defocus-through | 6f blur 0 → 16 px, cut, 8f 16 → 0 | Both sides defocus; the cut hides at peak blur | Card to card when nothing carries | None, or a soft tick |
 | Whip / blur-rush | 8–10f around the cut | Same speed and direction both sides; blur 20–30 px | Montages, high-energy social | Whoosh 0.6–0.7 (−4.4 to −3.1) loudest on the cut |
 | Rush into the lens | 10–24f ease-in | Exponential scale ×7 or camera to the object, bg to white | The peak, publish moments | Riser 0.55 (−5.2) ending on the cut + impact 0.85 (−1.4) |
 | Board erase | 10f + 8f blank | Every stroke un-draws | Whiteboard explainers | None; VO +6f after the cut |

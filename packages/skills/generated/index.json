@@ -1762,13 +1762,14 @@
         "which visual style fits our announcement",
         "the launch film has no peak or idea",
         "make the sound land on the picture",
-        "art direct our feature announcement film"
+        "art direct our feature announcement film",
+        "our short launch clip for X looks templated"
       ],
       "templates": [],
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.1.0",
+      "version": "1.2.0",
       "icon": "🎯",
       "source": "first-party"
     },
@@ -3736,5 +3737,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "918ccd10"
+  "revision": "e8bc3951"
 }

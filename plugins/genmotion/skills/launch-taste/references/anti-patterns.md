@@ -37,6 +37,9 @@ Contents: Idea · Structure and energy · Frame and type · Motion and transitio
 20. **Underexposure.** A dark film whose frame averages near black; on a phone in daylight it is a black rectangle. *Fix*: one bright focal point always; check on a phone-sized capture.
 21. **Palette drift.** A different colour system per section of a film about "one" product. *Fix*: one palette; a colour script only within it.
 22. **Patchwork.** Four type voices and four visual systems in 60 s (a sticker world, a dark terminal, a framed browser, 3D type over a person). *Fix*: one family; at most one deliberate crossing.
+22a. **Dark on dark at feed size.** A whole dense trading or dashboard screen, dark panels on a dark ground, shown full frame in a feed film: at a third of its size it is texture. Seen in every Mixed film of the social study. *Fix*: lift the one control or value that carries the beat to poster scale, or push until it is ≥ 40 px at 1080p; a rim or horizon light under the panel.
+22b. **Small titles on a big dark ground.** Title cards at 3–5% of frame height centred on near-black look refined on a monitor and vanish in a feed. *Fix*: the feed floors (`launch-playbook`, Feed placements); refinement comes from weight, spacing and light, not from smallness.
+22c. **A second world inside a sting.** An 8 s film that cuts once to a different studio (a pale room in a violet film). *Fix*: one ground and one light for every object.
 
 ## Motion and transitions
 
@@ -65,7 +68,9 @@ Any one of these on screen makes a film read as agent-made or template-made. Che
 - A radial glow centred on the canvas (not the subject) with dust specks, as the default backdrop.
 - A static coloured glow pinned to one corner for the whole film.
 - Floating pastel balls or sticker pills unrelated to the content.
-- Per-letter opacity fades as the only type move; blur-in/blur-out on every transition.
+- Per-letter opacity fades as the only type move; blur-in/blur-out on every transition (a blur or glow entrance by word is the house idiom; the tell is blur as the only transition).
+- A card stack made only of launch clichés ("Introducing", "and fixed it", "by design", "unstoppable", "available worldwide"): it reads as the template, or as its parody.
+- A static "Introducing" card at frame 0 (a kinetic opener that resolves into the product's glyph is fine).
 - Exact periodicity: every pop, swap or tease on the same frame interval with the same envelope.
 - A "feature cloud" of tags orbiting a centred phrase with flickering squares.
 - A **tile wall** as the "scale" beat: a grid of unlabelled cards, sparkline or bar tiles, or app screenshots standing in for "many". Show many of the device's own event instead.
@@ -78,6 +83,7 @@ Any one of these on screen makes a film read as agent-made or template-made. Che
 
 ## Integrity
 
+- **Borrowed authority.** Clips of famous people, broadcast footage, press front pages or testimonial posts are used only when they are real and the user has the rights; never fabricate a headline, a quote or a post, and never stand real third-party marks in as props (integrations and rivals are generic stand-in icons unless the user supplies the real files and the right to use them).
 - **Never replicate a real brand's identity** (its mark, wordmark, look, tagline or artwork) to make a film look premium, and never invent version or year labels for it. It is impersonation, and it shows nothing about the product.
 - **Loops must loop**: the last frame hands back to the first (direction's loop-seam check). An excerpt is not a loop.
 - **Timeline bugs**: a layer dropping to black because its source clip ended early. Capture the last frame of every layer's clip.

@@ -78,6 +78,7 @@ Pick exactly one. The families are measured from GenMotion's own house style; `r
 | H. Music video | The user's track is the brief | A music clock drives everything, scenes on bar lines, flash-to-white on cuts |
 | I. Brand guide / identity loop | The brand system is the content | Mark, palette, type specimen and lockup shown as content; visible grid |
 | J. Milestone / stat | One number to celebrate | Big tabular number tallies, punches 1.06 on landing, confetti within 2f, then breathes |
+| K. Social title-card launch | A short launch for X or a feed, 8–30 s | 2–4-word cards interleaved with cinematic product beats, one ground carrying every cut, light on edges, a beat every 1–2 s |
 
 The owner skill usually names a default family; follow it unless the assets or the audience say otherwise, and write why. Brand colours override a family's stage: on a brand ground keep the family's UI, motion and type, and let the brand hex replace the stage (style-families.md). Edited user footage has no family: the footage is the look.
 

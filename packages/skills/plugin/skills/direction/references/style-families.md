@@ -1,6 +1,6 @@
 # Style families
 
-The ten looks GenMotion's own templates are built in, measured from their source. Each entry gives what the family is, when to pick it, and its palette, type, motion, pacing, transition and sound signature with numbers (frames at 30 fps). Pick one per film and copy its signature into the Direction block; borrow a single device from a second family only when the idea needs it, and say so.
+The ten looks GenMotion's own templates are built in, measured from their source, plus K, measured from a curated set of social-native launch films (the taste `launch-taste` aims at). Each entry gives what the family is, when to pick it, and its palette, type, motion, pacing, transition and sound signature with numbers (frames at 30 fps). Pick one per film and copy its signature into the Direction block; borrow a single device from a second family only when the idea needs it, and say so.
 
 Moves named here (blurUp, pop, flood, iris, persisting element…) are defined with exact timings in `motion-language`.
 
@@ -14,7 +14,7 @@ Two rules sit above every row:
 - **Brand colours override a family's stage.** On a brand ground keep the family's UI treatment, motion, type and transitions; the brand hex replaces the stage, with any vignette within ±8 L so the hex still reads at the corners (and so a loop's last and first frames sit on the same ground).
 - **Edited footage has no family**: the footage is the look; titles and cards follow `video-editing`'s format references.
 
-Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D One-shot camera film · E Chat-UI social · F Whiteboard explainer · G Textured tactile · H Music video · I Brand guide / identity loop · J Milestone / stat · Mixing families · Engine notes
+Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D One-shot camera film · E Chat-UI social · F Whiteboard explainer · G Textured tactile · H Music video · I Brand guide / identity loop · J Milestone / stat · K Social title-card launch · Mixing families · Engine notes
 
 ---
 
@@ -73,6 +73,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Logo hold | 28–90f |
 
 **Calm C** (health, luxury, finance, hardware sold on trust): drop the pop, slam, burst and colour-flood numbers above; keep one material, one light and one slow move, headlines rise and fade with no blur (`motion-language`), and the ground changes once, at the peak, after the object has completed its move.
+
+**Soft-gloss C** (integrations, tokens, apps, consumer fintech; measured on social launch films): many small objects instead of one hero: app-icon squircles and thick-rimmed coins in clearcoat plastic (`three-look` `references/social-looks.md`), rounded bevels of 6–10% of the object's width, one studio environment for all of them. Flights in wide arcs over 30–60f with objects crossing in front of and behind the type; near objects ≥ 20% of frame height and motion-blurred (3–4 trailing ghosts at 0.35 → 0.08 opacity), far ones sharp; seeded per-item phase. A swarm escalates in three steps (a few, an orbit, a field) over 3–5 s. Pop on arrival 1 → 1.06 → 1 over 10f. The ground stays one colour or one gradient; no floods between beats.
 
 **Goes wrong when**: the brand colour lands on small text, two colours punch in one frame, or 3D is used as decoration around flat content.
 
@@ -148,6 +150,8 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Sound | A soundtrack with visuals locked to its pulses, or VO at full level + bed at −11 dB (0.28) + a wipe sound at −6 dB starting on the wipe's first frame + rings on the cut |
 | Logo hold | 60–105f |
 
+**Editorial variants of G** (measured on social launch films): *newsprint* — monochrome #f5f5f5 / #cdcfd2 / #38393d / #12161d with a halftone overlay, one warm accent (#ce9b29) on the product's main button only, heavy condensed grotesque for headlines and the hero number (the number may go to 200–260 px as the image), a small neutral sans for the narration line (≥ 40 px in a feed), B&W macro shots of 12–30f cut on the beat; *paper and daylight* — paper #f2f3ee / #d2d2cd, ink #1e191d, a static or barely drifting window-and-leaf shadow overlay at 10–18% multiply, small photos popping in 6f apart around a sentence built word by word, tiny red markers (#93282e) as the only accent, a count-up as the payoff.
+
 **Goes wrong when**: texture is so heavy that text loses contrast, or glitch effects appear on every cut instead of as the signature.
 
 ## H. Music video
@@ -203,6 +207,24 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Logo hold | The payoff hold is the lockup |
 
 **Goes wrong when**: the count is linear (it should decelerate into the landing), or the celebration lands a few frames off the number.
+
+## K. Social title-card launch
+
+**What it is**: the short launch film of the feed: type cards of 2–4 words interleaved with product beats, on one ground that carries every cut. Real UI made cinematic (tilted, rim-lit, a control lifted to poster scale), glossy objects, light on edges. Measured on a curated set of social-native launch films.
+
+**Pick it when**: a feature or product launch posted on X, LinkedIn or a feed under a message that carries the details; 8–30 s; 2–5 crisp facts.
+
+| Signature | Numbers |
+| --- | --- |
+| Palette | Dark: near-black tinted toward the accent (#070b12, #0f0520, #09090b) with an edge or horizon glow in the accent (teal → lime #459a8e → #78d090, violet #6f3fb3 → #835ebc, blue #3a6b8d); or light: white with the accent rising from the bottom edge (#ffffff → #e7faed → #71e498), or one flat saturated field (#4c44f3). One accent word per card in a lighter tint of the accent |
+| Type | One neutral grotesque, 500, sentence case. Cards 72–110 px (≥ 90 px in a feed), −0.02em; two-tone captions (key words ink at 500, the rest muted at 400); one bleed word in the film at most (the product's own term, up to 40% of frame height). An inline glyph slot at cap height for a rebus line |
+| Motion | Card words: glow-resolve or blurUp by word, 10–14f, stagger 3–4f; a punch word may smear in (scale x 1.5 → 1, blur 14 → 0, 8–10f). Card exit 6–8f with the ground's move. Product beats enter already moving; tilted UI pushes 1.0 → 1.25× over the beat; a lifted control springs to poster scale over 14–18f with no overshoot; objects pop 1.06 over 10f. A rotating gradient outline on the active control, one turn per 3–4 s |
+| Pacing | A beat every 30–60f; cards held by the hold formula (33f for two words, 51f for four); product beats 45–90f; the peak beat 75–100f; URL card ≥ 60f. Scenes 30–100f |
+| Transitions | Carried by the ground: a brand shape (arcs, a lens, a light band) closing and opening over 10–16f, the panel rising through the card while its words blur out, a defocus-through (blur 0 → 16 px over 6f, cut, 16 → 0 over 8f). Hard cuts only on the beat. One grammar for the film |
+| Sound | A short track with a clear grid (110–128 BPM); cards' first legible frame on beats; product beats carry the effects (click on the press frame, pops and coin clusters on bursts, a hit when a swarm settles); the URL card on the button |
+| Logo hold | 45–75f with the URL; the mark may appear earlier only docked beside the product |
+
+**Goes wrong when**: title type shrinks to 3–5% of frame height on a big dark ground, the product beats show a whole dense dark screen, the cards are all clichés, or each cut uses a different wipe.
 
 ---
 

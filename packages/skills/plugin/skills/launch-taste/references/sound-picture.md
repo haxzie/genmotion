@@ -59,6 +59,7 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 - A track at 120 BPM puts a beat every 15 frames and a bar every 60; arrivals on beats and big changes on bar lines lock picture to sound. The best music-led film cut within 1–5 frames of the grid but did not cut on every bar. [one]
 - A flat library track has no peak; give it one (`launch-playbook` §Sound) rather than accepting a flat wall.
 - An opening filter (dark and muffled, then full band) is a strong reveal arc if the full band arrives on the reveal. [one]
+- **A title-card interleave** (the social launch cut): cards land on beats (a card's first legible frame on the beat, not its first pixel), product beats carry the effects (a click on the press frame, coin or pop clusters on a burst, a soft hit when a swarm settles), and the URL card sits on the track's button or a decaying hit. Keep the cards themselves quiet (a soft tick at most) so the product's sounds read as the events. [several, from the social study]
 
 ## Muted placements
 
