@@ -303,10 +303,14 @@ export const hasTabularFigures = (s: TypeStyle) => {
  * figures "tabular" (default): every slot is one advance wide. Use a face with tabular figures on
  *   (withFonts with features '"tnum" 1'); with a proportional face a narrow 1 sits in a wide cell
  *   and "$1,211" reads "$1, 2 1 1".
- * figures "proportional": each slot is as wide as the digit it shows (blended while it rolls) and
- *   the number stays right-anchored, for a face that has no tabular figures.
+ * figures "proportional": each slot is as wide as the digit it shows (blended while it rolls), for a
+ *   face that has no tabular figures.
+ * anchor "center" (default): the VISIBLE number is centred on the group origin, so "£##.##" at 0
+ *   reads "£0.00" centred (not shifted right by the hidden tens slot); a slot rolling in from 0 counts
+ *   by how far it has rolled, so the number glides as it grows. "right" / "left" keep that edge of
+ *   the full pattern fixed (an amount in a right-aligned column grows leftward).
  */
-export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "proportional" = "tabular") {
+export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "proportional" = "tabular", anchor: "center" | "left" | "right" = "center") {
   const flat: TypeStyle = { ...s, tracking: 0 };
   const adv = [..."0123456789"].map((d) => measure(d, flat));
   const digitW = Math.ceil(Math.max(...adv));
@@ -358,7 +362,8 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
   /**
    * Show `value`; fractional values roll the last digit (and carry) smoothly. Leading zeros and
    * the separators before them are hidden ("$#,###" at 42 reads "$42", not "$0,042"); the digits
-   * stay right-anchored, and a prefix ("$") moves to sit beside the first visible digit.
+   * are laid out from the right, a prefix ("$") moves to sit beside the first visible digit, and
+   * the visible number is placed by `anchor` (centred by default).
    * Give the pattern as many # as the final value has digits. With decimals ("##.#") pass the real
    * value (0.4); a stepped readout passes values already rounded to the shown precision.
    */
@@ -369,6 +374,7 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
     let lead = true;
     let first: (typeof parts)[number] | undefined;
     const widths: number[] = [];
+    let grow = 1; // how far the first visible digit has rolled in from 0 (1 = fully there)
     parts.forEach((p, k) => {
       let w = p.w;
       if (p.digit) {
@@ -379,8 +385,10 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
         const roll = Math.min(1, Math.max(0, (v % place) - (place - 1)));
         tex.offset.y = 1 - (whole + roll + 1) / 11;
         // shown once it is (or is rolling to) non-zero; the ones digit and the decimals always show
+        const wasLead = lead;
         if (place <= unit || v > place - 1) lead = false;
         p.mesh.visible = !lead;
+        if (wasLead && !lead && place > unit && whole === 0) grow = roll;
         if (figures === "proportional") w = adv[whole]! + (adv[(whole + 1) % 10]! - adv[whole]!) * roll;
       } else {
         p.mesh.visible = k === 0 || !lead; // a separator shows only after a visible digit
@@ -400,7 +408,19 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
       }
     }
     const pre = parts[0];
-    if (pre && !pre.digit && first) pre.mesh.position.x = first.x - ((widths[parts.indexOf(first)]! + pre.w) / 2) * PX;
+    const fi = first ? parts.indexOf(first) : -1;
+    const preX = pre && !pre.digit && first ? first.x - ((widths[fi]! + pre.w) / 2) * PX : 0;
+    // the visible extent (px), the first digit counted by how far it has rolled in, then the anchor
+    let lo = Infinity, hi = -Infinity;
+    parts.forEach((p, k) => {
+      if (!p.mesh.visible) return;
+      const x = (k === 0 && !p.digit ? preX : p.x) / PX;
+      lo = Math.min(lo, x - widths[k]! / 2);
+      hi = Math.max(hi, x + widths[k]! / 2);
+    });
+    if (fi >= 0) lo += (1 - grow) * widths[fi]!;
+    const off = !Number.isFinite(lo) ? 0 : anchor === "center" ? -(lo + hi) / 2 : anchor === "left" ? -total / 2 - lo : total / 2 - hi;
+    parts.forEach((p, k) => (p.mesh.position.x = (k === 0 && !p.digit ? preX : p.x) + off * PX));
   };
   set(0);
   /** Tints the whole counter (drawn white; style.color is the starting tint and this replaces it): an ink change on a new ground. */
@@ -429,7 +449,7 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
 | `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | — | Per-frame look: blur in px, tint, clip below a world y, clip right of a world x (a wipe, feathered by `maskSoft` world units). The canvas is always drawn white and `style.color` is only the starting tint, so `color` here **replaces** it (a grey style tinted red is red, not a dark red multiply) |
 | `measure(text, style)` | px | Layout maths: slot widths, wrapping by hand |
 | `maskDepth(text, style, pad?)` | px | How far below a centred label's middle a rise mask goes for this text in this face: its lowest ink (descenders included) + `pad` (default 6% of size, ≥ 4 px). `maskY = centreY − maskDepth(text, style) * PX`; inside `withFonts` |
-| `counter("$#,###", style, figures?)` | `{ group, set(value), setOpacity(o), setColor(c), width }` | Count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit. A `.` followed by `#` marks decimals: `"##.#"` shows `set(0.4)` as "0.4" and `set(20)` as "20.0" (the ones digit and the decimals always show); for a stepped readout pass values already rounded to that precision, since a fraction beyond it rolls the last digit. Thousands use `,`. `figures` "tabular" (default: load the face with tabular figures on, §3) or "proportional" (a face without them: each slot as wide as its digit, right-anchored). `setColor` changes its ink (a counter crossing onto a new ground) |
+| `counter("$#,###", style, figures?, anchor?)` | `{ group, set(value), setOpacity(o), setColor(c), width }` | Count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit. `anchor` "center" (default) centres the **visible** number on the group origin, so `"£##.##"` at 0 reads "£0.00" centred (a judged film had it 33 px right of centre when the hidden tens slot still counted), and a digit rolling in glides the number left by how far it has rolled; "right" / "left" pin that edge of the full pattern (an amount in a right-aligned column). A `.` followed by `#` marks decimals: `"##.#"` shows `set(0.4)` as "0.4" and `set(20)` as "20.0" (the ones digit and the decimals always show); for a stepped readout pass values already rounded to that precision, since a fraction beyond it rolls the last digit. Thousands use `,`. `figures` "tabular" (default: load the face with tabular figures on, §3) or "proportional" (a face without them: each slot as wide as its digit). `setColor` changes its ink (a counter crossing onto a new ground) |
 | `hasTabularFigures(style)` | boolean | Whether the style's face sets every figure on one advance: true for a face loaded with `features: '"tnum" 1'` that has them |
 | `withFonts(ctx, files, build)` | the scene's update | Wrap the whole builder so no texture is drawn in a fallback face |
 | `onTop(obj, order?)` | the same object | Type over 3D as one layer: no depth test on its meshes, and `order` on every mesh **and Group** under it (the groups `line()`/`letters()`/`counter()` return included). 100 = above the world, under covers; 960+ = above a cover |
@@ -470,7 +490,7 @@ withFonts(ctx, [
 });
 ```
 
-  Tested in the capture browser: Inter's 1 and 0 measure 41.0 and 71.5 px at 120 px; with `"tnum" 1` both measure 73.7. A face with no `tnum` feature still reports `hasTabularFigures(...) === false` after this: use `counter(pattern, style, "proportional")`, which sizes each slot to the digit it shows (blending the two widths while a slot rolls) and keeps the number right-anchored. Never pad digits with spaces or pick a monospace face just for the count.
+  Tested in the capture browser: Inter's 1 and 0 measure 41.0 and 71.5 px at 120 px; with `"tnum" 1` both measure 73.7. A face with no `tnum` feature still reports `hasTabularFigures(...) === false` after this: use `counter(pattern, style, "proportional")`, which sizes each slot to the digit it shows (blending the two widths while a slot rolls). Never pad digits with spaces or pick a monospace face just for the count.
 - `withFonts` registers the load on `ctx.manager`, runs the builder when it lands, and re-poses the frame the host asked for before the barrier releases. A missing file never hangs the export; the fallback face draws instead (check a still).
 
 ## 4. Why it is built this way
