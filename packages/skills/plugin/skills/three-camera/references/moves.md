@@ -261,8 +261,8 @@ The same transform is **the pull-back that keeps its focal still** (the broken-r
 The look of a pro tool's launch: a real screen on a tilted plane, rising and pushing slowly, a coloured rim of light behind it, and other panels out of focus by their depth. Pose the subject, not the camera (§10), so type on the fitted camera stays exact. Each panel is one plane with two textures, the screen and a pre-blurred twin, mixed by a per-panel focus value: the defocus is a texture lookup, so it costs nothing per frame and is the same on every machine. The twin is made by drawing the screen into a small canvas and back up with smoothing (no canvas filter needed).
 
 ```ts
-/** A blurred twin of a UI canvas: down to 1/k and back up with smoothing ≈ a soft blur of ~k px. */
-export function blurredTwin(src: OffscreenCanvas, k = 10) {
+/** A blurred twin of a UI canvas: down to 1/k and back up with smoothing ≈ a soft blur of ~k canvas px (k/2 composition px at 2×). */
+export function blurredTwin(src: OffscreenCanvas, k = 24) {
   const small = new OffscreenCanvas(Math.max(1, Math.round(src.width / k)), Math.max(1, Math.round(src.height / k)));
   const s = small.getContext("2d")!;
   s.imageSmoothingQuality = "high";
@@ -318,8 +318,8 @@ export function rimTexture(w: number, h: number, r: number, blur = 40) {
 
 ```ts
 // builder: the hero panel, its rim, two background panels, all in one pivot posed per frame
-const hero = focusPanel(heroCanvas, 1400, 860, "ui-hero");
-const rim = rimTexture(1400, 860, 28, 48);
+const hero = focusPanel(heroCanvas, 1200, 740, "ui-hero");      // ~62% of a 1920 frame: room for the push
+const rim = rimTexture(1200, 740, 28, 48);
 const glowPlane = new THREE.Mesh(
   new THREE.PlaneGeometry(rim.wPx * PX, rim.hPx * PX),
   new THREE.MeshBasicMaterial({ map: rim.tex, color: "#78d090", transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
@@ -354,18 +354,23 @@ Two ways to show a collection (perks, partners, templates, plans) with depth ins
 // builder: CARDS are textured planes (each card drawn once at 2×), FOLDER is the container object
 const fanPivot = new THREE.Group();
 fanPivot.position.set(0, -260 * PX, 0);                          // the container's mouth
-CARDS.forEach((c, i) => { c.position.y = 300 * PX; fanPivot.add(c); }); // card centre above the pivot
+fanPivot.rotation.x = -0.18;                                     // the whole fan leans back a little
+const arms = CARDS.map((c) => {                                  // one arm per card: it pivots below the card
+  const a = new THREE.Group();
+  c.position.y = 150 * PX;                                       // the card's centre sits above its arm's origin
+  a.add(c);
+  fanPivot.add(a);
+  return a;
+});
 scene.add(FOLDER, fanPivot);
-const N = CARDS.length, SPREAD = 0.2;                            // radians between neighbours
-// frame: each card rises 18f outCubic, staggered 3f from the centre outward, then spreads
-CARDS.forEach((c, i) => {
+const N = CARDS.length, SPREAD = 0.26;                           // radians between neighbours
+// frame: each card rises 18f outCubic, staggered 3f from the centre outward, then spreads about its arm
+arms.forEach((a, i) => {
   const off = i - (N - 1) / 2;
   const p = prog(frame, F0 + Math.abs(off) * 3, 18, outCubic);
   const s = prog(frame, F0 + 10 + Math.abs(off) * 3, 16, outCubic);
-  c.position.y = (300 * p - 120 * (1 - p)) * PX;
-  c.position.z = 0.002 * i;                                      // fixed draw order, no z-fighting
-  c.rotation.z = -off * SPREAD * s;
-  (c.parent as THREE.Group).rotation.x = -0.18;                  // the whole fan leans back a little
+  a.position.set(0, (40 * p - 260 * (1 - p)) * PX, 0.002 * i);   // bottoms just inside the mouth; fixed draw order
+  a.rotation.z = -off * SPREAD * s;
 });
 ```
 
