@@ -18,7 +18,8 @@ export const FONT = 'Inter, "SF Pro Display", -apple-system, "Helvetica Neue", A
 export interface TypeStyle {
   size: number; // composition px
   weight?: number; // 400-500 (house cap 500); hierarchy comes from size, not weight
-  color?: string; // drawn colour; draw white and tint with setLabel({ color }) for sweeps
+  color?: string; // the starting tint. The canvas is always drawn white and this colour is the tint, so a
+                  // later setLabel({ color }) or counter setColor REPLACES it (it never multiplies with it)
   tracking?: number; // em; defaults by size
   font?: string;
 }
@@ -37,6 +38,22 @@ export function measure(text: string, s: TypeStyle): number {
   const g = (measurer ??= new OffscreenCanvas(8, 8).getContext("2d")!);
   applyFont(g, s, 1);
   return g.measureText(text).width;
+}
+
+/**
+ * How far below a centred label's middle a rise mask must sit for `text`, in composition px:
+ * the lowest ink of this text in this face (descenders included: g j p q y, a comma) plus `pad`.
+ * maskY = labelCentreY - maskDepth(text, style) * PX. An all-caps word gets a line just under
+ * its caps; a word with a descender gets one under the descender, so nothing is ever clipped.
+ * Call it inside withFonts (it measures the loaded face).
+ */
+export function maskDepth(text: string, s: TypeStyle, pad = Math.max(4, s.size * 0.06)): number {
+  const g = (measurer ??= new OffscreenCanvas(8, 8).getContext("2d")!);
+  applyFont(g, s, 1);
+  g.textBaseline = "middle"; // label() draws on the middle baseline, 0.04 x size lower
+  const below = g.measureText(text).actualBoundingBoxDescent;
+  g.textBaseline = "alphabetic";
+  return below + s.size * 0.04 + pad;
 }
 
 const VERT = /* glsl */ `
@@ -91,7 +108,7 @@ export function label(text: string, s: TypeStyle, align: "left" | "center" = "ce
   const g = canvas.getContext("2d")!;
   applyFont(g, s, RES);
   g.textBaseline = "middle";
-  g.fillStyle = s.color ?? "#ffffff";
+  g.fillStyle = "#ffffff"; // always white: style.color becomes the tint below, so a later tint replaces it
   g.fillText(text, pad * RES, (h / 2 + s.size * 0.04) * RES);
 
   const tex = new THREE.CanvasTexture(canvas as unknown as HTMLCanvasElement);
@@ -102,7 +119,7 @@ export function label(text: string, s: TypeStyle, align: "left" | "center" = "ce
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uMap: { value: tex },
-      uColor: { value: new THREE.Color(1, 1, 1) },
+      uColor: { value: new THREE.Color(s.color ?? "#ffffff") },
       uOpacity: { value: 1 },
       uBlur: { value: new THREE.Vector2(0, 0) },
       uMaskY: { value: -1e9 },
@@ -120,7 +137,7 @@ export function label(text: string, s: TypeStyle, align: "left" | "center" = "ce
   return mesh;
 }
 
-/** Per-frame look of a label: opacity, blur in composition px, tint, masks in world units. */
+/** Per-frame look of a label: opacity, blur in composition px, tint (replaces style.color), masks in world units. */
 export function setLabel(
   m: Label,
   o: { opacity?: number; blur?: number; color?: THREE.Color; maskY?: number; maskX?: number; maskSoft?: number },
@@ -280,7 +297,9 @@ export const hasTabularFigures = (s: TypeStyle) => {
 /**
  * A rolling number: one strip of 0-9 drawn once, one plane per digit slot showing a window
  * onto it. `set(value)` moves texture offsets (and, for proportional figures, slot positions) only.
- * `pattern` like "$#,###": # is a digit.
+ * `pattern` like "$#,###": # is a digit. A "." followed by # marks decimals: "##.#" shows 0.4 as
+ *   "0.4" and 20 as "20.0" (set the real value; the ones digit and every decimal are always shown).
+ *   Use "," (or a space) for thousands, never ".".
  * figures "tabular" (default): every slot is one advance wide. Use a face with tabular figures on
  *   (withFonts with features '"tnum" 1'); with a proportional face a narrow 1 sits in a wide cell
  *   and "$1,211" reads "$1, 2 1 1".
@@ -295,7 +314,7 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
   const canvas = new OffscreenCanvas(digitW * RES, cell * 11 * RES);
   const g = canvas.getContext("2d")!;
   applyFont(g, flat, RES);
-  g.fillStyle = s.color ?? "#ffffff";
+  g.fillStyle = "#ffffff"; // drawn white; style.color is applied as the tint (setColor replaces it)
   g.textAlign = "center";
   g.textBaseline = "middle";
   for (let i = 0; i <= 10; i++) g.fillText(String(i % 10), (digitW / 2) * RES, (cell * i + cell / 2 + s.size * 0.04) * RES);
@@ -325,6 +344,9 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
       parts.push({ mesh: m, w: measure(ch, flat), digit: false, x: 0 });
     }
   }
+  const dot = pattern.lastIndexOf(".");
+  const decimals = dot < 0 ? 0 : [...pattern.slice(dot + 1)].filter((c) => c === "#").length;
+  const unit = 10 ** decimals; // the place value of the ones digit, in scaled units
   const total = parts.reduce((a, p) => a + p.w, 0);
   let x = -total / 2;
   for (const p of parts) {
@@ -337,9 +359,11 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
    * Show `value`; fractional values roll the last digit (and carry) smoothly. Leading zeros and
    * the separators before them are hidden ("$#,###" at 42 reads "$42", not "$0,042"); the digits
    * stay right-anchored, and a prefix ("$") moves to sit beside the first visible digit.
-   * Give the pattern as many # as the final value has digits.
+   * Give the pattern as many # as the final value has digits. With decimals ("##.#") pass the real
+   * value (0.4); a stepped readout passes values already rounded to the shown precision.
    */
   const set = (value: number) => {
+    const v = Math.round(value * unit * 1e6) / 1e6; // 2.3 * 10 is 22.999...; snap float error first
     const n = slots.length;
     let d = 0;
     let lead = true;
@@ -350,11 +374,12 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
       if (p.digit) {
         const place = 10 ** (n - 1 - d);
         const tex = slots[d++]!;
-        const whole = Math.floor(value / place) % 10;
+        const whole = Math.floor(v / place) % 10;
         // a slot rolls to its next digit while everything below it passes from 9...9 to 0...0
-        const roll = Math.min(1, Math.max(0, (value % place) - (place - 1)));
+        const roll = Math.min(1, Math.max(0, (v % place) - (place - 1)));
         tex.offset.y = 1 - (whole + roll + 1) / 11;
-        if (place === 1 || value > place - 1) lead = false; // shown once it is (or is rolling to) non-zero
+        // shown once it is (or is rolling to) non-zero; the ones digit and the decimals always show
+        if (place <= unit || v > place - 1) lead = false;
         p.mesh.visible = !lead;
         if (figures === "proportional") w = adv[whole]! + (adv[(whole + 1) % 10]! - adv[whole]!) * roll;
       } else {
@@ -378,16 +403,17 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
     if (pre && !pre.digit && first) pre.mesh.position.x = first.x - ((widths[parts.indexOf(first)]! + pre.w) / 2) * PX;
   };
   set(0);
+  /** Tints the whole counter (drawn white; style.color is the starting tint and this replaces it): an ink change on a new ground. */
+  const setColor = (c: THREE.Color) => {
+    materials.forEach((m) => m.color.copy(c));
+    symbols.forEach((m) => (m.material.uniforms.uColor!.value as THREE.Color).copy(c));
+  };
+  setColor(new THREE.Color(s.color ?? "#ffffff"));
   /** Fades the whole counter; never re-shows a hidden leading slot. */
   const setOpacity = (o: number) => {
     materials.forEach((m) => (m.opacity = o));
     symbols.forEach((m) => (m.material.uniforms.uOpacity!.value = o));
     group.visible = o > 0.001;
-  };
-  /** Tints the whole counter (the strip is drawn white unless style.color says otherwise): an ink change on a new ground. */
-  const setColor = (c: THREE.Color) => {
-    materials.forEach((m) => m.color.copy(c));
-    symbols.forEach((m) => (m.material.uniforms.uColor!.value as THREE.Color).copy(c));
   };
   return { group, set, setOpacity, setColor, width: total * PX };
 }
@@ -400,9 +426,10 @@ export function counter(pattern: string, s: TypeStyle, figures: "tabular" | "pro
 | `label(text, style, align?)` | one plane (`Label`) | A line that moves as one; a single word; a caption |
 | `line(text, style, align?)` | `{ group, words[], width }` | Word-by-word reveals; `align` "left" / "center" / "right" puts the group origin at that edge (a left column uses "left"); each word keeps `userData.restX` |
 | `letters(word, style)` | `{ group, letters[], track(em, anchor?) }` | Per-character titles; a wordmark whose tracking tightens. `anchor` "left" / "center" / "right" is the edge that stays put; `track` returns the word's width |
-| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | — | Per-frame look: blur in px, tint (draw white, tint per frame), clip below a world y, clip right of a world x (a wipe, feathered by `maskSoft` world units) |
+| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | — | Per-frame look: blur in px, tint, clip below a world y, clip right of a world x (a wipe, feathered by `maskSoft` world units). The canvas is always drawn white and `style.color` is only the starting tint, so `color` here **replaces** it (a grey style tinted red is red, not a dark red multiply) |
 | `measure(text, style)` | px | Layout maths: slot widths, wrapping by hand |
-| `counter("$#,###", style, figures?)` | `{ group, set(value), setOpacity(o), setColor(c), width }` | Count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit. `figures` "tabular" (default: load the face with tabular figures on, §3) or "proportional" (a face without them: each slot as wide as its digit, right-anchored). `setColor` changes its ink (a counter crossing onto a new ground) |
+| `maskDepth(text, style, pad?)` | px | How far below a centred label's middle a rise mask goes for this text in this face: its lowest ink (descenders included) + `pad` (default 6% of size, ≥ 4 px). `maskY = centreY − maskDepth(text, style) * PX`; inside `withFonts` |
+| `counter("$#,###", style, figures?)` | `{ group, set(value), setOpacity(o), setColor(c), width }` | Count-ups; fractional values roll; leading zeros and their separators stay hidden, the prefix rides beside the first digit. A `.` followed by `#` marks decimals: `"##.#"` shows `set(0.4)` as "0.4" and `set(20)` as "20.0" (the ones digit and the decimals always show); for a stepped readout pass values already rounded to that precision, since a fraction beyond it rolls the last digit. Thousands use `,`. `figures` "tabular" (default: load the face with tabular figures on, §3) or "proportional" (a face without them: each slot as wide as its digit, right-anchored). `setColor` changes its ink (a counter crossing onto a new ground) |
 | `hasTabularFigures(style)` | boolean | Whether the style's face sets every figure on one advance: true for a face loaded with `features: '"tnum" 1'` that has them |
 | `withFonts(ctx, files, build)` | the scene's update | Wrap the whole builder so no texture is drawn in a fallback face |
 | `onTop(obj, order?)` | the same object | Type over 3D as one layer: no depth test on its meshes, and `order` on every mesh **and Group** under it (the groups `line()`/`letters()`/`counter()` return included). 100 = above the world, under covers; 960+ = above a cover |
@@ -450,10 +477,10 @@ withFonts(ctx, [
 
 - **2× canvases** (`RES`): captures run at up to 2× device pixels; type drawn at 1× goes soft.
 - **Tracking in the canvas** (`letterSpacing`): the canvas applies it per glyph, so measured widths include it and words lay out exactly.
-- **Draw white, tint per frame**: a colour sweep or two-pass ink is `color.lerpColors(a, b, t)` on one plane, never two crossfaded copies (which let the background show through and read pale).
+- **Draw white, tint per frame**: a colour sweep or two-pass ink is `color.lerpColors(a, b, t)` on one plane, never two crossfaded copies (which let the background show through and read pale). The kit draws every canvas white and turns `style.color` into the starting tint, so a style colour and a later tint never multiply (an earlier version drew the style colour into the canvas, and a grey style tinted toward ink came out near-black). Tested: a `#8a8a93` style tinted `#e0301e` renders `#e0301e`.
 - **A `ShaderMaterial`, not `MeshBasicMaterial`**: it gives blur and the mask, and it is never tone mapped, so text keeps its exact hex under any `renderer.toneMapping` (`three-look`).
 - **Blur room**: each canvas is padded by 16 px so a 10–16 px blur spreads instead of being clipped at the plane edge. For heavier display blur (18–34 px) pass a larger `blurRoom`.
-- **The masks are world coordinates**: `maskY` discards everything below a horizontal line, which is all `riseMask` and mask push-up need. Put the line just under the descenders: `baselineY - size * 0.75 * PX` for a centred label; for an all-caps word (no descenders) just under the caps, `y - size * 0.36 * PX` for a centred label (measured: Inter caps on a label centred at `y` run from 0.39 × size above it to 0.33 × size below, so caps sit 0.03 × size above the plane's centre; shift an all-caps wordmark down by that to centre it optically on a symbol). `maskX` discards everything right of a vertical line, so a light line or an arm travelling left to right can *write* a word in; `maskSoft` (world units, about 0.15 × size × PX) feathers that edge. Both are world values: if the type's group moves or sits inside a moved parent, convert with `getWorldPosition` first.
+- **The masks are world coordinates**: `maskY` discards everything below a horizontal line, which is all `riseMask` and mask push-up need. Put the line under the text's lowest ink with `maskDepth(text, style)`: for a centred label at `y`, `maskY = y − maskDepth(text, style) * PX`. It measures the actual word in the loaded face, so a mixed-case word with a descender ("Juniper", "Daylight") gets a line under the p and the g, and an all-caps word a line just under its caps; a caps-height mask on a word with a descender clips the tail of its y, g or p on every frame. Measured for Inter at 150 px: "Juniper" 90 px, "HARBOR" 62 px below the centre (with the 9 px pad), checked on a captured still with both words rising through their lines. Hand-set values, if you need them: under the descenders `y − size * 0.62 * PX`, under caps only `y − size * 0.36 * PX` (measured: Inter caps on a label centred at `y` run from 0.39 × size above it to 0.33 × size below, so caps sit 0.03 × size above the plane's centre; shift an all-caps wordmark down by that to centre it optically on a symbol). `maskX` discards everything right of a vertical line, so a light line or an arm travelling left to right can *write* a word in; `maskSoft` (world units, about 0.15 × size × PX) feathers that edge. Both are world values: if the type's group moves or sits inside a moved parent, convert with `getWorldPosition` first.
 - **Cap height**: Inter's capitals are 0.727 em tall, so a wordmark whose caps must be 96 px is set at `96 / 0.727 ≈ 132` px. Other faces: measure a capital H on a still once.
 - **Draw order, and the Group trap**: three.js sorts transparent objects by **groupOrder first** (the `renderOrder` of the nearest ancestor `THREE.Group`; every Group resets it to its own order, 0 by default), then by the mesh's own `renderOrder`, then by depth. So the Group that `line()`, `letters()` or `counter()` returns, at 0, drops its words to the bottom of whatever they sit in, whatever order the meshes carry: the trap a judged film hit when a payoff line nested in the overlay vanished under a flood. `onTop(obj, order)` therefore sets `order` on every Group under `obj` as well as every mesh, so the subtree is one layer. `three-camera`'s `overlay()` group is 900 and the cover inside it 950: `onTop(x)` (100) keeps world type under covers, `onTop(x, 960)` puts a line above a flood (tested: the same nested line without `onTop` drew under the cover, with `onTop(…, 960)` above it). Covers and panels must be `transparent: true`: opaque objects all draw before transparent ones. Layered flat shapes (a stand-in mark built from overlapping facets): one Group per layer, each `onTop(layer, n)` with rising `n`.
 - **Picking**: every plane is named after its words (`slug`), so a click in the editor arrives as `#ship-the-whole-film`.

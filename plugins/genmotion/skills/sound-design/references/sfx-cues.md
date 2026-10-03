@@ -239,6 +239,11 @@ Tested on ffmpeg 6.1 with 80 events accelerating from 30 f apart to every 1–2 
 
 When a film needs the *sound* of people talking without words (a café, a meeting behind a product, a crowd reacting, an app whose output is speech before a real recording exists) and there is no `voiceover` or `sfx`: formant-filtered noise and a low buzz, gated into syllables at about 4 Hz with phrase breaks. It is unmistakably a placeholder (it reads as "voices through a wall"); name it `placeholder-murmur.wav`, list it in `VIDEO.md` as a stand-in, and replace it with a real recording or a `voiceover` take of the actual words when the film's meaning depends on them.
 
+**Never for one intimate voice** (a diary, a voice message to someone, a private recording, one person thinking aloud): a through-the-wall crowd reads as the opposite of private. Instead:
+
+- **With no `voiceover`**: the on-screen words carry the voice (the transcript, set in the speaker's own type), and the recording frames get a close, quiet presence: a breath or room tone close to the mic (brown noise high-passed at 120 Hz and low-passed at 3 kHz, about −34 dB RMS, 0.02 linear), fading in over 6–8f with the recording and out with it. Flag "the real recording goes here" in `VIDEO.md`.
+- **With `voiceover`**: record the actual line, close and dry (no reverb, no room), placed at speech level per the ladder, with the bed out under it (duck 10–12 dB or stop it), because the product's sound is that one voice.
+
 ```
 # 6 s murmur: pink noise + a 125 Hz voiced buzz (3 harmonics, slow pitch drift) through three formant bands (600 / 1400 / 2600 Hz),
 # syllables at ~4.2 Hz with jittered phase, a 0.37 Hz phrase swell, and a 0.5 s pause every 2.6 s

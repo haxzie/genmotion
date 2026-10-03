@@ -1,0 +1,97 @@
+{
+  "id": "device-mockup",
+  "title": "Device mockup (Three.js)",
+  "description": "A convincing generic phone and a mobile app UI rebuilt in Three.js, measured from a polished launch film: the device as ratios of its width (flat slab, thin metal ring, black bezel, camera pill, status bar, home indicator, two-layer soft shadow) with its screen a render target clipped to the rounded glass; a canvas-drawn app kit (nav, chips, image cards, lists, typing inputs, a three-state button, sheets, toasts, streaming chat, library, detail, glossy stickers); and its motion on a beat grid. Load it when a video shows an app on a phone.",
+  "summary": "A crisp phone frame and drawn app UI in Three.js with measured motion: sheets, button states, toasts, chat streaming, beat punches.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "device",
+    "phone",
+    "mockup",
+    "app-ui",
+    "threejs",
+    "motion"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 3,
+    "maxSeconds": 120
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "skill",
+      "id": "three-assets",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "motion-language",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "launch-taste",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Rim aliasing, text size on screen, stickers over live UI and empty lower halves only show in frames."
+    },
+    {
+      "kind": "capability",
+      "id": "validate",
+      "why": "The phone, kit and flow modules compile against the project before any frame is judged."
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "show our app on a phone",
+    "phone mockup with our UI",
+    "app demo inside a phone frame",
+    "recreate an app screen flow in a phone",
+    "animate a bottom sheet and a toast on the phone",
+    "make the phone punch on the beat",
+    "the phone frame looks fake"
+  ],
+  "templates": [
+    "fintech-app-launch-video",
+    "samsung-pay-fintech-app-launch-video",
+    "polls-in-messages",
+    "elevenlabs-voice-ai-launch"
+  ],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "📱"
+}

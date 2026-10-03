@@ -69,6 +69,8 @@ The path parser handles M L H V C S Q T Z, absolute and relative. Arcs throw an 
 
 A phone or laptop is an extruded rounded rectangle (glossy dark `MeshPhysicalMaterial`, a small bevel) with the screenshot or footage plane just in front of its face; code in `references/images-and-logos.md` §4. Size the screen to the frame's inner area. Pushing through the screen into the UI is a match-push (`three-camera`, `three-transitions`).
 
+**For a phone with an app working inside it, use `device-mockup`**: the full kit, tested. It builds a convincing generic phone from measured ratios (crisp antialiased ring and bezel at any scale, camera pill, status bar, home indicator, soft two-layer shadow), clips its screens to the rounded glass through a render target, and adds the app kit (sheets, typing inputs, a three-state button, toasts, streaming chat) and the motion on a beat grid. The extruded frame above is for laptops, tablets and a quick 3D prop.
+
 ## Footage
 
 - **Transcode first** with `ffmpeg`: VP9 WebM, a keyframe every 15 frames, the project's fps, trimmed to the moment that matters, no audio track. The exact command is in `references/footage-and-audio.md` §1.

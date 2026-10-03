@@ -113,6 +113,13 @@
       "engines": [
         "three"
       ]
+    },
+    {
+      "kind": "skill",
+      "id": "device-mockup",
+      "engines": [
+        "three"
+      ]
     }
   ],
   "route": {
@@ -153,6 +160,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.1",
+  "version": "2.2.0",
   "icon": "🎓"
 }

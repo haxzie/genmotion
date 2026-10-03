@@ -16,7 +16,18 @@ cam.position.set(target.x, target.y, target.z + logLerp(D0, D0 / 1.6, t));
 cam.lookAt(target);
 ```
 
-- Push 24–48f, zoom 1.3–2.5×; pull-back 45–52f. Log-space distance, always.
+- Push 24–48f, zoom 1.3–2.5× (a launch film's peak push 1.7–3.8×, `launch-playbook`); pull-back 45–52f. Log-space distance, always.
+- **A move that carries the peak pre-rolls**, so the hit frame is already moving:
+
+```ts
+// the 10 lands on HIT; the push starts 12f earlier, so on HIT it runs at 4 * (12/36)^2 = 44% of peak speed
+const HIT = 540, PRE = 12, DUR = 36;
+const t = prog(frame, HIT - PRE, DUR, inOutCubic);
+cam.position.set(lerp(0, FOCUS.x, t), lerp(0, FOCUS.y, t), logLerp(D0, D0 / 2.2, t)); // reframe to centre
+cam.lookAt(cam.position.x, cam.position.y, 0);
+```
+
+  Pick `PRE` so `4 (PRE / DUR)²` is 0.4–0.6 (`PRE` ≈ 0.32–0.39 × `DUR`: 11–14f of a 36f move, 15–19f of a 48f pull). The words that change on the hit are on the camera overlay, not in the moving world.
 - To push onto an off-centre subject, lerp the camera's x/y and its look target together, so the subject slides to centre as it grows.
 - Creep (+1.5–6% over a long hold): the same line with `prog(frame, 0, durationInFrames, inOutSine)` and `D0 / 1.04`.
 
@@ -242,3 +253,5 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 ## 13. Push on a flat film as a view transform
 
 In a flat, diagrammatic film (a boundary on paper, a map, a UI with screen-space labels), a camera push also magnifies every label and changes every stroke width. Push a **map group** instead: `map.scale.set(k, k, 1)` and `map.position` set so the focus point stays put (`position = focus × (1 − k)`), with `k = logLerp(1, zoom, e)`. The labels and the overlay stay on the fitted camera at their true px; strokes drawn with a screen-px width (`three-assets` `outline()`, or line art with `uScale = k`) keep their weight. It is the same picture as a camera push for anything flat on z = 0, with none of its side effects.
+
+The same transform is **the pull-back that keeps its focal still** (the broken-rule pull where one unit becomes the whole field): `k` runs from the close-up zoom down to 1 in log space, `focus` is the focal element's position, and because `position = focus × (1 − k)` the focal sits on the same screen point on every frame while the rest of the world arrives around it. Labels that belong to the world fade out before `k` starts falling and back in after it settles.

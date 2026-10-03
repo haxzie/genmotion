@@ -27,8 +27,9 @@ Copy `references/type-kit.md` into `components/type.ts` (it imports `PX`/`RES` f
 | `label(text, style)` | One plane, drawn once at 2×, unlit, named after its words |
 | `line(text, style, align?)` | One plane per word, laid out with measured widths; each keeps `restX`; `align` "left" / "center" / "right" (a left column is "left") |
 | `letters(word, style)` | One plane per character; `track(em, anchor?)` re-spaces them with no redraw, holding the `anchor` edge ("left" for a wordmark right of its symbol) still |
-| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | The per-frame look: blur in px, tint, clip below a line, clip right of a line (a wipe that writes the word in) |
-| `counter("#,###", style, figures?)` | Digits rolling on a strip texture; leading zeros hidden ("$42", not "$0,042"); `setColor` for an ink change. Load the face with tabular figures on (`features: '"tnum" 1'`) or pass `"proportional"` |
+| `setLabel(m, { opacity, blur, color, maskY, maskX, maskSoft })` | The per-frame look: blur in px, tint (it **replaces** `style.color`, which is only the starting tint: the canvas is drawn white), clip below a line, clip right of a line (a wipe that writes the word in) |
+| `maskDepth(text, style)` | Px below a centred label's middle for a rise mask: the text's lowest ink in the loaded face (descenders included) plus a small pad |
+| `counter("#,###", style, figures?)` | Digits rolling on a strip texture; leading zeros hidden ("$42", not "$0,042"); decimals with `"##.#"` (`set(0.4)` reads "0.4"); `setColor` for an ink change. Load the face with tabular figures on (`features: '"tnum" 1'`) or pass `"proportional"` |
 | `withFonts(ctx, files, build)` | Builds the scene only once the font files have loaded, inside the frame barrier; several families in one call; `features` turns on OpenType features (tabular figures) |
 | `onTop(obj, order?)` | Keeps type in front of 3D objects as one layer: depth test off, `order` on every mesh **and Group** under it. 100 = above the world, under covers; 920 = captions on the overlay; 960+ = above a flood |
 
@@ -37,7 +38,7 @@ Rules it encodes, and why:
 - **Draw once in the builder, animate the meshes.** Redrawing a canvas per frame re-uploads a texture 30 times a second.
 - **2× canvases, sized in composition px.** Captures run at up to 2× device pixels. Never draw small and scale the plane up: that is the "blurry text" bug. Raise `size` instead.
 - **Ship the font file.** The capture machine has almost no fonts installed and a new project ships none; `"Inter"` by name silently becomes a default sans in the export. Put the woff2 (or woff) in `assets/` and wrap each scene's builder in `withFonts`; TTF and OTF files fail the project's bundler and `check`, so convert or fetch the woff2. Any OFL face: `npm pack @fontsource-variable/<family>` (or `@fontsource/<family>`) and take the latin woff2 from `files/`. Inter (OFL): `save-asset` `https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/InterVariable.woff2` (font CDNs are often blocked; this and the rsms/inter GitHub release are not); more sources in `references/type-kit.md` §3.
-- **Draw white, tint per frame.** Colour sweeps, inking and the punch word are one plane whose tint changes; two crossfaded copies let the background through and read pale.
+- **Draw white, tint per frame.** Colour sweeps, inking and the punch word are one plane whose tint changes; two crossfaded copies let the background through and read pale. The kit always draws white and uses `style.color` as the starting tint, so a later tint replaces it, never multiplies with it.
 - **Text is never tone mapped and never lit.** The kit's shader ignores `renderer.toneMapping`, so `#ededef` stays `#ededef` under any look.
 - **Text is never hidden by the 3D world.** The planes write no depth but still test it, so anything nearer the camera covers them. Wrap every headline, label and caption that shares a frame with 3D objects in `onTop()` (depth test off, drawn last); check a frame where an object passes in front.
 - **Kerned per character.** `letters()` places each glyph where it sits inside the kerned word, so "WAVY", "AV" and "To" set per character match the same word set whole.
@@ -82,6 +83,7 @@ export const TYPE = {
 - No wrapping happens for you. Break lines yourself at 2–6 words; measure with `measure()` and stack lines at 1.1–1.2 × size.
 - 16:9: keep words inside the house comfort zone, 8–10% per side (150–190 px left/right).
 - **Beside a hero object** (text left, product right): the text column is ≤ 40–45% of the frame width from the left margin (about 610–690 px of type at 1920 after a 170 px margin), so at hero size (92–110 px) that is 2–3 words a line, and a 4–6 word line breaks in two. Keep ≥ 80 px between the column's longest line and the object's silhouette at its largest. Don't run the same text-left / object-right layout on every beat: move the column or centre the payoff.
+- **A world moving under a headline** (a pull-back, a truck, lanes or rows sliding through the frame): type never collides with it mid-move. Route the moving parts out of the headline band (lay the world out so nothing travels through the line's box plus 40 px); if something must pass, fade it under a **feathered knockout** (a ground-coloured plane or mask with a ≥ 40 px soft edge) instead of a hard-edged patch, because a line that stops dead at an invisible box reads as a collision. Labels inside the moving world exit before the move or land after it settles; world text that shrinks below 28 px in a pull-back is drawn as bars (below).
 - 9:16 (1080×1920): everything readable inside x 120–840, y 270–1210 (the platform UI superset); headlines 2–4 words a line, 64–132 px; the hook just below the top band (y 270–450).
 - 1:1 and 4:5: 5–8% margins; 4:5 keeps key words inside the centre 1080×1080.
 - Scale a whole block to fit with `fitBlock()` only as a last resort; re-breaking lines per aspect is better than shrinking.
@@ -93,9 +95,9 @@ All in `references/reveals.md`, compiled and captured:
 | Recipe (numbers from `motion-language`) | Kit move |
 | --- | --- |
 | blurUp by word: 12f outCubic, 3f stagger, blur 10 → 0 | `line()`, `setLabel({ opacity, blur })`, y offset |
-| riseMask: 13f outQuart, stagger 4f | `setLabel({ maskY })` just under the descenders |
+| riseMask: 13f outQuart, stagger 4f | `setLabel({ maskY })` at `y − maskDepth(text, style) * PX`: under the descenders |
 | Per-character title with colour sweep | `letters()`, tint lands 1.6× slower than the move |
-| Wordmark: tracking +0.32 → +0.01em over 15f outQuad (uppercase: → +0.08 to +0.16em), letters rising through a caps mask; or written in by a wipe | `letters().track(em, "left")` per frame, `setLabel({ maskY })` or `setLabel({ maskX, maskSoft })` |
+| Wordmark: tracking +0.32 → +0.01em over 15f outQuad (uppercase: → +0.08 to +0.16em), letters rising through a mask under the word's lowest ink (`maskDepth`: under the caps only when the word has no descender); or written in by a wipe | `letters().track(em, "left")` per frame, `setLabel({ maskY })` or `setLabel({ maskX, maskSoft })` |
 | L→R sweep, two-pass ink | tint per word, 2f apart; grey → ink 5f later |
 | Typewriter: 2–2.4 f/char, caret solid while typing | `letters()` visibility by index + a caret plane |
 | Word-slot flip: −96° out, +92° in, slot morphs 14f | pivot on the baseline, `rotation.x`, measured slot widths |
@@ -189,7 +191,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 1. `capture-frames` on every held line: the face is the brand font (not a fallback sans), edges crisp, nothing under 28 px, no headline heavier than 500.
 2. Per-character words (`letters()`) at full resolution: no overlapping or gapped glyph pairs (look at a T, V, W or Y next to a lowercase letter). Mid-reveal frames of uppercase display type show no grey, half-opaque capitals. A counter mid-count shows no leading zeros, and a value with 1s in it (1,211) is evenly spaced: no wide gap either side of a 1.
 3. A frame where a 3D object passes the type: the type stays in front. A frame where a cover, flood or panel overlaps type: the type is on the side of it you intended (each group went through `onTop` with its layer's order).
-4. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down.
+4. One frame per shipped aspect: no word outside the safe zone for that aspect; 9:16 captions sit 58–63% down. During every camera or world move, a 4 fps strip of the move shows nothing crossing or abutting a visible word (no line ending at a hard invisible edge beside it), and rise-masked words show their descenders whole.
 5. Mid-reveal frame of each recipe: blur and colour sweep visible, no word clipped by its plane edge.
 6. Every line is fully legible by 15–20f after its first word, and holds `max(30, 9 × words + 15)` frames once legible.
 7. Every text plane is named after its words; no canvas is drawn inside a frame callback.

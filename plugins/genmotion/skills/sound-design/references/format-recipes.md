@@ -34,7 +34,7 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 - **Cues lead**: 5–20 designed cues on the film's events (a tone per unit, a tick per crossing, the hit on the peak, a 2–4 note sonic logo on the mark). Each cue's loudest 50 ms RMS sits **≥12 dB above the bed** (`mix-and-loudness.md`, Sparse mixes).
 - **Bed**: none, or an air bed at 0.05–0.15 low-passed at ≤ 4 kHz (`sfx-cues.md`'s ambient bed, brown noise alone). Take it out for the breath so the silence is real (room tone at −45 to −60 dBFS, not a riser filling it).
 - **Many events**: one stem from the scene's event schedule with the many-events rules (`sfx-cues.md`, Many events); heroes (first, last, isolated) at full level.
-- **Master**: −16 to −18 LUFS integrated, ≤ −1 dBTP, LRA ≥ 4–5 LU, with the computed-ceiling re-master (`mix-and-loudness.md`); −14 only when the cues are dense and energetic and still lead after it. Tell the user why it is quieter than −14 (platforms turn loud files down, not reliably quiet ones up).
+- **Master**: −16 to −18 LUFS integrated, ≤ −1 dBTP, LRA 4–14 LU (no stretch under −40 LUFS momentary for more than 2 s outside the named silence), with the computed-ceiling re-master (`mix-and-loudness.md`); −14 only when the cues are dense and energetic and still lead after it. Tell the user why it is quieter than −14 (platforms turn loud files down, not reliably quiet ones up).
 
 ## Brand sting (2–8 s)
 

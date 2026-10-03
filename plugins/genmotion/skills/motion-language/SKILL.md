@@ -110,6 +110,7 @@ Never let a damped swing stand in for this, and never decay the amplitude to zer
 | Constant spin | 0.006 rad/frame (rays), 0.05°/frame (orbits) | Background objects, linear |
 
 - **One** ambient behaviour on the focal element at a time; the camera drift can run under it.
+- **A held line still needs a visible change.** A line held at its formula (`direction` Step 6) is not a dead hold only if something can be seen changing on a 4 fps strip of the hold: the device acting, the next beat's first motion overlapping in, an ambient big enough to see. A 1.5% breathe or a 3–6% creep is invisible on the strip and does not count.
 - **Lockups move as one group.** A mark + name, an icon + label, a chip + its text: animate the group's transform, not the parts on separate paths, so nothing passes through a visible word. If one part must arrive first, the other enters only after the first has cleared its slot.
 - A line floats with one shared phase; per-word phases break the baseline.
 - Drift dies before a matched cut: `drift × (1 − transition progress)`.
@@ -134,11 +135,11 @@ One move per shot, always eased, always motivated by what the shot needs to say.
 
 | Move | Numbers | What it says | Use |
 | --- | --- | --- | --- |
-| Push-in | **24–48f inOutCubic**, zoom 1.3–2.5× | "Look at this"; importance, focus | Before a reveal, onto the control that matters |
+| Push-in | **24–48f inOutCubic**, zoom 1.3–2.5×; **a launch peak 1.7–3.8×** (`launch-playbook`), ending with the subject in the centre third at ≥ 40% of frame height | "Look at this"; importance, focus | Before a reveal, onto the control that matters |
 | Match-push | 6–10f inCubic to 3.8× into a cut | "We're going inside" | Mic → transcript, button → result |
 | Punch-in | 6–10f inCubic, 8–15%, hold ≥15f, release 10–15f | Emphasis on a word or beat | Key line, music hit |
 | Slam | zoom 1 → 9 over 10f inCubic + zoom blur + white flash | Impact, the peak | Once per film at most |
-| Pull-back | 45–52f inOutCubic | Context, scale, release | Revealing the bigger picture, toward the end card |
+| Pull-back | 45–52f inOutCubic; as the film's broken rule, it scales about the focal element so the focal stays put on screen | Context, scale, release | Revealing the bigger picture, toward the end card |
 | Orbit | 10–30° over 90–150f, inOutSine or linear | Premium form, "every side" | 3D product hero |
 | Pan / truck | 1.5–3 s inOut, cursor or subject leads | Journey, scanning a line-up | One-shot films, feature line-ups |
 | Creep | +1.5–6% zoom over the scene | Quiet life | Long holds |
@@ -146,6 +147,8 @@ One move per shot, always eased, always motivated by what the shot needs to say.
 | Shake | 3–6f decay, on the impact frame | Impact, urgency | Hits only |
 | FOV punch | −5 to −10°, decaying with a kick | Music hits | Music video |
 
+- **A move that carries the peak starts its ease-in 10–14f before the hit**, so on the hit frame it is visibly under way (about 40–60% of its peak speed) and the picture change lands *on* the hit; "ease in over 10–15f" and "the change lands on the hit frame" are the same rule once the ease-in is pre-rolled. A 4f lean-in leaves the hit frame looking still. Recipe and the speed formula: `three-camera`.
+- **Type waits for the move.** Labels belonging to the moving world land after it settles; nothing in the world crosses a visible word mid-move (route it out of the headline band, or under a feathered knockout with a ≥ 40 px soft edge, never a hard box: `three-type`).
 - Interpolate zoom in log space; route paths with three or more keys through a monotone spline.
 - Never animate dolly and FOV in the same move. Never a camera move under 6f except a deliberate punch-in into a cut.
 - Keep one direction of travel for progress across the film.
@@ -214,7 +217,7 @@ You will be tempted to do each of these. Don't.
 1. Every entrance decelerates and every exit accelerates; spot-check three elements with `capture-frames` at 25%, 50% and 100% of their move (most of the travel is done by 25% on an entrance).
 2. Exits finish 4–8f before each cut: the frame 3f before every exit-then-cut shows background only.
 3. For every matched handoff, the last frame of scene N and the first of N+1 match in carrier position, size and colour, with camera drift at zero.
-4. No multi-key camera or cursor path stalls: capture 5 consecutive frames around each interior key; the subject keeps moving.
+4. No multi-key camera or cursor path stalls: capture 5 consecutive frames around each interior key; the subject keeps moving. A camera move that carries the peak differs visibly between the hit frame and 2f before it.
 5. Overshoot appears only on the roles the Direction block allows, at the sizes above.
 6. Each held frame has exactly one ambient behaviour on its focal element.
 7. Every sound cue paired with a handoff sits at the frame this table gives (check against the cue sheet).

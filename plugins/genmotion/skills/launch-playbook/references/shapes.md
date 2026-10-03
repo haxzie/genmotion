@@ -2,6 +2,8 @@
 
 Read this after picking the shape, while writing the Beats table. Each shape adapts the 30 s default (900f, 120 BPM grid, reveal at 240) from `SKILL.md`; scale the frames proportionally for 15, 45 and 60 s. Frames at 30 fps. The tables are laid out reveal-led; when `launch-taste` step 7 makes the film an accumulation or outcome film, keep the shape's opening and move its 10 to the device's completion at 60–75% (`SKILL.md`, Accumulation or outcome at 30 s).
 
+Opening pace holds in every shape: the idea's device (or its first unit) is on screen and acting by frame 60 (in problem-first, the device is the problem's own object, so it acts from the hook), the first run of units takes ≤ 75–90f, nothing visible stops for more than 1 s between units, and a duration claim is shown compressed (≤ 75f). The setup rows below are budgets to spend on the device, not room for a claim line and a logo card before it starts.
+
 Contents: Problem-first · Demo-first · Manifesto · Metric-first · Category-creation · 90 s structure
 
 ---
