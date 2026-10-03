@@ -107,12 +107,22 @@ all three, plus the checklist for adding a template in the first place.
 
 5. **Regenerate the scaffold** (`package.json`, `tsconfig.json`, `.npmrc`,
    `.gitignore`, `AGENTS.md` — written fresh from `@genmotion/project`'s own
-   renderers, not copied from the source project):
+   renderers, not copied from the source project; `README.md` is step 6 and is
+   hand-written):
    ```sh
    pnpm --filter @genmotion/templates scaffold <id>
    ```
 
-6. **Generate the poster, then look at it:**
+6. **Write `README.md`** (the scaffold does not write this one, and a catalog
+   test fails without it). It travels with a remix and overrides the
+   scaffold's generic README, so it is the page someone lands on when the user
+   publishes their copy to GitHub. Follow `readme-spec.md` next to this file:
+   required sections, the link set (gallery, this template's page, a category
+   page per tag, docs, download), and the house rule of no em or en dashes.
+   Read two or three existing catalog READMEs first, then write this one from
+   the template's own scenes. Do not reword another template's.
+
+7. **Generate the poster, then look at it:**
    ```sh
    pnpm --filter @genmotion/templates poster <id>
    ```
@@ -121,9 +131,9 @@ all three, plus the checklist for adding a template in the first place.
    first scene's actual `interpolate`/`Sequence` timing to find a settled,
    legible frame and set `sampleAt` in `template.json`, then regenerate.
 
-7. **Render the video and upload to R2** — see the next section.
+8. **Render the video and upload to R2** — see the next section.
 
-8. **Run the tests:**
+9. **Run the tests:**
    ```sh
    pnpm --filter @genmotion/templates test
    pnpm --filter @genmotion/templates typecheck

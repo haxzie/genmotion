@@ -77,6 +77,20 @@ describe("genmotion --json", () => {
     const template = fileURLToPath(new URL("../../../templates/catalog/x-numbers-launch-video", import.meta.url));
     const { code } = gm(["init", "remix", "--template", template, "--yes"]);
     expect(code).toBe(0);
+
+    // The template's own README travels verbatim, over the scaffold's generic
+    // one: it is what someone lands on if this folder is published, links and
+    // all. Its AGENTS.md travels too, with `wireAgents` appending the terminal
+    // section on top rather than replacing what the template said.
+    const readme = await fs.readFile(path.join(tmp, "remix", "README.md"), "utf8");
+    expect(readme).toBe(await fs.readFile(path.join(template, "README.md"), "utf8"));
+    expect(readme).toContain("https://genmotion.dev/templates/x-numbers-launch-video");
+
+    const theirs = await fs.readFile(path.join(template, "AGENTS.md"), "utf8");
+    const agents = await fs.readFile(path.join(tmp, "remix", "AGENTS.md"), "utf8");
+    expect(agents.startsWith(theirs.slice(0, theirs.indexOf("\n## ")))).toBe(true);
+    expect(agents).toContain("## Working from the terminal");
+
     const pkg = JSON.parse(await fs.readFile(path.join(tmp, "remix", "package.json"), "utf8"));
     const ours = JSON.parse(await fs.readFile(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"));
     // An older pin installs an older studio: 0.2.x has no audio.

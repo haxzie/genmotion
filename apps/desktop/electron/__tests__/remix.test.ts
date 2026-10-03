@@ -78,6 +78,13 @@ describe("safePath", () => {
     }
   });
 
+  it("allows the two files a template writes about itself", () => {
+    for (const own of ["AGENTS.md", "README.md"]) {
+      expect(safePath(own), own).toBe(true);
+      expect(allowedExtension(own, "text"), own).toBe(true);
+    }
+  });
+
   it("refuses the scaffold's own files, which createProject writes fresh", () => {
     for (const owned of [
       "project.json",
@@ -85,7 +92,6 @@ describe("safePath", () => {
       "tsconfig.json",
       ".npmrc",
       ".gitignore",
-      "README.md",
       "template.json",
       "poster.jpg",
     ]) {
@@ -123,6 +129,27 @@ describe("writeRemix", () => {
       await expect(fs.stat(path.join(dir, file))).resolves.toBeTruthy();
     }
     await expect(fs.readFile(path.join(dir, SCENE.path), "utf8")).resolves.toContain("Scene");
+  });
+
+  it("lets the template's own README and AGENTS.md win over the scaffold's", async () => {
+    const dir = await tempDir();
+    await writeRemix(
+      dir,
+      "My Copy",
+      bundle([
+        SCENE,
+        { path: "README.md", encoding: "text", contents: "# The template's own\n" },
+        { path: "AGENTS.md", encoding: "text", contents: "# About this video\n" },
+      ]),
+    );
+    // Both are written about this particular piece, and both are what someone
+    // landing on the published repo (or the agent editing it) should read.
+    await expect(fs.readFile(path.join(dir, "README.md"), "utf8")).resolves.toBe(
+      "# The template's own\n",
+    );
+    await expect(fs.readFile(path.join(dir, "AGENTS.md"), "utf8")).resolves.toBe(
+      "# About this video\n",
+    );
   });
 
   it("decodes a binary file rather than writing its base64", async () => {

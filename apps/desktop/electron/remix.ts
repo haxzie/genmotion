@@ -35,13 +35,14 @@ const BINARY_EXT = new Set([
 
 /**
  * Written fresh by `createProject`, so a bundle claiming to carry one is
- * refused rather than allowed to overwrite the scaffold. `AGENTS.md` is the
- * deliberate exception: a template's own is written about that video, and it
- * is the first thing a remixer's coding agent reads.
+ * refused rather than allowed to overwrite the scaffold.
  *
- * `README.md` is not that exception. It is written for whoever lands on the
- * repository once the project is published, and the scaffold's version is the
- * one that explains how to open the folder they are looking at.
+ * `AGENTS.md` and `README.md` are the deliberate exceptions, and for the same
+ * reason: both are written *about* this particular video. AGENTS.md is the
+ * first thing a remixer's coding agent reads, and the template's README
+ * describes the piece the user inherited to whoever lands on the published
+ * repository. The scaffold writes a generic version of each before the
+ * bundle's files land, so a template that carries neither still gets one.
  */
 const SCAFFOLD_OWNED = new Set([
   "project.json",
@@ -49,7 +50,6 @@ const SCAFFOLD_OWNED = new Set([
   "tsconfig.json",
   ".npmrc",
   ".gitignore",
-  "README.md",
   "template.json",
   "poster.jpg",
 ]);

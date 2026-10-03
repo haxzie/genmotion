@@ -422,8 +422,9 @@ export async function buildRemixBundle(record: Bundleable): Promise<TemplateRemi
 
   for (const file of walked) {
     if (SCAFFOLD_OWNED.has(file.path) || TEMPLATE_ONLY.has(file.path)) continue;
-    // AGENTS.md is the one scaffold file a template may override: it is written
-    // *about* this video, and a remixer's own coding agent should read it.
+    // AGENTS.md and README.md are the scaffold files a template may override:
+    // both are written *about* this video, one for a remixer's own coding
+    // agent and one for whoever lands on the repo they publish.
     const encoding = file.path === "AGENTS.md" ? "text" : encodingFor(file.path);
     if (encoding === null) {
       throw new TemplateError(`${record.meta.id} ships an unsupported file: ${file.path}`);
