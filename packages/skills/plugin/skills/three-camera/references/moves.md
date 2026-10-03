@@ -248,7 +248,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
 - **Scale the plane, not the depth** (`rig.scale.set(s, s, 1)`): if z scaled too, the subject (in front of the screen) would rush toward the lens and drift off its screen point in perspective. A 3D subject therefore looks a little thinner in the opening frames; keep it shallow, or give it its own depth scale.
 - **The world the subject lived in is the screen**: the opening ground is exactly the screen's background colour (`toneMapped: false`), so nothing changes colour as the bezel arrives; the ground outside the device is the new, final ground.
 - **Type and UI drawn into the screen** are magnified up to `K` times at the start: draw them at `res = 2 × K` (`three-assets` drawn UI), or keep them hidden until the scale is under 2. Anything that must read during the move lives on the overlay, not in the screen.
-- Pair it with one sound: an air whoosh across the move, or the app's own UI sound on the frame the whole device lands (`sound-design`).
+- Pair it with one sound: the app's own UI sound, or a soft land, on the frame the whole device lands; never a whoosh across the move (`sound-design`).
 
 ## 13. Push on a flat film as a view transform
 

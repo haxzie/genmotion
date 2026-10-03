@@ -105,7 +105,7 @@ Dead time: any load or wait longer than 15f is cut (hard cut to the loaded state
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 audible; a click 0.9 on every press frame, varied ±0.04 and alternating SFX lanes; typing ticks 0.3–0.45; a soft swish 0.5 on hard cuts or none; a success tone 0.6 on the payoff frame; room tone 0.03–0.05 under everything so silence never reads as a bug report. Bed 0.12 under VO, 0.5 with no VO, instrumental, 100–120 BPM. Strip the recording's own audio. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 audible; a click 0.9 on every press frame, varied ±0.04 and alternating SFX lanes; typing ticks 0.3–0.45; hard cuts silent (never a whoosh, per `sound-design`); a success tone 0.6 on the payoff frame; room tone 0.03–0.05 under everything so silence never reads as a bug report. Bed 0.12 under VO, 0.5 with no VO, instrumental, 100–120 BPM. Strip the recording's own audio. Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 

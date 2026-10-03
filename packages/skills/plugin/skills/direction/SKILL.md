@@ -263,3 +263,4 @@ Run this on captured frames, not on the code; code that looks right often render
 9. The self-critique passed: no anti-slop item true, the swap test fails for a competitor, rubric average ≥4 with no axis below 3, and no Blocker open ("left as deliberate" never clears a Blocker). Every `freezedetect` flag has a saved 4 fps strip that you looked at before it was counted or dismissed (`references/critique.md` §1), and no confirmed dead hold is listed under "Left as deliberate".
 10. The export fits its destination (critique's Delivery blocker: a landing-page hero is ≤ 5 Mb/s at 1080p with faststart, and a loop's last frame and frame 0 measure PSNR ≥ 30 dB at 320 px).
 11. `validate` passes.
+12. No whoosh, swoosh, swish or air-sweep anywhere in the sound (`sound-design`'s ban): transitions carry the picture's own sound or none.

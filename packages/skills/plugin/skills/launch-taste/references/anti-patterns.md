@@ -56,9 +56,10 @@ Contents: Idea · Structure and energy · Frame and type · Motion and transitio
 30. **Silence where sound is the subject** (a music recap, a sound feature, a megaphone gag, a lightning strike with no thunder). *Fix*: a sound-on master.
 31. **A wall of loudness.** LRA near 2–5 LU, no dips, no tail. *Fix*: a breath, a cut on the payoff, a decay.
 32. **A dry voice and nothing else.** Synthetic narration with no bed and no cues reads as a screen recording. *Fix*: a low bed and one soft cue on the moments that matter.
-33. **Music laid under the edit.** Lifts and whooshes landing mid-beat, nothing on counters, typing or reveals. *Fix*: cut to the track, or move its events onto the picture's.
-34. **The product masked by its own score.** A beat-driven bed under the sounds being sold. *Fix*: remove the bed (`sound-picture.md`).
-35. **A quiet master.** −23 to −28 LUFS integrated plays far softer than everything around it. *Fix*: `sound-design`'s loudness target.
+33. **Music laid under the edit.** Lifts and hits landing mid-beat, nothing on counters, typing or reveals. *Fix*: cut to the track, or move its events onto the picture's.
+34. **A whoosh on the transitions.** A whoosh, swoosh, swish or air-sweep on a cut, wipe, flood, camera move, entrance or logo reveal: the sound that most marks a film as templated, banned outright (`sound-design`). *Fix*: the picture's own sound (a tap, a tick, a soft land on the settle, a tonal note on the beat), or nothing.
+35. **The product masked by its own score.** A beat-driven bed under the sounds being sold. *Fix*: remove the bed (`sound-picture.md`).
+36. **A quiet master.** −23 to −28 LUFS integrated plays far softer than everything around it. *Fix*: `sound-design`'s loudness target.
 
 ## Template tells
 

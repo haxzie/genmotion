@@ -82,7 +82,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.0",
+      "version": "2.0.1",
       "icon": "✅",
       "source": "first-party"
     },
@@ -851,7 +851,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.1",
+      "version": "2.2.2",
       "icon": "✨",
       "source": "first-party"
     },
@@ -1183,7 +1183,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.1",
+      "version": "1.4.2",
       "icon": "🎬",
       "source": "first-party"
     },
@@ -1517,7 +1517,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.2.3",
+      "version": "1.2.4",
       "icon": "🗺️",
       "source": "first-party"
     },
@@ -1700,7 +1700,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.5.0",
+      "version": "2.5.1",
       "icon": "🚀",
       "source": "first-party"
     },
@@ -1769,7 +1769,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.2.1",
+      "version": "1.2.2",
       "icon": "🎯",
       "source": "first-party"
     },
@@ -1839,7 +1839,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.0",
+      "version": "1.4.1",
       "icon": "〰️",
       "source": "first-party"
     },
@@ -1988,7 +1988,7 @@
         {
           "kind": "capability",
           "id": "sfx",
-          "why": "Whooshes, impacts, clicks and risers placed on exact frames."
+          "why": "Clicks, taps, impacts, chimes and tonal risers placed on exact frames."
         },
         {
           "kind": "capability",
@@ -2046,7 +2046,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.3.0",
+      "version": "1.3.1",
       "icon": "🎚️",
       "source": "first-party"
     },
@@ -2322,7 +2322,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.3.0",
+      "version": "2.3.1",
       "icon": "🎥",
       "source": "first-party"
     },
@@ -2457,7 +2457,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.1",
+      "version": "2.2.2",
       "icon": "🔀",
       "source": "first-party"
     },
@@ -2697,7 +2697,7 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "Swish, tap, soft pop, one confirmation tone."
+          "note": "Tap, click, soft pop, one confirmation tone."
         },
         {
           "purpose": "music",
@@ -2719,7 +2719,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.1",
+      "version": "2.0.2",
       "icon": "✂️",
       "source": "first-party"
     },
@@ -2842,7 +2842,7 @@
         {
           "kind": "capability",
           "id": "sfx",
-          "why": "A pop on each mark's landing frame and a swish on the turn."
+          "why": "A pop on each mark's landing frame and a tonal note on the turn."
         }
       ],
       "route": {
@@ -2880,7 +2880,7 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "Soft pop on each mark, one swish on the turn."
+          "note": "Soft pop on each mark, one tonal note on the turn."
         }
       ],
       "triggers": [
@@ -2895,7 +2895,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.0",
+      "version": "2.0.1",
       "icon": "🟩",
       "source": "first-party"
     },
@@ -2987,7 +2987,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.0",
+      "version": "2.0.1",
       "icon": "🪝",
       "source": "first-party"
     },
@@ -3129,7 +3129,7 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "The problem's own small sound, a swish, one resolving tone."
+          "note": "The problem's own small sound, one resolving tone."
         }
       ],
       "triggers": [
@@ -3146,7 +3146,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.0",
+      "version": "2.0.1",
       "icon": "🔁",
       "source": "first-party"
     },
@@ -3299,7 +3299,7 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "UI click, typing ticks, soft swish, one success tone."
+          "note": "UI clicks, typing ticks, soft lands and one success tone."
         },
         {
           "purpose": "music",
@@ -3329,7 +3329,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.0",
+      "version": "2.1.1",
       "icon": "🖥️",
       "source": "first-party"
     },
@@ -3686,7 +3686,7 @@
         {
           "kind": "capability",
           "id": "sfx",
-          "why": "Whooshes, pops and hits on cuts, captions and title cards."
+          "why": "Pops, dings and hits on captions, key numbers and title cards."
         }
       ],
       "route": {
@@ -3713,7 +3713,7 @@
           "purpose": "sfx",
           "model": "ElevenLabs SFX",
           "via": "sfx",
-          "note": "Whoosh, pop, hit, riser. Describe the sound, not the picture."
+          "note": "Pop, ding, hit, tonal riser. Describe the sound, not the picture."
         }
       ],
       "triggers": [
@@ -3732,10 +3732,10 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.1.0",
+      "version": "1.1.1",
       "icon": "✂️",
       "source": "first-party"
     }
   ],
-  "revision": "74b409f2"
+  "revision": "5b49d3bb"
 }

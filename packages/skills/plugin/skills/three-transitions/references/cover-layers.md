@@ -129,7 +129,7 @@ cover.u.uRadius.value = lerp(coverRadius(0, 0, width / 2, height / 2), PILL_RADI
 cover.u.uOpacity.value = 1 - prog(frame, 13, 8, outCubic); // the real pill takes over
 ```
 
-Sound: whoosh 3f before the flood begins (`sound-design`).
+Sound: a tap on the press that starts the flood, or nothing; never a whoosh (`sound-design`).
 
 ## 3. Iris in and out
 

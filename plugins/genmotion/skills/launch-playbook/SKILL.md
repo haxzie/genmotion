@@ -123,7 +123,7 @@ An 8 s sting is beats 1, 2, 4 and 5 only (object → claim → "now live" → UR
 | 1 | 0–60 | Hook | Shape's opening move, ≤4 words | In motion at frame 0 | Transient on frame 1 |
 | 2 | 60–240 | Setup + claim | The problem or the claim; **the problem or the proposition is on screen by frame 240** (reveal-led: the proposition) | Exit-then-cut or persisting element; breath 225–240 | Sparse; music dropout 225–240 |
 | 3 | 240–330 | **Reveal** | The product arrives through the idea's device and lands as its own glyph + name | Signature handoff contracting into the icon, camera push 24–48f; name slam completes on 240 | Riser ends on 240 (none when the chosen track has its own dropout → hit there); hit + drop on 240 |
-| 4 | 330–720 | Feature cascade | 3 features × 120–150f, each a run on the same surface: input → response → result | UI magnified 2–2.5×, cursor-driven, persisting element between features | A swish or click per feature, on the bar |
+| 4 | 330–720 | Feature cascade | 3 features × 120–150f, each a run on the same surface: input → response → result | UI magnified 2–2.5×, cursor-driven, persisting element between features | A click or tonal note per feature, on the bar |
 | 5 | 720–810 | Hero | Product at its most iconic + one line | Slow orbit or pull-back 45–52f | Full track |
 | 6 | 810–900 | End card | Mark + name, then the URL, or with no URL a platform line | Mark lands by 825, holds 75f; URL or platform line in by 830, holds ≥60f | Button on the mark, tail rings out |
 

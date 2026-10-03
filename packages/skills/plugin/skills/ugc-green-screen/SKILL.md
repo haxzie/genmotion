@@ -63,7 +63,7 @@ Weak: a press release, your own landing page, anything needing two sentences of 
 | Energy curve | Social ad: the read-aloud line is the hook at 8; micro-peaks on each mark; the **peak** on the turn (the cut to the user's own page); calm ask |
 | Pacing | High (a mark, push or cut every 45–90f); never 90f without a change |
 | Transitions | Workhorse: hard cut. Signature: the turn is a hard cut to the user's page in **identical framing and scale**, so only the content changes; focus pushes carry the eye to each line |
-| Sound | VO-led, bed 0.12; a pop on each mark landing; a swish on the turn |
+| Sound | VO-led, bed 0.12; a pop on each mark landing; a tonal note (or the bed's return on a downbeat) on the turn |
 | Memorable moment | The turn frame: their number, then ours, in the same place |
 
 ## Beat sheets
@@ -75,7 +75,7 @@ Weak: a press release, your own landing page, anything needing two sentences of 
 | 1 | 0–75 | Hook | Source full-bleed at frame 0, the price in y 300–500; presenter already in, or rising from the bottom edge over 9f outCubic | "Four hundred dollars. A year. For this." (7) |
 | 2 | 75–165 | Mark | Circle draws on the price over 12f, completing on "cheap" | "And that's the cheap tier." (5) |
 | 3 | 165–300 | Reaction | Focus push 30f onto the feature row; strike-through on the greyed items after the word | "Half of it is greyed out until you upgrade." (9) |
-| 4 | 300–390 | Turn (peak) | Hard cut to the user's own page, identical framing; swish on the cut | "So we put all of it in one price." (9) |
+| 4 | 300–390 | Turn (peak) | Hard cut to the user's own page, identical framing; a tonal note on the cut | "So we put all of it in one price." (9) |
 | 5 | 390–540 | Proof | Underline wipes under the price over 9f, completing on the number | "[Price] a month. Everything on." (6) |
 | 6 | 540–720 | Demo | Cut to the product doing one thing; presenter corner-locked | "Same job, in about [time]." (6) |
 | 7 | 720–900 | Ask | Presenter steps up to 1.2 (jump zoom), source dims 20%; CTA text ≥60f | "Link's in my bio if you want to look." (9) |
@@ -114,7 +114,7 @@ There is no background-removal capability: a cutout comes from a key colour, the
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 is the first word of the read; bed 0.12, instrumental, low energy (90–110 BPM) so the voice owns it; a soft pop 0.45 on each mark's completion frame (a marker squeak at 0.3 under the draw is optional); a swish 0.5 on the turn and on no other cut, or on every hard cut; room tone 0.03 under a still presenter. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 is the first word of the read; bed 0.12, instrumental, low energy (90–110 BPM) so the voice owns it; a soft pop 0.45 on each mark's completion frame (a marker squeak at 0.3 under the draw is optional); a tonal note 0.5 on the turn (or the bed's next section starting on that frame), every other cut silent, never a whoosh; room tone 0.03 under a still presenter. Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 

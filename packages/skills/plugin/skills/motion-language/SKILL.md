@@ -164,19 +164,19 @@ Choose one signature and one workhorse per film (`direction` Step 7). House usag
 | Handoff | Duration | Carrier / build | Use | Sound cue (linear / dB) |
 | --- | --- | --- | --- | --- |
 | Persisting element | 0f at the cut; moves 16–22f after | No exit in scene N; identical pose at frame 0 of N+1 | The default for related scenes | None, or a pop 0.5 (−6) when it lands |
-| Flood becomes object | 6–13f ease-in, contract 10–13f | Circle from a button to `hypot(halfW, halfH) × 1.05`; next scene contracts it into an object | CTA press, send, brand beats | Whoosh 0.7 (−3.1) **3f before the flood begins** |
-| Iris | 16–34f inOutCubic | Circle from the clicked control to the farthest corner; iris-in shrinks to an object | End of a demo, ending on a mark | Click 0.9 (−0.9) on the press; swell 0.6 (−4.4) from iris start |
-| Match-push | 24–48f readable, 6–10f aggressive | Camera ends at an exact crop; next scene laid out at that scale; drift stopped | Into a UI element | Whoosh 0.5–0.75 (−6 to −2.5), 2–4f before the cut |
-| Push through screen | 45f in, 52f back out | Zoom = frame width / screen width | Device → UI → device | Soft whoosh 0.5 (−6) or none |
+| Flood becomes object | 6–13f ease-in, contract 10–13f | Circle from a button to `hypot(halfW, halfH) × 1.05`; next scene contracts it into an object | CTA press, send, brand beats | Tap 0.8 (−1.9) on the press that starts it, or nothing |
+| Iris | 16–34f inOutCubic | Circle from the clicked control to the farthest corner; iris-in shrinks to an object | End of a demo, ending on a mark | Click 0.9 (−0.9) on the press; tonal swell 0.6 (−4.4) from iris start |
+| Match-push | 24–48f readable, 6–10f aggressive | Camera ends at an exact crop; next scene laid out at that scale; drift stopped | Into a UI element | None; soft land 0.5–0.7 (−6 to −3.1) on the settle, or a tonal note on the beat |
+| Push through screen | 45f in, 52f back out | Zoom = frame width / screen width | Device → UI → device | None, or the UI's own sound as the screen fills |
 | Flash-to-white | ramp 4–8f ease-in, decay 6–9f | White layer straddles the cut; ≥ 50% luma contrast with the frames either side, measured within the flashing area; letterboxed picture: flash the picture area only; never into an already bright plate | Music cuts, impacts; once or twice per film elsewhere | Impact 0.7–0.85 (−3.1 to −1.4) on the cut ±2f |
-| Block wipe | 18–24f | 12 × 7 cells by sweep + clump + jitter, growing out of an on-screen object of the wipe's colour; incoming beat already 12f into its entrances | Textured, editorial films | Wipe sound 0.5 (−6) on the wipe's first frame |
-| Colour-field push / panel wipe | 8–23f inOutCubic | Field owns the last frame; next scene carries momentum (46 px → 0 over 16f) | Chapters, palette changes | Whoosh 0.5–0.7 (−6 to −3.1) from push start |
-| Card morph | 18–28f inOutCubic | Card lerps to an overscanned full frame; labels fade 2.4× faster | Opening an example into its scene | Soft whoosh 0.5 (−6) or none |
+| Block wipe | 18–24f | 12 × 7 cells by sweep + clump + jitter, growing out of an on-screen object of the wipe's colour; incoming beat already 12f into its entrances | Textured, editorial films | None, or soft ticks 0.3–0.45 as clumps land |
+| Colour-field push / panel wipe | 8–23f inOutCubic | Field owns the last frame; next scene carries momentum (46 px → 0 over 16f) | Chapters, palette changes | Soft land 0.5–0.7 (−6 to −3.1) on the settle, or none |
+| Card morph | 18–28f inOutCubic | Card lerps to an overscanned full frame; labels fade 2.4× faster | Opening an example into its scene | None, or the tap 0.8 (−1.9) that opens the card |
 | Typewriter delete | 2–2.4 f/char type, 2.1 delete | Same slot, width reserved | "Introducing" → the name | Key ticks 0.3–0.45 (−10.5 to −6.9) |
-| Rise-through | 18–24f outSmooth | The next beat's panel rises from below through the card while the card's words blur 0 → 12 px and fade over its first 10f; no cut | A type card into a product beat (family K) | Soft whoosh 0.5 (−6) from the rise's start |
-| Brand-shape pass | 10–16f inOutCubic close, 10–16f open | A large soft brand shape (an arc, a lens, a light band) closes over the frame and opens on the next beat; the same shape every time, in the film's ground colours | Every cut of a short social film | Swell 0.5 (−6) on the close, nothing on the open |
+| Rise-through | 18–24f outSmooth | The next beat's panel rises from below through the card while the card's words blur 0 → 12 px and fade over its first 10f; no cut | A type card into a product beat (family K) | None, or a soft land 0.5 (−6) when the panel settles |
+| Brand-shape pass | 10–16f inOutCubic close, 10–16f open | A large soft brand shape (an arc, a lens, a light band) closes over the frame and opens on the next beat; the same shape every time, in the film's ground colours | Every cut of a short social film | A tonal note 0.5 (−6) on the close (never a noise swell), nothing on the open |
 | Defocus-through | 6f blur 0 → 16 px, cut, 8f 16 → 0 | Both sides defocus; the cut hides at peak blur | Card to card when nothing carries | None, or a soft tick |
-| Whip / blur-rush | 8–10f around the cut | Same speed and direction both sides; blur 20–30 px | Montages, high-energy social | Whoosh 0.6–0.7 (−4.4 to −3.1) loudest on the cut |
+| Whip / blur-rush | 8–10f around the cut | Same speed and direction both sides; blur 20–30 px | Montages, high-energy social | The beat or hit on the cut, or nothing; never a whoosh |
 | Rush into the lens | 10–24f ease-in | Exponential scale ×7 or camera to the object, bg to white | The peak, publish moments | Riser 0.55 (−5.2) ending on the cut + impact 0.85 (−1.4) |
 | Board erase | 10f + 8f blank | Every stroke un-draws | Whiteboard explainers | None; VO +6f after the cut |
 | Exit-then-cut | 6–9f, clear 4–8f before | Elements leave, cut on a near-empty frame | The workhorse between VO beats | None; VO +3–8f after the cut |

@@ -36,7 +36,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: a circle grows from a UI element (a pressed button, a send icon, the centre) until it covers the frame: radius 0 → `hypot(halfW, halfH) × 1.05` (from an off-centre origin: the distance to the farthest corner × 1.05). Scene N+1 opens fully in that colour and contracts it into an object (a pill, a button, a card), or tints out over 8f (blue full → 0.42 at the cut → 0 over 8f). The object it contracts into is the only thing moving for 6f after it lands and is ≥ 6% of the frame's width; otherwise the "flood became this" read is lost.
 - **Three.js**: a `CircleGeometry(1, 96)` plane in front of the camera, scaled each frame; at distance `d` in front of a perspective camera the cover radius is `hypot(halfW, halfH) × 1.05` in world units at that distance. Parent it to the camera so camera moves don't uncover the edge. `userData.pickable = false`.
 - **Use**: a CTA press, "send", a brand-colour beat, the move into the end card.
-- **Sound**: whoosh 0.7 (−3.1 dB) starting **3f before the flood begins**; optional impact 0.75 (−2.5 dB) one frame after the cut if the next scene lands hard.
+- **Sound**: the tap 0.8–0.9 (−1.9 to −0.9 dB) on the press frame that starts the flood, or nothing; never a whoosh (`sound-design`); optional impact 0.75 (−2.5 dB) one frame after the cut if the next scene lands hard.
 - **Goes wrong**: the flood colour is not the next scene's background colour exactly, so the cut flickers.
 
 ## 3. Iris (out from a button or logo; in to an object)
@@ -45,7 +45,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build (iris-out)**: a circle centred on the clicked control grows to `REACH = hypot(max(cx, W − cx), max(cy, H − cy))` and becomes the next frame (a solid colour, or the next scene seen through the hole). **Iris-in**: a circular mask shrinks from radius ≈1500 px to the size of an object (an orb, an avatar, a dot) over 30f; the object is the next scene's subject. Two-stage bursts open fast to ~200 px, then ease to full.
 - **Three.js**: iris-out = the flood circle (§2) with the next scene's colour. Iris-in = a full-screen plane with a circular hole: a `ShaderMaterial` that discards fragments inside radius `r` (pass `r` and the centre as uniforms), or a `RingGeometry` with a huge outer radius. Dashed rings echoing the burst: `RingGeometry` segments rotated 10–20°/s.
 - **Use**: the click that ends a demo; ending on a mark; a reveal from darkness.
-- **Sound**: the click 0.9 (−0.9 dB) on the press frame that triggers it; a swell 0.6 (−4.4 dB, fade-in 10f, fade-out 20f) from the iris start, or a riser that lands as the iris closes on its object.
+- **Sound**: the click 0.9 (−0.9 dB) on the press frame that triggers it; a tonal swell 0.6 (a pad or chord, never a noise swell; −4.4 dB, fade-in 10f, fade-out 20f) from the iris start, or a tonal riser that lands as the iris closes on its object.
 
 ## 4. Match-push (scale-matched cut, drift stopped)
 
@@ -53,7 +53,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: scene N's camera ends at an exact crop (x, y, zoom) on a UI element; scene N+1 is laid out at exactly that crop's scale, so frame 0 matches. Export the handoff constants (`HANDOFF_ZOOM`, `HANDOFF_CENTER`) and compute both layouts from them. Kill drift over the push: `drift × (1 − push progress)`. Interpolate zoom in log space.
 - **Three.js**: dolly the camera (`position.z`) or narrow the `fov`; for a matched cut, compute scene N+1's object scale from scene N's final camera distance (`scaleNext = scaleNow × distStart / distEnd`). Never animate both fov and z in one move.
 - **Use**: zooming "into" a control to reveal what it does; mic → transcript; button → result.
-- **Sound**: whoosh or push 0.5–0.75 (−6 to −2.5 dB) starting 2–4f before the cut; nothing for a slow readable push under VO.
+- **Sound**: nothing by default (the camera move is silent); a soft land 0.5–0.7 (−6 to −3.1 dB) on the frame the crop settles, or a tonal note if the cut sits on the beat.
 - **Goes wrong**: drift still running at the cut (the frames "almost" match), or the incoming layout guessed by eye.
 
 ## 5. Push through the screen / pull back
@@ -62,7 +62,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: the camera pushes until the phone's screen fills the frame exactly (zoom = frame width / screen width, e.g. 1080 / 780 = 1.3846, centred on the screen). Scene N+1 is the flat UI at full frame. A later scene opens on that crop and pulls back out to show the device again.
 - **Three.js**: the screen is a plane with the UI drawn to a canvas texture; push the camera until the plane fills the frustum; scene N+1 renders the same UI as a full-frame plane.
 - **Use**: going from "the product in the world" to "the product's UI" and back; chat and app ads.
-- **Sound**: a soft whoosh 0.5 (−6 dB) under the push, or nothing when the chat's own sounds carry the scene.
+- **Sound**: nothing, or the UI's own sound on the frame the screen fills; the chat's own sounds usually carry the scene.
 
 ## 6. Flash-to-white (and the strobe, and the impact frame)
 
@@ -80,7 +80,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Pixel dissolve**: per-cell hash threshold; cells go chunky (larger blocks) just before they drop out.
 - **Three.js**: an `InstancedMesh` of cell quads in front of the camera, or a single full-screen `ShaderMaterial` that computes the cell index from UVs and discards by threshold (cheaper, one draw call). Seeded hash, never a random source.
 - **Use**: textured, retro-tech and editorial films; alternating between two worlds (paper ↔ phone).
-- **Sound**: a wipe sound 0.5 (−6 dB, 20f) starting on the wipe's **first** frame (18–24f before the cut), so it covers the wipe.
+- **Sound**: nothing, or soft ticks 0.3–0.45 (−10.5 to −6.9 dB) as cell clumps land (thinned per `sound-design`'s many-events rules); never a swipe or whoosh.
 
 ## 8. Colour-field push, panel wipe, sheet flood
 
@@ -88,7 +88,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: a full-frame solid or gradient layer translates across (−W → 0) and owns the final frame. Scene N+1 opens on the identical field and **carries momentum**: its content starts already moving (≈46 px → 0 over 16f) in the same direction. Sheet flood: the last of a stack of sliding sheets keeps travelling until it covers the frame.
 - **Three.js**: a camera-parented plane sized to cover (see `three-transitions` for the sizing code), translated on x; for a radial gradient field, a canvas texture drawn once.
 - **Use**: chapter changes, palette changes, brand-guide sections.
-- **Sound**: whoosh 0.5–0.7 (−6 to −3.1 dB) from the start of the push.
+- **Sound**: a soft land 0.5–0.7 (−6 to −3.1 dB) on the frame the incoming scene settles, a tonal note on the beat, or nothing.
 - **Goes wrong**: the incoming content starts at rest (the momentum carry is what makes it feel like one move).
 
 ## 9. Card morph (card → full bleed, frame → card)
@@ -97,7 +97,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: lerp the card's left, top, width, height and corner radius from its rest rect to an overscanned full frame (−30, −20, W + 60, H + 40); fade scrims and labels at 2.4× the rate so they are gone before the card fills. The other cards leave 16f earlier (end−46 … end−30). The reverse (an outline frame collapsing into a card, cards squashing into a gradient bar that thins to 1 px) closes chapters.
 - **Three.js**: a plane with a rounded-rectangle `ShaderMaterial` (signed-distance corner radius as a uniform), or a canvas texture redrawn only at the start and end states; scale and position the plane per frame.
 - **Use**: opening one example into its full scene; collapsing a scene into the next one's list item.
-- **Sound**: a soft whoosh 0.5 (−6 dB) at the morph start, or none.
+- **Sound**: none, or the tap 0.8 (−1.9 dB) that opens the card on the morph's first frame.
 
 ## 10. Typewriter delete and word swaps (text-to-text handoffs)
 
@@ -113,7 +113,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Build**: exit with a large travel (x −400 px or more) and blur growing to 20–30 px on an ease-in; the next scene enters from the opposite side at the **same speed and direction**, blur resolving on an ease-out. Velocity-derived blur: blur = 0.11 × px moved per frame, capped at 26. Fast scrolls: blur = velocity × 1.6, capped at 220 px of streak.
 - **Three.js**: a directional blur pass, or sub-frame sampling (render 4–10 sub-frame positions and average them) for real motion blur on fast moves; scale the sample count to the on-screen displacement (`ceil(maxDisplacement / 3px)`, up to 10).
 - **Use**: high-energy montages, social cuts, jumps in place or time. Keep one direction for the whole film.
-- **Sound**: whoosh 0.6–0.7 (−4.4 to −3.1 dB) whose loudest point sits on the cut (a 21f whoosh usually starts about 4f before it).
+- **Sound**: the music's beat or hit on the cut, or nothing; never a whoosh, however fast the move (`sound-design`).
 - **Goes wrong**: the two sides travel at different speeds or in different directions; it reads as two unrelated moves.
 
 ## 12. Rush into the lens (blow-up, camera slam)
@@ -153,7 +153,7 @@ The single most used motivated handoff in the catalog (about 25 of them).
 - **Duration**: 0f.
 - **Build**: content to content exactly on a beat or bar line of the track (at 30 fps and 120 BPM a beat is 15f; at 90 BPM an eighth note is 10f). Optional 2-frame strobe on accent cuts.
 - **Use**: the beat-cut kinetic style (where it is the grammar), a smash cut from calm to loud, a deliberate mid-scene shift. Elsewhere, rare.
-- **Sound**: the beat itself. Do not add a whoosh to a hard cut.
+- **Sound**: the beat itself, or nothing. Never a whoosh (`sound-design`'s ban).
 
 ## 17. Continuous film (no cut)
 

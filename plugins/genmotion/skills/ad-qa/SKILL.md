@@ -96,7 +96,8 @@ ffmpeg -hide_banner -nostats -t 0.1 -i out.mp4 -vn -af astats=metadata=0 -f null
 - [Blocker] Integrated −14 LUFS ±1, true peak ≤ −1 dBTP, no clipping. Report both numbers.
 - [Blocker] VO intelligible at the loudest music section; the bed is 0.12 under VO (`sound-design` ladder).
 - [Fix] Frame 1 is audible (the first 0.1 s RMS is not near −inf); no unintended silences ≥0.3 s inside the ad (room tone under VO gaps).
-- [Fix] SFX sit on their visual frames (tap on the press frame, impact ±2f, whoosh leading its cut); every hard cut gets a swish or none does.
+- [Fix] SFX sit on their visual frames (tap on the press frame, impact ±2f); hard cuts are silent unless the picture makes a sound on them.
+- [Blocker] No whoosh, swoosh, swish or air-sweep anywhere in the ad, on cuts or anything else (`sound-design`'s ban): check the SFX file names, the generation prompts and the cue sheet.
 - Fix: scale clip volumes by the loudness difference, or re-master per `sound-design` → `references/mix-and-loudness.md`.
 
 ### 10. Ad codes
@@ -134,7 +135,7 @@ Score the ad on `direction`'s rubric (Idea, Hook, Frame, Type, Motion, Transitio
 
 Give the user one short paragraph, not a checklist. Name what you changed and what only they can answer; do not list tests that passed. Append the scores to `VIDEO.md` in `direction`'s critique format.
 
-> Checked the ad on captured frames and the export. Frame 0 is the render bar already crawling, and the hook line is legible by frame 6. It plays muted: every line is captioned in the 1110–1210 band and the turn is a hard cut with a brightness step. I moved the price out of the right rail and raised the bed's fade so frame 1 has the swish. Export measures −14.2 LUFS, −1.6 dBTP. Two things for you: "eleven minutes" is a placeholder until you give me the real figure, and the presenter is generated, so the script does not claim they are a customer. Scores: Idea 4 · Hook 5 · Frame 4 · Type 4 · Motion 4 · Transitions 4 · Pacing 4 · Sound 4.
+> Checked the ad on captured frames and the export. Frame 0 is the render bar already crawling, and the hook line is legible by frame 6. It plays muted: every line is captioned in the 1110–1210 band and the turn is a hard cut with a brightness step. I moved the price out of the right rail and raised the bed's fade so frame 1 has the downbeat. Export measures −14.2 LUFS, −1.6 dBTP. Two things for you: "eleven minutes" is a placeholder until you give me the real figure, and the presenter is generated, so the script does not claim they are a customer. Scores: Idea 4 · Hook 5 · Frame 4 · Type 4 · Motion 4 · Transitions 4 · Pacing 4 · Sound 4.
 
 ## Requirements
 

@@ -80,7 +80,7 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "Swish, tap, soft pop, one confirmation tone."
+      "note": "Tap, click, soft pop, one confirmation tone."
     },
     {
       "purpose": "music",
@@ -102,6 +102,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "icon": "✂️"
 }

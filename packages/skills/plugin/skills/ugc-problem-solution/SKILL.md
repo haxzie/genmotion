@@ -97,7 +97,7 @@ Not this when:
 
 ## Sound plan
 
-Per `sound-design` and `ugc-craft`: frame 1 has the problem's own small unpleasant sound (a zip snagging, a buzz, a notification) at 0.5–0.7; bed 0.12 under VO, low and slightly flat in the problem; **the 10f drop** cuts bed and room tone; on the turn frame the bed returns (a brighter section, cued with the track's start offset to a downbeat) with a soft swish 0.5 if every hard cut has one; demonstration foley on its actions; a resolving tone 0.6 on the relief frame. Master −14 LUFS, ≤ −1 dBTP.
+Per `sound-design` and `ugc-craft`: frame 1 has the problem's own small unpleasant sound (a zip snagging, a buzz, a notification) at 0.5–0.7; bed 0.12 under VO, low and slightly flat in the problem; **the 10f drop** cuts bed and room tone; on the turn frame the bed returns (a brighter section, cued with the track's start offset to a downbeat) and no transition sound (never a whoosh, per `sound-design`); demonstration foley on its actions; a resolving tone 0.6 on the relief frame. Master −14 LUFS, ≤ −1 dBTP.
 
 ## Building it
 
@@ -131,7 +131,7 @@ With no footage, the normal case, build the failure as a designed frame rather t
 | Failure and relief stills | `generate-image`, prompted as a matched pair | Typography and rebuilt UI for both beats |
 | The user's footage | `save-asset`, then `ffmpeg` to trim and re-encode | Generated stills with camera moves, which this format tolerates well |
 | Narration | `pick-voice` then `voiceover` | Captions only; the turn still reads visually |
-| The problem sound, the swish, the relief tone | `sfx` | Credited CC0 sounds via `web-research` + `save-asset`; the drop alone still works |
+| The problem sound, the relief tone | `sfx` | Credited CC0 sounds via `web-research` + `save-asset`; the drop alone still works |
 | Music | `music` | No bed; foley and the drop carry it |
 
 ## Checks before you finish

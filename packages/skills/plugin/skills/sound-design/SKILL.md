@@ -9,7 +9,9 @@ Half of what a viewer reads as "polish" is sound arriving on the right frame at 
 
 Frame counts are at 30 fps; at 24 fps multiply them by 0.8 (the beat grid has its own 24 fps column). Times in seconds and milliseconds hold at any rate.
 
-> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, and never putting words in a real person's mouth. The checks at the end are a quality bar to clear, not a template to reproduce.
+> **These are references, not rules.** The numbers, beat sheets, style families and examples here are starting points distilled from work that landed well, not a recipe to fill in. The user's instructions always win over anything in this skill. When a different idea serves the brief better, propose it and try it: change the structure, break a default, invent a device, and write what you changed and why in `VIDEO.md`. What stays fixed is correctness: determinism, legibility and safe zones, loudness and clipping, licences and credits, never putting words in a real person's mouth, and the whoosh ban below. The checks at the end are a quality bar to clear, not a template to reproduce.
+
+**Never use a whoosh.** No whoosh, swoosh, swish, swipe, air-sweep or "transition" noise-swell, in any film, generated, downloaded or synthesised: not on cuts, wipes, floods, camera moves, entrances or logo reveals. It is the sound that most marks a film as templated, and this pack bans it outright. A transition gets the sound of what happens in the picture (a click, a tap, a key, a tick, a soft thud or land on the settle, a pop, a tonal note on the beat), or nothing: most cuts are silent. This is a fixed rule like determinism, not a reference: it holds even when another skill, a template or a reference film seems to call for one, and only the user asking for one by name overrides it.
 
 ## When to use
 
@@ -144,7 +146,7 @@ These are the house levels, with each source normalised first (below) so the gai
 | Podcast clip | none, or 0.1 | −20 | talk carries it |
 | UI clicks / taps | 0.8–1.0 | −2 to 0 | short and bright, they cut through |
 | Impacts / slams | 0.7–0.85 | −3 to −1.4 | felt, not louder than VO |
-| Whooshes | 0.5–0.7 | −6 to −3 | air, not a hit |
+| Soft lands / thuds on a settle | 0.5–0.7 | −6 to −3 | felt under the picture, not a hit |
 | Risers / swells / rings | 0.55–0.6 | −5 to −4.4 | |
 | Pops / ticks | 0.45–0.55 | −7 to −5 | many of them, so each is quiet |
 | Room tone / ambience | 0.03–0.1 | −30 to −20 | felt only in the gaps |
@@ -240,8 +242,8 @@ Placement is frame-exact and comes from the same constants the animation uses (s
 
 | Cue | Lands | Level |
 |---|---|---|
-| Whoosh on a cut | starts ~4 f before the cut (house) so its peak hits the cut | 0.5–0.7 |
-| Whoosh on a wipe or flood | starts on the wipe's first frame (3–24 f before the cut) | 0.5 |
+| Hard cut | nothing (cuts are silent); a click if the cut is a UI action; or the music's beat | — |
+| Wipe, flood or push | the picture's own event: a tap on the press that starts it, a soft land on its settle frame, or a tonal note on the beat; else nothing | 0.5–0.7 |
 | UI click / tap | the press frame, 0 f (up to 1 f early) | 0.8–1.0 |
 | Message / bubble | its first visible pixel | 0.75–0.9 |
 | Impact / slam / logo lock | the contact frame (motion stops), ±2 f | 0.7–0.85 |
@@ -253,12 +255,12 @@ Placement is frame-exact and comes from the same constants the animation uses (s
 
 **A riser resolves on the hit, never into a gap.** Every riser ends in something on its landing frame: a hit, a note (the sonic logo's first note), or the next bed's first transient blooming from that frame. Its last sample sits on that frame (`startFrame = hit − length`) and the resolving sound starts on that same frame; a riser with nothing after it is a bug: a riser that stops 1–3 f early, or a hit placed a few frames late, leaves a hole on the landing frame that reads as a dropout or a broken file, not as tension. Designed silence before a hit is a separate, deliberate beat (riser → hard cut to 0.5–1.5 s of room tone → hit, the trailer title), never an accident of placement; check it on the waveform (Checks 6).
 
-**A riser into a hit is a level relationship, not two volumes.** The ladder's gains assume peak-normalised files, but a riser's tail is dense and a hit is short, so riser 0.55 + impact 0.8 can leave the hit only 1–4 dB above the riser (measured), and it doesn't punch. Verify it: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser's 50 ms RMS rises with **no dip over 6 dB** before its end (commands in `references/sfx-cues.md`). If the hit is short of 8 dB, lower the riser (usually to 0.3–0.4), never raise the impact past the headroom. Sound-on pieces give the anticipation sound too (ticks, an air bed, a whoosh): **never open on more than 0.5 s of silence**.
+**A riser into a hit is a level relationship, not two volumes.** The ladder's gains assume peak-normalised files, but a riser's tail is dense and a hit is short, so riser 0.55 + impact 0.8 can leave the hit only 1–4 dB above the riser (measured), and it doesn't punch. Verify it: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser's 50 ms RMS rises with **no dip over 6 dB** before its end (commands in `references/sfx-cues.md`). If the hit is short of 8 dB, lower the riser (usually to 0.3–0.4), never raise the impact past the headroom. Sound-on pieces give the anticipation sound too (ticks, an air bed, a tonal build): **never open on more than 0.5 s of silence**.
 
-**Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. Exception: a sting's anticipation ticks follow its swing (6 ticks in 1.2 s on a quickening swing is right); the owner's beat sheet wins there. One sound per event that matters, not one per event. Treat hard cuts consistently: all get a quiet swish or none do. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
+**Density**: about 1 cue per second at most, and only for UI-dense literal films; 0.25–0.5/s for most promos. Exception: a sting's anticipation ticks follow its swing (6 ticks in 1.2 s on a quickening swing is right); the owner's beat sheet wins there. One sound per event that matters, not one per event. Hard cuts are silent by default; a cut gets a sound only when something in the picture makes one (a press, a landing, the beat), and never a whoosh. At most 2 SFX at once, none over a VO word that carries meaning. Repeats of one file alternate lanes and vary level by ±0.04 (0.42 / 0.46 / 0.5) so they never stack identically.
 
-**Getting them (`sfx`)**: describe the sound, not the picture: source, material, size, speed, envelope, tail, length, "one-shot", "no music". Use the model's own words: impact, whoosh, riser, braam, glitch, drone, ambience, loop. Set a duration (0.5–30 s) for anything timed, and loop mode for ambience. Generate 2–3 takes of hero sounds. Example: "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot, 0.6 seconds". Prompt library in `references/sfx-cues.md`.
-Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited); **synthesised placeholders** made with `ffmpeg` (riser, impact, whoosh, pop, tick, chime, and a speech-like murmur for a crowd or a room of voices without words, never for one intimate voice: tested recipes with safe levels in `references/sfx-cues.md`), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine-and-noise sound reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting. A product whose output is sound (a soundscape, a sleep or music app) gets its own 2–4 s in the film with the score ducked 10–12 dB under it; with no recording, `references/sfx-cues.md` has a tested synthesised ambient bed (labelled a placeholder) and the command that turns it into per-frame amplitude for the drawn waveform.
+**Getting them (`sfx`)**: describe the sound, not the picture: source, material, size, speed, envelope, tail, length, "one-shot", "no music". Use the model's own words: impact, click, tick, chime, riser (tonal), braam, glitch, drone, ambience, loop. Set a duration (0.5–30 s) for anything timed, and loop mode for ambience. Generate 2–3 takes of hero sounds. Example: "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot, 0.6 seconds". Prompt library in `references/sfx-cues.md`.
+Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from Freesound or Openverse via `web-research` + `save-asset` (credited); **synthesised placeholders** made with `ffmpeg` (riser, impact, pop, tick, chime, and a speech-like murmur for a crowd or a room of voices without words, never for one intimate voice: tested recipes with safe levels in `references/sfx-cues.md`), recorded in `VIDEO.md` as placeholders and named as such to the user, because a sine-and-noise sound reads as a test tone next to a designed one; or let the music's own transients mark the moment. A sparse set of synthesised cues beats a silent Gen Z edit or sting. A product whose output is sound (a soundscape, a sleep or music app) gets its own 2–4 s in the film with the score ducked 10–12 dB under it; with no recording, `references/sfx-cues.md` has a tested synthesised ambient bed (labelled a placeholder) and the command that turns it into per-frame amplitude for the drawn waveform.
 
 ## Silence and endings
 
@@ -267,22 +269,22 @@ Fallback when `sfx` is unavailable, in order: the user's files; CC0 sounds from 
 - **A musical dropout may be longer than the picture's breath**: a library track's only clean dropout is often 2–3 s, while `direction`'s breath is 10–30 f. Keep the picture still for the breath only and keep it moving through the rest of the dropout, or the film stalls.
 - **Room tone, not digital zero**, under quiet VO stretches and between clips; pure zero sounds broken on headphones. When one bed hands to another (a recording stops, the room takes over), overlap them 4–6 f, never butt them.
 - **Endings land on a button**: the logo or CTA frame is the track's last hit and the tail rings 1–3 s. No button: fade 1–3 s ending on a bar line while the picture holds.
-- **Stings end on a sonic logo**: whoosh or riser into the lock-up (0.5–1.5 s) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. About 3 s total.
+- **Stings end on a sonic logo**: a tonal build or ticks into the lock-up (0.5–1.5 s; a riser only if it is tonal, never a noise swell) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. About 3 s total.
 
 ## Format recipes
 
 | Format | Music | SFX | VO and mix |
 |---|---|---|---|
-| Launch film | 110–128 BPM build-and-drop, drop on the reveal | 5–8 hero moments, swish per feature | bed per the ladder (0.18) under VO, 1.0 when music-only |
+| Launch film | 110–128 BPM build-and-drop, drop on the reveal | 5–8 hero moments, a click or tonal note per feature | bed per the ladder (0.18) under VO, 1.0 when music-only |
 | Explainer with VO | 90–110 sparse, no melody | UI clicks ≤ 1 per 2–3 s, room tone | VO +6 f after cuts, bed 0.18 |
 | Explainer, text-led (no VO) | music-led at 1.0, sparse, no lead melody | a cue on each reveal the diagram hinges on | dropout on the breath, return on the peak |
 | Brand sting | a 3 s sonic logo or none | riser → impact on settle → tail; sound under the anticipation too | no VO; hit ≥8 dB over the riser tail |
-| UGC / social ad | 95–130 trend-adjacent | transient on frame 1, swish on every jump cut or none | bed 0.12–0.2 under talk |
+| UGC / social ad | 95–130 trend-adjacent | transient on frame 1, nothing on jump cuts, a pop on caption keywords sparingly | bed 0.12–0.2 under talk |
 | Trailer | three acts, accelerating; a volume staircase, peaks limited, never `loudnorm` on the cue | braams on act breaks, riser → room-tone silence → title hit | lines in the gaps, a cold-open line 6–10 LU under Act 1's music |
 | Music + sparse accents | music-led at 1.0, pre-mastered −15 LUFS / −3 dBTP | ≤0.7, a few hero moments | re-master the export to −14 |
 | Podcast clip | none under talk (or 0.1), optional 1–2 s sting | sparing pops on caption emphasis | dialogue −16 LUFS, deliver −14 for social |
-| Talking head | intro, b-roll and section stings; bed 0.12–0.2 if any | swish on graphics and zoom punches | bed out under the key line |
-| Gen Z edit over speech | lo-fi / house / phonk bed, 0.14–0.2, low-passed at 6–8 kHz | 3–6 cues per 30 s on interrupts (pop, whoosh, hit) | speech decides the cuts; bed out under the hook line and payoff |
+| Talking head | intro, b-roll and section stings; bed 0.12–0.2 if any | a pop or click on graphics, nothing on zoom punches | bed out under the key line |
+| Gen Z edit over speech | lo-fi / house / phonk bed, 0.14–0.2, low-passed at 6–8 kHz | 3–6 cues per 30 s on interrupts (pop, ding, hit) | speech decides the cuts; bed out under the hook line and payoff |
 | Gen Z edit, music-led | 130–160 phonk or house at 1.0, cuts on beats or half bars | one hit per joke | −14 LUFS like everything else |
 | UI demo | none or 100–120 at 0.1 | a varied click per interaction, typing loop, success chime | room tone throughout |
 | Milestone | music-led at 1.0 | a tick per count step (0.45), impact when the number lands | no VO |
@@ -315,4 +317,5 @@ Beat sheets, frame budgets and levels per format are in `references/format-recip
 9. No clip runs past the film's end unless it is a deliberate tail, and no long bed ends abruptly.
 10. Every non-generated audio file has a credits line in `VIDEO.md` with its licence, and none is NC, BBC RemArc, YouTube-licence-only or a rip.
 11. A sparse, picture-led film: each designed cue's loudest 50 ms RMS is ≥12 dB above the bed's RMS in a cue-free window, and the master's LRA is 4–14 LU (≤ 12–14 for any film meant to be heard). The momentary loudness shows no stretch below −40 LUFS longer than 2 s except the named silence (`references/mix-and-loudness.md`, Sparse mixes, has both commands). A film of many sound events was built as one stem from the scene's event schedule with the many-events rules, and the cue on its first and last event is audible above the texture.
-12. A music-led trailer keeps its build: integrated loudness per section rises act by act and the climax is the loudest; any designed silence is room tone (−45 to −60 dBFS RMS), not digital zero.
+12. No whoosh, swoosh, swish or air-sweep anywhere in the mix (the ban above): check every SFX file name, every generation prompt and the cue sheet in `VIDEO.md`.
+13. A music-led trailer keeps its build: integrated loudness per section rises act by act and the climax is the loudest; any designed silence is room tone (−45 to −60 dBFS RMS), not digital zero.

@@ -60,7 +60,7 @@ Pick one. A sting that builds, then reveals, then transforms is three stings.
 - **Energy curve**: anticipation (3) → **hit (10) at 40–60% of the length** → settle and hold (4). **The breath is inside the build**: in the 6–10f before the lock, *fewer things* move and the sound thins (the riser is the only thing growing), but the breath reduces how many pieces move, never the speed of the last one: one piece is still travelling on lock −1 and arrives on the lock frame. A fade is not an arrival, a long ease is not an arrival (anything ≥ 6f long has visually arrived several frames early), and a group glide that ends at lock −6 leaves the hit landing on a picture that has already stopped. A still beat *before* the build is a stall, not a breath.
 - **Frame 0 is already moving**: the anticipation's motion has started by frame 15 (a ring part-drawn, a pointer mid-swing), and it fills a deliberate part of the frame with visual **mass**, not just span: the precursor's bounding box is **≥ 35% of the frame's short edge** and **≥ 3% of the frame's area is visible ink** (a 30 px-wide stroke 300 px tall is a line, not a subject: give it a ring, ticks or rays that later collapse into the mark, or widen it), not a speck in a large dead field. Measure both on frame 0. Fill it with **motion**, not size: never start oversized and pull out, because a shrinking, calming subject drains the energy the build needs. The anticipation's energy rises into the trigger (a swing that tightens and quickens, a sweep that accelerates), and the build's first 10f change more than the anticipation's last 10f.
 - **Transitions**: none inside a sting; for an outro, the incoming film's last element persists into the build (transform shape).
-- **Sound**: the sonic logo, about 3 s: whoosh or riser into the lock (0.5–1.5 s) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. No VO, no bed. **This skill's sound rules win over `sound-design`'s general ones for a sting**: anticipation ticks may run several per second (one on each pass of a swing), and the first sound may sit on the anticipation's first motivated event inside the first 0.5 s instead of on frame 1.
+- **Sound**: the sonic logo, about 3 s: a tonal build or ticks into the lock (0.5–1.5 s; a riser only if tonal, never a whoosh or noise swell, per `sound-design`'s ban) → impact on the settle frame → a 2–4 note tonal button → shimmer tail 1–1.5 s. No VO, no bed. **This skill's sound rules win over `sound-design`'s general ones for a sting**: anticipation ticks may run several per second (one on each pass of a swing), and the first sound may sit on the anticipation's first motivated event inside the first 0.5 s instead of on frame 1.
 - **Memorable moment**: the lock frame itself, and it must be a **picture** event, not only a sound. **The lock's picture event is the largest change in the last 6f, measured on a crop of the whole lockup** (symbol and name): the mean absolute difference between lock −1 and lock is larger than between any other two neighbouring frames from lock −6 to lock. It comes from one of:
   - a **≤ 4f move** that ends on the lock (the last letter written in by the wipe, the last piece seating, a 2–3f scale seat of 1.5–3%);
   - a **light event that travels across the whole lockup**, symbol and name, peaking on the lock frame (a sweep, not a glint on one facet of the symbol while the name, often three times its area, sits still).
@@ -100,15 +100,15 @@ Pick one. A sting that builds, then reveals, then transforms is three stings.
 
 | Cue | Lands | Level |
 | --- | --- | --- |
-| Riser or whoosh | `startFrame = lock − riserLength`, so it **ends on the lock frame** | 0.55–0.6 (−5 to −4.4 dB) |
+| Tonal riser or ticks | `startFrame = lock − riserLength`, so it **ends on the lock frame** | 0.55–0.6 (−5 to −4.4 dB) |
 | Impact | the lock frame ±1f (33 ms), layered: a 2–5 kHz transient + a 100–500 Hz body | 0.9 (−0.9 dB) |
 | Tonal button | 0–4f after the impact: 2–4 notes or a chord | 0.6–0.8 |
 | Tail | shimmer or reverb, 1–1.5 s, decaying to silence before the last frame | — |
 
-- **The anticipation has sound too** (ticks on a swing, an air bed, a soft whoosh on the search): with sound on, a sting never opens on more than 0.5 s of silence.
+- **The anticipation has sound too** (ticks on a swing, an air bed, a soft tick as the search changes direction): with sound on, a sting never opens on more than 0.5 s of silence.
 - **Contrast**: the impact's first 10 ms RMS is **≥8 dB above the riser's last 100 ms**, and the riser has no internal dip over 6 dB. Per-clip volumes do not guarantee this (sources are normalised differently); measure it (`sound-design`'s `references/sfx-cues.md`) and pull the riser down 6–8 dB at its top if it fails.
 
-Generate with `sfx` or `music`, describing the sound, not the picture: "a short rising whoosh into a solid low hit with a bright three-note synth chime, ending in a soft shimmer, 3 seconds, one-shot, no music". Generate 2–3 takes and pick by ear on the lock frame. No sub drop if the sting precedes speech. For a loop, the tail must reach silence before the loop point.
+Generate with `sfx` or `music`, describing the sound, not the picture: "two warm synth notes rising for one second into a solid low hit with a bright three-note synth chime, ending in a soft shimmer, 3 seconds, one-shot, no music". Generate 2–3 takes and pick by ear on the lock frame. No sub drop if the sting precedes speech. For a loop, the tail must reach silence before the loop point.
 
 ## Directed example: 5 s ident, music-free, 16:9
 
@@ -118,7 +118,7 @@ SMP: Small pieces, one system.
 Idea: We show the modular mark as tiles that roll into place like a slot machine settling.
 Style family: I brand identity loop — the mark is modular, the grid is the brand
 Energy curve: 3 (tiles idle) → hit 10 at frame 72 → 4 hold
-Sound: sfx-led (riser texture matched to the Feeling: a filtered or tonal swell for calm, a noise riser for energetic) — tile clicks 0.45 alternating lanes from frame 0, riser 0.55 from 42 to 72, impact 0.9 on 72 (≥8 dB over the riser's top), three-note chime from 74, tail to 135
+Sound: sfx-led (riser texture matched to the Feeling: a filtered tonal swell for calm, a brighter, faster tonal riser for energetic; never a noise swell) — tile clicks 0.45 alternating lanes from frame 0, riser 0.55 from 42 to 72, impact 0.9 on 72 (≥8 dB over the riser's top), three-note chime from 74, tail to 135
 Memorable moment: 64–72 — the last three tiles land 3f apart and the wordmark locks on the hit
 
 ## Beats
@@ -150,7 +150,7 @@ Memorable moment: 64–72 — the last three tiles land 3f apart and the wordmar
 
 ## Good and bad
 
-- Bad: the logo fades in over 1 s, a whoosh plays somewhere near it, the logo drifts and shimmers forever. Good: four strokes draw on 3f apart, the last one locks on frame 72 with the impact on 72, the tagline rises at 90, and only a 0.8% creep moves after.
+- Bad: the logo fades in over 1 s, a sound plays somewhere near it, the logo drifts and shimmers forever. Good: four strokes draw on 3f apart, the last one locks on frame 72 with the impact on 72, the tagline rises at 90, and only a 0.8% creep moves after.
 - Bad: a pointer settles at f32, nothing moves or sounds until f58, then four moves cram into f58–72. Good: the pointer searches until f33, snaps home with a tick and a point glint on 36, and the build runs 36–72 with its moves staggered.
 - Bad: the symbol forms, then the name fades on letter by letter as grey half-letters, and the lock frame differs from lock −1 only by a glint on one facet. Good: the arm that became the symbol carries on as a thin line along the baseline, writes the name in behind it, passes the last letter on the lock, and the impact lands on that frame.
 - Bad: a grain-and-vignette backdrop that boils on a brand hex. Good: the brand's midnight, flat and exact at centre and corners.

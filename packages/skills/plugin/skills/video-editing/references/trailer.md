@@ -93,8 +93,8 @@ Contrast is the engine: the escalation only lands because of the quiet before it
 
 - Booms and impacts on every title card and on the turn.
 - Risers 2–8 s long, ending exactly on the hit frame.
-- Whooshes on fast transitions, peak on the cut.
-- A reverse cymbal into a cut; braams for the epic moments, sparingly.
+- Fast transitions get the hit on the cut or nothing; never a whoosh (`sound-design`'s ban).
+- Braams for the epic moments, sparingly.
 - **Designed silence**: 0.5–1 s of room tone before the biggest hit, never digital zero (it sounds like a dropout on headphones). Harvest it from the source's quietest stretch and drop it to −45 to −60 dBFS RMS (`ffmpeg-recipes.md` §7, room tone).
 - Dialogue: lines laid across cuts as J/L-cuts. When the footage is a finished film mix, the dialogue is not clean: lift lines per the main skill's Step 9 (finished mix, no stems), and keep a cold-open **line** 6–10 LU under Act 1's music, not above it. A cold open built on a **sound** (an impact, a roar, a feed hook's sync sound) is not a line: it sits at Act 1's level or above, or the hook plays near-silent.
 - **Pre-mix the trailer to one WAV.** The timeline has 4 lanes and one static volume per clip (`sound-design`), and a trailer has a dozen overlapping pieces with automated levels (bed staircase, lines, ducks, hits, sync sound, room tone). Build them in one ffmpeg graph (`-filter_complex_script`: per piece `atrim`, `asetpts=PTS-STARTPTS`, 10–50 ms `afade`s, `adelay=ms|ms` to its trailer time, levels as `volume='…':eval=frame` expressions; then `amix=inputs=N:normalize=0`, which sums without dividing, and `aresample=48000`; tested), master that, and place the one file at 1.0 on lane 0. Set the climax ramp before the limiter and measure after it: at least 1 LU of the staircase must survive the limiting.

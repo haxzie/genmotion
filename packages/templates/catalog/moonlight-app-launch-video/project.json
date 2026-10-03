@@ -173,66 +173,6 @@
       "muted": false
     },
     {
-      "id": "whoosh-0",
-      "file": "assets/sfx-whoosh.mp3",
-      "track": 2,
-      "startFrame": 116,
-      "durationInFrames": 21,
-      "startFrom": 0,
-      "volume": 0.5,
-      "fadeInFrames": 0,
-      "fadeOutFrames": 0,
-      "muted": false
-    },
-    {
-      "id": "whoosh-1",
-      "file": "assets/sfx-whoosh.mp3",
-      "track": 2,
-      "startFrame": 186,
-      "durationInFrames": 21,
-      "startFrom": 0,
-      "volume": 0.5,
-      "fadeInFrames": 0,
-      "fadeOutFrames": 0,
-      "muted": false
-    },
-    {
-      "id": "whoosh-2",
-      "file": "assets/sfx-whoosh.mp3",
-      "track": 2,
-      "startFrame": 305,
-      "durationInFrames": 21,
-      "startFrom": 0,
-      "volume": 0.5,
-      "fadeInFrames": 0,
-      "fadeOutFrames": 0,
-      "muted": false
-    },
-    {
-      "id": "whoosh-3",
-      "file": "assets/sfx-whoosh.mp3",
-      "track": 2,
-      "startFrame": 476,
-      "durationInFrames": 21,
-      "startFrom": 0,
-      "volume": 0.5,
-      "fadeInFrames": 0,
-      "fadeOutFrames": 0,
-      "muted": false
-    },
-    {
-      "id": "whoosh-4",
-      "file": "assets/sfx-whoosh.mp3",
-      "track": 2,
-      "startFrame": 572,
-      "durationInFrames": 21,
-      "startFrom": 0,
-      "volume": 0.5,
-      "fadeInFrames": 0,
-      "fadeOutFrames": 0,
-      "muted": false
-    },
-    {
       "id": "click-0",
       "file": "assets/sfx-click.mp3",
       "track": 3,

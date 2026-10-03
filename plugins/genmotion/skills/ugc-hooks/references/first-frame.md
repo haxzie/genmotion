@@ -33,4 +33,4 @@ Exit the line with a 6f inCubic exit that clears 4f before the scene ends, or ha
 
 ## Sound
 
-If there is any audio at all, frame 1 has it: a word already in progress, a transient, or a bed that starts on a downbeat. Silence under the first half second is indistinguishable from a video that has not loaded. A hard cut at 36f carries a swish (0.5) only if every other hard cut in the ad does.
+If there is any audio at all, frame 1 has it: a word already in progress, a transient, or a bed that starts on a downbeat. Silence under the first half second is indistinguishable from a video that has not loaded. A hard cut at 36f is silent unless the picture makes a sound on it (a tap, the beat); never a whoosh (`sound-design`).

@@ -79,7 +79,7 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     fallback: "use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type",
   },
   sfx: {
-    label: "Whooshes, clicks, ambience",
+    label: "Clicks, taps, chimes, ambience",
     desktop: "`generate_sfx`",
     mcp: null,
     shell: null,

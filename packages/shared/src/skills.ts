@@ -103,7 +103,7 @@ export const SKILL_CAPABILITIES = [
   "pick-voice",
   /** Narration. */
   "voiceover",
-  /** Whooshes, clicks, ambience. */
+  /** Clicks, taps, chimes, ambience. */
   "sfx",
   /** A music bed or score: generated, or found under a licence that allows the use. */
   "music",

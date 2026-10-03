@@ -97,7 +97,7 @@ Safe zone: 16:9 — 8% sides (154 px), 5% top/bottom
 | 4 | 300–420 | Demo 1 | the tone picker | "Reminders in your voice" (4 → 51f) | "Ledgerly writes the reminders, in your voice." (7) | 7 | exit-then-cut | click on the picker |
 | 5 | 420–540 | Demo 2 | the pay link on a phone | "Paid in one tap" (4 → 51f) | "Clients pay from a link, in one tap." (8) | 7 | persisting element: the phone's green tick becomes beat 6's status dot | tap on 470, chime on 478 |
 | 6 | 540–660 | Proof | the late-payer list | "See who's late, early" (4 → 51f) | "You see who's late before they are." (7) | 6 | exit-then-cut | none |
-| 7 | 660–790 | Resolve | the headline | "Get paid. Skip the awkward emails." (6 → 69f) | "Get paid without the awkward emails." (6) | 7 | the green accent floods from the headline's full stop (12f) into the end card | whoosh 3f before the flood |
+| 7 | 660–790 | Resolve | the headline | "Get paid. Skip the awkward emails." (6 → 69f) | "Get paid without the awkward emails." (6) | 7 | the green accent floods from the headline's full stop (12f) into the end card | none: the flood is silent, the sonic logo lands at 800 |
 | 8 | 790–900 | CTA | mark + URL | "ledgerly.app" (1 → 30f; held 100f) | — (VO-free) | 3 | end | sonic logo on the mark's land (800) |
 
 Sum: 900f. VO 41 words; each line also fits its own beat (beat 2: 6 words ≈ 78f, from 81 to 159, before the breath).
@@ -118,7 +118,6 @@ Sum: 900f. VO 41 words; each line also fits its own beat (beat 2: 6 words ≈ 78
 | 6 | 0 | VO line 1 | 1.0 / 0 | 0 / 0 | 6f after start |
 | 196 | 2 | Click | 0.9 / −0.9 | 0 / 2 | press frame |
 | 200–262 | 2, 3 | Stamp ×12 (every 4th note), alternating lanes | 0.42 / 0.46 / 0.50 (−7.5 / −6.7 / −6) | 0 / 4 | each stamp's first visible frame |
-| 787 | 2 | Whoosh | 0.7 / −3.1 | 0 / 6 | 3f before the flood starts |
 | 800 | 2 | Sonic logo | 0.9 / −0.9 | 0 / 10 | mark's land frame |
 
 ---

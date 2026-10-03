@@ -90,7 +90,7 @@ export const CHAT_PLUGINS: ChatPlugin[] = [
     hint: "Make a sound effect from a description",
     integration: "elevenlabs",
     tool: "generate_sfx",
-    placeholder: "Describe the sound — a whoosh, a click, rain on glass…",
+    placeholder: "Describe the sound — a mouse click, a soft chime, rain on glass…",
     directive:
       "Generate the sound effect for this request with the `generate_sfx` tool, then place the audio it returns on the timeline at the moment it belongs to.",
   },

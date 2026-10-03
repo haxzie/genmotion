@@ -79,7 +79,7 @@ The owner skill's own plan (shot list, script, cue sheet) goes in the body as yo
 
 Read the owner skill fully. Then load its `requires` that apply to this project's engine:
 
-- **Always**: `motion-language` (entrances, exits, easing, camera, handoffs) before the first scene, and `sound-design` (music, effects, VO mix, loudness) before placing any audio.
+- **Always**: `motion-language` (entrances, exits, easing, camera, handoffs) before the first scene, and `sound-design` (music, effects, VO mix, loudness) before placing any audio. Its whoosh ban is fixed: never a whoosh, swoosh or swish on anything, whatever another skill or a reference suggests.
 - **Launch-type films** (a product launch, feature announcement, brand sting, milestone, store preview, or a freeform promo for a product or company): `launch-taste` before writing direction's Idea and Style family lines; it chooses the concept device, the look and the sound's role, and its taste test joins the self-critique.
 - **Foundations** for ads: `ugc-ad-foundations`, then `ugc-hooks`, `ugc-scripting` or `ugc-craft` when the owner says so.
 - **Techniques**, cross-cutting: `screen-capture`, `ai-presenter`, `stock-and-broll`, `ad-qa`.
@@ -112,3 +112,4 @@ Nothing. This skill is the map.
 - `validate` passes.
 - `capture-frames` on the first frame and on each scene you touched, and you looked at them.
 - The owner skill's own checklist ran, and so did the self-critique in `direction`.
+- No whoosh, swoosh or swish anywhere in the mix (`sound-design`'s ban).

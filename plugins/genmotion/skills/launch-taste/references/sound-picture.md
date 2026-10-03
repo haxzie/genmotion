@@ -70,7 +70,7 @@ A film with no lead (a dry voice with no bed, or a wall of music with every cue 
 ## Checks
 
 1. Pick three cue frames: on a 4 fps strip (or frame-by-frame capture) around each, the first changed pixel is on or up to 2 frames before the cue's onset, never after it.
-2. A sustained motion (a slide, a glide, a camera move with a whoosh) has a sound of about the same length.
+2. A sustained motion (a slide, a glide, a camera move under a tonal swell) has a sound of about the same length.
 3. Where the product or payoff leads, the bed's 0.5 s RMS sits ≥10 dB below its level either side (`ffmpeg` `astats` on the music stem).
 4. The last 1.5 s: the music is decaying or has hit its button; it is not at full level on the last frame.
 5. The export's LRA is above about 3 LU (a living mix), measured with `ffmpeg` `ebur128`.

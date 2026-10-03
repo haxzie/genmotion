@@ -67,7 +67,6 @@ Word pop per `ugc-craft` (1–3 words, ALL CAPS Bold caption allowed up to 110 p
 
 | Sound | Use |
 |---|---|
-| whoosh | transitions, b-roll in |
 | pop / bubble | a text pop |
 | click / keyboard | UI on screen |
 | ding / cash register | a number, money |
@@ -76,7 +75,7 @@ Word pop per `ugc-craft` (1–3 words, ALL CAPS Bold caption allowed up to 110 p
 | riser into a bass drop | the reveal |
 | vine boom | ironic shock, rarely, if at all |
 
-3–8 sounds per 30 s at most, each 6–12 dB under the voice peak. Generate them with `sfx` (describe the sound, not the picture); without `sfx`, synthesise the pop, whoosh and hit you need (`sound-design`'s `references/sfx-cues.md`, tested recipes, labelled placeholders). Zero sounds is not an option for this format. Trending audio is licensed per platform and added in the app: export with original audio plus your music bed, and tell the user which moment a trending sound would replace.
+3–8 sounds per 30 s at most, each 6–12 dB under the voice peak. Generate them with `sfx` (describe the sound, not the picture); without `sfx`, synthesise the pop, tick and hit you need (`sound-design`'s `references/sfx-cues.md`, tested recipes, labelled placeholders). Zero sounds is not an option for this format. Transitions and b-roll entrances stay silent: never a whoosh (`sound-design`'s ban). Trending audio is licensed per platform and added in the app: export with original audio plus your music bed, and tell the user which moment a trending sound would replace.
 
 **The sound plan decides who cuts** (`sound-design`, sound plan):
 

@@ -134,7 +134,7 @@ Crops by ffmpeg (§6) when the framing per camera is fixed; in the scene (`foota
 - Hook title: a 5–9 word claim at y 270–450 for the first 3–5 s, or persistent ("Why VCs pass on 99% of founders"). Optional small guest label: name + credential, ≥40 px (a 28 px credit is unreadable on a phone).
 - **No transcript: still ship a hook title.** Build it only from public facts (the guest, the show, the episode or file title, the topic if the metadata names it), as a question or a POV, never a quote: "How does a surgeon decide when to stop?" when the episode title is about that decision; "POV: you get 40 seconds with <guest>" when nothing names the topic. Never a bare name label, and never words the guest may not have said. Record it in `VIDEO.md` as unverified.
 - End: a 1 s "Full interview: <show>" card earns its place when the licence asks for credit; otherwise end on the payoff.
-- Music: optional; `sound-design`'s podcast-clip row (none, or 0.1 low-passed). SFX: at most one whoosh on the open and one pop on the key number.
+- Music: optional; `sound-design`'s podcast-clip row (none, or 0.1 low-passed). SFX: at most one pop on the key number; nothing on the open's cut.
 - Loudness −14 LUFS / −1 dBTP.
 
 ### Procedure (clips)

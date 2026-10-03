@@ -26,7 +26,7 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 
 **Graphics:** lower third on first appearance (4–6 s); keyword pops of 2–5 words for 1.5–3 s; chapter cards 1–2 s; spoken numbers become an animated chart; all inside title-safe.
 
-**Sound:** a bed per `sound-design`'s bed row (0.12–0.2, 14–20 LU under the voice), changing at each chapter; drop it to silence under the most important line; light SFX (a soft whoosh on transitions, a click on text). Loudness −14 LUFS.
+**Sound:** a bed per `sound-design`'s bed row (0.12–0.2, 14–20 LU under the voice), changing at each chapter; drop it to silence under the most important line; light SFX (a click or pop on text; transitions silent, never a whoosh, per `sound-design`). Loudness −14 LUFS.
 
 **Delivery:** H.264 High, CRF 18 (or 12–20 Mbps at 1080p), AAC 48 kHz; SRT uploaded separately (not burned); chapters in the description.
 
@@ -49,7 +49,7 @@ Read this when one person talks to camera and the user wants it edited. Pick the
 - Joins per the Gen Z / Shorts row of the main skill's pause table (Step 5): in −0.03 s, out +0.05 s; in a monologue cut only pauses ≥0.25 s.
 - Punch-in (1.0 → 1.12 over 8 f) on stressed words, at most 4 per 30 s.
 - Captions: word pop per `ugc-craft`, placed per `captions.md`.
-- SFX: whoosh on b-roll entrances, pop on text, a ding on a key number; 3–8 per 30 s at most, each 6–12 dB under the voice.
+- SFX: pop on text, a ding on a key number, nothing on b-roll entrances or cuts (no whooshes, per `sound-design`); 3–8 per 30 s at most, each 6–12 dB under the voice.
 - Aspect 1080×1920; eyes at y 500–750.
 - Loudness −14 LUFS / −1 dBTP.
 

@@ -63,7 +63,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Suits**: consumer products, fintech, devices; brand stings; milestones with a physical unit ("the unit becomes the quantity"); generative products whose output can fill the object ("output as material").
 - **Fails for**: workflow products (3D around flat content is decoration); more than one idea.
 - **Motion personality**: one material, one light, one move [two]. Entrances thrown and caught: fast, then a long ease-out tail, no bounce (about 25 frames in, 20 more to settle, measured on a sting that worked [one]); a lockup slammed from oversized to final size in about 16 frames with no overshoot, then dead still [one]. Long holds are carried by secondary motion *inside* the object (footage playing on it, micro-rotation), never by moving the background [one]. When the headline lands, the field behind it dims or vignettes [one]. A rigid grid of objects gets per-item phase so it shimmers instead of strobing (seeded, never random per run) [one].
-- **Sound personality**: whoosh on the entrance, a pad, a tonal hit on the lock, a decaying tail; two sync points can be enough [two].
+- **Sound personality**: a soft land on the entrance's settle, a pad, a tonal hit on the lock, a decaying tail; two sync points can be enough [two].
 - **A device or object launch** (hardware, a wearable, a physical product): show the object at hero size, **≥ 35% of the frame width**, at least once, and give it one close-up on its material (the brushed edge, the weave, the sensor window), because a product seen only small reads as a generic prop. The headline spec is a **visible state on the object** (a charge arc that barely moves, a reading on its display, a light that stays on), not only a caption, so the claim survives a muted view.
 - **Calm C** (health, luxury, hardware sold on trust): drop house C's pop, slam and colour-flood numbers; keep one material, one light and one slow move, and let the ground change only at the peak.
 - **Classic failure**: the stock gold-metal-and-bloom look [one]; soft or upscaled textures on the object, which on a brand piece *is* the brand [one]; a long middle hold with nothing new [two]; the object small (under a fifth of the frame width) in every shot, with the spec carried only by type [one].
@@ -136,7 +136,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Suits**: AI app builders, agents on a canvas, assistants, search, any product driven by a typed request [several].
 - **Fails for**: products with no input box; requests that are boring to read.
 - **Motion personality**: the composer near full frame, the request typing at headline size (7–10% of frame height) with a solid caret, the tail words in the brand gradient [two]; the integrated source's icon flies in and docks as a chip as the request names it [one]; a weighted cursor presses send; a hard cut to the result already moving (a hover, a cursor mid-path), one action in it, back to the next request [two]. On a canvas tool, the tool's native notation (selection handles, named cursors, comments) is the graphic language, and one request bursts into a grid of variants a person then chooses from [one].
-- **Sound personality**: key ticks under the typing, a soft send, a whoosh into the result; the bed sits under it.
+- **Sound personality**: key ticks under the typing, a soft send, a chime as the result appears; the bed sits under it.
 - **Classic failure**: the request in small UI type with a marketing line over it; results shown as static screenshots; every result the same layout.
 - **House**: B for the results; K's cards between rounds when the film is short; a brand gradient as the frame around a neutral composer card keeps the brand on screen [one].
 
@@ -146,7 +146,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Suits**: trading and finance apps, dashboards, pro creative tools, anything whose dark UI is itself the asset [several].
 - **Fails for**: UI that cannot be magnified (the film turns into texture); calm-trust consumer products (it reads cold).
 - **Motion personality**: real screens on tilted planes (back-tilt 20–35°, or a steep side angle with captions in the space the angle opens), rising and pushing slowly (about 1.0 → 1.25× over a beat) with a coloured rim light behind the panel [several]; one panel sharp and the rest defocused by depth [two]; a fan of cards out of a container, or a floor of cards receding under the headline [one]; one control lifted out to poster scale for the decision [one].
-- **Sound personality**: low pulse, UI ticks, a whoosh per panel move.
+- **Sound personality**: low pulse, UI ticks, a soft land as each panel settles.
 - **Classic failure**: a whole dense screen at feed size [several]; dark panel on dark ground with no rim or horizon light [two]; captions at 3% of frame height [one].
 - **House**: K or B on a dark ground; light the rims as C does.
 
@@ -156,7 +156,7 @@ Contents: How to choose · Kinetic editorial type · UI-led story film · Maker'
 - **Suits**: integrations (the services as glossy app icons swirling around the product's mark), tokens and coins (a toggle that throws a stream of coins past the lens), apps replacing apps (rival tools as generic icons dropped in a bin), consumer fintech [several].
 - **Fails for**: calm-trust enterprise, health and luxury, where toy gloss reads as a game.
 - **Motion personality**: soft clearcoat plastic, rounded bevels, thick-rimmed coins; flights in wide arcs with real depth (objects pass in front of and behind the type), near ones larger and motion-blurred; escalation in three steps (a few → an orbit → a full field) for "thousands" [one]; seeded per-item phase so a swarm never strobes. One material family and one light for every object; a second studio look inside the film reads as a second film [one].
-- **Sound personality**: pops and coin clinks clustered on the burst, a whoosh on the arc, a soft hit when the swarm settles.
+- **Sound personality**: pops and coin clinks clustered on the burst, a rising tonal note on the arc, a soft hit when the swarm settles.
 - **Classic failure**: real third-party marks used as props without permission; a burst with no cause (nothing the viewer did released it); flat sprites with no depth.
 - **House**: C, soft-gloss variant.
 

@@ -147,7 +147,7 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "UI click, typing ticks, soft swish, one success tone."
+      "note": "UI clicks, typing ticks, soft lands and one success tone."
     },
     {
       "purpose": "music",
@@ -177,6 +177,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.0",
+  "version": "2.1.1",
   "icon": "🖥️"
 }

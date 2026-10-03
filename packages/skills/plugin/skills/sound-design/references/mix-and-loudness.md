@@ -36,7 +36,8 @@ The export sums every clip with `amix … normalize=0` and applies **no limiter 
 | Podcast clip | none, or 0.1 | −20 dB | −34 LUFS |
 | UI clicks / taps | 0.8–1.0 | short transients, perceived well below VO | −30 to −22 LUFS |
 | Impacts | 0.7–0.85 | hits under VO ≈ −6 dB | peaks −10 to −6 dBFS |
-| Whooshes | 0.5–0.7 | | |
+| Soft lands / thuds on a settle | 0.5–0.7 | | |
+| Transition cues | none by default (no whooshes: SKILL.md) | | |
 | Risers / swells / rings | 0.55–0.6 | | |
 | Pops / ticks | 0.45–0.55 | | |
 | Logo hit | 0.45 intro / 0.9 final lockup | | |

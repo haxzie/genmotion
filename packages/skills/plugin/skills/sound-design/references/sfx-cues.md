@@ -6,7 +6,8 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 
 | Category | What it is | Fits | Placement |
 |---|---|---|---|
-| Whoosh / swoosh / swish | air movement; swish short and bright, whoosh fuller | elements flying across, camera moves, slides and wipes | its **peak** on the cut or the moment of max velocity; house: start 4 f before a cut, or on the first frame of a wipe |
+| Whoosh / swoosh / swish | air movement | **never** (SKILL.md, the whoosh ban) | a move, wipe or cut gets the picture's own sound (a tap, a soft land on the settle, a tonal note on the beat) or nothing |
+| Soft land / thud | a low, short, padded contact | a panel, card or device settling after a move | on the settle frame (motion stops), ±1 f |
 | Riser / uplifter | rising pitch or noise, 1–8 s | into reveals, drops, title cards | **ends exactly on** the reveal; length 1, 2 or 4 bars |
 | Downlifter / reverse | falling sweep | after a drop, a scene exit, "power down" | starts on the hit, decays across the next shot |
 | Impact / hit / slam | sharp transient + body | landing, text slam, logo lock, cut to black | transient on the contact frame, ±2 f |
@@ -25,10 +26,10 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 
 | Cue | Offset from the visual | Clip length | `volume` | Fade out |
 |---|---|---|---|---|
-| Whoosh into a hard cut | −4 f | 21–24 f | 0.5–0.7 | — |
-| Whoosh into a colour flood | −3 f from the flood start (18–22 f before the cut) | ~20 f | 0.7 | — |
+| Hard cut | nothing (cuts are silent), or the beat it sits on | — | — | — |
+| Colour flood | a tap on the press that starts it (0 f), and/or a soft land on the frame the next scene settles | 3–15 f | 0.8 / 0.5–0.7 | 2 f |
 | Block / pixel wipe | on the wipe's first frame (18–24 f before the cut) | 20 f | 0.5 | — |
-| Iris / orb swell | on the iris start (~32 f before the cut) | ~40 f | 0.6 | 20 f, fade in 10 f |
+| Iris / orb | a tonal note or chord (never a noise swell) on the iris start (~32 f before the cut) | ~40 f | 0.6 | 20 f, fade in 10 f |
 | Ring on a cut | 0 f | short | 0.6 | 4 f |
 | Click on a press | 0 f | 3–15 f | 0.8–1.0 | 2 f |
 | Message sent / received | the bubble's first visible pixel | short | 0.75–0.9 | — |
@@ -40,14 +41,14 @@ Read this when you are writing the cue sheet or prompting `sfx`. Frames are at 3
 
 Rules behind the numbers:
 - Audio early is noticed less than audio late (broadcast tolerance is roughly 40 ms early / 60 ms late), so at 30 fps hits sit on the frame or 1 f early, never late.
-- A whoosh's peak is usually 30–70% into the file. Find it and set `startFrame = cutFrame − peakOffsetFrames`; trim the head with `startFrom` (seconds) rather than moving the peak off the cut.
+- A designed impact or chime's peak is often a few frames into the file. Find it and set `startFrame = eventFrame − peakOffsetFrames`; trim the head with `startFrom` (seconds) rather than moving the peak off the cut.
 - If a sound is tied to an element, its visual onset must be a defined frame. A spring-derived fade moves the first visible pixel; drive opacity with a stepped or fixed-length ease instead.
 - Repeats of one file alternate tracks 2 and 3 and vary level ±0.04 (0.42 / 0.46 / 0.5).
 
-Find a whoosh's peak with `ffmpeg` (10 ms RMS rows; the loudest row is the peak):
+Find an impact's peak with `ffmpeg` (10 ms RMS rows; the loudest row is the peak):
 
 ```
-ffmpeg -i assets/whoosh.wav -af "aresample=48000,asetnsamples=n=480:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/whoosh-rms.txt" -f null -
+ffmpeg -i assets/impact.wav -af "aresample=48000,asetnsamples=n=480:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=assets/impact-rms.txt" -f null -
 ```
 
 ## Density
@@ -59,7 +60,7 @@ ffmpeg -i assets/whoosh.wav -af "aresample=48000,asetnsamples=n=480:p=0,astats=m
 | Punctuated promo | 0.25–0.5 | fintech 0.40, square chat-UI launch 0.25 + VO |
 | VO-carried | a handful in the whole film | 70 s explainer-launch: 1 cue |
 
-Limits: at most 2 SFX sounding at once; none over a VO word that carries meaning (place in the gap or drop it 6–10 dB); hard cuts all get the same treatment or none.
+Limits: at most 2 SFX sounding at once; none over a VO word that carries meaning (place in the gap or drop it 6–10 dB); hard cuts are silent unless the picture makes a sound on them, and never get a whoosh.
 
 ## Layering a hero hit
 
@@ -77,9 +78,9 @@ Pattern: what makes it + character + envelope + length + "one-shot" / "no music"
 
 | Need | Prompt | Duration |
 |---|---|---|
-| Transition swish | "short airy whoosh, fast left-to-right pass, bright, clean one-shot, no music" | 0.6 s |
-| Big whoosh into a hit | "deep cinematic whoosh building for one second, ending in a punchy low impact with a short reverb tail" | 1.5 s |
-| Riser | "rising white-noise riser with a pitch sweep up, tension building, ends abruptly at the peak" | 2 or 4 s (one or two bars at 120) |
+| Soft land on a settle | "soft padded thud, a small card set down on felt, low and short, no tail, one-shot, no music" | 0.5 s |
+| Tonal build into a hit | "two warm synth notes a fifth apart rising in pitch for one second, ending in a punchy low impact with a short reverb tail" | 1.5 s |
+| Riser | "rising synth riser, a sustained chord sweeping up in pitch, tension building, ends abruptly at the peak" | 2 or 4 s (one or two bars at 120) |
 | Text slam | "tight punchy impact, a sharp snap layered with a deep thud, very short tail, one-shot" | 0.6 s |
 | Sub drop | "sub bass drop, deep sine falling in pitch, clean, no other sounds" | 1.5 s |
 | Braam | "massive cinematic braam, distorted low brass blast with a long dark tail, trailer style" | 3 s |
@@ -111,7 +112,6 @@ Each command below ran on ffmpeg 6.1 and was measured. They are deterministic (f
 |---|---|---|---|
 | riser | −14.9 dBFS, rising monotonically (no 50 ms dip) | 2.0 s (1 bar at 120 BPM) | `startFrame = hit − 60` at 30 fps |
 | impact | −4.1 dBFS | 1.2 s | on the contact / lock frame |
-| whoosh | −13.0 dBFS, loudest at 0.17–0.22 s | 0.4 s | `startFrame = cut − 6` |
 | pop | −10.2 dBFS | 0.08 s | text pop, arrival |
 | riser (tonal) | −13.2 dBFS, rising monotonically | 1.2 s | calm stings and reveals; `startFrame = hit − 36`; place at **0.7** (its tail is denser than the noise riser's: at 1.0 it measured only about 7 dB under the impact) |
 | tick | −13.4 dBFS | 0.04 s | counter steps, anticipation |
@@ -125,9 +125,6 @@ ffmpeg -f lavfi -i "aevalsrc='0.18*pow(t/2,2)*sin(2*PI*(220*t+165*t*t))':s=48000
 
 # impact: 30 ms high-passed noise snap + a 70→50 Hz body with fast decay
 ffmpeg -f lavfi -i "aevalsrc='0.45*exp(-6*t)*sin(2*PI*(70*t-10*t*t))':s=48000:d=1.2" -f lavfi -i "anoisesrc=c=white:r=48000:a=0.35:seed=3:d=1.2" -filter_complex "[1:a]highpass=f=1500,volume='exp(-120*t)':eval=frame[s];[0:a][s]amix=inputs=2:normalize=0,afade=t=in:d=0.002,afade=t=out:st=1.1:d=0.1,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-impact.wav
-
-# whoosh: pink noise band-passed 400–3000 Hz, sin² swell
-ffmpeg -f lavfi -i "anoisesrc=c=pink:r=48000:a=0.9:seed=5:d=0.4" -af "highpass=f=400,lowpass=f=3000,volume='pow(sin(PI*t/0.4),2)':eval=frame,aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-whoosh.wav
 
 # pop: 900 Hz blip falling in pitch, 2 ms attack
 ffmpeg -f lavfi -i "aevalsrc='0.5*min(t/0.002,1)*exp(-60*t)*sin(2*PI*(900*t-2500*t*t))':s=48000:d=0.08" -af "aformat=channel_layouts=stereo" -c:a pcm_s16le assets/sfx-pop.wav

@@ -106,7 +106,7 @@ cover.u.uRadius.value = lerp(coverRadius(0, 0, width / 2, height / 2), PILL_R, k
 cover.u.uOpacity.value = 1 - prog(frame, 13, 8, outCubic);   // the real pill takes over
 ```
 
-Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, cam, height)`. Sound: a whoosh 3f before the flood begins, an optional impact one frame after the cut (`sound-design`).
+Both scenes build `cover = coverLayer(width, height, FLOOD)` on `overlay(scene, cam, height)`. Sound: a tap on the press that starts the flood (or nothing), an optional soft land or impact one frame after the cut; never a whoosh (`sound-design`).
 
 ## Timing on both sides of a cut
 

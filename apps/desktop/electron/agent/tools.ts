@@ -499,7 +499,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "generate_sfx",
     description:
-      "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For the whoosh on a transition, a click on a button, a rising swell under a reveal, rain behind a scene. Describe the sound itself, not the picture — 'a soft airy whoosh, rising, 1 second', 'rain on a window, steady, no thunder'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",
+      "Generate a sound effect from a short description and save it into the project's assets/, returning the path to place on the timeline. For a click on a button, a soft land as a panel settles, a chime on a success, rain behind a scene. Never a whoosh, swoosh or swish: a transition gets the picture's own sound, or none. Describe the sound itself, not the picture — 'a soft padded thud, a card set down on felt, 0.5 seconds', 'rain on a window, steady, no thunder'. Leave the duration out unless the cue has to fit an exact moment; the model picks a natural length. One effect per call.",
     shape: {
       text: z
         .string()
@@ -516,7 +516,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         .boolean()
         .optional()
         .describe("Ask for a seamless loop — ambience or a drone that runs under a whole scene."),
-      filename: z.string().optional().describe('Preferred filename, e.g. "whoosh-1.mp3"'),
+      filename: z.string().optional().describe('Preferred filename, e.g. "click-1.mp3"'),
     },
     async run(session, args) {
       const { text: description, durationSeconds, loop, filename } = args as unknown as {

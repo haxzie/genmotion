@@ -106,7 +106,7 @@
     {
       "kind": "capability",
       "id": "sfx",
-      "why": "Whooshes, pops and hits on cuts, captions and title cards."
+      "why": "Pops, dings and hits on captions, key numbers and title cards."
     }
   ],
   "route": {
@@ -133,7 +133,7 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "Whoosh, pop, hit, riser. Describe the sound, not the picture."
+      "note": "Pop, ding, hit, tonal riser. Describe the sound, not the picture."
     }
   ],
   "triggers": [
@@ -152,6 +152,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "icon": "✂️"
 }

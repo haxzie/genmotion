@@ -5,10 +5,10 @@ Read this when you write the cue sheet for a specific kind of video. Frames at 3
 ## Launch film (20–90 s)
 
 - **Music**: instrumental build-and-drop, 110–128 BPM (ask for 120: 15 f per beat). Drop on the product reveal.
-- **Shape**: frame 1 transient → problem section sparse and low → riser 2–4 s (one or two bars) into the **drop on the reveal** → feature montage, a cut every 1–2 beats, each feature landing with a light swish or click → breakdown under the key line → logo on the last hit, 1–3 s tail.
-- **SFX**: 5–8 hero moments. Whoosh 0.7 three frames before each flood, impact 0.7–0.85 on slams and the logo, click 0.9 on taps.
+- **Shape**: frame 1 transient → problem section sparse and low → riser 2–4 s (one or two bars) into the **drop on the reveal** → feature montage, a cut every 1–2 beats, each feature landing with a click or a tonal note on the bar → breakdown under the key line → logo on the last hit, 1–3 s tail.
+- **SFX**: 5–8 hero moments. A tap 0.8 on the press that starts each flood (or nothing), impact 0.7–0.85 on slams and the logo, click 0.9 on taps; no whooshes (SKILL.md, the ban).
 - **Levels**: music-only films at 1.0; with SFX 0.5–0.6; VO-led: bed 0.18 (the ladder's 0.1–0.2) with VO at 1.0, +3 to +8 f after each cut.
-- House examples: a fintech launch at music 0.55 with whooshes and impacts; a voice-AI launch with a sparse bed under VO, block-wipe SFX on wipe starts and rings on cuts.
+- House examples: a fintech launch at music 0.55 with taps and impacts; a voice-AI launch with a sparse bed under VO and rings on the cuts the picture marks.
 - **No drop in the track?** Search the onset dump (SKILL.md, Beat grid) for a natural dropout followed by a hit and cue the track with `startFrom` so the hit lands on the reveal frame.
 
 ## Explainer with VO (40–120 s)
@@ -38,10 +38,10 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 
 ## Brand sting (2–8 s)
 
-- **Sequence**: whoosh or riser into the lock-up (0.5–1.5 s) → **impact on the settle frame** → tonal button (2–4 notes or a chord) → shimmer tail 1–1.5 s. About 3 s of sound.
+- **Sequence**: a tonal build or ticks into the lock-up (0.5–1.5 s; a riser only if tonal, never a noise swell) → **impact on the settle frame** → tonal button (2–4 notes or a chord) → shimmer tail 1–1.5 s. About 3 s of sound.
 - **Source**: a music generator with a 3–5 s length, or `sfx` ("short bright three-note synth logo jingle, ending on a sustained chord, 2.5 seconds").
 - **Levels**: logo hit 0.9; no bed. No sub drop if the sting will precede speech.
-- **The anticipation has sound too** (ticks, an air bed, a swing whoosh): a sound-on sting never opens on more than 0.5 s of silence.
+- **The anticipation has sound too** (ticks on the swing, an air bed, a tonal build): a sound-on sting never opens on more than 0.5 s of silence.
 - **Contrast**: the impact's first 10 ms RMS is ≥8 dB above the riser's last 100 ms, and the riser has no dip over 6 dB; lower the riser until it passes (`sfx-cues.md` has the measurement).
 - **Loop variant**: the last frame's sound must decay to silence before the loop point.
 
@@ -49,7 +49,7 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 
 - **Frame 1**: a transient, never a fade-in.
 - **Music**: trend-adjacent 95–130 BPM, cut on beats; bed 0.12–0.2 under talk (the ladder). Brand TikTok accounts use the Commercial Music Library in-app; never export a trending sound into the file.
-- **SFX**: a swish on every jump cut or none; a hit on the product shot; a pop (0.45) on caption keywords, sparingly; foley on product handling.
+- **SFX**: nothing on jump cuts; a hit on the product shot; a pop (0.45) on caption keywords, sparingly; foley on product handling.
 - **Muted**: captions carry every claim.
 
 ## Trailer / teaser (30–150 s)
@@ -72,7 +72,7 @@ A muted-first launch, a calm hardware or data film, a film whose content is many
 ## Talking head (YouTube, 1–15 min)
 
 - Speech at −16 to −14 LUFS short-term. Music only on the intro, b-roll stretches and section stings (1–2 bars); bed 0.12–0.2 under speech when present (the ladder), out under the key line.
-- Light swishes on graphics and zoom punches; a boom on a rare emphasis joke.
+- A pop or click on graphics, nothing on zoom punches or cuts; a boom on a rare emphasis joke.
 - Room tone continuous under cuts so jump cuts do not drop to digital zero.
 
 ## Gen Z edit (7–45 s): two different films
@@ -82,7 +82,7 @@ Decide which one it is first, because the cutting authority flips.
 **Over speech** (a talking head cut TikTok-style, the common case):
 - The speech decides every cut; a beat grid would cut mid-word.
 - Bed: lo-fi, house or phonk at 0.14–0.2, low-passed at 6–8 kHz so it is heard on a phone without masking the voice (14–20 LU under it). Drop it to silence under the hook line and the payoff, and bring it back on the next cut.
-- SFX: 3–6 per 30 s on the interrupts (pop on a text pop, whoosh on an angle change, hit on the reveal), each 6–12 dB under the voice peak. No `sfx`? Synthesise them (`sfx-cues.md`).
+- SFX: 3–6 per 30 s on the interrupts (pop on a text pop, a ding on a key number, hit on the reveal; angle changes stay silent), each 6–12 dB under the voice peak. No `sfx`? Synthesise them (`sfx-cues.md`).
 - Dated: a library jazz or ukulele bed reads as 2010s YouTube. If that is the only bed available, prefer no bed and more sound design.
 
 **Music-led** (a montage, no speech):
@@ -95,7 +95,7 @@ Both: master −14 LUFS / −1 dBTP.
 ## UI demo / screen walkthrough (15–90 s)
 
 - No music, or minimal tech / lo-fi at 100–120 BPM at 0.1 under VO (0.5 with no VO).
-- **A click per interaction** on the press frame (0.8–1.0), varied in level ±0.04 and alternating tracks; soft whooshes on screen transitions; a typing loop under text entry; a success chime on completion; room tone throughout.
+- **A click per interaction** on the press frame (0.8–1.0), varied in level ±0.04 and alternating tracks; screen transitions silent (or the click that caused them); a typing loop under text entry; a success chime on completion; room tone throughout.
 - Strip the recording's own audio before placing it.
 
 ## Milestone / stat announcement (6–20 s)

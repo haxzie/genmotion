@@ -69,7 +69,7 @@ Contents: A Beat-cut kinetic type · B Soft-light SaaS · C 3D product hero · D
 | Motion | Pop: keys [0 → 1.08 at 60% → 1] over 14f. Slam: z 6 → 0 with scale 0.7 → 1.04 → 1 over 14f. Burst: 25 objects staggered 1–2f, 22–26f ease-out. Rays spin 0.006 rad/frame continuously. Kinetic words 3f apart, entrance 9f, exit 6f |
 | Pacing | 18–25f between beats; scenes 33–180f |
 | Transitions | Radial colour flood (10–13f, ease-in) that the next scene contracts into an object (a pill, a button); rush into the lens; push into a ring; white wipe; hard cut to black at the very end |
-| Sound | Music at −5 dB (0.55). Whoosh (−3 dB) 3f before each flood starts; impact (−3 to −1.4 dB) on slams and the logo; click on taps; coin or pop clusters on bursts |
+| Sound | Music at −5 dB (0.55). A tap (−2 dB) on the press that starts each flood, never a whoosh (`sound-design`); impact (−3 to −1.4 dB) on slams and the logo; click on taps; coin or pop clusters on bursts |
 | Logo hold | 28–90f |
 
 **Calm C** (health, luxury, finance, hardware sold on trust): drop the pop, slam, burst and colour-flood numbers above; keep one material, one light and one slow move, headlines rise and fade with no blur (`motion-language`), and the ground changes once, at the peak, after the object has completed its move.

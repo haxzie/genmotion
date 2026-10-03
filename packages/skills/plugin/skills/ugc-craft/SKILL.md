@@ -84,7 +84,7 @@ Platform skins (same geometry, different style):
 | Beat | Sound | Level (linear / dB) |
 | --- | --- | --- |
 | Frame 1 | A transient, a downbeat, or a word already in progress. Never silence or a fade-in | — |
-| Hard cuts | A short swish on every hard cut, or on none. Half-scored cuts sound like a mistake | 0.5 (−6) |
+| Hard cuts | Nothing: cuts are silent, never a whoosh or swish (`sound-design`'s ban). A cut gets a sound only when the picture makes one (a tap, the beat) | — |
 | UI tap or click | On the press frame, up to 1f early | 0.9 (−0.9) |
 | Caption pop (Bold caption only) | A soft tick on keyword groups, not every group | 0.45 (−7) |
 | Mark landing, product set-down | Pop or soft impact on the contact frame ±2f | 0.5–0.7 (−6 to −3) |
@@ -113,7 +113,7 @@ The last pass, and the one that decides whether it reads as a person or a render
 
 ## Good and bad
 
-- **Bad**: every line gets a zoom, alternating in and out, plus a whoosh. **Good**: two punch-ins in 30 s, on the price and the result, each with nothing else moving.
+- **Bad**: every line gets a zoom, alternating in and out, plus a sound on each. **Good**: two punch-ins in 30 s, on the price and the result, each with nothing else moving.
 - **Bad**: a four-word caption fading in over 12f at the bottom of the frame. **Good**: two-word groups popping on each word's start frame at y 1160, hard-killed when the next group starts.
 - **Bad**: the music at 0.4 under the VO because "it's a good track", or at 0.05 where nobody hears it. **Good**: 0.12 under the VO, back to 0.5 under the product moment, cut entirely for the CTA line.
 

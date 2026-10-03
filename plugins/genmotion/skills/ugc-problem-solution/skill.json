@@ -136,7 +136,7 @@
       "purpose": "sfx",
       "model": "ElevenLabs SFX",
       "via": "sfx",
-      "note": "The problem's own small sound, a swish, one resolving tone."
+      "note": "The problem's own small sound, one resolving tone."
     }
   ],
   "triggers": [
@@ -153,6 +153,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.0",
+  "version": "2.0.1",
   "icon": "🔁"
 }

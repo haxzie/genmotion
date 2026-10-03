@@ -135,7 +135,8 @@ Severity: **Blocker** = do not ship. **Fix** = fix unless the Direction block sa
 
 ### Sound (when the film has any)
 - [Blocker] VO is intelligible over the bed; no clipping in the export.
-- [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; whooshes lead their move; impacts on the impact frame ±2f).
+- [Fix] Effects sit on their visual events (UI sounds on the first visible pixel or press frame; soft lands on the settle frame; impacts on the impact frame ±2f).
+- [Blocker] A whoosh, swoosh, swish or air-sweep anywhere fails (`sound-design`'s ban): transitions get the picture's own sound or none.
 - [Fix] Music starts and ends with the picture; a sonic resolve on the logo.
 - [Fix] Cuts sit on the music's beats where the film is music-led.
 - [Fix] A film meant to be heard has a loudness range of about 4–14 LU, and outside its named silence the momentary loudness never sits under −40 LUFS for more than 2 s (`sound-design`, Sparse, picture-led films); the first 3 s of a sound-on film are audible. A declared bed is heard: it sits around −32 LUFS momentary under the effects, not at −50, or the film plays as clicks over silence.
