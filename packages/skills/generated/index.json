@@ -545,7 +545,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.1",
+      "version": "2.1.2",
       "icon": "📈",
       "source": "first-party"
     },
@@ -1115,7 +1115,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.0.0",
+      "version": "1.1.0",
       "icon": "📱",
       "source": "first-party"
     },
@@ -3737,5 +3737,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "1167d78a"
+  "revision": "e3ef2330"
 }

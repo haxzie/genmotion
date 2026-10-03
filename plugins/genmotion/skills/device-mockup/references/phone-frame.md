@@ -2,13 +2,13 @@
 
 A generic modern phone built for motion: flat-edged slab, thin metal ring, black bezel, camera pill, status bar, home indicator and a two-layer soft shadow, with the app's screens drawn into it. Every size comes from the outer width W through the ratios in `SKILL.md`, so one number sizes the whole device in any aspect.
 
-Tested by rendering: compiled against `three` r185 with strict TypeScript, captured with the CLI at 1080 × 1920 (SwiftShader) in all three finishes, landscape, a 22° turn, a +30% push, punches, crossfades and veils. `images/device-finishes.png` shows the bare devices; `images/home.png` a populated screen.
+Tested by rendering: compiled against `three` r185 with strict TypeScript, captured with the CLI at 1080 × 1920 (SwiftShader) in all three finishes, landscape, a 22° turn, a +30% push, punches, crossfades, veils, a 50% fade and the lift-out in §8. `images/device-finishes.png` shows the bare devices; `images/home.png` a populated screen.
 
 It needs `PX` from `components/stage.ts` (`three-camera` `references/rig.md`) and `FONT` from `components/type.ts` (`three-type` `references/type-kit.md`). **Build it inside `withFonts`**: the status bar's time is type drawn once into a canvas.
 
 ![Black, silver (turned 22°) and graphite landscape finishes](images/device-finishes.png)
 
-Contents: 1 How it is built · 2 The module · 3 API · 4 A minimal scene · 5 Changing screens · 6 Beat moves · 7 Finishes, landscape, tilt, sizes · 8 When a frame comes out wrong
+Contents: 1 How it is built · 2 The module · 3 API · 4 A minimal scene · 5 Changing screens · 6 Beat moves · 7 Finishes, landscape, tilt, sizes · 8 Lift an element out of the screen · 9 When a frame comes out wrong
 
 ## 1. How it is built, and why
 
@@ -17,6 +17,7 @@ Contents: 1 How it is built · 2 The module · 3 API · 4 A minimal scene · 5 C
 - **The target is sized from the device**: screen px × the renderer's pixel ratio × `maxZoom`, 4× MSAA, half-float so dark gradients do not band. Canvas textures inside are drawn at `res` ≥ 2× that. Raise `maxZoom` before pushing into the screen.
 - **Side walls** are an extruded rounded rectangle behind the face, invisible head-on and shown only when the device turns (`ph.device.rotation`).
 - **The shadow** is two planes with a Gaussian rounded-box falloff (an erf approximation): a broad slate-blue drop and a tight contact shadow. They live on `ph.group`, not `ph.device`, so a tilt does not lift them off the ground.
+- **Fading composites the device as one layer.** The face is transparent, so at 50% it would show what is behind it: the side walls (a dark slab the size of the body) and the shadow under the body. `set({ opacity })` below 1 hides the walls and cuts the body out of both shadow planes, so a 50% phone is the opaque phone at 50% over the stage, not a grey slab. A turned device loses its walls while it fades; fade it head-on.
 - **The status bar belongs to the device**: drawn once in dark and light ink above every page, so it never changes between screens (the reference's signal bars came and went). The ink follows the first page in the render list with `userData.ink` (`appKit`'s `page()` sets it).
 
 ## 2. The module
@@ -116,8 +117,8 @@ void main() {
 }`;
 
 const SHADOW = /* glsl */ `
-uniform vec2 uSize, uBox, uOff;
-uniform float uR, uSigma, uOpacity;
+uniform vec2 uSize, uBox, uOff, uBody;
+uniform float uR, uSigma, uOpacity, uCut;
 uniform vec3 uColor;
 varying vec2 vP;
 ${SDF}
@@ -125,6 +126,8 @@ float erf(float x) { float s = sign(x), a = abs(x); x = 1.0 + (0.278393 + (0.230
 void main() {
   float d = sdRB(vP - uOff, uBox, uR);
   float a = 0.5 - 0.5 * erf(d / (uSigma * 1.4142));
+  // while the device fades, its own shadow must not show through the glass: cut the body out
+  a *= 1.0 - uCut * smoothstep(1.0, -1.0, sdRB(vP, uBody, uR));
   gl_FragColor = vec4(uColor, a * uOpacity);
   #include <colorspace_fragment>
 }`;
@@ -199,12 +202,22 @@ export interface Phone {
   ui: THREE.Scene; // everything shown on the screen; origin = screen centre, 1 unit = 100 px
   /** Draw the screen. `a`: what is on it; `b` + `mix`: a crossfade towards b. Call once per frame, last. */
   render(a: THREE.Object3D | THREE.Object3D[], b?: THREE.Object3D | THREE.Object3D[], mix?: number): void;
-  /** Per-frame look: whole-device opacity, a veil colour washed over the screen (flash, dim, "opening"). */
+  /**
+   * Per-frame look: whole-device opacity, a veil colour washed over the screen (flash, dim, "opening").
+   * Below opacity 1 the side walls hide and the shadow is cut out under the body, so a 50% phone is
+   * the opaque phone at 50% over the stage, not a grey slab with its shadow showing through the glass.
+   */
   set(o: { opacity?: number; veil?: number; veilColor?: THREE.ColorRepresentation; sheen?: number; status?: boolean }): void;
   /** A point on the device in px from its centre (y up), in the group's space. */
   at(xPx: number, yPx: number, z?: number): THREE.Vector3;
   /** Add a sticker or callout on top of the device at (x, y) px from its centre; it punches with the phone. */
   attach<O extends THREE.Object3D>(obj: O, xPx: number, yPx: number): O;
+  /** Draw a world object over the device (it is NOT on the phone's group): renderOrder on it and every child. */
+  above<O extends THREE.Object3D>(obj: O, order?: number): O;
+  /** Screen px (top-left origin, y down: what put() uses) to device px from the centre, y up (what attach() and at() use). */
+  toDevice(xPx: number, yPx: number): [number, number];
+  /** Screen px to world position this frame (after the group's scale, position and the device's tilt). */
+  toWorld(xPx: number, yPx: number, z?: number): THREE.Vector3;
   dispose(): void;
 }
 
@@ -292,6 +305,7 @@ export function phone(ctx: { renderer: THREE.WebGLRenderer }, opts: PhoneOptions
         uSize: { value: sz }, uBox: { value: new THREE.Vector2(bw / 2 - 2, bh / 2 - 2) },
         uOff: { value: new THREE.Vector2(0, -s.off * W) }, uR: { value: spec.R },
         uSigma: { value: s.sigma * W }, uOpacity: { value: s.op * shadowK }, uColor: { value: new THREE.Color(s.color) },
+        uBody: { value: new THREE.Vector2(bw / 2 - 1, bh / 2 - 1) }, uCut: { value: 0 },
       },
       vertexShader: VERT, fragmentShader: SHADOW, transparent: true, depthWrite: false,
     }));
@@ -335,8 +349,13 @@ export function phone(ctx: { renderer: THREE.WebGLRenderer }, opts: PhoneOptions
       const u = body.uniforms;
       if (o.opacity !== undefined) {
         u.uOpacity!.value = o.opacity;
-        sideMat.opacity = o.opacity;
-        shadows.forEach((s) => ((s.material as THREE.ShaderMaterial).uniforms.uOpacity!.value = s.userData.op * o.opacity! ** 2));
+        const solid = o.opacity >= 0.999;
+        side.visible = solid; // a translucent slab behind the screen is what turns a fading phone grey
+        shadows.forEach((s) => {
+          const u2 = (s.material as THREE.ShaderMaterial).uniforms;
+          u2.uOpacity!.value = s.userData.op * o.opacity! ** 2;
+          u2.uCut!.value = solid ? 0 : 1;
+        });
         group.visible = o.opacity > 0.001;
       }
       if (o.veil !== undefined) u.uVeil!.value = o.veil;
@@ -351,6 +370,15 @@ export function phone(ctx: { renderer: THREE.WebGLRenderer }, opts: PhoneOptions
       obj.traverse((o) => (o.renderOrder = 5)); // above the face (2), which is transparent too
       group.add(obj);
       return obj;
+    },
+    above(obj, order = 10) {
+      obj.traverse((o) => (o.renderOrder = order)); // groups too: three sorts by the nearest Group's order first
+      return obj;
+    },
+    toDevice: (x, y) => [x - spec.Sw / 2, spec.Sh / 2 - y],
+    toWorld(x, y, z = 0.02) {
+      device.updateWorldMatrix(true, false);
+      return device.localToWorld(new THREE.Vector3((x - spec.Sw / 2) * PX, (spec.Sh / 2 - y) * PX, z));
     },
     dispose() {
       rtA.dispose();
@@ -415,14 +443,17 @@ export function creep(frame: number, start: number, end: number, amount = 0.039)
 | Call | Returns | Use |
 | --- | --- | --- |
 | `phoneSpec(W, landscape?)` | every size in px | Layout maths: `Sw`, `Sh` (screen), `R`, `inset`, pill and status positions |
-| `phone(ctx, { width, finish, landscape, sheen, shadow, maxZoom, depth }, time?)` | `Phone` | The device. `width` is W at scale 1 (765 for 9:16); `finish` `"black"`, `"silver"`, `"graphite"` or `{ edge, rim, bezel, side }`; `sheen` 0–1 (0.35); `maxZoom` the largest scale it is ever shown at (1.06 covers punches and pushes) |
+| `phone(ctx, { width, finish, landscape, sheen, shadow, maxZoom, depth }, time?)` | `Phone` | The device. `width` is W at scale 1 (765 for the measured 9:16 rest framing, 700 for the feed framing); `finish` `"black"`, `"silver"`, `"graphite"` or `{ edge, rim, bezel, side }`; `sheen` 0–1 (0.35); `maxZoom` the largest scale it is ever shown at (1.06 covers punches and pushes) |
 | `ph.group` | Group | Move, scale (punch, push, entrance) and fade the whole device with its shadow |
 | `ph.device` | Group | Tilt only this: `rotation.y` up to about 0.4 rad (25°) still reads as a slab |
 | `ph.ui` | Scene | Add pages, sheets and toast layers here; each top-level child is drawn only when listed in `render` |
 | `ph.render(a, b?, mix?)` | — | **Last call of every frame.** Draws the listed objects into the screen; with `b` and `mix` it crossfades to a second list |
-| `ph.set({ opacity, veil, veilColor, sheen, status })` | — | Whole-device fade (shadow fades with it), a colour washed over the screen (flash, "opening" veil), status bar on or off |
+| `ph.set({ opacity, veil, veilColor, sheen, status })` | — | Whole-device fade (the shadow fades with it and is cut out under the glass, the walls hide below 1), a colour washed over the screen (flash, "opening" veil), status bar on or off. Attached stickers are not faded: fade them yourself |
 | `ph.attach(obj, x, y)` | obj | A sticker or callout on top of the device at (x, y) px from its centre; it punches and pushes with the phone |
 | `ph.at(x, y)` | Vector3 | That point in the group's space |
+| `ph.toDevice(x, y)` | `[x, y]` | Screen px (top-left origin, y down, what `put()` uses) to device px from the centre, y up (what `attach()` uses): `ph.attach(st, ...ph.toDevice(40, 600))` |
+| `ph.toWorld(x, y, z?)` | Vector3 | A screen point in world space this frame, after the group's scale and position and the device's tilt: where a world copy of an on-screen element starts |
+| `ph.above(obj, order?)` | obj | For a world object that is **not** on the phone's group (a lifted icon, a callout, a finger): sets `renderOrder` (10) on it and every child, Groups included. Without it the object draws under the face, which is transparent too |
 | `stageBackdrop(width, height, ground?, glow?)` | texture | `scene.background`: the cool ground with the glow rising from below |
 | `punch(frame, hits, amp?)` | number | Extra scale for beat punches |
 | `creep(frame, start, end, amount?)` | number | Extra scale for the bar push and its snap back |
@@ -449,7 +480,7 @@ export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
     const home = k.page("home");
     k.put(home, k.navBar("Trails"), 0, 0);
     ph.ui.add(home);
-    const grid = beatGrid(115, ctx.fps, 12);
+    const grid = beatGrid(120, ctx.fps, 12);
     return ({ frame }) => {
       const zoom = 1 + Math.max(punch(frame, [grid.bar(1)]), creep(frame, grid.bar(0), grid.bar(1)));
       ph.group.scale.setScalar(zoom);
@@ -491,10 +522,83 @@ ph.group.scale.setScalar(zoom * entranceScale);
 - A turn: `ph.device.rotation.set(0.06, -0.38, 0)` shows the side wall; keep it to one shot and ≤ 25°, the face is flat.
 - Off-centre (a 16:9 layout with the phone on a third), the perspective camera shows a sliver of the near side wall, which reads as thickness; pass `depth: 0` for a perfectly flat slab. Tested at 1920 × 1080 with W = 430 at x = +400 px.
 - At W below about 700 the status bar's time falls under 28 px: it is device chrome, not copy, and is exempt from the floor; everything the viewer must read is not.
+- On a warm or saturated ground the slate shadow nearly vanishes (a judged film measured −17 L at the side on cream against the reference's −50 L): pass `shadow: 1.3–1.6`. The shadow needs ground under the device: a bottom edge tangent to the frame has none, which is why a bleed is 150–200 px, never 0–40.
 - Per aspect, pick W from the table in `SKILL.md`; two phones side by side at W = 400 each fit a 1080-wide frame with 80 px between them.
 - `sheen: 0` for the reference's perfectly flat glass; 0.35 adds a faint diagonal lift that reads as glass on light screens. Above 0.5 it shows as a streak on saturated colours.
 
-## 8. When a frame comes out wrong
+## 8. Lift an element out of the screen
+
+The hand-off from the app to the end card: the app's own icon (or a card, an avatar, a number) leaves the header, grows and becomes the mark while the phone drops away beneath it. It only carries if the element is **never off screen**: it is seen leaving the header before the phone goes. A judged film dropped the phone first and flew the icon in from a corner afterwards, smaller, and the hand-off read as two unrelated moves.
+
+1. Draw the element with one function, so the copy inside the screen and the world copy are the same pixels.
+2. On the lift frame, hide the in-screen one and show a world plane placed with `ph.toWorld(x, y)` at the element's centre (screen px) and scaled by the phone's scale at that frame: the two coincide exactly, so there is no jump.
+3. `ph.above(copy)`: a world object draws under the phone's transparent face unless its order is higher.
+4. The element leads: it rises and grows (here 1 → 2.6× over 18f outCubic); the phone drops 4f later (1100 px over 14f inCubic) and may fade with it. Leave the lift silent so the sonic logo on the landing reads clean.
+
+Tested: the frames before and on the lift match pixel for pixel at the icon; at the phone's 50% opacity the screen reads pale, not grey.
+
+```ts
+import * as THREE from "three";
+import type { ThreeSceneContext, ThreeSceneUpdate } from "@genmotion/three-engine";
+import interUrl from "../assets/InterVariable.woff2";
+import { fitCamera, PX } from "../components/stage";
+import { prog, outCubic, inCubic, lerp } from "../components/ease";
+import { withFonts, label, setLabel } from "../components/type";
+import { phone, stageBackdrop } from "../components/phone";
+import { appKit, fade, icon, scenery } from "../components/appui";
+
+/** The app's header icon lifts out of the screen and becomes the end card's mark while the phone drops away. */
+export default function buildScene(ctx: ThreeSceneContext): ThreeSceneUpdate {
+  fitCamera(ctx.camera, ctx.height);
+  ctx.scene.background = stageBackdrop(ctx.width, ctx.height);
+  return withFonts(ctx, [{ family: "Inter", url: interUrl }], () => {
+    const ph = phone(ctx, { width: 765 });
+    ctx.scene.add(ph.group);
+    const k = appKit(ph.spec);
+    const { pad } = k.sp;
+    const page = k.page("home");
+    // the header: app icon + name. The icon is drawn by one function so the in-screen copy and the
+    // world copy are the same pixels
+    const ic = k.pct(12);
+    const drawIcon = (g: OffscreenCanvasRenderingContext2D, w: number, h: number) => {
+      g.fillStyle = k.T.accent;
+      g.fill(k.roundPath(0, 0, w, h, w * 0.24));
+      icon(g, "spark", w / 2, h / 2, w * 0.56, "#ffffff");
+    };
+    const inScreen = k.put(page, k.plane(ic, ic, drawIcon, "app-icon"), pad, k.pct(19) - ic / 2);
+    k.put(page, k.textBlock("Fernway", k.type.section * 1.3, 700), pad + ic + k.pct(3), k.pct(19) - k.type.section * 0.85);
+    k.put(page, k.greeting(["Good morning, **Ana**.", "Where are we walking?"]), pad, k.pct(30));
+    const lake = scenery(["#9cc7e8", "#e8eef0"], "#fff6d8", ["#5f8a7a", "#2f5a4c"]);
+    k.stack(page, [k.imageCard(k.Sw - pad * 2, Math.round(k.S * 0.7), lake, "Lakeside Loop", "4.2 km · 1 h 20"), k.imageCard(k.Sw - pad * 2, Math.round(k.S * 0.7), lake, "North Shore", "3.4 km")], pad, k.pct(52));
+    ph.ui.add(page);
+
+    // the world copy: same drawing, placed exactly over the in-screen icon at the lift frame, drawn
+    // above the phone's face (renderOrder), so the hand-off has no gap and no jump
+    const LIFT = 20;
+    const lifted = ph.above(k.plane(ic, ic, drawIcon, "app-icon-lifted"), 10);
+    const from = ph.toWorld(pad + ic / 2, k.pct(19)); // the phone is at rest here; pose it for LIFT first if it moves
+    const to = new THREE.Vector3(0, 1.4, 0.02), END = 2.6; // the end card's mark: 2.6x, 140 px above centre
+    ctx.scene.add(lifted);
+    const word = label("Fernway", { size: 96, weight: 500, color: "#0d0f12" });
+    word.position.set(0, -1.1, 0);
+    ctx.scene.add(word);
+    return ({ frame }) => {
+      const p = prog(frame, LIFT, 18, outCubic); // the icon leads: it rises and grows first
+      lifted.position.lerpVectors(from, to, p);
+      lifted.scale.setScalar(lerp(ph.group.scale.x, END, p));
+      lifted.visible = frame >= LIFT;
+      fade(inScreen, frame >= LIFT ? 0 : 1);
+      const d = prog(frame, LIFT + 4, 14, inCubic); // the phone drops beneath it, 4f later
+      ph.group.position.y = -1100 * d * PX;
+      ph.set({ opacity: 1 - prog(frame, LIFT + 4, 14) }); // no grey slab mid-fade: walls hide, shadow is cut
+      setLabel(word, { opacity: prog(frame, LIFT + 20, 8, outCubic) });
+      ph.render(page);
+    };
+  });
+}
+```
+
+## 9. When a frame comes out wrong
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
@@ -505,3 +609,7 @@ ph.group.scale.setScalar(zoom * entranceScale);
 | Status bar in the wrong ink | No `userData.ink` on the first page in the list | `k.page(name, bg, "light")` for dark pages |
 | Typing reveals the whole word | `set()` called before the input was placed | Call `input.set()` per frame, after `put()` |
 | Two sheets or pages flicker in order | Equal z | The upper one at a higher z (sheets at 1, toast layers at 3) |
+| A lifted icon, a finger or a callout vanishes over the phone | A world object with renderOrder 0 sorts under the transparent face (2), and three sorts by the nearest Group's order first | `ph.above(obj)` (or `attach()` when it should punch with the phone) |
+| The phone goes grey while it fades | An old copy of the module: the side walls and the shadow showed through the glass | This `set({ opacity })` hides the walls and cuts the shadow under the body |
+| No shadow under the device, the bottom looks cut | The device's bottom is tangent to the frame (within 40 px) | Bleed 150–200 px off the frame, or keep ≥ 120 px of ground under it |
+| An element placed over the screen is off by half the screen | Mixed coordinates: `put()` is screen px from the top-left, y down; `attach()` is device px from the centre, y up | `ph.toDevice(x, y)` for `attach()`, `ph.toWorld(x, y)` for a world object |
