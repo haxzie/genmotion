@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import type { SceneFork } from "@genmotion/project";
 import { TemplateError, getTemplate, listTemplates, type TemplateRecord } from "./index";
 import {
   SCENES_FILE,
@@ -224,4 +225,36 @@ export async function getSceneStill(id: string): Promise<string | null> {
   if (!file) return null;
   const still = sceneStillPath(record, file);
   return (await fs.access(still).then(() => true).catch(() => false)) ? still : null;
+}
+
+/**
+ * Everything `forkScene` needs to copy a scene into a project: the scene file,
+ * the modules it imports and the assets those import, bytes included. Null
+ * when the scene is unknown.
+ */
+export async function getSceneFork(id: string): Promise<SceneFork | null> {
+  const scene = await getScene(id);
+  if (!scene) return null;
+  const record = await getTemplate(scene.template);
+  if (!record) return null;
+  const assets = await Promise.all(
+    scene.assets.map(async (rel) => {
+      const bytes = await fs.readFile(path.join(record.dir, rel)).catch(() => null);
+      return bytes ? { path: rel, encoding: "base64" as const, contents: bytes.toString("base64") } : null;
+    }),
+  );
+  return {
+    id: scene.id,
+    template: scene.template,
+    engine: scene.engine,
+    fps: scene.fps,
+    width: scene.width,
+    height: scene.height,
+    title: scene.title,
+    durationInFrames: scene.durationInFrames,
+    files: [
+      ...scene.files.map((f) => ({ path: f.path, encoding: "text" as const, contents: f.contents })),
+      ...assets.filter((a): a is NonNullable<typeof a> => a !== null),
+    ],
+  };
 }

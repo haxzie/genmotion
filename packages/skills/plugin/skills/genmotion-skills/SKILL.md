@@ -86,9 +86,17 @@ Read the owner skill fully. Then load its `requires` that apply to this project'
 - **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them: a locked single-scene piece (most stings) skips `three-camera` unless the camera moves and `three-transitions` unless there is a handoff, a flash or an iris.
 - **When two skills disagree, the owner wins for its own format**: a sting's sound rules (anticipation ticks, where the first sound sits) over `sound-design`'s general density, a trailer's card typography over the house sentence case, an owner's beat sheet over a style family's tempo. A general rule an owner does not mention still applies.
 
-## Step 7: find references for your beats
+## Step 7: start each beat from the scene library
 
-Once the beat table exists, run `search-scenes` once per beat you are unsure how to stage, with the beat's job and the visual idea in a few words ("hook: typed prompt sends and floods the frame", "integrations: app logos plug into one hub", "funding number counts up"), not your brand. It searches every scene of GenMotion's own templates, each tagged with the job it does (hook, problem, reveal, feature, workflow, integrations, stat, data, conversation, cta, logo…). Open the two or three most promising: each comes with three frames, how it is built and its code. Borrow the device, the pacing and the technique, then write your own scene in your own brand: never paste a template's copy, logos or brand colours into someone else's video. Note what you borrowed from in the beat table's "On screen" column, so a later session knows. Skip this for a small edit.
+GenMotion's templates were built over many passes; a scene written from scratch in one pass does not reach them. So once the beat table exists, run `search-scenes` for each beat with its job and visual idea in a few words ("hook: typed prompt sends and floods the frame", "integrations: app logos plug into one hub", "funding number counts up"), not your brand. Every scene in the library is tagged with the job it does (hook, problem, reveal, feature, workflow, integrations, stat, data, conversation, cta, logo…) and comes with three frames, how it is built and its code.
+
+- **A hero or solid scene is close to the beat, in your engine:** fork it (`search-scenes` names the fork step) and re-skin it. Change the brand module once (colours, fonts), then every string, number, name, logo and image. Keep the timing, camera, easing, blur, grain and glow unless you have a reason. Retime it to your beat and match its first and last frames to its neighbours.
+- **Close but not quite:** fork it anyway and change the part that differs. Restructuring a finished scene beats rebuilding one.
+- **Nothing is close, or it's another engine:** build the beat yourself, using the nearest scene's timing and finishing as the bar.
+- Forks from several templates in one video must look like one film: one palette, one type pair, one grain and glow treatment, chosen in `direction` and applied to every forked scene's brand module.
+- Never ship a template's own copy, product names, people, logos or brand colours. Record in the beat table which scene each beat was forked from.
+
+Skip this for a small edit.
 
 ## Opening a skill's reference files
 

@@ -13,7 +13,7 @@ import {
   templatePosterPath,
   toSummary,
 } from "@genmotion/templates";
-import { SCENE_BEATS, findScenes, getScene, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
+import { SCENE_BEATS, findScenes, getScene, getSceneFork, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
 import { anonymousDistinctId, clientIp, trackServer } from "../analytics";
 import { notifyRemixIntent } from "../slack";
 
@@ -109,6 +109,14 @@ templateRoutes.get("/scenes/:template/:scene", async (c) => {
   if (!scene) return c.json({ error: "Not found" }, 404);
   c.header("Cache-Control", JSON_CACHE);
   return c.json(scene);
+});
+
+/** The scene with its imports and assets, bytes included, for `forkScene`. */
+templateRoutes.get("/scenes/:template/:scene/fork", async (c) => {
+  const fork = await getSceneFork(`${c.req.param("template")}/${c.req.param("scene")}`);
+  if (!fork) return c.json({ error: "Not found" }, 404);
+  c.header("Cache-Control", JSON_CACHE);
+  return c.json(fork);
 });
 
 templateRoutes.get("/scenes/:template/:scene/still", async (c) => {

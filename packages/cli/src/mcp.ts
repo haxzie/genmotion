@@ -6,7 +6,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Browser } from "playwright-core";
-import { addScene, createProject, readManifest } from "@genmotion/project";
+import { addScene, createProject, forkScene, readManifest } from "@genmotion/project";
 import { createSceneBundler } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { checkProject, launchBrowser, parseDuration, renderProject, renderStills, type Codec } from "@genmotion/render";
@@ -15,7 +15,7 @@ import { downloadAsset } from "./assets";
 import { addAudio, removeAudio, setAudio } from "./audio";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
-import { BEAT_HELP, formatSceneHits, formatSceneReference, readSceneReference, readSceneStill, searchSceneLibrary } from "./scenes";
+import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference, readSceneFork, readSceneReference, readSceneStill, searchSceneLibrary } from "./scenes";
 import { SCENE_BEATS } from "@genmotion/templates/scene-search";
 import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, renderProjectSkill, wireAgents } from "./agents";
 import { ROUTER_SKILL, readSkill, searchPack } from "./skills";
@@ -39,7 +39,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     { name: "genmotion", version: VERSION },
     {
       instructions:
-        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), plan the beats, then search_scenes for a reference per beat and get_scene the best ones, then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
+        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), plan the beats, then search_scenes per beat, get_scene the best ones and fork_scene the closest (then re-skin it), then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
     },
   );
 
@@ -365,7 +365,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
         content: [
           {
             type: "text",
-            text: `${formatSceneHits(hits)}\n\nNext: get_scene(<id>) for the frames and code of the ones worth borrowing from. Take the idea, the pacing and the technique; write your own scene for your own brand.`,
+            text: `${formatSceneHits(hits)}\n\nNext: get_scene(<id>) on the promising ones to see their frames, then fork_scene the closest and re-skin it (brand, copy, data). Build from scratch only where nothing is close.`,
           },
         ],
       };
@@ -392,6 +392,23 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       };
     },
     { readOnlyHint: true },
+  );
+
+  tool(
+    "fork_scene",
+    "Copy a library scene into this project — the scene file, the components it imports and their assets (namespaced under the template's id), registered in project.json — so you start from a finished, tuned scene and re-skin it (brand colours, copy, logos, data) instead of rebuilding it from scratch. The best way to reach template quality: fork the closest hero scene for each beat where one fits. Same engine only.",
+    {
+      ...dirArg,
+      id: z.string().min(3).describe("Scene id from search_scenes."),
+      name: z.string().optional().describe("Scene name in project.json. Defaults to the library title."),
+      after: z.string().optional().describe("Insert after this scene (file or name). Appends by default."),
+      replace: z.string().optional().describe("Replace this scene (file or name), e.g. the starter scene."),
+    },
+    async ({ dir, id, name, after, replace }) => {
+      const fork = await readSceneFork(id);
+      const forked = await forkScene({ projectDir: project(dir), fork, name, after, replace });
+      return { content: [{ type: "text", text: forkNextSteps(forked, fork.template) }] };
+    },
   );
 
   tool(

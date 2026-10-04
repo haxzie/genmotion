@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
+import type { SceneFork } from "@genmotion/project";
 import type { SceneHit, SceneQuery, SceneReference } from "@genmotion/templates/scene-search";
 
-export { BEAT_HELP, formatSceneHits, formatSceneReference } from "@genmotion/templates/scene-search";
+export { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference } from "@genmotion/templates/scene-search";
 import { CliError } from "./output";
 import { API_URL } from "./templates";
 import { VERSION } from "./version";
@@ -77,3 +78,15 @@ export async function sceneStillLocation(id: string): Promise<string | null> {
   const res = await fetch(url, { method: "HEAD", headers: HEADERS }).catch(() => null);
   return res?.ok ? url : null;
 }
+
+export async function readSceneFork(id: string): Promise<SceneFork> {
+  const lib = await local();
+  const fork = lib
+    ? await lib.getSceneFork(id)
+    : await get(`/api/templates/scenes/${id.split("/").map(encodeURIComponent).join("/")}/fork`).then((r) =>
+        r.ok ? (r.json() as Promise<SceneFork>) : null,
+      );
+  if (!fork) throw new CliError(`No scene "${id}"`, { fix: 'Ids look like "<template>/<scene file stem>" — find one with search_scenes' });
+  return fork;
+}
+

@@ -2,13 +2,14 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import type { NativeImage } from "electron";
 import { z } from "zod";
-import { readManifest, type ProjectEngine } from "@genmotion/project";
+import { forkScene, readManifest, type ProjectEngine, type SceneFork } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
 import { cloudFetch, desktopAuth } from "../auth";
 import {
   SCENE_BEATS,
+  forkNextSteps,
   formatSceneHits,
   formatSceneReference,
   type SceneHit,
@@ -653,7 +654,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       if (!res?.ok) return failure("The scene library is unreachable right now. Plan the beat from the skills alone.");
       const { scenes } = (await res.json()) as { scenes: SceneHit[] };
       return text(
-        `${formatSceneHits(scenes)}\n\nNext: get_scene(<id>) for the frames and code of the ones worth borrowing from. Take the idea, the pacing and the technique; write your own scene for this brand.`,
+        `${formatSceneHits(scenes)}\n\nNext: get_scene(<id>) on the promising ones to see their frames, then fork_scene the closest and re-skin it (brand, copy, data). Build from scratch only where nothing is close.`,
       );
     },
   },
@@ -681,6 +682,30 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       const still = file ? null : await cloudFetch(`/api/templates/scenes/${tail}/still`).catch(() => null);
       const image = still?.ok ? { base64: Buffer.from(await still.arrayBuffer()).toString("base64"), mimeType: "image/jpeg" } : undefined;
       return { text: body, ...(image ? { image } : {}) };
+    },
+  },
+  {
+    name: "fork_scene",
+    description:
+      "Copy a library scene into this project: the scene file, the components it imports and their assets (namespaced under the template's id), registered in project.json, so you start from a finished, tuned scene and re-skin it (brand colours, copy, logos, data) instead of rebuilding it. The best way to reach template quality: fork the closest hero scene for each beat where one fits. Same engine only.",
+    shape: {
+      id: z.string().min(3).max(200).describe("Scene id from search_scenes."),
+      name: z.string().max(120).optional().describe("Scene name in project.json. Defaults to the library title."),
+      after: z.string().max(200).optional().describe("Insert after this scene (file or name). Appends by default."),
+      replace: z.string().max(200).optional().describe("Replace this scene (file or name), e.g. the starter scene."),
+    },
+    async run(session, args) {
+      const { id, name, after, replace } = args as unknown as { id: string; name?: string; after?: string; replace?: string };
+      const tail = id.split("/").map(encodeURIComponent).join("/");
+      const res = await cloudFetch(`/api/templates/scenes/${tail}/fork`).catch(() => null);
+      if (!res?.ok) return failure(`No scene "${id}". Ids look like "<template>/<scene file stem>"; find one with search_scenes.`);
+      const fork = (await res.json()) as SceneFork;
+      try {
+        const forked = await forkScene({ projectDir: session.dir, fork, name, after, replace });
+        return text(forkNextSteps(forked, fork.template));
+      } catch (err) {
+        return failure(err instanceof Error ? err.message : String(err));
+      }
     },
   },
   {

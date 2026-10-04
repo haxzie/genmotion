@@ -114,10 +114,10 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     shell: "`npx @genmotion/cli skills search \"<request>\" --json`, then `npx @genmotion/cli skills show <id>`",
   },
   "search-scenes": {
-    label: "Find how a beat (hook, integrations, stat, end card…) was done in GenMotion's templates: frames, notes and code",
-    desktop: "`search_scenes`, then `get_scene`",
-    mcp: "`search_scenes`, then `get_scene`",
-    shell: "`npx @genmotion/cli scenes search \"<beat and idea>\" --json`, then `npx @genmotion/cli scenes show <id>`",
+    label: "Find how a beat (hook, integrations, stat, end card…) was done in GenMotion's templates — frames, notes, code — and fork the closest into the project",
+    desktop: "`search_scenes`, `get_scene`, then `fork_scene`",
+    mcp: "`search_scenes`, `get_scene`, then `fork_scene`",
+    shell: "`npx @genmotion/cli scenes search \"<beat and idea>\"`, `scenes show <id>`, then `scenes add <id>`",
   },
   "recommend-integration": {
     label: "Offer the user a connector a skill wants",

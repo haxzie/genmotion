@@ -507,7 +507,9 @@ export function formatSceneReference(scene: SceneReference, options: SceneRefere
     `Techniques: ${scene.techniques.join(", ")} · mood: ${scene.mood.join(", ")}`,
     "",
     "## Code",
-    "Study it for the idea and the timing; write your own scene for your own brand and copy rather than pasting this one. Your project's engine rules still apply.",
+    crossEngine
+      ? "Study it for the idea and the timing; it can't be forked into your engine."
+      : "If this is close to your beat, fork it (fork_scene / `genmotion scenes add <id>`) and re-skin it: that keeps the tuned timing, camera and finish. Otherwise study it and write your own.",
   ];
   const budget = full ? Infinity : scene.standalone ? INLINE_TOTAL.standalone : INLINE_TOTAL.slice;
   let used = 0;
@@ -525,4 +527,23 @@ export function formatSceneReference(scene: SceneReference, options: SceneRefere
   if (withheld.length) lines.push(`\nAlso imported, not shown — read one by its path (file=<path>):\n${withheld.join("\n")}`);
   if (scene.assets.length) lines.push(`\nAssets it imports (not shipped): ${scene.assets.join(", ")}`);
   return lines.filter((l) => l !== null).join("\n");
+}
+
+/** What to tell an agent right after a fork, so the re-skin is the next step. */
+export function forkNextSteps(forked: { file: string; written: string[]; kept: string[]; warnings: string[] }, template: string): string {
+  return [
+    `Forked into ${forked.file} and registered in project.json.`,
+    forked.written.length ? `Wrote: ${forked.written.join(", ")}` : "",
+    forked.kept.length ? `Kept your existing (edited) copies of: ${forked.kept.join(", ")}` : "",
+    ...forked.warnings.map((w) => `Warning: ${w}`),
+    "",
+    "Now re-skin it — this is the job, not optional polish:",
+    `1. Brand: components/${template}/ usually has a brand/palette/type module — change colours and fonts there once, and every scene forked from this template follows.`,
+    `2. Copy and data: replace every string, number, name and logo in ${forked.file} (and the components it pulls them from) with this video's own. Never ship the template's brand, product names, people or logos.`,
+    "3. Keep what made it good: the timing, camera moves, easing, blur, grain and glow. Change them only for a reason.",
+    "4. Handoffs: match its first and last frames to the neighbouring scenes (colour, position, carrier).",
+    "5. Look: capture frames at its start, middle and end, compare with the library filmstrip, and fix anything that reads as the old brand.",
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
 }

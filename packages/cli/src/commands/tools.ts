@@ -8,7 +8,8 @@ import { wireAgents } from "../agents";
 import { installSkills, installedSkills, listPack, readSkill, searchPack } from "../skills";
 import { SKILL_KINDS, type SkillKind } from "@genmotion/shared";
 import { listTemplates } from "../templates";
-import { BEAT_HELP, formatSceneHits, formatSceneReference, readSceneReference, sceneStillLocation, searchSceneLibrary } from "../scenes";
+import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference, readSceneFork, readSceneReference, sceneStillLocation, searchSceneLibrary } from "../scenes";
+import { forkScene } from "@genmotion/project";
 import { SCENE_BEATS, type SceneBeat } from "@genmotion/templates/scene-search";
 import { resolveProjectDir } from "../project-dir";
 import { CliError, bold, dim, green, red, yellow } from "../output";
@@ -311,6 +312,9 @@ Inside a project, scenes in its own engine rank first.
 
   search "<what you need>"   e.g. "integrations wall of app logos", "funding number reveal"
   show <id> [file]           The scene's notes and code (and one imported file by path)
+  add <id>                   Fork it into this project: the scene, its components and
+                             assets, registered in project.json — then re-skin it
+                             (--name <name>, --after <scene>, --replace <scene>)
 
 Options
   --beat <beat>        search: only this beat. One of:
@@ -329,6 +333,9 @@ Options
     all: { type: "boolean" },
     full: { type: "boolean" },
     mood: { type: "string" },
+    name: { type: "string" },
+    after: { type: "string" },
+    replace: { type: "string" },
     limit: { type: "string" },
   },
   async run({ values, positionals, out }) {
@@ -354,7 +361,7 @@ Options
         includeFiller: values.all === true,
         limit: num(values.limit, "limit") ?? 8,
       });
-      out.result({ query, hits }, `${formatSceneHits(hits)}\n\n${dim("Read one: npx @genmotion/cli scenes show <id>")}`);
+      out.result({ query, hits }, `${formatSceneHits(hits)}\n\n${dim("Look: npx @genmotion/cli scenes show <id>  ·  Fork the closest: npx @genmotion/cli scenes add <id>")}`);
       return;
     }
     if (action === "show") {
@@ -364,6 +371,20 @@ Options
       const frames = await sceneStillLocation(id);
       const engine = await engineHere(str(values.dir));
       out.result({ ...scene, frames }, formatSceneReference(scene, { file, frames, engine, full: values.full === true }));
+      return;
+    }
+    if (action === "add") {
+      const [id] = args;
+      if (!id) throw new CliError("Which scene?", { fix: 'npx @genmotion/cli scenes search "<what you need>"' });
+      const fork = await readSceneFork(id);
+      const forked = await forkScene({
+        projectDir: resolveProjectDir(str(values.dir)),
+        fork,
+        name: str(values.name),
+        after: str(values.after),
+        replace: str(values.replace),
+      });
+      out.result({ ...forked }, forkNextSteps(forked, fork.template));
       return;
     }
     throw new CliError(`Unknown action "${action}"`, { fix: `npx @genmotion/cli scenes --help (beats: ${BEAT_HELP})` });

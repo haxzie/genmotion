@@ -8,3 +8,4 @@ export * from "./scaffold-three";
 export * from "./scaffold-readme";
 export * from "./scenes";
 export * from "./audio";
+export * from "./fork";
