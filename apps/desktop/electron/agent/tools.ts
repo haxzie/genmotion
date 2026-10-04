@@ -632,11 +632,11 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       query: z.string().max(300).default("").describe("What the scene should do or show. Name the beat and the visual idea."),
       beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
       engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; usually leave it out."),
-      aspect: z.enum(["landscape", "portrait", "square"]).optional(),
+      aspect: z.enum(["landscape", "portrait", "square"]).optional().describe("Rank scenes of this shape first."),
       limit: z.number().int().min(1).max(15).optional().describe("How many. Default 6."),
     },
     readOnly: true,
-    async run(_session, args) {
+    async run(session, args) {
       const { query, beat, engine, aspect, limit } = args as unknown as {
         query?: string;
         beat?: string;
@@ -648,6 +648,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       if (beat) params.set("beat", beat);
       if (engine) params.set("engine", engine);
       if (aspect) params.set("aspect", aspect);
+      if (session.engine) params.set("preferEngine", session.engine);
       const res = await cloudFetch(`/api/templates/scenes?${params}`).catch(() => null);
       if (!res?.ok) return failure("The scene library is unreachable right now. Plan the beat from the skills alone.");
       const { scenes } = (await res.json()) as { scenes: SceneHit[] };
@@ -665,7 +666,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       file: z.string().max(200).optional().describe("A file the scene imports, e.g. components/chat.ts."),
     },
     readOnly: true,
-    async run(_session, args) {
+    async run(session, args) {
       const { id, file } = args as unknown as { id: string; file?: string };
       const tail = id.split("/").map(encodeURIComponent).join("/");
       const res = await cloudFetch(`/api/templates/scenes/${tail}`).catch(() => null);
@@ -673,7 +674,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       const scene = (await res.json()) as SceneReference;
       let body: string;
       try {
-        body = formatSceneReference(scene, file);
+        body = formatSceneReference(scene, { file, engine: session.engine });
       } catch (err) {
         return failure(err instanceof Error ? err.message : String(err));
       }

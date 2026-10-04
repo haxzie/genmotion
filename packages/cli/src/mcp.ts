@@ -355,11 +355,11 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       query: z.string().default("").describe("What the scene should do or show, in a few words. Name the beat and the visual idea, not your brand."),
       beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
       engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; leave it out unless you need copyable code."),
-      aspect: z.enum(["landscape", "portrait", "square"]).optional(),
+      aspect: z.enum(["landscape", "portrait", "square"]).optional().describe("Rank scenes of this shape first."),
       limit: z.number().int().min(1).max(15).default(6),
     },
     async ({ query, beat, engine, aspect, limit }) => {
-      const hits = await searchSceneLibrary({ query, beat, engine, aspect, limit });
+      const hits = await searchSceneLibrary({ query, beat, engine, aspect, preferEngine: await engineOf(), limit });
       return {
         content: [
           {
@@ -381,7 +381,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     },
     async ({ id, file }) => {
       const scene = await readSceneReference(id);
-      const text = formatSceneReference(scene, file);
+      const text = formatSceneReference(scene, { file, engine: await engineOf() });
       const still = file ? null : await readSceneStill(id).catch(() => null);
       return {
         content: [

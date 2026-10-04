@@ -23,6 +23,8 @@ export * from "./scene-search";
 
 interface LoadedScene extends SceneSummary {
   build: string;
+  /** Searched, never returned: carries style words ("whiteboard") the scene entries don't repeat. */
+  templateDescription: string;
 }
 
 interface LoadedTemplate {
@@ -70,6 +72,7 @@ async function loadTemplateScenes(record: TemplateRecord): Promise<LoadedTemplat
         id: `${meta.id}/${stem}`,
         template: meta.id,
         templateTitle: meta.title,
+        templateDescription: meta.description,
         file: entry.file,
         title: curated.title,
         beat: curated.beat,
@@ -112,7 +115,7 @@ async function loadLibrary(): Promise<LoadedTemplate[]> {
 
 /** Every curated scene in the catalog, filler included. */
 export async function listScenes(): Promise<SceneSummary[]> {
-  return (await loadLibrary()).flatMap((t) => t.scenes.map(({ build: _build, ...s }) => s));
+  return (await loadLibrary()).flatMap((t) => t.scenes.map(({ build: _build, templateDescription: _d, ...s }) => s));
 }
 
 export async function findScenes(query: SceneQuery): Promise<SceneHit[]> {
@@ -200,8 +203,9 @@ export async function getScene(id: string): Promise<SceneReference | null> {
   if (!scene) return null;
   const neighbour = (s: LoadedScene | undefined) => (s ? { id: s.id, title: s.title, beat: s.beat } : null);
   const { files, assets } = await gatherCode(record, scene.file);
+  const { templateDescription: _d, ...rest } = scene;
   return {
-    ...scene,
+    ...rest,
     arc: loaded.sidecar.arc,
     previous: neighbour(loaded.scenes[index - 1]),
     next: neighbour(loaded.scenes[index + 1]),

@@ -307,6 +307,8 @@ export const scenes: Command = {
 Every scene of every template, described by the job it does in its video
 (its beat), what is on screen, how it's built and when to borrow it.
 
+Inside a project, scenes in its own engine rank first.
+
   search "<what you need>"   e.g. "integrations wall of app logos", "funding number reveal"
   show <id> [file]           The scene's notes and code (and one imported file by path)
 
@@ -314,8 +316,9 @@ Options
   --beat <beat>        search: only this beat. One of:
                        ${SCENE_BEATS.join(", ")}
   --engine <engine>    search: three | react
-  --aspect <aspect>    search: landscape | portrait | square
+  --aspect <aspect>    search: rank this shape first (landscape | portrait | square)
   --all                search: include filler scenes
+  --full               show: inline every imported file, however long
   --limit <n>          search: how many (default 8)
   --json`,
   options: {
@@ -323,6 +326,7 @@ Options
     engine: { type: "string" },
     aspect: { type: "string" },
     all: { type: "boolean" },
+    full: { type: "boolean" },
     limit: { type: "string" },
   },
   async run({ values, positionals, out }) {
@@ -343,6 +347,7 @@ Options
         beat: beat as SceneBeat | undefined,
         engine: str(values.engine),
         aspect: aspect as "landscape" | "portrait" | "square" | undefined,
+        preferEngine: await engineHere(str(values.dir)),
         includeFiller: values.all === true,
         limit: num(values.limit, "limit") ?? 8,
       });
@@ -354,10 +359,8 @@ Options
       if (!id) throw new CliError("Which scene?", { fix: 'npx @genmotion/cli scenes search "<what you need>"' });
       const scene = await readSceneReference(id);
       const frames = await sceneStillLocation(id);
-      out.result(
-        { ...scene, frames },
-        `${formatSceneReference(scene, file)}${frames && !file ? `\n\nThree frames of it (entrance, key moment, end): ${frames}` : ""}`,
-      );
+      const engine = await engineHere(str(values.dir));
+      out.result({ ...scene, frames }, formatSceneReference(scene, { file, frames, engine, full: values.full === true }));
       return;
     }
     throw new CliError(`Unknown action "${action}"`, { fix: `npx @genmotion/cli scenes --help (beats: ${BEAT_HELP})` });

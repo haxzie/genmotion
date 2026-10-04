@@ -238,8 +238,18 @@ export interface SceneQuery {
   videoType?: string;
   engine?: string;
   technique?: string;
-  /** "landscape" | "portrait" | "square" */
+  /**
+   * Ranks scenes of this shape higher. A preference rather than a filter: the
+   * catalog is mostly landscape, so filtering a "square" request down to the
+   * few square scenes replaced relevance with whatever happened to be square
+   * (an agent asking for a funding beat got three chat scenes).
+   */
   aspect?: "landscape" | "portrait" | "square";
+  /**
+   * The engine the agent is writing in. A soft preference too: ideas cross
+   * engines, but a scene in your own engine has code you can lift.
+   */
+  preferEngine?: string;
   /** Filler is hidden unless asked for: it teaches nothing on its own. */
   includeFiller?: boolean;
   /** At most this many hits from one template, so results span the catalog. Default 2. */
@@ -250,6 +260,8 @@ export interface SceneQuery {
 export interface SceneHit {
   scene: SceneSummary;
   score: number;
+  /** Matching scenes from the same template held back by the per-template cap. */
+  moreInTemplate?: number;
 }
 
 const STOP = new Set([
@@ -287,7 +299,7 @@ function stem(token: string): string {
  * beat and title say what a scene is for, which is what queries mostly ask;
  * the reuse note says when to borrow it, which is the agent's own framing.
  */
-export function sceneSearchText(scene: SceneSummary): string {
+export function sceneSearchText(scene: SceneSummary & { templateDescription?: string }): string {
   const beats = [scene.beat, ...scene.alsoFits];
   return [
     scene.title,
@@ -300,6 +312,8 @@ export function sceneSearchText(scene: SceneSummary): string {
     scene.mood.join(" "),
     scene.videoTypes.join(" ").replace(/-/g, " "),
     scene.templateTitle,
+    scene.templateTitle,
+    scene.templateDescription ?? "",
     scene.reuse,
   ].join(" ");
 }
@@ -311,12 +325,12 @@ function aspectOf(scene: SceneSummary): "landscape" | "portrait" | "square" {
 
 const QUALITY_BOOST: Record<SceneQuality, number> = { hero: 1.3, solid: 1, filler: 0.6 };
 
-type Searchable = SceneSummary & { build?: string };
+type Searchable = SceneSummary & { build?: string; templateDescription?: string };
 
 /**
  * Rank the library against a request.
  *
- * Facets (beat, engine, aspect…) filter; the free-text query ranks with BM25
+ * Facets (beat, engine, technique) filter; aspect and engine preference boost; the free-text query ranks with BM25
  * over each scene's text, nudged by curation quality. With no query, the
  * filtered set comes back hero-first — "show me every integrations beat" is a
  * legitimate thing to ask.
@@ -330,8 +344,7 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
       (!q.beat || s.beat === q.beat || s.alsoFits.includes(q.beat)) &&
       (!q.videoType || s.videoTypes.includes(q.videoType)) &&
       (!q.engine || s.engine === q.engine) &&
-      (!q.technique || s.techniques.includes(q.technique)) &&
-      (!q.aspect || aspectOf(s) === q.aspect),
+      (!q.technique || s.techniques.includes(q.technique)),
   );
 
   const scores = new Map<string, number>();
@@ -363,10 +376,16 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
   const named = q.beat ? [] : beatsInQuery(q.query ?? "");
   const beatBoost = (scene: SceneSummary) =>
     named.includes(scene.beat) ? 1.8 : scene.alsoFits.some((b) => named.includes(b)) ? 1.3 : 1;
+  // Music-video imagery shares a lot of vocabulary with everything ("chart",
+  // "grid", "counter") but is rarely what someone building a product or an
+  // explainer wants; it has to be asked for.
+  const moodBoost = (scene: SceneSummary) => (scene.beat === "atmosphere" && !named.includes("atmosphere") ? 0.6 : 1);
+  const shapeBoost = (scene: SceneSummary) =>
+    (q.aspect && aspectOf(scene) === q.aspect ? 1.4 : 1) * (q.preferEngine && scene.engine === q.preferEngine ? 1.3 : 1);
   const ranked = pool
     .map((scene) => {
       const base = terms.length > 0 ? scores.get(scene.id) ?? 0 : 1;
-      return { scene, score: base * QUALITY_BOOST[scene.quality] * beatBoost(scene) };
+      return { scene, score: base * QUALITY_BOOST[scene.quality] * beatBoost(scene) * moodBoost(scene) * shapeBoost(scene) };
     })
     .filter((h) => h.score > 0)
     .sort((a, b) => b.score - a.score || a.scene.id.localeCompare(b.scene.id));
@@ -380,12 +399,23 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
     hits.push({ scene: stripPrivate(hit.scene), score: Math.round(hit.score * 100) / 100 });
     if (hits.length >= limit) break;
   }
+  // Say what the cap held back, on the template's last hit, so a query that
+  // really is about one template ("whiteboard explainer") isn't a dead end.
+  const matched = new Map<string, number>();
+  for (const h of ranked) matched.set(h.scene.template, (matched.get(h.scene.template) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  for (const h of hits) {
+    const k = (seen.get(h.scene.template) ?? 0) + 1;
+    seen.set(h.scene.template, k);
+    const more = (matched.get(h.scene.template) ?? 0) - (taken.get(h.scene.template) ?? 0);
+    if (k === taken.get(h.scene.template) && more > 0) h.moreInTemplate = more;
+  }
   return hits;
 }
 
 /** Search hands back summaries; the build notes and the code are `getScene`'s. */
 function stripPrivate(scene: Searchable): SceneSummary {
-  const { build: _build, ...summary } = scene;
+  const { build: _build, templateDescription: _description, ...summary } = scene;
   return summary;
 }
 
@@ -399,36 +429,68 @@ export const BEAT_HELP = SCENE_BEATS.map((b) => `${b} (${SCENE_BEAT_LABELS[b]})`
 export function formatSceneHits(hits: SceneHit[]): string {
   if (hits.length === 0) return "No scenes matched. Try a beat filter alone, or fewer words.";
   return hits
-    .map(({ scene: s }, i) =>
+    .map(({ scene: s, moreInTemplate }, i) =>
       [
         `${i + 1}. ${s.id} — ${s.title}`,
         `   [${s.beat}${s.alsoFits.length ? ` +${s.alsoFits.join(",")}` : ""} · ${s.quality} · ${s.engine} ${s.width}x${s.height} · ${(s.durationInFrames / s.fps).toFixed(1)}s · scene ${s.position}/${s.of} of "${s.templateTitle}"]`,
         `   ${s.summary}`,
         `   Borrow it: ${s.reuse}`,
         `   Techniques: ${s.techniques.join(", ")} · mood: ${s.mood.join(", ")}`,
-      ].join("\n"),
+        moreInTemplate ? `   +${moreInTemplate} more matching scene${moreInTemplate === 1 ? "" : "s"} in this template (its arc is in get_scene)` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     )
     .join("\n\n");
 }
 
-/** Past this, dependency files are listed rather than inlined; ask for one by name. */
-const INLINE_BUDGET = 48 * 1024;
+/**
+ * How much imported code comes inline. Shared component files run to
+ * thousands of lines, and an agent printing all of them every time it opens a
+ * scene drowned the notes it came for (trials hit 800-line outputs). Small
+ * helpers inline; big ones are listed with what they export, to read by name.
+ * A scene that is only a window onto a shared component gets more room,
+ * because there the component *is* the scene.
+ */
+const INLINE_FILE_MAX = 6 * 1024;
+const INLINE_TOTAL = { standalone: 16 * 1024, slice: 28 * 1024 };
+
+function exportsOf(source: string): string[] {
+  const names = new Set<string>();
+  for (const m of source.matchAll(/export\s+(?:default\s+)?(?:async\s+)?(?:function\*?|const|let|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g)) {
+    names.add(m[1]!);
+  }
+  return [...names];
+}
+
+export interface SceneReferenceFormat {
+  /** One imported file instead of the overview. */
+  file?: string;
+  /** Where the filmstrip can be opened (a path or URL), shown first. */
+  frames?: string | null;
+  /** The reader's own engine, so a cross-engine reference says so up front. */
+  engine?: string;
+  /** Inline every imported file regardless of size. */
+  full?: boolean;
+}
 
 /**
- * A scene reference as text. The scene file always comes whole; the modules
- * it imports are inlined while they fit, and named otherwise, because a
- * template's shared components can run to thousands of lines and the agent
- * usually needs one function from them, not all of it.
+ * A scene reference as text: frames, notes, then code. The scene file always
+ * comes whole.
  */
-export function formatSceneReference(scene: SceneReference, file?: string): string {
+export function formatSceneReference(scene: SceneReference, options: SceneReferenceFormat = {}): string {
+  const { file, frames, engine, full } = options;
   if (file) {
     const one = scene.files.find((f) => f.path === file);
     if (!one) throw new Error(`${scene.id} has no file "${file}". One of: ${scene.files.map((f) => f.path).join(", ")}`);
     return `// ${one.path} (from ${scene.id})\n${one.contents}`;
   }
+  const crossEngine = engine && engine !== scene.engine;
   const lines: (string | null)[] = [
     `# ${scene.title}`,
     `${scene.id} · beat: ${scene.beat}${scene.alsoFits.length ? ` (also ${scene.alsoFits.join(", ")})` : ""} · ${scene.quality} · ${scene.engine} engine · ${scene.width}x${scene.height} @ ${scene.fps}fps · ${scene.durationInFrames} frames (${(scene.durationInFrames / scene.fps).toFixed(1)}s)`,
+    frames ? `Frames (entrance, key moment, end) — look at them first: ${frames}` : null,
+    crossEngine ? `Written for the ${scene.engine} engine, yours is ${engine}: borrow the idea and timing, not the code.` : null,
     `Scene ${scene.position} of ${scene.of} in "${scene.templateTitle}". The template's arc: ${scene.arc}`,
     scene.previous ? `Before it: ${scene.previous.id} (${scene.previous.beat}) — ${scene.previous.title}` : null,
     scene.next ? `After it: ${scene.next.id} (${scene.next.beat}) — ${scene.next.title}` : null,
@@ -441,18 +503,20 @@ export function formatSceneReference(scene: SceneReference, file?: string): stri
     "## Code",
     "Study it for the idea and the timing; write your own scene for your own brand and copy rather than pasting this one. Your project's engine rules still apply.",
   ];
+  const budget = full ? Infinity : scene.standalone ? INLINE_TOTAL.standalone : INLINE_TOTAL.slice;
   let used = 0;
   const withheld: string[] = [];
   for (const [i, f] of scene.files.entries()) {
     const size = f.contents.length;
-    if (i > 0 && used + size > INLINE_BUDGET) {
-      withheld.push(`${f.path} (${f.contents.split("\n").length} lines)`);
+    if (i > 0 && !full && (size > (scene.standalone ? INLINE_FILE_MAX : budget) || used + size > budget)) {
+      const names = exportsOf(f.contents);
+      withheld.push(`- ${f.path} (${f.contents.split("\n").length} lines)${names.length ? `: ${names.slice(0, 14).join(", ")}${names.length > 14 ? ", …" : ""}` : ""}`);
       continue;
     }
     used += size;
     lines.push(`\n### ${f.path}\n\`\`\`ts\n${f.contents}\n\`\`\``);
   }
-  if (withheld.length) lines.push(`\nAlso imported, not shown (read one with file=<path>): ${withheld.join(", ")}`);
+  if (withheld.length) lines.push(`\nAlso imported, not shown — read one by its path (file=<path>):\n${withheld.join("\n")}`);
   if (scene.assets.length) lines.push(`\nAssets it imports (not shipped): ${scene.assets.join(", ")}`);
   return lines.filter((l) => l !== null).join("\n");
 }
