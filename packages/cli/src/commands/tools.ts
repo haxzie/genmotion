@@ -8,9 +8,9 @@ import { wireAgents } from "../agents";
 import { installSkills, installedSkills, listPack, readSkill, searchPack } from "../skills";
 import { SKILL_KINDS, type SkillKind } from "@genmotion/shared";
 import { listTemplates } from "../templates";
-import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference, readSceneFork, readSceneReference, sceneStillLocation, searchSceneLibrary } from "../scenes";
+import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneHitsBrief, formatSceneReference, readSceneFork, readSceneReference, sceneStillLocation, searchSceneLibrary } from "../scenes";
 import { forkScene } from "@genmotion/project";
-import { SCENE_BEATS, type SceneBeat } from "@genmotion/templates/scene-search";
+import { SCENE_BEATS, parseAspect, type SceneBeat } from "@genmotion/templates/scene-search";
 import { resolveProjectDir } from "../project-dir";
 import { CliError, bold, dim, green, red, yellow } from "../output";
 import { num, str, type Command } from "../command";
@@ -320,9 +320,11 @@ Options
   --beat <beat>        search: only this beat. One of:
                        ${SCENE_BEATS.join(", ")}
   --engine <engine>    search: three | react
-  --aspect <aspect>    search: rank this shape first (landscape | portrait | square)
+  --aspect <aspect>    search: rank this shape first (landscape | portrait | square, or 16:9 …)
+  --template <id>      search: only this template; with no query, its whole arc in order
   --mood <mood>        search: rank this mood first (dark, light, playful, premium, techy…)
   --all                search: include filler scenes
+  --brief              search: one line per result
   --full               show: inline every imported file, however long
   --limit <n>          search: how many (default 8)
   --json`,
@@ -333,6 +335,8 @@ Options
     all: { type: "boolean" },
     full: { type: "boolean" },
     mood: { type: "string" },
+    brief: { type: "boolean" },
+    template: { type: "string" },
     name: { type: "string" },
     after: { type: "string" },
     replace: { type: "string" },
@@ -345,23 +349,27 @@ Options
       if (beat && !(SCENE_BEATS as readonly string[]).includes(beat)) {
         throw new CliError(`Unknown beat "${beat}"`, { fix: `--beat ${SCENE_BEATS.join("|")}` });
       }
-      const aspect = str(values.aspect);
-      if (aspect && !["landscape", "portrait", "square"].includes(aspect)) {
-        throw new CliError(`Unknown aspect "${aspect}"`, { fix: "--aspect landscape|portrait|square" });
+      const aspect = parseAspect(str(values.aspect));
+      if (str(values.aspect) && !aspect) {
+        throw new CliError(`Unknown aspect "${str(values.aspect)}"`, { fix: "--aspect landscape|portrait|square (or 16:9, 9:16, 1:1)" });
       }
+      const template = str(values.template);
       const query = args.join(" ").trim();
-      if (!query && !beat) throw new CliError("What scene do you need?", { fix: 'npx @genmotion/cli scenes search "integrations wall of app logos"' });
+      if (!query && !beat && !template) throw new CliError("What scene do you need?", { fix: 'npx @genmotion/cli scenes search "integrations wall of app logos"' });
       const hits = await searchSceneLibrary({
         query,
+        template,
         beat: beat as SceneBeat | undefined,
         engine: str(values.engine),
-        aspect: aspect as "landscape" | "portrait" | "square" | undefined,
+        aspect,
         preferEngine: await engineHere(str(values.dir)),
         mood: str(values.mood),
         includeFiller: values.all === true,
         limit: num(values.limit, "limit") ?? 8,
       });
-      out.result({ query, hits }, `${formatSceneHits(hits)}\n\n${dim("Look: npx @genmotion/cli scenes show <id>  ·  Fork the closest: npx @genmotion/cli scenes add <id>")}`);
+      const shapes = aspect ? hits.filter((h) => (h.scene.width === h.scene.height ? "square" : h.scene.width > h.scene.height ? "landscape" : "portrait") === aspect).length : null;
+      const note = shapes === 0 ? `\n\n${yellow(`No ${aspect} scenes matched; these are the closest in other shapes (re-frame a fork).`)}` : "";
+      out.result({ query, hits }, `${values.brief === true ? formatSceneHitsBrief(hits) : formatSceneHits(hits)}${note}\n\n${dim("Look: npx @genmotion/cli scenes show <id>  ·  Fork the closest: npx @genmotion/cli scenes add <id>")}`);
       return;
     }
     if (action === "show") {

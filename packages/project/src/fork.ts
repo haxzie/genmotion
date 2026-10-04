@@ -65,6 +65,8 @@ export interface ForkedScene {
    * fork from this template, and overwriting would undo it.
    */
   kept: string[];
+  /** The replaced scene's file, deleted because nothing references it any more. */
+  removed: string[];
   warnings: string[];
 }
 
@@ -150,7 +152,12 @@ export async function forkScene(input: ForkSceneInput): Promise<ForkedScene> {
   }, 0);
   const ext = P.extname(sceneFile);
   const stem = stemOf(sceneFile).replace(/^\d+-/, "");
-  let n = highest + 1;
+  // A replacement takes the replaced scene's number, so the files still sort
+  // in timeline order.
+  const replacedNumber = input.replace
+    ? Number(/^(\d+)-/.exec(P.basename(manifest.scenes.find((s) => s.file === input.replace || s.name === input.replace)?.file ?? ""))?.[1])
+    : NaN;
+  let n = Number.isFinite(replacedNumber) ? replacedNumber : highest + 1;
   let newSceneFile = `${SCENES_DIR}/${String(n).padStart(2, "0")}-${stem}${ext}`;
   while (manifest.scenes.some((s) => s.file === newSceneFile) || (await exists(path.join(projectDir, newSceneFile)))) {
     n++;
@@ -159,7 +166,7 @@ export async function forkScene(input: ForkSceneInput): Promise<ForkedScene> {
 
   const names = new Set(fork.files.map((f) => f.path));
   const destination = (original: string) => destinationOf(original, sceneFile, newSceneFile, fork.template);
-  const result: ForkedScene = { file: newSceneFile, name: "", durationInFrames: 0, written: [], unchanged: [], kept: [], warnings: [] };
+  const result: ForkedScene = { file: newSceneFile, name: "", durationInFrames: 0, written: [], unchanged: [], kept: [], removed: [], warnings: [] };
 
   for (const f of fork.files) {
     const target = destination(f.path);
@@ -196,7 +203,13 @@ export async function forkScene(input: ForkSceneInput): Promise<ForkedScene> {
   if (input.replace) {
     const at = manifest.scenes.findIndex((s) => s.file === input.replace || s.name === input.replace);
     if (at === -1) throw new ProjectError(`No scene "${input.replace}" in ${MANIFEST_FILE}`);
-    manifest.scenes.splice(at, 1, entry);
+    const [old] = manifest.scenes.splice(at, 1, entry);
+    // Replacing means the old scene is gone; a file nothing references is
+    // just a stray that later looks like a scene someone forgot to register.
+    if (old && !manifest.scenes.some((s) => s.file === old.file)) {
+      await fs.rm(path.join(projectDir, old.file), { force: true });
+      result.removed.push(old.file);
+    }
   } else {
     let index = manifest.scenes.length;
     if (input.after) {

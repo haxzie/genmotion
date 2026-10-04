@@ -243,6 +243,20 @@ export async function getSceneFork(id: string): Promise<SceneFork | null> {
       return bytes ? { path: rel, encoding: "base64" as const, contents: bytes.toString("base64") } : null;
     }),
   );
+  // Ambient declarations (`declare module "*.svg"`) are imported by nothing,
+  // so the import walk misses them, but a forked component needs them to typecheck.
+  const declared = new Set(scene.files.map((f) => f.path));
+  const dirs = [...new Set(scene.files.map((f) => path.posix.dirname(f.path)))];
+  const declarations: { path: string; encoding: "text"; contents: string }[] = [];
+  for (const dir of dirs) {
+    const entries = await fs.readdir(path.join(record.dir, dir)).catch(() => [] as string[]);
+    for (const name of entries) {
+      const rel = path.posix.join(dir, name);
+      if (name.endsWith(".d.ts") && !declared.has(rel)) {
+        declarations.push({ path: rel, encoding: "text", contents: await fs.readFile(path.join(record.dir, rel), "utf8") });
+      }
+    }
+  }
   return {
     id: scene.id,
     template: scene.template,
@@ -254,6 +268,7 @@ export async function getSceneFork(id: string): Promise<SceneFork | null> {
     durationInFrames: scene.durationInFrames,
     files: [
       ...scene.files.map((f) => ({ path: f.path, encoding: "text" as const, contents: f.contents })),
+      ...declarations,
       ...assets.filter((a): a is NonNullable<typeof a> => a !== null),
     ],
   };

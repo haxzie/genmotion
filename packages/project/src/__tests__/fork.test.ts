@@ -41,6 +41,15 @@ describe("forkScene", () => {
     expect(await fs.readFile(path.join(dir, "components/demo-template/kit.ts"), "utf8")).toContain("k = 2");
   });
 
+  it("replaces a scene and deletes its file", async () => {
+    const dir = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "gm-fork-")), "p");
+    await createProject({ dir, engine: "three", width: 1920, height: 1080, fps: 30 });
+    const starter = (await readManifest(dir)).scenes[0]!.file;
+    const forked = await forkScene({ projectDir: dir, fork: fork(), replace: starter });
+    expect(forked.removed).toEqual([starter]);
+    expect((await readManifest(dir)).scenes.map((s) => s.file)).toEqual([forked.file]);
+  });
+
   it("refuses another engine and unsafe paths", async () => {
     const dir = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "gm-fork-")), "p");
     await createProject({ dir, engine: "three", width: 1920, height: 1080, fps: 30 });

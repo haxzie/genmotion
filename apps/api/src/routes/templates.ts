@@ -13,7 +13,7 @@ import {
   templatePosterPath,
   toSummary,
 } from "@genmotion/templates";
-import { SCENE_BEATS, findScenes, getScene, getSceneFork, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
+import { SCENE_BEATS, findScenes, parseAspect, getScene, getSceneFork, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
 import { anonymousDistinctId, clientIp, trackServer } from "../analytics";
 import { notifyRemixIntent } from "../slack";
 
@@ -86,7 +86,7 @@ templateRoutes.get("/scenes", async (c) => {
   if (beat && !(SCENE_BEATS as readonly string[]).includes(beat)) {
     return c.json({ error: `Unknown beat "${beat}"`, beats: SCENE_BEATS }, 400);
   }
-  const aspect = c.req.query("aspect");
+  const aspect = parseAspect(c.req.query("aspect"));
   const limit = Number(c.req.query("limit"));
   const hits = await findScenes({
     query: c.req.query("q") ?? "",
@@ -94,7 +94,8 @@ templateRoutes.get("/scenes", async (c) => {
     videoType: c.req.query("videoType") || undefined,
     engine: c.req.query("engine") || undefined,
     technique: c.req.query("technique") || undefined,
-    aspect: aspect === "landscape" || aspect === "portrait" || aspect === "square" ? aspect : undefined,
+    aspect,
+    template: c.req.query("template") || undefined,
     preferEngine: c.req.query("preferEngine") || undefined,
     mood: c.req.query("mood") || undefined,
     includeFiller: c.req.query("includeFiller") === "true",

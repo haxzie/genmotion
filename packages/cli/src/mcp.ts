@@ -16,7 +16,7 @@ import { addAudio, removeAudio, setAudio } from "./audio";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
 import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference, readSceneFork, readSceneReference, readSceneStill, searchSceneLibrary } from "./scenes";
-import { SCENE_BEATS } from "@genmotion/templates/scene-search";
+import { SCENE_BEATS, parseAspect } from "@genmotion/templates/scene-search";
 import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, renderProjectSkill, wireAgents } from "./agents";
 import { ROUTER_SKILL, readSkill, searchPack } from "./skills";
 import { SKILL_KINDS } from "@genmotion/shared";
@@ -355,12 +355,13 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       query: z.string().default("").describe("What the scene should do or show, in a few words. Name the beat and the visual idea, not your brand."),
       beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
       engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; leave it out unless you need copyable code."),
-      aspect: z.enum(["landscape", "portrait", "square"]).optional().describe("Rank scenes of this shape first."),
+      aspect: z.string().optional().describe("Rank scenes of this shape first: landscape, portrait, square, or 16:9 / 9:16 / 1:1."),
+      template: z.string().optional().describe("Only this template's scenes; with no query, its whole arc in order."),
       mood: z.string().optional().describe("Rank this mood first: dark, light, playful, premium, techy, minimal, bold…"),
       limit: z.number().int().min(1).max(15).default(6),
     },
-    async ({ query, beat, engine, aspect, mood, limit }) => {
-      const hits = await searchSceneLibrary({ query, beat, engine, aspect, mood, preferEngine: await engineOf(), limit });
+    async ({ query, beat, engine, aspect, template, mood, limit }) => {
+      const hits = await searchSceneLibrary({ query, beat, engine, aspect: parseAspect(aspect), template, mood, preferEngine: await engineOf(), limit });
       return {
         content: [
           {

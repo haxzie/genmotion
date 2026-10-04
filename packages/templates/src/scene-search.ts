@@ -234,6 +234,8 @@ export interface SceneReference extends SceneSummary {
 
 export interface SceneQuery {
   query?: string;
+  /** Only this template's scenes — with no query, its whole arc in order. */
+  template?: string;
   beat?: SceneBeat;
   videoType?: string;
   engine?: string;
@@ -336,11 +338,12 @@ type Searchable = SceneSummary & { build?: string; templateDescription?: string 
  * legitimate thing to ask.
  */
 export function searchScenes(library: readonly Searchable[], q: SceneQuery): SceneHit[] {
-  const limit = Math.min(Math.max(1, q.limit ?? 8), 30);
-  const perTemplate = Math.max(1, q.perTemplate ?? 2);
+  const limit = q.template ? 60 : Math.min(Math.max(1, q.limit ?? 8), 30);
+  const perTemplate = q.template ? Infinity : Math.max(1, q.perTemplate ?? 2);
   const pool = library.filter(
     (s) =>
-      (q.includeFiller || s.quality !== "filler") &&
+      (!q.template || s.template === q.template) &&
+      (q.includeFiller || q.template !== undefined || s.quality !== "filler") &&
       (!q.beat || s.beat === q.beat || s.alsoFits.includes(q.beat)) &&
       (!q.videoType || s.videoTypes.includes(q.videoType)) &&
       (!q.engine || s.engine === q.engine) &&
@@ -382,15 +385,17 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
   const moodBoost = (scene: SceneSummary) => (scene.beat === "atmosphere" && !named.includes("atmosphere") ? 0.6 : 1);
   const shapeBoost = (scene: SceneSummary) =>
     (q.aspect && aspectOf(scene) === q.aspect ? 1.4 : 1) *
-    (q.preferEngine && scene.engine === q.preferEngine ? 1.3 : 1) *
-    (q.mood && scene.mood.includes(q.mood) ? 1.4 : 1);
+    (q.preferEngine && scene.engine !== q.preferEngine ? 0.45 : 1) *
+    (q.mood && scene.mood.includes(q.mood) ? 2 : 1);
   const ranked = pool
     .map((scene) => {
       const base = terms.length > 0 ? scores.get(scene.id) ?? 0 : 1;
       return { scene, score: base * QUALITY_BOOST[scene.quality] * beatBoost(scene) * moodBoost(scene) * shapeBoost(scene) };
     })
     .filter((h) => h.score > 0)
-    .sort((a, b) => b.score - a.score || a.scene.id.localeCompare(b.scene.id));
+    .sort((a, b) =>
+      q.template && terms.length === 0 ? a.scene.position - b.scene.position : b.score - a.score || a.scene.id.localeCompare(b.scene.id),
+    );
   // A tail of one-shared-word matches is noise that reads as a recommendation;
   // stop where relevance falls below a quarter of the best hit.
   const floor = terms.length > 0 ? (ranked[0]?.score ?? 0) * 0.25 : 0;
@@ -430,6 +435,14 @@ function stripPrivate(scene: Searchable): SceneSummary {
 // reads the same wherever an agent meets it.
 
 export const BEAT_HELP = SCENE_BEATS.map((b) => `${b} (${SCENE_BEAT_LABELS[b]})`).join("; ");
+
+/** One line per hit, for scanning a long list. */
+export function formatSceneHitsBrief(hits: SceneHit[]): string {
+  if (hits.length === 0) return "No scenes matched. Try a beat filter alone, or fewer words.";
+  return hits
+    .map(({ scene: s }) => `${s.id.padEnd(58)} ${s.engine.padEnd(5)} ${s.beat.padEnd(12)} ${s.quality.padEnd(6)} ${s.title}`)
+    .join("\n");
+}
 
 /** Search results as an agent reads them: enough to choose, one handle to open. */
 export function formatSceneHits(hits: SceneHit[]): string {
@@ -511,6 +524,12 @@ export function formatSceneReference(scene: SceneReference, options: SceneRefere
       ? "Study it for the idea and the timing; it can't be forked into your engine."
       : "If this is close to your beat, fork it (fork_scene / `genmotion scenes add <id>`) and re-skin it: that keeps the tuned timing, camera and finish. Otherwise study it and write your own.",
   ];
+  const brand = scene.files.filter((f) => /(^|\/)(brand|palette|theme|colou?rs?|tokens|copy|look)\.[a-z]+$/i.test(f.path)).map((f) => f.path);
+  lines.push(
+    brand.length
+      ? `Re-skin from: ${brand.join(", ")} (brand, palette and copy live there; check the scene file for strings it sets itself).`
+      : "Re-skin note: this template has no brand module; colours and copy are set inline in the scene and its components.",
+  );
   const budget = full ? Infinity : scene.standalone ? INLINE_TOTAL.standalone : INLINE_TOTAL.slice;
   let used = 0;
   const withheld: string[] = [];
@@ -530,9 +549,10 @@ export function formatSceneReference(scene: SceneReference, options: SceneRefere
 }
 
 /** What to tell an agent right after a fork, so the re-skin is the next step. */
-export function forkNextSteps(forked: { file: string; written: string[]; kept: string[]; warnings: string[] }, template: string): string {
+export function forkNextSteps(forked: { file: string; written: string[]; kept: string[]; removed?: string[]; warnings: string[] }, template: string): string {
   return [
     `Forked into ${forked.file} and registered in project.json.`,
+    forked.removed?.length ? `Replaced and deleted: ${forked.removed.join(", ")}` : "",
     forked.written.length ? `Wrote: ${forked.written.join(", ")}` : "",
     forked.kept.length ? `Kept your existing (edited) copies of: ${forked.kept.join(", ")}` : "",
     ...forked.warnings.map((w) => `Warning: ${w}`),
@@ -546,4 +566,15 @@ export function forkNextSteps(forked: { file: string; written: string[]; kept: s
   ]
     .filter((l) => l !== "")
     .join("\n");
+}
+
+/** `16:9`, `9:16`, `1:1` and friends, as the shape names search takes. */
+export function parseAspect(text: string | undefined): "landscape" | "portrait" | "square" | undefined {
+  if (!text) return undefined;
+  const t = text.trim().toLowerCase();
+  if (t === "landscape" || t === "portrait" || t === "square") return t;
+  const m = /^(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)$/.exec(t);
+  if (!m) return undefined;
+  const ratio = Number(m[1]) / Number(m[2]);
+  return Math.abs(ratio - 1) < 0.05 ? "square" : ratio > 1 ? "landscape" : "portrait";
 }

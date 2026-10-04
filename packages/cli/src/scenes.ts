@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import type { SceneFork } from "@genmotion/project";
 import type { SceneHit, SceneQuery, SceneReference } from "@genmotion/templates/scene-search";
 
-export { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference } from "@genmotion/templates/scene-search";
+export { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneHitsBrief, formatSceneReference } from "@genmotion/templates/scene-search";
 import { CliError } from "./output";
 import { API_URL } from "./templates";
 import { VERSION } from "./version";

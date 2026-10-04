@@ -633,13 +633,15 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       query: z.string().max(300).default("").describe("What the scene should do or show. Name the beat and the visual idea."),
       beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
       engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; usually leave it out."),
-      aspect: z.enum(["landscape", "portrait", "square"]).optional().describe("Rank scenes of this shape first."),
+      aspect: z.string().max(20).optional().describe("Rank scenes of this shape first: landscape, portrait, square, or 16:9 / 9:16 / 1:1."),
+      template: z.string().max(100).optional().describe("Only this template's scenes; with no query, its whole arc in order."),
       limit: z.number().int().min(1).max(15).optional().describe("How many. Default 6."),
     },
     readOnly: true,
     async run(session, args) {
-      const { query, beat, engine, aspect, limit } = args as unknown as {
+      const { query, beat, engine, aspect, template, limit } = args as unknown as {
         query?: string;
+        template?: string;
         beat?: string;
         engine?: string;
         aspect?: string;
@@ -649,6 +651,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       if (beat) params.set("beat", beat);
       if (engine) params.set("engine", engine);
       if (aspect) params.set("aspect", aspect);
+      if (template) params.set("template", template);
       if (session.engine) params.set("preferEngine", session.engine);
       const res = await cloudFetch(`/api/templates/scenes?${params}`).catch(() => null);
       if (!res?.ok) return failure("The scene library is unreachable right now. Plan the beat from the skills alone.");
