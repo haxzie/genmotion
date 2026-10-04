@@ -164,6 +164,13 @@ export async function forkScene(input: ForkSceneInput): Promise<ForkedScene> {
     newSceneFile = `${SCENES_DIR}/${String(n).padStart(2, "0")}-${stem}${ext}`;
   }
 
+  // Check where it goes before writing anything, so a bad --after leaves no strays.
+  for (const target of [input.after, input.replace]) {
+    if (target && !manifest.scenes.some((s) => s.file === target || s.name === target)) {
+      throw new ProjectError(`No scene "${target}" in ${MANIFEST_FILE}. Scenes: ${manifest.scenes.map((s) => s.file).join(", ")}`);
+    }
+  }
+
   const names = new Set(fork.files.map((f) => f.path));
   const destination = (original: string) => destinationOf(original, sceneFile, newSceneFile, fork.template);
   const result: ForkedScene = { file: newSceneFile, name: "", durationInFrames: 0, written: [], unchanged: [], kept: [], removed: [], warnings: [] };
