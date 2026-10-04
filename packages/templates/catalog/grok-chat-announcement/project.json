@@ -1,0 +1,110 @@
+{
+  "name": "Grok chat announcement video",
+  "engine": "three",
+  "fps": 60,
+  "width": 1080,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-group-chat.ts",
+      "durationInFrames": 216,
+      "name": "Group chat"
+    },
+    {
+      "file": "scenes/02-ask-grok.ts",
+      "durationInFrames": 194,
+      "name": "Ask the assistant"
+    },
+    {
+      "file": "scenes/03-thanks.ts",
+      "durationInFrames": 280,
+      "name": "Thanks + outro"
+    }
+  ],
+  "audio": [
+    {
+      "id": "sfx-receive-1",
+      "file": "assets/sfx-receive.mp3",
+      "track": 0,
+      "startFrame": 34,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-receive-2",
+      "file": "assets/sfx-receive.mp3",
+      "track": 0,
+      "startFrame": 105,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-receive-3",
+      "file": "assets/sfx-receive.mp3",
+      "track": 0,
+      "startFrame": 174,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-receive-4",
+      "file": "assets/sfx-receive.mp3",
+      "track": 0,
+      "startFrame": 334,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-receive-5",
+      "file": "assets/sfx-receive.mp3",
+      "track": 0,
+      "startFrame": 445,
+      "durationInFrames": 36,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-send-1",
+      "file": "assets/sfx-send.mp3",
+      "track": 1,
+      "startFrame": 222,
+      "durationInFrames": 29,
+      "startFrom": 0,
+      "volume": 1.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-send-2",
+      "file": "assets/sfx-send.mp3",
+      "track": 1,
+      "startFrame": 507,
+      "durationInFrames": 29,
+      "startFrom": 0,
+      "volume": 1.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "grok-chat-announcement",
+  "title": "Grok chat announcement video",
+  "description": "A square group-chat announcement: friends argue over when to leave for the airport, someone asks the assistant in-thread, and it answers with traffic and security times. Typing dots, timed bubbles and message sounds throughout.",
+  "metaTitle": "AI Assistant Group Chat Announcement Video Template — GenMotion",
+  "category": "social",
+  "tags": [
+    "Announcement",
+    "Social Media"
+  ],
+  "publishedAt": "2026-10-04",
+  "featured": false,
+  "sampleAt": 0.9,
+  "order": 32,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-chat-announcement/video.mp4"
+}

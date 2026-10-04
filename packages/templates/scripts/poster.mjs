@@ -1,9 +1,9 @@
 /**
  * Capture each template's poster — the image the gallery card shows.
  *
- * One frame of the first scene, through the same player the editor preview and
- * the export both drive, so the card is the composition rather than an
- * approximation of it. Headless Chromium via Playwright: the desktop app's own
+ * One frame of the first scene (or whichever `posterScene` names), through the
+ * same player the editor preview and the export both drive, so the card is the
+ * composition rather than an approximation of it. Headless Chromium via Playwright: the desktop app's own
  * capture needs an Electron window, which a package script has no way to open.
  *
  *   pnpm --filter @genmotion/templates poster            # every template
@@ -36,8 +36,12 @@ async function capture(browser, id) {
   const record = await getTemplate(id);
   if (!record) throw new Error(`No such template: ${id}`);
 
-  const entry = record.manifest.scenes[0];
-  if (!entry) throw new Error(`${id} has no scenes`);
+  // Scene 0 unless the sidecar names another: a first scene that animates for
+  // its whole duration (a counter rolling to its final number) has no settled
+  // frame at any `sampleAt`, so the poster comes from the next scene that does.
+  const sceneIndex = record.meta.posterScene ?? 0;
+  const entry = record.manifest.scenes[sceneIndex];
+  if (!entry) throw new Error(`${id} has no scene at index ${sceneIndex}`);
 
   const bundler = createSceneBundler({
     projectDir: record.dir,

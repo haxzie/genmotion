@@ -1,0 +1,116 @@
+{
+  "name": "Solara funding announcement video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-counter.ts",
+      "durationInFrames": 29,
+      "name": "Counter"
+    },
+    {
+      "file": "scenes/02-announce.ts",
+      "durationInFrames": 57,
+      "name": "$400M"
+    },
+    {
+      "file": "scenes/03-series-f.ts",
+      "durationInFrames": 57,
+      "name": "Series F"
+    },
+    {
+      "file": "scenes/04-valuation-card.ts",
+      "durationInFrames": 27,
+      "name": "Valuation card"
+    },
+    {
+      "file": "scenes/05-valuation.ts",
+      "durationInFrames": 53,
+      "name": "$8.4B valuation"
+    },
+    {
+      "file": "scenes/06-future-sky.ts",
+      "durationInFrames": 42,
+      "name": "The future of"
+    },
+    {
+      "file": "scenes/07-future-work.ts",
+      "durationInFrames": 201,
+      "name": "Future of work + list"
+    },
+    {
+      "file": "scenes/08-agentic.ts",
+      "durationInFrames": 86,
+      "name": "Agentic control plane"
+    },
+    {
+      "file": "scenes/09-logo.ts",
+      "durationInFrames": 44,
+      "name": "End lockup"
+    }
+  ],
+  "audio": [
+    {
+      "id": "score",
+      "file": "assets/score.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 596,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 24,
+      "muted": false
+    },
+    {
+      "id": "tick-397",
+      "file": "assets/sfx-tick.wav",
+      "track": 2,
+      "startFrame": 5,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 0.62,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "tick-398",
+      "file": "assets/sfx-tick.wav",
+      "track": 3,
+      "startFrame": 14,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "tick-399",
+      "file": "assets/sfx-tick.wav",
+      "track": 2,
+      "startFrame": 24,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 0.66,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "tink-8-4b-solid",
+      "file": "assets/sfx-glass-tink.wav",
+      "track": 2,
+      "startFrame": 159,
+      "durationInFrames": 30,
+      "startFrom": 0,
+      "volume": 0.6,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
