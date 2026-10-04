@@ -389,10 +389,14 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
     })
     .filter((h) => h.score > 0)
     .sort((a, b) => b.score - a.score || a.scene.id.localeCompare(b.scene.id));
+  // A tail of one-shared-word matches is noise that reads as a recommendation;
+  // stop where relevance falls below a quarter of the best hit.
+  const floor = terms.length > 0 ? (ranked[0]?.score ?? 0) * 0.25 : 0;
+  const relevant = ranked.filter((h) => h.score >= floor);
 
   const taken = new Map<string, number>();
   const hits: SceneHit[] = [];
-  for (const hit of ranked) {
+  for (const hit of relevant) {
     const n = taken.get(hit.scene.template) ?? 0;
     if (n >= perTemplate) continue;
     taken.set(hit.scene.template, n + 1);
@@ -402,7 +406,7 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
   // Say what the cap held back, on the template's last hit, so a query that
   // really is about one template ("whiteboard explainer") isn't a dead end.
   const matched = new Map<string, number>();
-  for (const h of ranked) matched.set(h.scene.template, (matched.get(h.scene.template) ?? 0) + 1);
+  for (const h of relevant) matched.set(h.scene.template, (matched.get(h.scene.template) ?? 0) + 1);
   const seen = new Map<string, number>();
   for (const h of hits) {
     const k = (seen.get(h.scene.template) ?? 0) + 1;
@@ -432,7 +436,7 @@ export function formatSceneHits(hits: SceneHit[]): string {
     .map(({ scene: s, moreInTemplate }, i) =>
       [
         `${i + 1}. ${s.id} — ${s.title}`,
-        `   [${s.beat}${s.alsoFits.length ? ` +${s.alsoFits.join(",")}` : ""} · ${s.quality} · ${s.engine} ${s.width}x${s.height} · ${(s.durationInFrames / s.fps).toFixed(1)}s · scene ${s.position}/${s.of} of "${s.templateTitle}"]`,
+        `   [${s.engine} · ${s.beat}${s.alsoFits.length ? ` +${s.alsoFits.join(",")}` : ""} · ${s.quality} · ${s.width}x${s.height} · ${(s.durationInFrames / s.fps).toFixed(1)}s · scene ${s.position}/${s.of} of "${s.templateTitle}"]`,
         `   ${s.summary}`,
         `   Borrow it: ${s.reuse}`,
         `   Techniques: ${s.techniques.join(", ")} · mood: ${s.mood.join(", ")}`,
