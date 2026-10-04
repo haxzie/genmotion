@@ -1,0 +1,130 @@
+{
+  "name": "Assemble YC launch video",
+  "engine": "three",
+  "fps": 25,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-sales-closed.ts",
+      "durationInFrames": 64,
+      "name": "Sales closed"
+    },
+    {
+      "file": "scenes/02-thirty-minutes.ts",
+      "durationInFrames": 78,
+      "name": "30:00 minutes"
+    },
+    {
+      "file": "scenes/03-six-weeks.ts",
+      "durationInFrames": 144,
+      "name": "6 weeks"
+    },
+    {
+      "file": "scenes/04-iso-plane.ts",
+      "durationInFrames": 110,
+      "name": "IT implementation"
+    },
+    {
+      "file": "scenes/05-salesforce.ts",
+      "durationInFrames": 155,
+      "name": "Started in Salesforce"
+    },
+    {
+      "file": "scenes/06-without-breaking.ts",
+      "durationInFrames": 80,
+      "name": "Without breaking"
+    },
+    {
+      "file": "scenes/07-gets-stuck.ts",
+      "durationInFrames": 59,
+      "name": "Gets stuck"
+    },
+    {
+      "file": "scenes/08-multiple-platforms.ts",
+      "durationInFrames": 37,
+      "name": "Multiple platforms"
+    },
+    {
+      "file": "scenes/09-undocumented.ts",
+      "durationInFrames": 84,
+      "name": "Undocumented decisions"
+    },
+    {
+      "file": "scenes/10-everything-else.ts",
+      "durationInFrames": 72,
+      "name": "Everything else"
+    },
+    {
+      "file": "scenes/11-assemble.ts",
+      "durationInFrames": 40,
+      "name": "Assemble"
+    },
+    {
+      "file": "scenes/12-composer.ts",
+      "durationInFrames": 119,
+      "name": "Composer"
+    },
+    {
+      "file": "scenes/13-transcript.ts",
+      "durationInFrames": 100,
+      "name": "Agent transcript"
+    },
+    {
+      "file": "scenes/14-aws-diagram.ts",
+      "durationInFrames": 64,
+      "name": "AWS diagram"
+    },
+    {
+      "file": "scenes/15-change-cards.ts",
+      "durationInFrames": 41,
+      "name": "Change timeline"
+    },
+    {
+      "file": "scenes/16-agent-trace.ts",
+      "durationInFrames": 89,
+      "name": "Agent trace"
+    },
+    {
+      "file": "scenes/17-weeks-coordinating.ts",
+      "durationInFrames": 143,
+      "name": "Weeks coordinating"
+    },
+    {
+      "file": "scenes/18-assemble-end.ts",
+      "durationInFrames": 112,
+      "name": "Assemble end"
+    },
+    {
+      "file": "scenes/19-learn-more.ts",
+      "durationInFrames": 105,
+      "name": "Learn more"
+    }
+  ],
+  "audio": [
+    {
+      "id": "voiceover",
+      "file": "assets/vo.m4a",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1696,
+      "startFrom": 0,
+      "volume": 1.2731237075835733,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "score",
+      "file": "assets/score.m4a",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 1696,
+      "startFrom": 0,
+      "volume": 0.15078458102678352,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 13,
+      "muted": false
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+node_modules/
+.genmotion/
+.agents/
+exports/
+.DS_Store

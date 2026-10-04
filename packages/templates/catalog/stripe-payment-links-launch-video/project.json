@@ -1,0 +1,78 @@
+{
+  "name": "Stripe Payment Links launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "durationInFrames": 60,
+      "name": "Global payments are a"
+    },
+    {
+      "file": "scenes/02-pain.ts",
+      "durationInFrames": 147,
+      "name": "A pain → streak → puck"
+    },
+    {
+      "file": "scenes/03-coin.ts",
+      "durationInFrames": 27,
+      "name": "Coin in the column"
+    },
+    {
+      "file": "scenes/04-meet.ts",
+      "durationInFrames": 69,
+      "name": "Meet Infinite"
+    },
+    {
+      "file": "scenes/05-fast.ts",
+      "durationInFrames": 18,
+      "name": "Fast"
+    },
+    {
+      "file": "scenes/06-circuit.ts",
+      "durationInFrames": 88,
+      "name": "Global → Affordable"
+    },
+    {
+      "file": "scenes/07-phone.ts",
+      "durationInFrames": 85,
+      "name": "Sign up · Send funds"
+    },
+    {
+      "file": "scenes/08-business.ts",
+      "durationInFrames": 40,
+      "name": "Built for businesses"
+    },
+    {
+      "file": "scenes/09-wheel.ts",
+      "durationInFrames": 132,
+      "name": "Dash · API · SDK"
+    },
+    {
+      "file": "scenes/10-coin-stablecoins.ts",
+      "durationInFrames": 50,
+      "name": "Coin → Powered by Stripe"
+    },
+    {
+      "file": "scenes/12-endcard.ts",
+      "durationInFrames": 184,
+      "name": "End card"
+    }
+  ],
+  "audio": [
+    {
+      "id": "music-atlas",
+      "file": "assets/music-atlas-edit.m4a",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 900,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

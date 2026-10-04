@@ -70,13 +70,22 @@ export const templateMetaSchema = z.object({
   /** Breaks ties within a day; lower is earlier. Then title. */
   order: z.number().int().default(100),
   /**
-   * Fraction into the first scene where `scripts/poster.mjs` samples its
+   * Fraction into the poster's scene where `scripts/poster.mjs` samples its
    * frame. Defaults to 0.6 — late enough that an entrance has settled, early
    * enough that a typical scene's exit hasn't started. Set this when the
-   * first scene carries more than one beat and the default would land
+   * scene carries more than one beat and the default would land
    * mid-transition or mid-sentence, as an early multi-headline scene can.
    */
   sampleAt: z.number().min(0).max(1).optional(),
+  /**
+   * Which scene the poster is sampled from, as an index into `project.json`'s
+   * `scenes`. Defaults to 0, because a video's opening frame is usually the
+   * honest one to put on a card. Set it when the first scene has no settled
+   * frame anywhere in it — a counter that rolls for its whole duration has
+   * none, so every `sampleAt` lands on a half-rolled number — and point it at
+   * the first scene that does.
+   */
+  posterScene: z.number().int().min(0).optional(),
   /**
    * Where `render-video.mjs` last uploaded this template's rendered MP4 in
    * R2 — a record for a human (or another script) to check without listing
@@ -92,7 +101,7 @@ export type TemplateMeta = z.infer<typeof templateMetaSchema>;
 
 /** The sidecar filename. */
 export const TEMPLATE_FILE = "template.json";
-/** The card image, captured from the template's own first scene. */
+/** The card image, captured from the template's own first scene (or `posterScene`). */
 export const POSTER_FILE = "poster.jpg";
 
 /**

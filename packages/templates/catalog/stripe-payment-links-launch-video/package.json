@@ -1,0 +1,21 @@
+{
+  "name": "stripe-payment-links-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "genmotion dev",
+    "render": "genmotion render",
+    "still": "genmotion still",
+    "check": "genmotion check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genmotion/three-engine": "^0.1.0",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@genmotion/cli": "^0.3.0",
+    "@types/three": "^0.185.4",
+    "typescript": "^5.9.3"
+  }
+}
