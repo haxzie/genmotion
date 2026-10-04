@@ -250,6 +250,8 @@ export interface SceneQuery {
    * engines, but a scene in your own engine has code you can lift.
    */
   preferEngine?: string;
+  /** Ranks scenes with this mood (`dark`, `playful`, …) higher. */
+  mood?: string;
   /** Filler is hidden unless asked for: it teaches nothing on its own. */
   includeFiller?: boolean;
   /** At most this many hits from one template, so results span the catalog. Default 2. */
@@ -311,8 +313,6 @@ export function sceneSearchText(scene: SceneSummary & { templateDescription?: st
     scene.techniques.join(" ").replace(/-/g, " "),
     scene.mood.join(" "),
     scene.videoTypes.join(" ").replace(/-/g, " "),
-    scene.templateTitle,
-    scene.templateTitle,
     scene.templateDescription ?? "",
     scene.reuse,
   ].join(" ");
@@ -381,7 +381,9 @@ export function searchScenes(library: readonly Searchable[], q: SceneQuery): Sce
   // explainer wants; it has to be asked for.
   const moodBoost = (scene: SceneSummary) => (scene.beat === "atmosphere" && !named.includes("atmosphere") ? 0.6 : 1);
   const shapeBoost = (scene: SceneSummary) =>
-    (q.aspect && aspectOf(scene) === q.aspect ? 1.4 : 1) * (q.preferEngine && scene.engine === q.preferEngine ? 1.3 : 1);
+    (q.aspect && aspectOf(scene) === q.aspect ? 1.4 : 1) *
+    (q.preferEngine && scene.engine === q.preferEngine ? 1.3 : 1) *
+    (q.mood && scene.mood.includes(q.mood) ? 1.4 : 1);
   const ranked = pool
     .map((scene) => {
       const base = terms.length > 0 ? scores.get(scene.id) ?? 0 : 1;

@@ -317,6 +317,7 @@ Options
                        ${SCENE_BEATS.join(", ")}
   --engine <engine>    search: three | react
   --aspect <aspect>    search: rank this shape first (landscape | portrait | square)
+  --mood <mood>        search: rank this mood first (dark, light, playful, premium, techy…)
   --all                search: include filler scenes
   --full               show: inline every imported file, however long
   --limit <n>          search: how many (default 8)
@@ -327,6 +328,7 @@ Options
     aspect: { type: "string" },
     all: { type: "boolean" },
     full: { type: "boolean" },
+    mood: { type: "string" },
     limit: { type: "string" },
   },
   async run({ values, positionals, out }) {
@@ -348,6 +350,7 @@ Options
         engine: str(values.engine),
         aspect: aspect as "landscape" | "portrait" | "square" | undefined,
         preferEngine: await engineHere(str(values.dir)),
+        mood: str(values.mood),
         includeFiller: values.all === true,
         limit: num(values.limit, "limit") ?? 8,
       });

@@ -96,6 +96,7 @@ templateRoutes.get("/scenes", async (c) => {
     technique: c.req.query("technique") || undefined,
     aspect: aspect === "landscape" || aspect === "portrait" || aspect === "square" ? aspect : undefined,
     preferEngine: c.req.query("preferEngine") || undefined,
+    mood: c.req.query("mood") || undefined,
     includeFiller: c.req.query("includeFiller") === "true",
     limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
   });

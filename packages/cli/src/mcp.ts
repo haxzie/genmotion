@@ -356,10 +356,11 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
       engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; leave it out unless you need copyable code."),
       aspect: z.enum(["landscape", "portrait", "square"]).optional().describe("Rank scenes of this shape first."),
+      mood: z.string().optional().describe("Rank this mood first: dark, light, playful, premium, techy, minimal, bold…"),
       limit: z.number().int().min(1).max(15).default(6),
     },
-    async ({ query, beat, engine, aspect, limit }) => {
-      const hits = await searchSceneLibrary({ query, beat, engine, aspect, preferEngine: await engineOf(), limit });
+    async ({ query, beat, engine, aspect, mood, limit }) => {
+      const hits = await searchSceneLibrary({ query, beat, engine, aspect, mood, preferEngine: await engineOf(), limit });
       return {
         content: [
           {
