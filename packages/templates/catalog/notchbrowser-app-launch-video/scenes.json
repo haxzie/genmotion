@@ -1,0 +1,80 @@
+{
+  "arc": "hook (headline + slot-machine list of AI chores) → problem (camera pulls back as app windows pile onto the desktop) → turn (push through the pile to 'don't make your browser one of them') → reveal + feature (cursor clicks the notch, it opens into a browser, tabs clicked, collapses) → recap (product name + 5-item checklist) — all one continuous camera move, no cuts",
+  "scenes": [
+    {
+      "file": "scenes/01-the-hard-part.ts",
+      "title": "Colorama-wipe headline over a slot-machine list",
+      "beat": "hook",
+      "alsoFits": ["problem"],
+      "summary": "Over a dark, blurred Mac wallpaper, 'in the ai era, the hard part is' arrives word by word from the right while an orange colorama gradient band sweeps across the line. The headline shrinks up and a vertical slot-machine list spins beneath it — 30 rows like 'spending tokens wisely', 'picking the right model', 'juggling twelve chat tabs', each with a white app tile (OpenAI, Claude, Gemini, Chrome, Slack…) — fast through the middle, decelerating to land on 'managing your desktop' (Finder icon), where an orange '?' pops on.",
+      "build": "Calls makeFilmScene(ctx, 0.0, FILM): the whole film is Canvas 2D painted into an OffscreenCanvas shown on a full-screen three.js quad (components/core.ts), with sub-frame motion blur and grain. This beat is drawFilm's text section in components/film.ts: wordsLine() + wipeFill() for the moving gradient band, drawList()/listPos() with a pow(1-u, 3.6) landing curve for the spinning list, appTile() from components/ui.ts.",
+      "reuse": "Borrow the slot-machine list for any 'so many things to deal with' hook: replace the HARD array (label, icon key) and the headline words; it lands on whatever item is last. The colorama wipe is a reusable text accent. Copy core.ts + film.ts + ui.ts together — the scene file alone is a 1-line window.",
+      "techniques": ["kinetic-type", "word-by-word", "light-sweep", "icon-grid", "grain-texture", "continuous-take"],
+      "mood": ["dark", "bold", "techy"],
+      "videoTypes": ["launch-playbook", "ugc-problem-solution", "app-store-preview"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.15, 0.6, 0.98]
+    },
+    {
+      "file": "scenes/02-desktop-pileup.ts",
+      "title": "Camera pulls back as app windows pile onto desktop",
+      "beat": "problem",
+      "alsoFits": ["integrations"],
+      "summary": "The text fades and the camera pulls back from 2.4x to the full desktop (real wallpaper, menu bar and dock) as it un-dims. Eight detailed macOS app windows fly in from depth one after another and stack up: Claude, ChatGPT, Grok, Linear (AI-flavoured issues), Chrome on Claude model pricing docs, Spotify 'deep focus', Slack #ai-tools ('burned 2M tokens before lunch'), and a Claude Code terminal.",
+      "build": "makeFilmScene(ctx, 8.4, FILM). In components/film.ts, winDepth()/winRect() scale each window from a depth value toward the camera centre (1/d), and the camera is a keyframed centre+zoom (CAM_KEYS, log-space zoom). Each window is hand-painted once into a cached canvas in components/windows.ts (paintClaude, paintSlack, …).",
+      "reuse": "The 'desktop buried in windows / tool sprawl' problem shot: swap WINDOWS paint functions for the apps your audience juggles, and the wallpaper/dock images. Needs the full film module; the scene file is only a time offset.",
+      "techniques": ["desktop-window", "ui-mockup", "3d-camera-move", "cards-stack", "continuous-take"],
+      "mood": ["dark", "techy"],
+      "videoTypes": ["launch-playbook", "ugc-problem-solution"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.25, 0.6, 0.95]
+    },
+    {
+      "file": "scenes/03-one-of-them.ts",
+      "title": "Push through the pile to 'don't make your browser one of them'",
+      "beat": "turn",
+      "alsoFits": ["transition"],
+      "summary": "The camera pushes back in to 2.4x while the windows fly out past the lens in reverse order and the desktop dims again. Two lines arrive word by word: 'don't make your browser' (white) and 'one of them', each swept by the orange colorama band — the second line is left orange — then they lift away.",
+      "build": "makeFilmScene(ctx, 12.8, FILM). Same winDepth() run in reverse (depth to 0.07 so windows overshoot the camera) and wordsLine() with a `leave` colour of ORANGE for line two, in components/film.ts.",
+      "reuse": "Pivot line after a clutter beat; the fly-past-the-lens exit is the reusable bit. Shares its text device with 01, so study that first.",
+      "techniques": ["kinetic-type", "word-by-word", "light-sweep", "zoom-through", "continuous-take"],
+      "mood": ["dark", "bold"],
+      "videoTypes": ["launch-playbook", "ugc-problem-solution"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.15, 0.55, 0.88]
+    },
+    {
+      "file": "scenes/04-notchbrowser.ts",
+      "title": "Cursor clicks MacBook notch, it opens into a browser",
+      "beat": "reveal",
+      "alsoFits": ["feature", "workflow"],
+      "summary": "The camera pans up and zooms 3.15x onto the menu-bar notch. An oversized cursor glides in, hovers, and the black notch swells into a pill labelled 'NotchBrowser'; on click it grows into a large black browser panel hanging from the top edge (tabs, URL bar) showing a Threads feed as the camera pulls back. The cursor clicks through tabs — Reddit 'You need to try opus 5.5', a GitHub profile, Google — then clicks the chevron and the panel collapses back into the notch.",
+      "build": "makeFilmScene(ctx, 16.6, FILM). drawNotch() in components/film.ts lerps one rounded black shape notch→pill→panel→notch (drawShape in components/panel.ts); drawChrome()/pageCanvas() paint the tabs and cached page mocks; cursorAt() follows CUR_KEYS with press scaling on each click time. Motion blur samples rise automatically when the panel or cursor moves fast.",
+      "reuse": "Pattern for any 'UI element expands into the app' reveal (notch, menu-bar item, dynamic island, button): keep the single morphing shape and keyframed cursor, replace the panel chrome and PAGES. Don't keep the third-party page mocks or the NotchBrowser label.",
+      "techniques": ["ui-mockup", "browser-window", "cursor-click", "3d-camera-move", "continuous-take"],
+      "mood": ["dark", "premium", "techy"],
+      "videoTypes": ["launch-playbook", "app-store-preview", "demo-walkthrough"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.38, 0.6, 0.88]
+    },
+    {
+      "file": "scenes/05-checklist.ts",
+      "title": "Product name over a 5-item drawn-on checklist",
+      "beat": "recap",
+      "alsoFits": ["benefit", "cta"],
+      "summary": "As the panel finishes collapsing, the camera eases back to the full desktop and it dims nearly to black. 'notchbrowser' rises in at 88px, then five claims slide in one by one, each with an orange ring and white tick that draw on: 'a real browser, inside your notch', 'up to 8 tabs that survive a restart', 'ad & tracker blocking built in', 'cinema mode for video', 'no data collected. no subscription.'",
+      "build": "makeFilmScene(ctx, 25.0, FILM). drawChecklist() in components/film.ts: arc stroke from -π/2 over progress for the ring, then a two-segment polyline tick drawn by path length; rows staggered 0.3s.",
+      "reuse": "Any closing 'what you get' list: change CLAIMS and the heading. The drawn ring+tick is easy to lift into another canvas scene. Needs the shared film module to run.",
+      "techniques": ["checklist", "kinetic-type", "continuous-take"],
+      "mood": ["dark", "minimal"],
+      "videoTypes": ["launch-playbook", "app-store-preview", "announce-feature"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.3, 0.6, 0.95]
+    }
+  ]
+}

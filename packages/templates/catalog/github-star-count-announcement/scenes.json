@@ -1,0 +1,38 @@
+{
+  "arc": "blueprint grid draws on → header lockup → stat (counter + star-history chart climb together) → confetti payoff → exit",
+  "scenes": [
+    {
+      "file": "scenes/01-stars.tsx",
+      "title": "Blueprint-grid star counter with growing history chart and party poppers",
+      "beat": "stat",
+      "alsoFits": [
+        "data",
+        "announcement"
+      ],
+      "summary": "Warm paper background; a hairline field grid, structural rules and orange crosshairs wipe on in the first ~20 frames. Header: Firecrawl mark + mono 'firecrawl/firecrawl' types in char by char on the left, GitHub mark + uppercase 'STARGAZERS' on the right; '★ TOTAL STARS' eyebrow over four L-shaped measurement brackets. A 264px tabular counter rolls 0 → 176,599 over 7 seconds while an orange area chart with a pulsing head dot and dashed dropline draws left→right along the bottom, both on the same outCubic curve. At landing (~frame 232) two confetti cannons fire inward from the bottom corners; everything except the grid exits by frame 350.",
+      "build": "GridBackdrop (components/GridBackdrop.tsx) renders the grid from div hairlines plus scaleX/scaleY rule wipes and crosshairs at the grid intersections; StarHistoryChart (components/StarHistoryChart.tsx) is an SVG path sampled from a Catmull-Rom curve through 14 control points, revealed by the same eased progress as <CountText>, so the curve head and the digits settle together. Two seeded <Confetti> emitters (origin {0.03,1} angle 62 and {0.97,1} angle 118) fire on COUNT_END. Layout snaps to the `grid` constants in components/brand.ts.",
+      "reuse": "Strong reference for any growth-metric reveal (stars, ARR, users) where you want a number and a chart to land on the same beat, or for a blueprint/engineering aesthetic. Swap repo name, total, chart control points and brand colours. Don't present the curve as real data — it's shape only — and don't keep Firecrawl branding.",
+      "techniques": [
+        "counter",
+        "chart-line",
+        "burst-confetti",
+        "kinetic-type"
+      ],
+      "mood": [
+        "techy",
+        "light",
+        "editorial"
+      ],
+      "videoTypes": [
+        "announce-milestone"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.66,
+        0.8
+      ]
+    }
+  ]
+}

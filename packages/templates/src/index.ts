@@ -33,6 +33,7 @@ import {
   type TemplateRemixFile,
   type TemplateSummary,
 } from "./types";
+import { SCENES_FILE, STILLS_DIR } from "./scene-search";
 
 export * from "./types";
 export {
@@ -66,7 +67,10 @@ export const TEMPLATE_INLINE_LIMIT = 512 * 1024;
  * a project. They stay behind on a remix: the copy is a video of the user's
  * own, not a catalog entry.
  */
-const TEMPLATE_ONLY = new Set([TEMPLATE_FILE, POSTER_FILE, SAMPLE_FILE]);
+const TEMPLATE_ONLY = new Set([TEMPLATE_FILE, POSTER_FILE, SAMPLE_FILE, SCENES_FILE]);
+
+/** Folders that are catalog material too: the scene library's filmstrips. */
+const TEMPLATE_ONLY_DIRS = [`${STILLS_DIR}/`];
 
 /**
  * Written fresh by `createProject` on every remix, so never copied.
@@ -422,6 +426,7 @@ export async function buildRemixBundle(record: Bundleable): Promise<TemplateRemi
 
   for (const file of walked) {
     if (SCAFFOLD_OWNED.has(file.path) || TEMPLATE_ONLY.has(file.path)) continue;
+    if (TEMPLATE_ONLY_DIRS.some((dir) => file.path.startsWith(dir))) continue;
     // AGENTS.md and README.md are the scaffold files a template may override:
     // both are written *about* this video, one for a remixer's own coding
     // agent and one for whoever lands on the repo they publish.

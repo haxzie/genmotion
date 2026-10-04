@@ -1,0 +1,44 @@
+{
+  "arc": "conversation (one continuous take): hook question ×3 → reply → link-preview reveal → feature question → answer → fire reaction → payoff line",
+  "scenes": [
+    {
+      "file": "scenes/01-messenger-chat.tsx",
+      "title": "Messenger dark-mode thread: launch-video panic to link preview",
+      "beat": "conversation",
+      "alsoFits": [
+        "hook",
+        "problem",
+        "reveal",
+        "benefit"
+      ],
+      "summary": "A black, dark-mode Facebook Messenger screen with 'Maya / Active now' in the header and blue accent icons. Internal beats: problem — three #303030 incoming bubbles 'Ok so we're launching on Tuesday 🚀', 'and I still don't have a launch video 😭', 'what's the best tool for making one??' each after typing dots; turn — you type and send 'say less' (thumbs-up morphs into a send arrow); reveal — 'genmotion.dev' sends as a blue bubble above a dark link-preview card ('AI Product Launch Video Generator'); feature — 'wait it writes the scenes itself??' / 'and exports a real MP4'; payoff — a 🔥 reaction pops on the card and 'ok I'm never opening After Effects again' lands, ending on a typing indicator.",
+      "build": "Same engine as the Instagram and WhatsApp templates: a SCRIPT array laid out bottom-up where each slot eases open (12 frames, outCubic) ahead of a spring-scaled bubble, TYPING windows for the dots chip, and COMPOSE entries driving a hand-rolled ComposerInput caret; composer icons collapse via a shared typingUI factor. Tokens (M), Avatar, TypingDots, LinkPreview and ComposerInput are in components/messenger.tsx; SFX cues in project.json sit on each bubble's impact frame.",
+      "reuse": "Use when the chat must read as Messenger or simply as a dark-mode iOS chat: swap the script, avatar, link card and reaction emoji. It is effectively the same scene as instagram-chat-video's with a different skin and no emoji-only reply, so prefer that one as the reference for the layout logic. Don't copy the GenMotion link card or Maya persona unless the video is about GenMotion.",
+      "techniques": [
+        "chat-bubbles",
+        "phone-mockup",
+        "typing-input",
+        "emoji",
+        "sound-sync",
+        "ui-mockup"
+      ],
+      "mood": [
+        "playful",
+        "dark",
+        "humorous"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "launch-playbook",
+        "freeform-video"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.93
+      ]
+    }
+  ]
+}

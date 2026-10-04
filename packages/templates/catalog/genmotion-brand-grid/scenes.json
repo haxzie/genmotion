@@ -1,0 +1,39 @@
+{
+  "arc": "brand sting: grid + anchor tiles → wordmark resolves → staircase of tiles slot-rolls through pixel icons → tiles clear, logo lockup holds",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "title": "Pixel-tile grid slot-rolls a staircase of icons beside a wordmark",
+      "beat": "logo",
+      "alsoFits": [
+        "brand",
+        "hook"
+      ],
+      "summary": "A near-black frame divided into a 9-column dotted grid. Two pinwheel-logo pixel tiles (teal top-right, lime bottom-left) slide up into their cells, and the GenMotion logo + 92px 'GenMotion' wordmark fades up in a merged three-cell slot at bottom-right. A diagonal staircase of seven cells (bottom-left to top-right, 3 frames apart) then rolls like slot reels through lime/teal/mint/violet/graphite tiles carrying 7×7 pixel icons — play, keyframe, sparkle, cursor, layers, timeline, easing curve, frame — flipping every 24 frames in alternating directions, before rolling back to empty and leaving the anchors and wordmark.",
+      "build": "Grid rules are repeating-linear-gradient dotted lines, with the interior verticals split around the merged wordmark cell. TileRoller (components/TileRoller.tsx) is one overflow-hidden cell that translates the outgoing and incoming faces by ±size every ROLL_PERIOD (24 frames, 11-frame inOutCubic roll); buildDeck() makes a seeded null→6 faces→null deck that never repeats a face. Icons are '#'/'.' string bitmaps in components/brand.ts drawn by PixelBitmap as square divs.",
+      "reuse": "Use as an intro/outro sting for any brand with a pixel or grid identity: swap BRAND colours, the ICONS bitmaps (draw your own 7×7 marks), the logo image and wordmark text; change STAIRS for a different pattern. The slot-reel tile roller is the reusable piece. Don't keep the GenMotion pinwheel bitmap or wordmark for another brand.",
+      "techniques": [
+        "pixel-grid",
+        "icon-grid",
+        "mask-reveal",
+        "sound-sync"
+      ],
+      "mood": [
+        "techy",
+        "dark",
+        "playful"
+      ],
+      "videoTypes": [
+        "brand-sting",
+        "launch-playbook"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.95
+      ]
+    }
+  ]
+}

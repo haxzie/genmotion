@@ -1,0 +1,50 @@
+{
+  "arc": "conversation: friends' problem ×3 messages → ask the AI in-thread → AI answer (feature) → agreement + thanks reaction → fade",
+  "scenes": [
+    {
+      "file": "scenes/01-group-chat.ts",
+      "title": "Group chat argument with typing dots and spring scroll",
+      "beat": "conversation",
+      "alsoFits": ["problem", "hook"],
+      "summary": "Square, black, iMessage-style group thread. Typing dots pulse in a grey bubble, then Benji Taylor's message lands: \"what time do we need to leave for SFO? flight boards at 7\". Alex Abraham types and replies \"idk like 6?\", then Benji pushes back \"no 5, security will be a mess\". Each new item shoves the list up on a slightly underdamped spring, older lines fade into a black gradient at the top, with receive sounds on each message.",
+      "build": "Only a slice: the scene calls buildChat(ctx) from components/chat.ts and drives it with toSourceFrame(frame, fps, 0). chat.ts holds the whole SCRIPT (who, lines, landing frame, push), draws each bubble/label to an OffscreenCanvas CanvasTexture on an orthographic pixel-space plane, and positions every item with a sum of damped-spring step responses (SCROLL_SPRING) per scroll event.",
+      "reuse": "Borrow chat.ts for any messaging-thread story (support chat, group chat, AI chat): rewrite SCRIPT and resize bubble width/height per message, swap avatars and the palette in components/brand.ts. Copying this scene file alone gives nothing; take components/chat.ts and brand.ts.",
+      "techniques": ["chat-bubbles", "typing-input", "avatar-stream", "sound-sync"],
+      "mood": ["minimal", "dark", "humorous"],
+      "videoTypes": ["ugc-problem-solution", "announce-feature", "app-store-preview"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.25, 0.58, 0.95]
+    },
+    {
+      "file": "scenes/02-ask-grok.ts",
+      "title": "Asking the AI assistant in-thread, typing, then the answer",
+      "beat": "conversation",
+      "alsoFits": ["feature", "reveal"],
+      "summary": "The user's blue sent bubble \"grok, what time should we leave\" fades in on the right. A white four-point spark mark appears with a typing indicator for about a second, then the assistant's four-line answer lands under the label \"Grok\": \"5:20. 101 is only about 25 min that early, but Terminal 2 security has been 15 to 20 min this week. You'd be at the gate by 6:30 ✈️\". The thread springs up to make room.",
+      "build": "Slice of the continuous take: buildChat(ctx) from components/chat.ts at OFFSET 216. The assistant's avatar is a canvas-drawn four-point spark (drawGlyph) instead of a photo; sent bubbles fade in place over ~16 frames, incoming ones crossfade over the typing bubble and settle up 8px.",
+      "reuse": "The core 'AI answers in the chat' beat for any assistant or bot feature announcement; change the question, the answer lines (and bubble height), and the assistant mark. Copy components/chat.ts, not this file. Don't reuse the Grok name as your product unless it is.",
+      "techniques": ["chat-bubbles", "typing-input", "avatar-stream", "sound-sync"],
+      "mood": ["minimal", "dark", "techy"],
+      "videoTypes": ["announce-feature", "ugc-problem-solution", "explainer"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.15, 0.45, 0.9]
+    },
+    {
+      "file": "scenes/03-thanks.ts",
+      "title": "Agreement, thanks bubble, thumbs-up reaction, fade to black",
+      "beat": "conversation",
+      "alsoFits": ["benefit"],
+      "summary": "Alex types and replies \"ok 520\", the user sends \"thanks grok\", and a 👍 reaction pill pops out from under that bubble with a small overshoot. The thread holds, then the whole frame fades to black.",
+      "build": "Slice of the continuous take: buildChat(ctx) at OFFSET 410. The reaction is a canvas-drawn pill parented to the thanks bubble's group, scaled 0.4 → 1.06 → 1; the outro is a black plane whose opacity interpolates over OUTRO [666, 680].",
+      "reuse": "Only useful together with the rest of components/chat.ts; the reaction-pop and outro fade are the bits worth noting. Same rewrite path as the other scenes.",
+      "techniques": ["chat-bubbles", "emoji", "sound-sync"],
+      "mood": ["minimal", "dark", "humorous"],
+      "videoTypes": ["announce-feature", "ugc-problem-solution"],
+      "quality": "filler",
+      "standalone": false,
+      "sampleAt": [0.22, 0.65, 0.88]
+    }
+  ]
+}

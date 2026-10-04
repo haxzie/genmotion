@@ -13,6 +13,7 @@ import {
   templatePosterPath,
   toSummary,
 } from "@genmotion/templates";
+import { SCENE_BEATS, findScenes, getScene, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
 import { anonymousDistinctId, clientIp, trackServer } from "../analytics";
 import { notifyRemixIntent } from "../slack";
 
@@ -73,6 +74,48 @@ templateRoutes.get("/", async (c) => {
   });
   c.header("Cache-Control", JSON_CACHE);
   return c.json({ templates: records.map(toSummary), nextCursor });
+});
+
+/**
+ * The scene library: every template's scenes, one by one, for an agent
+ * building a different video to borrow from. Registered before `/:id` so
+ * "scenes" is never read as a template id.
+ */
+templateRoutes.get("/scenes", async (c) => {
+  const beat = c.req.query("beat");
+  if (beat && !(SCENE_BEATS as readonly string[]).includes(beat)) {
+    return c.json({ error: `Unknown beat "${beat}"`, beats: SCENE_BEATS }, 400);
+  }
+  const aspect = c.req.query("aspect");
+  const limit = Number(c.req.query("limit"));
+  const hits = await findScenes({
+    query: c.req.query("q") ?? "",
+    beat: beat as SceneBeat | undefined,
+    videoType: c.req.query("videoType") || undefined,
+    engine: c.req.query("engine") || undefined,
+    technique: c.req.query("technique") || undefined,
+    aspect: aspect === "landscape" || aspect === "portrait" || aspect === "square" ? aspect : undefined,
+    includeFiller: c.req.query("includeFiller") === "true",
+    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+  });
+  c.header("Cache-Control", JSON_CACHE);
+  return c.json({ scenes: hits });
+});
+
+templateRoutes.get("/scenes/:template/:scene", async (c) => {
+  const scene = await getScene(`${c.req.param("template")}/${c.req.param("scene")}`);
+  if (!scene) return c.json({ error: "Not found" }, 404);
+  c.header("Cache-Control", JSON_CACHE);
+  return c.json(scene);
+});
+
+templateRoutes.get("/scenes/:template/:scene/still", async (c) => {
+  const still = await getSceneStill(`${c.req.param("template")}/${c.req.param("scene")}`);
+  const jpeg = still ? await fs.readFile(still).catch(() => null) : null;
+  if (!jpeg) return c.json({ error: "Not found" }, 404);
+  c.header("Content-Type", "image/jpeg");
+  c.header("Cache-Control", BYTES_CACHE);
+  return c.body(new Uint8Array(jpeg));
 });
 
 templateRoutes.get("/:id", async (c) => {

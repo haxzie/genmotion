@@ -208,7 +208,7 @@ The beat table's frame ranges must add up to the length in the front matter. Eve
 
 ## Directing each scene
 
-Build the peak scene first: it is the riskiest, and it sets the bar the others are measured against. Then, for every beat, decide six things before writing code:
+Build the peak scene first: it is the riskiest, and it sets the bar the others are measured against. Before you stage a beat you have no strong picture of, run `search-scenes` with its job and idea (for example "integrations: tools plugging into one hub") and look at how the house templates did it. Then, for every beat, decide six things before writing code:
 
 1. **Job**: hook, setup, reveal, proof, demo, data moment, bridge, resolve. One per scene. If a scene has two, split it.
 2. **Focal point**: the one thing the eye should be on within 0.5 s (15f) of the cut. Only it moves on arrival; everything else is already settled or still.

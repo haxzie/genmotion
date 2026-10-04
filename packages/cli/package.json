@@ -59,6 +59,7 @@
     "@genmotion/render": "workspace:*",
     "@genmotion/shared": "workspace:*",
     "@genmotion/skills": "workspace:*",
+    "@genmotion/templates": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",

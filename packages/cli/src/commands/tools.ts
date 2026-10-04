@@ -8,6 +8,8 @@ import { wireAgents } from "../agents";
 import { installSkills, installedSkills, listPack, readSkill, searchPack } from "../skills";
 import { SKILL_KINDS, type SkillKind } from "@genmotion/shared";
 import { listTemplates } from "../templates";
+import { BEAT_HELP, formatSceneHits, formatSceneReference, readSceneReference, sceneStillLocation, searchSceneLibrary } from "../scenes";
+import { SCENE_BEATS, type SceneBeat } from "@genmotion/templates/scene-search";
 import { resolveProjectDir } from "../project-dir";
 import { CliError, bold, dim, green, red, yellow } from "../output";
 import { num, str, type Command } from "../command";
@@ -26,7 +28,7 @@ Speaks MCP over stdio. New projects already carry the config (.mcp.json,
   Codex         codex mcp add genmotion -- npx -y @genmotion/cli mcp
   Any client    { "command": "npx", "args": ["-y", "@genmotion/cli", "mcp"] }
 
-Tools: search_skills, get_skill, project_overview, create_project,
+Tools: search_skills, get_skill, search_scenes, get_scene, project_overview, create_project,
 add_scene, validate_scene, check_project, capture_frames, render_video,
 save_asset, add_package, get_guide, list_templates.`,
   options: {},
@@ -294,5 +296,70 @@ In a project, the project's own copy is in package.json:
       { app: app ? { before: before.app, after: after.app } : null, cli: { before: before.cli, after: after.cli } },
       [...(app ? [line("app", before.app, after.app)] : []), line("genmotion", before.cli, after.cli)].join("\n"),
     );
+  },
+};
+
+export const scenes: Command = {
+  name: "scenes",
+  summary: "Search the scene library: how a hook, integrations beat or end card was done in a template",
+  help: `Usage: genmotion scenes <search|show> [options]
+
+Every scene of every template, described by the job it does in its video
+(its beat), what is on screen, how it's built and when to borrow it.
+
+  search "<what you need>"   e.g. "integrations wall of app logos", "funding number reveal"
+  show <id> [file]           The scene's notes and code (and one imported file by path)
+
+Options
+  --beat <beat>        search: only this beat. One of:
+                       ${SCENE_BEATS.join(", ")}
+  --engine <engine>    search: three | react
+  --aspect <aspect>    search: landscape | portrait | square
+  --all                search: include filler scenes
+  --limit <n>          search: how many (default 8)
+  --json`,
+  options: {
+    beat: { type: "string" },
+    engine: { type: "string" },
+    aspect: { type: "string" },
+    all: { type: "boolean" },
+    limit: { type: "string" },
+  },
+  async run({ values, positionals, out }) {
+    const [action = "search", ...args] = positionals;
+    if (action === "search") {
+      const beat = str(values.beat);
+      if (beat && !(SCENE_BEATS as readonly string[]).includes(beat)) {
+        throw new CliError(`Unknown beat "${beat}"`, { fix: `--beat ${SCENE_BEATS.join("|")}` });
+      }
+      const aspect = str(values.aspect);
+      if (aspect && !["landscape", "portrait", "square"].includes(aspect)) {
+        throw new CliError(`Unknown aspect "${aspect}"`, { fix: "--aspect landscape|portrait|square" });
+      }
+      const query = args.join(" ").trim();
+      if (!query && !beat) throw new CliError("What scene do you need?", { fix: 'npx @genmotion/cli scenes search "integrations wall of app logos"' });
+      const hits = await searchSceneLibrary({
+        query,
+        beat: beat as SceneBeat | undefined,
+        engine: str(values.engine),
+        aspect: aspect as "landscape" | "portrait" | "square" | undefined,
+        includeFiller: values.all === true,
+        limit: num(values.limit, "limit") ?? 8,
+      });
+      out.result({ query, hits }, `${formatSceneHits(hits)}\n\n${dim("Read one: npx @genmotion/cli scenes show <id>")}`);
+      return;
+    }
+    if (action === "show") {
+      const [id, file] = args;
+      if (!id) throw new CliError("Which scene?", { fix: 'npx @genmotion/cli scenes search "<what you need>"' });
+      const scene = await readSceneReference(id);
+      const frames = await sceneStillLocation(id);
+      out.result(
+        { ...scene, frames },
+        `${formatSceneReference(scene, file)}${frames && !file ? `\n\nThree frames of it (entrance, key moment, end): ${frames}` : ""}`,
+      );
+      return;
+    }
+    throw new CliError(`Unknown action "${action}"`, { fix: `npx @genmotion/cli scenes --help (beats: ${BEAT_HELP})` });
   },
 };

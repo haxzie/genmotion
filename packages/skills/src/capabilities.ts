@@ -113,6 +113,12 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     mcp: "`search_skills`, then `get_skill`",
     shell: "`npx @genmotion/cli skills search \"<request>\" --json`, then `npx @genmotion/cli skills show <id>`",
   },
+  "search-scenes": {
+    label: "Find how a beat (hook, integrations, stat, end card…) was done in GenMotion's templates: frames, notes and code",
+    desktop: "`search_scenes`, then `get_scene`",
+    mcp: "`search_scenes`, then `get_scene`",
+    shell: "`npx @genmotion/cli scenes search \"<beat and idea>\" --json`, then `npx @genmotion/cli scenes show <id>`",
+  },
   "recommend-integration": {
     label: "Offer the user a connector a skill wants",
     desktop: "`recommend_integration`",
@@ -150,6 +156,7 @@ export const TOOL_CAPABILITIES: Record<string, SkillCapability> = {
   generate_voiceover: "voiceover",
   generate_sfx: "sfx",
   search_skills: "search-skills",
+  search_scenes: "search-scenes",
   recommend_integration: "recommend-integration",
 };
 

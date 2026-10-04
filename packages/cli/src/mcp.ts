@@ -15,6 +15,8 @@ import { downloadAsset } from "./assets";
 import { addAudio, removeAudio, setAudio } from "./audio";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
+import { BEAT_HELP, formatSceneHits, formatSceneReference, readSceneReference, readSceneStill, searchSceneLibrary } from "./scenes";
+import { SCENE_BEATS } from "@genmotion/templates/scene-search";
 import { THREE_AUTHORING_GUIDE, TERMINAL_SECTION, renderProjectSkill, wireAgents } from "./agents";
 import { ROUTER_SKILL, readSkill, searchPack } from "./skills";
 import { SKILL_KINDS } from "@genmotion/shared";
@@ -37,7 +39,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     { name: "genmotion", version: VERSION },
     {
       instructions:
-        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
+        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), plan the beats, then search_scenes for a reference per beat and get_scene the best ones, then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
     },
   );
 
@@ -342,6 +344,51 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
       const skill = await readSkill(id, file);
       const footer = skill.references.length && !file ? `\n\n---\nReference files (read with get_skill + file, only when needed): ${skill.references.join(", ")}` : "";
       return { content: [{ type: "text", text: `${skill.text}${footer}` }] };
+    },
+    { readOnlyHint: true },
+  );
+
+  tool(
+    "search_scenes",
+    `Search the scene library: every scene of GenMotion's templates, each described by the job it does in its video. Use it while planning your beats, once per beat you want a reference for: 'hook for a developer tool launch', 'integrations: app logos connecting', 'funding round number reveal', 'chat conversation with an AI answer', 'logo end card'. Filter by beat when you know it — ${BEAT_HELP}. Results show what each scene does on screen and when to borrow it; open the promising ones with get_scene to see three frames and the code.`,
+    {
+      query: z.string().default("").describe("What the scene should do or show, in a few words. Name the beat and the visual idea, not your brand."),
+      beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
+      engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; leave it out unless you need copyable code."),
+      aspect: z.enum(["landscape", "portrait", "square"]).optional(),
+      limit: z.number().int().min(1).max(15).default(6),
+    },
+    async ({ query, beat, engine, aspect, limit }) => {
+      const hits = await searchSceneLibrary({ query, beat, engine, aspect, limit });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `${formatSceneHits(hits)}\n\nNext: get_scene(<id>) for the frames and code of the ones worth borrowing from. Take the idea, the pacing and the technique; write your own scene for your own brand.`,
+          },
+        ],
+      };
+    },
+    { readOnlyHint: true },
+  );
+
+  tool(
+    "get_scene",
+    "Open one scene from the library: three frames of it (entrance, key moment, end state), what it does, how it's built, where it sits in its template's story, and its code with the components it imports. Pass `file` to read one imported module that was too long to inline.",
+    {
+      id: z.string().min(3).describe("Scene id from search_scenes, e.g. 'stripe-payment-links-launch-video/09-wheel'."),
+      file: z.string().optional().describe("A file the scene imports, e.g. components/chat.ts."),
+    },
+    async ({ id, file }) => {
+      const scene = await readSceneReference(id);
+      const text = formatSceneReference(scene, file);
+      const still = file ? null : await readSceneStill(id).catch(() => null);
+      return {
+        content: [
+          ...(still ? [{ type: "image" as const, data: still.toString("base64"), mimeType: "image/jpeg" }] : []),
+          { type: "text" as const, text },
+        ],
+      };
     },
     { readOnlyHint: true },
   );

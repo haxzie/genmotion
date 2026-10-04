@@ -1,0 +1,80 @@
+{
+  "arc": "reveal (name flips to tagline) → feature (type a question into Claude, click send) → workflow (Claude calls the tool, sources tick off) → integrations (cycling data-type chips collapse to the name, then 'all your agents') → cta (browser types the URL, go button expands into a black wipe)",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "title": "Typed 'Introducing Sequel' flips into tagline",
+      "beat": "reveal",
+      "alsoFits": ["hook"],
+      "summary": "White frame, black Inter 96px. 'Introducing' then 'Sequel' type in as a typewriter. At frame 66 'Sequel' rotates up and away on X while 'Introducing' collapses, and 'Your team’s marketing brain' flips up into the widened slot and re-centres, holding with a breathe.",
+      "build": "A flex row of fixed-width word slots whose widths are interpolated (W_INTRO→0, W_SEQUEL→W_BRAIN) so the centred line reflows smoothly; the outgoing word is a rotateX with perspective, the incoming one is <TextAnimation preset=\"flipUp\"> inside a <Sequence>. Hand-measured advance widths drive the slot sizes.",
+      "reuse": "Any 'Introducing <Name>' → '<what it is>' opener on a plain background. Swap the three strings and re-measure the slot widths for your font size. Don't keep the Sequel name or the 'marketing brain' line.",
+      "techniques": ["kinetic-type", "typewriter"],
+      "mood": ["minimal", "light", "premium"],
+      "videoTypes": ["launch-playbook", "announce-feature", "brand-sting"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.4, 0.62, 0.85]
+    },
+    {
+      "file": "scenes/02-ask.tsx",
+      "title": "Claude composer: camera push, typed question, click send",
+      "beat": "feature",
+      "alsoFits": ["hook", "workflow"],
+      "summary": "A faithful claude.ai home screen: coral mark spins in, serif 'Good evening', the composer with a 'Sequel' tool chip and 'Claude Sonnet 4.5' picker, and suggestion chips (Write, Learn, Code, Life stuff, Claude’s choice). The camera pushes in to 1.7x as 'How are users finding my product?' types with a live caret, pans, pulls back to frame the whole composer, then zooms to 2.4x on the coral send button as a cursor arcs in and clicks; the arrow swaps to a stop square and the text flies up.",
+      "build": "<Camera world={3}> with keyframed x/y/zoom plus drift; the UI is drawn at real claude.ai pixel sizes and magnified via scale(2.2) from components/claude.ts so proportions hold at any zoom. Typing is hand-rolled (slice by frame) so the thin caret stays glued; cursor x and y use different easings to bend the path into an arc.",
+      "reuse": "Template for any 'user asks an AI chat app a question' shot: swap the prompt, the tool chip and model label, or re-skin for another chat UI. The real-pixel-then-scale pattern and keyframed camera choreography are the parts to study. Don't keep the Sequel chip or claude.ai branding if your product isn't Claude.",
+      "techniques": ["ui-mockup", "typing-input", "cursor-click", "3d-camera-move"],
+      "mood": ["light", "premium", "techy"],
+      "videoTypes": ["launch-playbook", "announce-feature", "demo-walkthrough"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.15, 0.55, 0.9]
+    },
+    {
+      "file": "scenes/03-thinking.tsx",
+      "title": "AI tool-call checklist with spinners to checks",
+      "beat": "workflow",
+      "alsoFits": ["integrations", "feature"],
+      "summary": "On Claude's cream page the coral mark spins beside a shimmering 'Thinking…', which swaps to 'Calling Sequel…'. Three tool-call rows stagger in, each a Sequel badge + source badge: 'Searching Google Analytics', 'Analyzing search data' (Search Console), 'Understanding PostHog sessions'; each coral arc spinner resolves into a green check, then the mark coasts to a stop and the block slides up.",
+      "build": "AbsoluteFill with a header using two <Sequence>-scoped <TextAnimation hold=\"shimmer\"> lines and a STEPS array of {label,start,done} frames; each row crossfades an SVG dash-offset spinner (rotate by frame) into a lucide Check. Scale matches the previous scene's apparent zoom (scale(2.53)) so the cut feels continuous.",
+      "reuse": "Any 'agent is working / calling tools / fetching from sources' beat: swap STEPS labels and logos, header text and colours. Works outside Claude by re-skinning. Don't copy the Sequel badge pairing unless you have a 'via' product.",
+      "techniques": ["checklist", "ui-mockup", "notifications"],
+      "mood": ["light", "techy", "calm"],
+      "videoTypes": ["launch-playbook", "announce-feature", "demo-walkthrough", "explainer"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.15, 0.6, 0.85]
+    },
+    {
+      "file": "scenes/04-connect.tsx",
+      "title": "Sentence with cycling logo chips collapsing to a name",
+      "beat": "integrations",
+      "alsoFits": ["reveal", "benefit"],
+      "summary": "'Connect your agents to your [chip] data' at 72px on white, where the grey pill chip holds three overlapping logo circles plus a word and flips on X every 24 frames: marketing (Google Ads, Meta, HubSpot), finance, revenue, product, analytics. Then 'your' and the chip collapse and 'data' flips into 'Sequel'. The line slides up; 'Available for all your [Claude Code, Codex, Cursor, VS Code] agents' rises in and a cursor clicks the agents chip.",
+      "build": "Inline-word slot technique: every word is a fixed-width flex child whose width/gap is interpolated over a piecewise keyframe list (W_IN/W_OUT built per cycle) so the centred line reflows. Chip is a local component with overlapping icon circles (negative margin, z-index) and rotateX flips under perspective; icons come from components/integrations.ts.",
+      "reuse": "Great for 'works with X, Y, Z' or 'for marketing / finance / product teams' lines without a logo wall. Swap CYCLE labels, app ids and measured textW, and the closing name. Re-measure widths for your font. Don't keep Sequel copy.",
+      "techniques": ["kinetic-type", "logo-wall", "cursor-click"],
+      "mood": ["light", "minimal", "premium"],
+      "videoTypes": ["launch-playbook", "announce-feature"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.2, 0.55, 0.8]
+    },
+    {
+      "file": "scenes/05-agents.tsx",
+      "title": "Browser new tab types URL, go button floods to black",
+      "beat": "cta",
+      "alsoFits": ["transition"],
+      "summary": "A light macOS Chrome window (traffic lights, 'New Tab', omnibox 'Search Google or type a URL') with a big pill search input and a row of shortcut tiles (Analytics, Stripe, HubSpot, PostHog, Mixpanel). 'sequel.sh' types in with a caret, a cursor arcs to the black round go button, clicks, and the button expands as a circle until it covers the whole frame in black.",
+      "build": "Chrome chrome drawn at real proportions times 2.4; typed URL by slicing on frame; the wipe is an absolutely positioned circle centred on the button whose radius interpolates to REACH (hypot to the farthest corner).",
+      "reuse": "Any URL/website CTA ending: swap the URL and shortcut logos. The button-becomes-the-frame circle wipe is a reusable transition into a dark logo end card. Drop the source-logo shortcuts if irrelevant.",
+      "techniques": ["browser-window", "typing-input", "cursor-click", "mask-reveal"],
+      "mood": ["light", "minimal"],
+      "videoTypes": ["launch-playbook", "announce-feature"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.3, 0.68, 0.85]
+    }
+  ]
+}

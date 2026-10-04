@@ -1,0 +1,35 @@
+{
+  "arc": "integrations montage (constant app icon in a hard-cutting dock) → click + launch bounce → white-out → tagline ×2",
+  "scenes": [
+    {
+      "file": "scenes/01-notion-dock.tsx",
+      "title": "Liquid-glass dock hard-cutting through twelve app sets",
+      "beat": "integrations",
+      "alsoFits": ["hook", "reveal"],
+      "summary": "A close-up macOS dock in refractive liquid glass assembles centre-out with the Notion icon fixed dead centre. Every 13 frames the wallpaper and the six icons around Notion hard-cut to a new themed set, twelve in all: AI assistants (Gemini, ChatGPT, Claude, Perplexity, Copilot, Grammarly), design tools, terminals, chat apps, notes, browsers, Microsoft Office, media, Apple creative apps, project tools, utilities, Apple basics. A specular highlight sweeps once across the glass while the camera eases in to 1.03. A white cursor glides in from bottom right, clicks Notion, it bounces out of the dock, and everything except the icon flashes to white.",
+      "build": "<Camera world={3}> with a slow push and a drift that dies before the cut. The glass is a backdrop-filter layer run through an inline SVG feTurbulence + feDisplacementMap filter, plus a tint, an inner glow and a gradient rim drawn with a mask-composite ring. SETS is an array of {wallpaper, six app slugs}; the current set is picked by frame with no blending, and the NEXT set's images are pre-mounted at opacity 0 so hard cuts never catch an undecoded image. Icons and wallpapers come from components/assets.ts (icon(), wallpaper()). Exports NOTION_HANDOFF_PX for scene 2.",
+      "reuse": "The go-to for 'works with every tool / for every kind of workflow' or a rhythmic hook: put your app in the centre slot and retheme SETS. The liquid-glass recipe (displacement filter + tint + masked rim) is reusable for any glass panel. Retime BEAT for your music's tempo. Third-party icons in assets/ are for illustration; check you may show them.",
+      "techniques": ["app-dock", "logo-wall", "cursor-click", "photo-media", "glow"],
+      "mood": ["premium", "energetic", "bold"],
+      "videoTypes": ["launch-playbook", "brand-sting", "announce-feature"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.15, 0.5, 0.84]
+    },
+    {
+      "file": "scenes/02-any-workspace.tsx",
+      "title": "Logo slides off, two tagline lines slide through on white",
+      "beat": "benefit",
+      "alsoFits": ["cta"],
+      "summary": "Opens on the Notion icon centred on white, exactly as scene 1 ends; it accelerates out to the left. \"Any workspace.\" slides in from the right at 150px and continues out left, overlapped by \"One way to do it\" doing the same, breathing gently while it holds.",
+      "build": "AbsoluteFill on white; the icon's translateX is an ease-in interpolate. Each line is its own <Sequence> with <TextAnimation preset=\"slideIn\" exit=\"auto\" hold=\"breathe\">. Imports NOTION_HANDOFF_PX from scenes/01-notion-dock.tsx so the icon size matches the cut.",
+      "reuse": "A simple two-line tagline close after a logo handoff; swap the copy and the icon. Thin on its own: the value is mostly in pairing it with scene 1's white-out.",
+      "techniques": ["kinetic-type"],
+      "mood": ["minimal", "light", "bold"],
+      "videoTypes": ["launch-playbook", "brand-sting"],
+      "quality": "filler",
+      "standalone": false,
+      "sampleAt": [0.06, 0.28, 0.8]
+    }
+  ]
+}

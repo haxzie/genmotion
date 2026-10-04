@@ -1,0 +1,44 @@
+{
+  "arc": "conversation (one continuous take): hook question ×3 → reply → link-preview reveal → feature question → answer → fire reaction → payoff line",
+  "scenes": [
+    {
+      "file": "scenes/01-whatsapp-chat.tsx",
+      "title": "WhatsApp dark thread with doodle wallpaper and read ticks",
+      "beat": "conversation",
+      "alsoFits": [
+        "hook",
+        "problem",
+        "reveal",
+        "benefit"
+      ],
+      "summary": "A dark WhatsApp chat over the tiled doodle wallpaper, header 'Maya' whose subtitle swaps 'online' ↔ teal 'typing…' in sync with the typing bubble. Internal beats: problem — three tailed incoming bubbles with timestamps ('Ok so we're launching on Tuesday 🚀', 'and I still don't have a launch video 😭', 'what's the best tool for making one??'); turn — you type 'say less' in the floating pill composer (mic becomes a send arrow); reveal — 'genmotion.dev' sends as a green bubble with an inset link preview ('AI Product Launch Video Generator'); feature — 'wait it writes the scenes itself??' / 'and exports a real MP4', with grey ticks doubling then turning blue; payoff — 🔥 reaction on the link and 'ok I'm never opening After Effects again'.",
+      "build": "Same bottom-up SCRIPT/TYPING/COMPOSE engine as the Instagram and Messenger templates (slot eases open, bubble springs in with a 26px rise), plus WhatsApp details in components/whatsapp.tsx: Wallpaper is an inline tiling SVG data-URI, Tail draws the squared-corner tail only on the first bubble of a run, Meta + metaReserve put the timestamp on the last line's baseline with an inline spacer so bubble heights stay predictable, and Ticks cross-fades grey→blue double-ticks at sentAt+10/+22.",
+      "reuse": "Borrow for a WhatsApp-styled chat ad, or lift just the delivery-ticks, baseline-timestamp or doodle-wallpaper tricks into another chat UI. Swap SCRIPT copy, times, avatar and link card, and keep project.json SFX cues in step with each `at`. Don't copy the GenMotion link card or Maya persona for unrelated products.",
+      "techniques": [
+        "chat-bubbles",
+        "phone-mockup",
+        "typing-input",
+        "emoji",
+        "sound-sync",
+        "ui-mockup"
+      ],
+      "mood": [
+        "playful",
+        "dark",
+        "humorous"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "launch-playbook",
+        "freeform-video"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.93
+      ]
+    }
+  ]
+}

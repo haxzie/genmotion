@@ -1,0 +1,80 @@
+{
+  "arc": "hook (orbit rings + typed \"Introducing\" → \"X Numbers\") → reveal (dial-pad dots morph into a number card with rolling digits) → feature (chat list → menu gains a \"Number\" row → \"Your X Number\" sheet) → workflow (dark DM: Enter X Number keypad → unlocked chat) → logo (X mark in orbit, wiped out)",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "title": "Dashed orbit rings with riding icons and a typed-in feature name",
+      "beat": "hook",
+      "alsoFits": ["reveal"],
+      "summary": "On light grey (#f2f2f2), four thin dashed rings draw on and slowly rotate around the centre, carrying small black squares and white circle badges with video, phone and chat-bubble icons, while the camera zooms out from 1.55x and back in. \"Introducing\" types in letter by letter, un-types, and \"X Numbers\" types in with the real X glyph as its first character, framed by two arcs of a circle and a diagonal hairline that keep clear of the text. At the end a hole opens at the centre and expands to reveal the next scene's dial-pad dots.",
+      "build": "Not Three.js geometry: the whole film is Canvas 2D painted into one 1920×1080 OffscreenCanvas shown on a full-screen quad (components/core.ts makeFilmScene). This file only calls makeFilmScene(ctx, 0, drawFilm); the real work is drawIntro() in components/film.ts — dashedArc rings rotated by T, items placed by polar angle, text sliced by a stepped char count, an evenodd clip rectangle keeping lines off the text, and a growing circular clip that draws drawDotsNumber() inside it. Keyframes use a monotone-cubic track() helper.",
+      "reuse": "Borrow the orbit-rings-with-icons opener and the type/un-type/type name swap for any feature announcement; swap the RING_ITEMS icons and the two strings. The circle-hole transition (clip to a growing circle, draw the next beat inside) is a clean reusable cut. To copy it you need components/film.ts, core.ts and draw.ts, not this file. The X glyph is X Corp's trademark.",
+      "techniques": ["orbit", "typewriter", "kinetic-type", "mask-reveal", "zoom-through"],
+      "mood": ["minimal", "light", "techy"],
+      "videoTypes": ["announce-feature", "launch-playbook"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.15, 0.6, 0.85]
+    },
+    {
+      "file": "scenes/02-number.ts",
+      "title": "Dial-pad dots morph into a number card with slot-machine digits",
+      "beat": "reveal",
+      "alsoFits": ["stat", "feature"],
+      "summary": "On light grey, ten black dots pop in with an overshoot in a 3-3-3-1 dial-pad grid and spread out. The middle row then transforms: the outer dots slide apart and grow into grey circles while the centre dot stretches into a pill and then a large rounded white card with a soft shadow and a brief blur. Inside the card the digits roll like a slot machine — alternate reels rolling up and down — and land on \"3555-0162\" with a little jitter, next to a grey copy icon. Dashed rails with circular nodes slide across above and below, and a disk with a ring of rotating digits sweeps in from the right to take over the frame.",
+      "build": "This file is makeFilmScene(ctx, 4.5, drawFilm); the work is drawDotsNumber() in components/film.ts and drawReels()/reelState() in components/phone.ts. Each dot/pill/card dimension is a measured keyframe track; the card uses canvas shadow + filter blur. drawReels renders each digit slot as a vertical strip of 0–9 into a scratch canvas, offset by a continuous reel position, then masks it with a vertical gradient via destination-in. rail() draws dashed lines with a moving node.",
+      "reuse": "The rolling-digit reel is one of the most borrowable devices here: use drawReels/reelState for any number reveal — phone number, price, counter, code — by changing FINAL digits and landing times. The dots→pill→card morph works for any \"a thing becomes a card\" beat. Needs components/film.ts, phone.ts, draw.ts and core.ts; the scene file alone draws nothing.",
+      "techniques": ["counter", "kinetic-type", "cards-stack", "mask-reveal"],
+      "mood": ["minimal", "light", "premium"],
+      "videoTypes": ["announce-feature", "launch-playbook", "explainer"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.125, 0.53, 0.78]
+    },
+    {
+      "file": "scenes/03-menu.ts",
+      "title": "Phone chat list → menu zoom gains a new \"Number\" row → \"Your X Number\" sheet",
+      "beat": "feature",
+      "alsoFits": ["workflow"],
+      "summary": "A light-mode phone rises inside the digit-ring disk showing an X Chat inbox (avatars, verified badges, rows like \"Nikita Bier — It’s like a better version of a phone n…\"). The \"All\" filter is pressed and a menu grows from the top-right (All, Unread, Direct, Groups, Requests, Settings, Mark All Read); the camera zooms deep into it as a new row slides open with a dial-pad icon and \"Number\" types in, and a soft highlight sweeps across it. The menu flies up and out, revealing the phone zoomed out with a \"Your X Number\" sheet that lifts toward the camera: explainer copy, a number field whose digits roll in, an \"Enabled\" toggle that switches on, and Refresh / Share buttons. A tap dot appears at the centre at the end.",
+      "build": "makeFilmScene(ctx, 8.5, drawFilm) — the work is drawLight()/drawSheetPhone() in components/film.ts plus drawPhone, lightChat, drawMenu and drawYourNumberSheet in components/phone.ts, all laid out in iPhone points (393×852) and placed by a PhoneXf {cx, top, s} transform. The zoom is just keyframed scale/top for the menu, drawn outside the phone clip once it lifts; the inserted row animates the menu height (ins) and a stepped character count. Avatars are PNGs loaded through ctx.manager.",
+      "reuse": "Strong reference for a UI-native feature reveal: show the real app screen, zoom into the exact menu, and animate the new item being inserted, then present the feature's settings sheet. Swap the chat rows, menu items, sheet copy and colours. Do not reuse the X branding, real people's names or the avatar images. Requires the shared film/phone/draw components.",
+      "techniques": ["phone-mockup", "ui-mockup", "zoom-through", "typewriter", "cursor-click", "continuous-take"],
+      "mood": ["minimal", "light", "premium"],
+      "videoTypes": ["announce-feature", "demo-walkthrough", "launch-playbook"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.1, 0.43, 0.92]
+    },
+    {
+      "file": "scenes/04-dark.ts",
+      "title": "Dark DM: \"Enter X Number\" keypad unlocks the chat",
+      "beat": "workflow",
+      "alsoFits": ["conversation", "feature"],
+      "summary": "A white circle and a black circle burst from the centre with dashed and solid rings, opening onto a dark-mode phone with a DM header for \"Benji Taylor\" (verified, Encrypted, Joined July 2014, 217K Followers). Bottom copy reads \"@benjitaylor doesn’t follow you. If you know their X Number you can reach their priority inbox.\" with an \"Enter X Number\" button that gets pressed. An \"Enter X Number\" keypad sheet slides up and eight digits are typed one by one with key-press bubbles, the sheet drops away, \"You used @benjitaylor’s X Number. You can now message and call them.\" appears, then a blue \"Love your work\" bubble and a grey \"Yoooo! Thank you\" reply rise in. The camera scrolls and zooms the phone throughout; a white disk swallows the frame at the end.",
+      "build": "makeFilmScene(ctx, 15.4, drawFilm) — drawBurst()/drawDark()/drawWhiteDisk() in components/film.ts, and darkChat()/keypadSheet()/inputBar() in components/phone.ts. The phone transform (scale/top) is one long keyframe track; key presses come from a PRESSES time list that scales each key, grows a highlight disc and advances the typed count; chat bubbles are rounded rects with time-driven y/alpha. The burst is two clipped circles: the dark scene is drawn only inside the black circle's clip.",
+      "reuse": "Use for any \"enter a code / PIN / number to unlock\" flow or a short chat payoff in a dark UI: swap the header, gate copy, typed digits and bubble lines. The circle-burst into dark mode is a reusable light→dark transition. Do not reuse the X branding, real names or avatars. Requires the shared film/phone/draw components.",
+      "techniques": ["phone-mockup", "ui-mockup", "typing-input", "chat-bubbles", "continuous-take", "mask-reveal"],
+      "mood": ["dark", "minimal", "premium"],
+      "videoTypes": ["announce-feature", "demo-walkthrough", "launch-playbook"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.14, 0.52, 0.93]
+    },
+    {
+      "file": "scenes/05-outro.ts",
+      "title": "X mark builds inside a planet with orbits, grows, then wipes away diagonally",
+      "beat": "logo",
+      "alsoFits": ["brand"],
+      "summary": "On light grey, a large circle shrinks in to a planet-like disc with a thin outline, while a solid and a dashed tilted ellipse fade in as slow orbits and a small orbit draws on around it carrying a black dot. The X mark builds in two strokes — the heavy diagonal first, then the light one sweeping down from the top-right. The orbits fade, the disc collapses, the X grows to fill the centre, holds, and is wiped away from the bottom-left corner toward the top-right, leaving an empty grey frame.",
+      "build": "makeFilmScene(ctx, 27.1, drawFilm) — drawOutro() in components/film.ts draws ellipses with g.ellipse and a dashed line, the small orbit arc grows/shrinks by angle, and drawXAnimated() in components/draw.ts clips the X path to a diagonal band for the heavy stroke and to a top-down rect for the light stroke, with a linear-gradient fill for the diagonal wipe.",
+      "reuse": "A tidy minimal logo sting: planet + orbits + a two-stroke mark build and a diagonal wipe out. Swap the mark path and its stroke-split geometry for your own logo. Needs components/film.ts, draw.ts and core.ts. The X mark is X Corp's trademark.",
+      "techniques": ["orbit", "mask-reveal"],
+      "mood": ["minimal", "light", "premium"],
+      "videoTypes": ["brand-sting", "announce-feature", "launch-playbook"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.22, 0.45, 0.63]
+    }
+  ]
+}

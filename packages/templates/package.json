@@ -5,14 +5,17 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./scenes": "./src/scenes.ts",
+    "./scene-search": "./src/scene-search.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "poster": "tsx scripts/poster.mjs",
     "render-video": "tsx --env-file=../../.env scripts/render-video.mjs",
-    "scaffold": "tsx scripts/scaffold.mjs"
+    "scaffold": "tsx scripts/scaffold.mjs",
+    "scene-stills": "tsx scripts/scene-stills.mjs"
   },
   "dependencies": {
     "@genmotion/project": "workspace:*",

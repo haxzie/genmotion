@@ -113,6 +113,8 @@ export const SKILL_CAPABILITIES = [
   "place-audio",
   /** Rank the skill pack against a request. */
   "search-skills",
+  /** Find how a beat was done in the template library, with frames and code. */
+  "search-scenes",
   /** Offer the user a connector a skill wants. */
   "recommend-integration",
   /** Trims, transcodes and frame extraction on the command line. */

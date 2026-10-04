@@ -1,0 +1,38 @@
+{
+  "arc": "repo lockup → stat (star counter tallies up with contributor avatars streaming) → number exits on the lockup",
+  "scenes": [
+    {
+      "file": "scenes/01-stars.tsx",
+      "title": "Star counter to 180,598 with rising contributor-avatar bubbles",
+      "beat": "stat",
+      "alsoFits": [
+        "announcement",
+        "proof"
+      ],
+      "summary": "Light #FAFAFA frame. The Firecrawl flame + 'firecrawl/firecrawl' lockup drops in at the top and breathes. A big orange filled star and a 250px counter blur up and tally from 0 to 180,598 over 4 seconds, with 'GitHub stars' blurring up beneath; on landing the number punches to 1.06×. Throughout, 64 round white-bordered contributor avatars float up from the bottom with a sine sway, mostly along the left and right thirds, fading before the top band. The number and label blur out in the last ~22 frames, leaving the lockup.",
+      "build": "One AbsoluteFill: BUBBLES is precomputed from AVATARS (components/avatars.ts) with seeded random() for launch time (spread across the count-up), x (60% biased to the sides to keep the copy column clear), size, sway and frequency; each bubble's y eases bottom→top with a bezier and fades by y position. Counter is <CountText>, label <TextAnimation preset=\"blurUp\">, punch/out are interpolates against useWindowDuration().",
+      "reuse": "Any community milestone: stars, users, members, downloads. Swap STAR_COUNT/REPO in components/brand.ts, the mark image and the avatar list (any faces work). The side-biased rising-avatar stream is the borrowable idea. Don't reuse Firecrawl's flame or orange unless it's Firecrawl.",
+      "techniques": [
+        "counter",
+        "avatar-stream",
+        "particles",
+        "kinetic-type"
+      ],
+      "mood": [
+        "light",
+        "energetic",
+        "minimal"
+      ],
+      "videoTypes": [
+        "announce-milestone"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.58,
+        0.82
+      ]
+    }
+  ]
+}

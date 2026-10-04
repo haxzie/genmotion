@@ -1,0 +1,115 @@
+{
+  "arc": "hook (group chat can't decide) → conversation → feature (poll drops, tap to vote, votes roll in) → benefit/announcement payoff ('New in Messages')",
+  "scenes": [
+    {
+      "file": "scenes/01-groupchat.tsx",
+      "title": "Group chat in a floating iPhone, then camera pushes into the screen",
+      "beat": "hook",
+      "alsoFits": [
+        "problem",
+        "conversation"
+      ],
+      "summary": "White stage with a soft breathing blue radial glow. 'The group chat / can't decide.' blurs up word by word above a silver iPhone that rises in, showing an iMessage group 'Trip Squad'. Five bubbles land with springy pop, tilt and blur: 'ok so are we actually doing this trip or not 👀', 'im in. 8 days in april ✈️', 'WAIT YES 🙋' (gets a 👍 tapback), 'somewhere with good food pls 🍜', and your blue 'ok everyone drop your picks 👇'. The headline exits at frame ~104 and the camera pushes in (frames 125→170) until the screen fills the frame.",
+      "build": "<Camera> with a far <Layer z={2200}> glow and the phone on the screen plane; last keyframe zooms to 1.3846 (=1080/780) on the screen so scene 2 can open on the same crop. Headline is <TextAnimation preset=\"blurUp\" by=\"word\"> with a hand-placed exit. The real work is components/chat.tsx (ChatList/Row: rows grow via rowGrow with an overshoot bezier, bubbles spring + rotate + de-blur, emphasis ring pulse, tapbacks), components/phone.tsx (PhoneShell bezel + dynamic island) and components/script.ts (messages with [emoji] tokens rendered as local Twemoji SVGs).",
+      "reuse": "Good opener for any messaging/social feature ad: swap the headline, the group name, avatars and BASE messages in script.ts. The push-into-screen handoff is the reusable device. Don't copy the trip-planning copy or Trip Squad avatars.",
+      "techniques": [
+        "chat-bubbles",
+        "phone-mockup",
+        "kinetic-type",
+        "word-by-word",
+        "3d-camera-move",
+        "emoji"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "warm"
+      ],
+      "videoTypes": [
+        "announce-feature",
+        "app-store-preview",
+        "ugc-problem-solution"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/02-poll.tsx",
+      "title": "Full-screen iMessage poll: drop, tap to vote, live result bars",
+      "beat": "feature",
+      "alsoFits": [
+        "conversation",
+        "workflow",
+        "data"
+      ],
+      "summary": "Opens inside the screen (chat fills the 1080 frame) as the chat header slides down. The argument escalates: 'tokyo. thats it thats the msg 🗼', 'lisbon is cheaper tho 😭', 'MEXICO CITY?? 🌮', 'everyone STOP. poll incoming 📊', typing dots, then a poll card 'Where are we going?' with options Tokyo 🇯🇵 / Lisbon 🇵🇹 / Mexico City 🇲🇽 staggers in. A translucent finger circle glides up, presses Tokyo (ripple, check fills blue), and five votes roll in with avatar chips, a 'n of 5 voted' tally and fill bars — Tokyo leads with a pulsing blue bar. 'TOKYO BABYYY 🎉' lands, the poll gets a ❤️ tapback, and you send 'booking flights tonight 🔥'.",
+      "build": "Plain AbsoluteFill at scale S = 1080/780 so it matches scene 1's final camera crop. PollCard in components/chat.tsx computes per-option counts from eased vote progress (VOTES timings in script.ts), bar width = share of total, leading option tinted and pulsing, voter avatars scale in. The finger tracks the poll's live row position via rowTop(), so it lands on the option even while the list is still scrolling; press dip + expanding ring ripple are interpolates around PRESS_AT.",
+      "reuse": "The go-to reference for any poll/voting/survey feature, or any 'finger taps a UI option and results update' beat. Swap POLL question/options, VOTES and the surrounding messages in script.ts. Don't copy the trip copy or people; drop the scale-matching if you aren't handing off from a camera push.",
+      "techniques": [
+        "chat-bubbles",
+        "ui-mockup",
+        "cursor-click",
+        "chart-bar",
+        "avatar-stream",
+        "emoji"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "energetic"
+      ],
+      "videoTypes": [
+        "announce-feature",
+        "demo-walkthrough",
+        "app-store-preview"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.56,
+        0.88
+      ]
+    },
+    {
+      "file": "scenes/03-payoff.tsx",
+      "title": "Pull back out of the phone to 'Drop a poll. Get an answer.' with confetti",
+      "beat": "benefit",
+      "alsoFits": [
+        "announcement",
+        "cta"
+      ],
+      "summary": "Opens on scene 2's crop (screen filling the frame) and the camera pulls back over ~52 frames to reveal the iPhone holding the settled poll result, its dynamic island fading in. Confetti bursts from the phone in blue, pink, yellow, green and purple; the uppercase eyebrow 'New in Messages' fades up and 'Drop a poll. / Get an answer.' blurs up word by word above the phone, then both exit as the camera drifts in slightly.",
+      "build": "<Camera> whose first keyframe matches scene 2's zoom (1.3846) and pulls to zoom 1; glow on a far <Layer>, confetti in an <Overlay> (<Confetti spread={360}> from the phone). The phone content is the same ChatList/PollCard from components/chat.tsx fed SCENE3_MSGS/POLL_DONE (all `at` values in the past), so it shows the finished state — the scene is the end of a continuous take.",
+      "reuse": "Use the pull-back-out-of-the-device reveal for a feature-ad payoff: swap the eyebrow and two-line headline, and feed the phone whatever final UI state the previous scene ended on. Don't copy the 'New in Messages' wording for non-Apple-style products.",
+      "techniques": [
+        "phone-mockup",
+        "3d-camera-move",
+        "burst-confetti",
+        "kinetic-type",
+        "word-by-word"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "premium"
+      ],
+      "videoTypes": [
+        "announce-feature",
+        "app-store-preview"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.12,
+        0.5,
+        0.85
+      ]
+    }
+  ]
+}

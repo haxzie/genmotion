@@ -1,0 +1,46 @@
+{
+  "arc": "conversation (one continuous take): hook question ×3 → reply → link-preview reveal → feature question → answer → emoji reaction → payoff line",
+  "scenes": [
+    {
+      "file": "scenes/01-instagram-chat.tsx",
+      "title": "Instagram DM thread: launch-video panic to link preview",
+      "beat": "conversation",
+      "alsoFits": [
+        "hook",
+        "problem",
+        "reveal",
+        "benefit",
+        "proof"
+      ],
+      "summary": "A light-mode Instagram Direct screen (1080×1920) with Maya Rivera / mayabuilds in the header. Internal beats: problem — three grey incoming bubbles 'Ok so we're launching on Tuesday 🚀', 'and I still don't have a launch video 😭', 'what's the best tool for making one??', each preceded by typing dots; turn — you type 'say less' in the composer (blue 'Send' label replaces the icons) and send; reveal — 'genmotion.dev' types out and sends as a gradient link-preview card (OG image + 'AI Product Launch Video Generator'); feature/benefit — 'wait it writes the scenes itself??' / 'and exports a real MP4' with a 'Seen' receipt; payoff — a bubble-less '🤯🤯🤯' emoji reply, a ❤️ reaction pops onto the link, and 'ok I'm never opening After Effects again' closes on a last typing indicator. Thread pushes upward as each bubble lands, ~1.5s apart.",
+      "build": "One SCRIPT array of messages ({kind: in|out|link|emoji|divider, at, h, gap}) laid out bottom-up: each message's slot height eases open over 12 frames (outCubic) and the bubble springs in 6 frames later, so the whole thread scrolls without jitter; TYPING windows pin a TypingDots chip to the bottom and COMPOSE entries drive ComposerInput (hand-rolled iOS caret, frames-per-char speed). Sent bubbles use gradientFor(top,bottom), which samples a violet→indigo ramp by the bubble's live screen position, so they recolour as they scroll up — Instagram's viewport-anchored gradient. Tokens, Avatar, TypingDots, LinkPreview and ComposerInput live in components/instagram.tsx; SFX in project.json are placed on each bubble's impact frame.",
+      "reuse": "Borrow for any vertical DM/chat-ad story: rewrite SCRIPT, TYPING and COMPOSE (keep at/sendAt in step, and move the SFX cues in project.json with them), swap the avatar, the OG image and the link title. The slot-then-bubble layout and viewport-anchored gradient are the reusable ideas. Don't copy Maya's name/handle, the genmotion.dev link card or the exact copy unless the video is about GenMotion; keep the light Instagram palette only if it's meant to read as Instagram.",
+      "techniques": [
+        "chat-bubbles",
+        "phone-mockup",
+        "typing-input",
+        "emoji",
+        "sound-sync",
+        "ui-mockup"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "humorous"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "launch-playbook",
+        "app-store-preview",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.18,
+        0.5,
+        0.9
+      ]
+    }
+  ]
+}

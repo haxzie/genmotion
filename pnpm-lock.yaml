@@ -545,6 +545,9 @@ importers:
       '@genmotion/skills':
         specifier: workspace:*
         version: link:../skills
+      '@genmotion/templates':
+        specifier: workspace:*
+        version: link:../templates
       '@types/node':
         specifier: ^22
         version: 22.19.20

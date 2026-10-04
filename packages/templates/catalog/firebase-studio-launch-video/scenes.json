@@ -1,0 +1,350 @@
+{
+  "arc": "hook (Faster/Smarter/Safer under a light sweep) → reveal (Firebase pill makes it possible) → benefit (global infrastructure / zero DevOps) → feature (one platform to build & serve) → reveal (Firebase Studio lockup) → feature (your app/backend/users/data → Spark → Blaze tiers) → benefit (full-stack, more platforms, global scale; the app you prototype is the app you ship) → workflow (prototype → build/test/secure/deploy → production in One Click) → integrations → cta",
+  "scenes": [
+    {
+      "file": "scenes/01-hook.ts",
+      "title": "Light-sweep headline into Faster / Smarter / Safer icon lockups",
+      "beat": "hook",
+      "alsoFits": [
+        "benefit"
+      ],
+      "summary": "On black, a huge soft ellipse of warm light (white core through amber, orange, flame red, into black) sweeps up through the frame. \"You want an app\" reveals letter by letter with a blur-to-sharp left-to-right wipe while the line settles from 1.36x to 1x, then \"that's\" in dark ink sits inside the full light and drops away with a blur. Three hard-cut lockups follow, each a 159 px word beside a white rounded icon tile with a translucent halo: \"Faster\" (orange zap), \"Smarter\" (red sparkles), \"Safer\" (shield); each tile pops 0.89→1 and its face flashes amber on the cut before settling white.",
+      "build": "The light is a full-frame ShaderMaterial (components/glow.ts glowLayer) computing distance outside a near-parabolic ellipse and mapping it through a 12-stop colour ramp; glowAt() poses apex/curvature/spread per frame from fitted keys in components/glowKeys.ts. Type is canvas-texture labels from components/type.ts (letters() for the per-letter wipe, label()/setLabel() for opacity+blur); icon tiles are canvas-drawn rounded rects with Lucide paths via drawIcon in components/ui.ts. Timing uses sampled() measured tracks from components/ease.ts.",
+      "reuse": "Borrow for any bold opener that sets up a promise and pays it off with 2-4 one-word claims: swap the setup line, the three words and their icons (ICONS in ui.ts), and re-tint the glow ramp stops to your brand. The glow ramp and keys are tuned to Firebase warm colours and to a reference film's frame-by-frame measurements; replace the sampled tracks with simple interpolate() curves rather than copying the numbers.",
+      "techniques": [
+        "kinetic-type",
+        "light-sweep",
+        "glow",
+        "gradient-bg",
+        "mask-reveal"
+      ],
+      "mood": [
+        "premium",
+        "bold",
+        "dark"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.12,
+        0.5,
+        0.82
+      ]
+    },
+    {
+      "file": "scenes/02-firebase.ts",
+      "title": "Product pill types in, whips left and trails a line into the tagline",
+      "beat": "reveal",
+      "alsoFits": [
+        "transition"
+      ],
+      "summary": "The warm light clears to white as a grid of small grey crosshairs blooms outward from the centre. A dark (#202124) rounded pill opens from the middle while the Firebase flame ignites layer by layer and \"Firebase\" is unmasked inside it; the pill then whips left off frame, trailing a thin grey line. Cut to \"makes it possible\" in black with a small mono \"Firebase\" eyebrow above, while the line's end square keeps drifting in from the left; the crosshair lattice spins 90° through the whip and clears from the middle out.",
+      "build": "Pill is an SDF rounded rect (components/rect.ts rrect, resizable per frame without stretching corners) holding flame() from components/firebase.ts (four stacked layer planes with an ignite(t) stagger) and a label masked by maskX. The lattice is components/sparkles.ts sparkleGrid, one InstancedMesh posed per mark (scale by a growing reveal rectangle, rotation by a shared spin). Pill width/x/y, line length and text position are sampled per-frame tracks.",
+      "reuse": "Use as the name-drop after a hook: a logo pill that opens, then exits with a whip and a leading line that hands off to a tagline. Swap the mark (flame()) and pill word; the crosshair-lattice bloom is a reusable light backdrop. Don't copy the Firebase flame paths or the measured pixel tracks.",
+      "techniques": [
+        "kinetic-type",
+        "mask-reveal",
+        "whip-pan",
+        "pixel-grid"
+      ],
+      "mood": [
+        "minimal",
+        "light",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.19,
+        0.42,
+        0.75
+      ]
+    },
+    {
+      "file": "scenes/03-infra.ts",
+      "title": "Scrolling server racks either side of \"Global infrastructure / Zero DevOps\"",
+      "beat": "benefit",
+      "alsoFits": [
+        "feature"
+      ],
+      "summary": "Black ground with columns of white horizontal lines scrolling up at both edges like server racks, with filled white cells blinking in them. A small mono \"Built on Google Cloud\" sits above; \"Global infrastructure\" is centred between two orange square nodes wired to the racks. The racks and nodes surge inward, the label erases left to right, and the line swaps to \"Zero DevOps\" with the left node riding along before everything slides off.",
+      "build": "Each rack column is a plane with a ShaderMaterial that draws horizontal lines at a uniform pitch and scrolling phase in screen space, plus edge hairlines and a pool of 14 white cell meshes; per-frame column extents, pitch, phase and filled blocks come from the measured table in components/rackData.ts. Nodes and wires are flat planes; type via components/type.ts label/letters.",
+      "reuse": "Good reference for an infrastructure / scale / backend benefit beat: abstract racks are cheap (one shader per column) and read as \"data centre\" without any 3D. Replace the measured RACKS table with a procedural scroll (phase = frame * speed) and a deterministic hash for lit cells; swap the two headline lines and the eyebrow.",
+      "techniques": [
+        "kinetic-type",
+        "diagram"
+      ],
+      "mood": [
+        "techy",
+        "dark",
+        "minimal"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "explainer"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.18,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/04-platform.ts",
+      "title": "Two-card split: headline left, scrolling icon list right",
+      "beat": "feature",
+      "alsoFits": [
+        "benefit",
+        "recap"
+      ],
+      "summary": "On a light grey ground, a white card on the left carries the line \"One platform\" word by word, then \"to build & serve\". A narrower white card on the right scrolls a list of red rounded icon tiles with red labels — Build, Deploy, Monitor, Scale — through a highlight, rows fading in and out by opacity. Small orange anchor dots mark the card gutter; at the end the Scale tile leaves the list toward the next scene's orbit.",
+      "build": "Cards are rrect() SDF rectangles and flat planes positioned in screen px (components/stage.ts sx/sy). List tile art is canvas-drawn in components/tiles.ts tileTexture; per-frame list top, row alphas and panel pan come from components/listData.ts. Each headline word is its own label with a sampled ink-left track placed by components/place.ts inkPlacer.",
+      "reuse": "Borrow the layout for a \"one platform for X, Y, Z\" beat: a statement on one panel, a scrolling vertical list of capabilities on the other. Swap words, tile glyphs and colours; drive the list scroll with a simple eased track instead of the measured LIST table.",
+      "techniques": [
+        "kinetic-type",
+        "word-by-word",
+        "icon-grid",
+        "split-screen",
+        "cards-stack"
+      ],
+      "mood": [
+        "minimal",
+        "light",
+        "corporate"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "explainer"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.22,
+        0.65,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/05-studio.ts",
+      "title": "Orbiting tiles collapse into a card, logo lockup and typed badge",
+      "beat": "reveal",
+      "alsoFits": [
+        "logo",
+        "integrations"
+      ],
+      "summary": "Four red capability tiles orbit the igniting Firebase flame inside concentric grey rings over a crosshair lattice that blooms and turns a quarter. The rings collapse into a squircle and then a flat card; light server racks slide in from both sides to hug it, the official Firebase wordmark wipes in beside the flame, and the card widens as \"Studio\" slides in from the right. A mono badge \"Prototype · Build · Deploy\" types itself out in a box below, and the composition pans off left.",
+      "build": "Rings and card are rrect() SDF shapes whose w/h/radius are sampled per frame so a circle morphs into a card; rack columns are a line-pitch ShaderMaterial (same idea as scene 03, light colours). flame() and wordmarkReveal() from components/firebase.ts give the ignite and a shader mask that wipes the vector wordmark; the badge is letters() typed by count. Orbit tile positions come from components/orbitData.ts; lattice from components/sparkles.ts.",
+      "reuse": "A strong pattern for revealing a product name out of the features that preceded it: features orbit the mark, collapse into a container, then the lockup and a typed tagline badge land. Swap the mark, wordmark, product suffix (\"Studio\") and badge text. Do not copy the Firebase flame/wordmark paths; replace the measured ORBIT table with a parametric orbit (angle = f(frame)).",
+      "techniques": [
+        "orbit",
+        "mask-reveal",
+        "typewriter",
+        "kinetic-type",
+        "pixel-grid",
+        "icon-grid"
+      ],
+      "mood": [
+        "premium",
+        "light",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.4,
+        0.82
+      ]
+    },
+    {
+      "file": "scenes/06-paths.ts",
+      "title": "Word carousel \"Your app/backend/users/data\" into pricing tiers over a pixel mosaic",
+      "beat": "feature",
+      "alsoFits": [
+        "benefit",
+        "transition"
+      ],
+      "summary": "On a flame-red ground framed by white hairlines with corner squares and a lead line, \"Your\" holds still while a strip of words — app, backend, users, data — slides left behind it under a soft mask, each word brightening as it lands. The frame cuts to a pixel mosaic: big cells shading from ember black to flame red, with orange accent cells, under centred white headlines \"Start free on Spark\", \"with generous free quotas.\", \"Scale up on Blaze\". The mosaic shrinks and shifts, the last line erases right to left, and a single white cell zooms until it fills the frame.",
+      "build": "Carousel words are separate labels laid out from real widths and slid along a measured track remapped to the new copy, with setLabel maskL to clip them at \"Your\". The mosaic is one full-frame shader (components/mosaic.ts mosaicLayer): each cell's shade is a cubic darkness field sampled at its centre, re-ramped to Firebase reds, with uniform slots for 3 accent cells and one white cell; per-frame cell size, offset and coefficients come from components/mosaicData.ts.",
+      "reuse": "Borrow the \"Your ___\" slot-machine carousel for any \"for every X\" list, and the pixel-mosaic ground for tier / plan / scale beats; the white cell that zooms to fill the frame is a clean hard transition into a white scene. Swap the strip words and headline copy; drive the mosaic field procedurally instead of from the fitted MOSAIC table.",
+      "techniques": [
+        "kinetic-type",
+        "mask-reveal",
+        "pixel-grid",
+        "zoom-through",
+        "gradient-bg"
+      ],
+      "mood": [
+        "bold",
+        "dark",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "explainer"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.45,
+        0.8
+      ]
+    },
+    {
+      "file": "scenes/07-quality.ts",
+      "title": "Rising word pairs, then \"The app you prototype is the app you ship\" over a zooming lattice",
+      "beat": "benefit",
+      "alsoFits": [
+        "transition"
+      ],
+      "summary": "On white, black word pairs cut in and drift: \"Full-stack\", \"More platforms\", \"Global scale\". Then \"The app you prototype\" rises in word by word, two frames apart, as a grey crosshair lattice blooms from the line; the words rise out and \"is the app you ship\" rises in while the lattice zooms out and its centre crosshairs turn into orange open-cornered squares. Marks behind the words are knocked out so the line stays clean.",
+      "build": "Words are individual labels with sampled x tracks and a tiny RISE_IN/RISE_OUT offset table; relayout() re-centres each phrase from the new words' widths while keeping each word's measured motion. The lattice is two InstancedMeshes (crosshair texture and dashed-square texture) whose pitch shrinks per frame for the zoom-out and swap per cell inside a growing radius.",
+      "reuse": "Use for a punchy tagline/benefit sequence: quick two-word claims then a two-part payoff line. Swap the copy; keep the knock-out-behind-text trick for any lattice/pattern background. Frames 687–688 show dark flanks that only make sense following scene 06's white-cell zoom — drop them if used alone.",
+      "techniques": [
+        "kinetic-type",
+        "word-by-word",
+        "pixel-grid",
+        "zoom-through"
+      ],
+      "mood": [
+        "minimal",
+        "light",
+        "editorial"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/08-checkpoint.ts",
+      "title": "Headline words become pills: Prototype → pipeline steps → Production in One Click",
+      "beat": "workflow",
+      "alsoFits": [
+        "feature",
+        "transition"
+      ],
+      "summary": "On flame red, \"Prototype to production\" rises in white, then the words turn into white pills with red text: \"Prototype\" → arrow → \"Production\". Outlined white step pills \"Build\", \"Test\", \"Secure\", \"Deploy\" slide out from behind Production with a second arrow, then collapse; \"in\" rises above as a \"One Click\" pill takes the slot, flickers to an outline and back to filled. The camera pushes into One Click inside a soft halo, framed by white hairlines and four spokes with dots that start to rotate and shrink.",
+      "build": "Each pill is an rrect() SDF box whose x/y/w/h is sampled per frame from components/pillData.ts (segments split by gaps), with a centred label scaled to the pill height and clamped to its width so text never spills while a pill emerges or collapses. Arrows are a canvas-drawn texture; the push-in frame is plain hairline planes and spoke planes in a group rotated and scaled by sampled tracks.",
+      "reuse": "Great for any process beat (A → steps → B, \"in one click\"): words morphing into pills is a reusable device for pipelines, checkouts and onboarding flows. Swap pill labels and colours; generate pill boxes from a simple layout + eased tracks instead of the measured PILLS data.",
+      "techniques": [
+        "kinetic-type",
+        "diagram",
+        "timeline",
+        "zoom-through"
+      ],
+      "mood": [
+        "bold",
+        "energetic",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "explainer",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.39,
+        0.88
+      ]
+    },
+    {
+      "file": "scenes/09-integrations.ts",
+      "title": "Ring of eight platform logo tiles spiralling around the product tile",
+      "beat": "integrations",
+      "alsoFits": [
+        "proof"
+      ],
+      "summary": "On white, a hairline cross with orange corner dots frames a pale centre cell holding the Firebase flame on a white tile with a soft halo. Eight white rounded tiles with brand-coloured marks — Gemini, Flutter, Android, Apple, Unity, Angular, Next.js, Google Cloud — sit 45° apart on a rigid ring that spirals in from a 568 px radius to ~420 px while turning clockwise. Only about a second long.",
+      "build": "Logo tiles are canvas textures drawing simple-icons SVG path data (components/integrations.ts INTEGRATIONS: name, path d, brand colour) on white rounded rects, with an rrect drop shadow. Positions are polar: angle, radius and tile size are sampled tracks applied to all tiles with a fixed 45° offset each.",
+      "reuse": "Drop-in \"works with\" beat: replace the INTEGRATIONS list with your partners' simple-icons paths and colours, and lengthen it (a slower orbit reads better than this 29-frame version). Brand marks are trademarks of their owners — use only ones you're entitled to show.",
+      "techniques": [
+        "logo-orbit",
+        "orbit",
+        "icon-grid"
+      ],
+      "mood": [
+        "minimal",
+        "light",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "explainer"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/10-outro.ts",
+      "title": "Giant flame outline sweeps and flashes behind \"Build what's next\" → \"Start today\" end card",
+      "beat": "cta",
+      "alsoFits": [
+        "logo"
+      ],
+      "summary": "On white, a giant 1 px grey outline of the Firebase flame sweeps up through the frame and floods with a vertical amber → orange → red fill for a beat, behind \"Build what’s next\" in black. Cut to the end card: the outline zoomed and settled behind, a small igniting flame on top, \"Start today\" centred, and the mono URL \"firebase.google.com\" near the bottom.",
+      "build": "The outline is one full-frame ShaderMaterial that samples a 4096 px mask of the flame (rasterised once from FLAME_LAYERS) and draws a hairline where inside/outside flips within a pixel; uniforms set its scale/origin per frame from components/outroData.ts and a flash mixes in a three-stop vertical fill. Type is label() placed with inkPlacer; the small mark is flame() with ignite().",
+      "reuse": "Borrow the oversized hairline logo outline as a backdrop for any end card — rasterise your own mark into the mask and swap the tagline, CTA and URL. Don't copy the Firebase flame or the fitted OUTRO table; a simple eased scale/translate is enough.",
+      "techniques": [
+        "kinetic-type",
+        "zoom-through",
+        "gradient-bg"
+      ],
+      "mood": [
+        "minimal",
+        "light",
+        "premium"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.08,
+        0.45,
+        0.9
+      ]
+    }
+  ]
+}

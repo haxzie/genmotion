@@ -86,6 +86,10 @@ Read the owner skill fully. Then load its `requires` that apply to this project'
 - **Engine craft** for Three.js projects: `three-look` (lighting, palette), `three-camera`, `three-type`, `three-transitions`, `three-assets`. Load `three-look` before the first scene and the others as the plan needs them: a locked single-scene piece (most stings) skips `three-camera` unless the camera moves and `three-transitions` unless there is a handoff, a flash or an iris.
 - **When two skills disagree, the owner wins for its own format**: a sting's sound rules (anticipation ticks, where the first sound sits) over `sound-design`'s general density, a trailer's card typography over the house sentence case, an owner's beat sheet over a style family's tempo. A general rule an owner does not mention still applies.
 
+## Step 7: find references for your beats
+
+Once the beat table exists, run `search-scenes` once per beat you are unsure how to stage, with the beat's job and the visual idea in a few words ("hook: typed prompt sends and floods the frame", "integrations: app logos plug into one hub", "funding number counts up"), not your brand. It searches every scene of GenMotion's own templates, each tagged with the job it does (hook, problem, reveal, feature, workflow, integrations, stat, data, conversation, cta, logo…). Open the two or three most promising: each comes with three frames, how it is built and its code. Borrow the device, the pacing and the technique, then write your own scene in your own brand: never paste a template's copy, logos or brand colours into someone else's video. Note what you borrowed from in the beat table's "On screen" column, so a later session knows. Skip this for a small edit.
+
 ## Opening a skill's reference files
 
 Skills keep long tables and code in `references/*.md` beside their `SKILL.md`, and say when to read each one. A path like `references/critique.md` is relative to that skill's own folder. How to open one on each surface:
@@ -98,7 +102,7 @@ Read a reference when the skill says the step needs it, not all of them up front
 
 ## Capabilities, not tools
 
-Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `music`, `place-audio`, `transcribe`, `search-skills`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.
+Skills in this pack name what to do as capability ids in backticks: `validate`, `capture-frames`, `project-overview`, `save-asset`, `generate-image`, `pick-voice`, `voiceover`, `sfx`, `music`, `place-audio`, `transcribe`, `search-skills`, `search-scenes`, `recommend-integration`, `ffmpeg`, `web-research`. Your environment's instructions map each one to a real tool, or tell you what to do when it isn't available. When a skill needs a capability you don't have, say so in one sentence, use the fallback, and carry on. Never stall a video on a missing generator.
 
 **Times for `capture-frames`**: a bare number is a frame (`45` = `45f`); `1.5s`, `500ms` and `60%` (of the last frame) also work. They count from the start of the whole film, unless the tool takes a scene and you named one, so the land at frame 180 of a scene that starts at 90 is `270`.
 

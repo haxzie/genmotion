@@ -6,7 +6,14 @@ import { readManifest, type ProjectEngine } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
 import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
-import { desktopAuth } from "../auth";
+import { cloudFetch, desktopAuth } from "../auth";
+import {
+  SCENE_BEATS,
+  formatSceneHits,
+  formatSceneReference,
+  type SceneHit,
+  type SceneReference,
+} from "@genmotion/templates/scene-search";
 import { captureCompositionFrame, captureFrameAndObjects } from "../export/capture";
 import { resolveFrameTarget, SAMPLE_AT } from "../export/frame-target";
 import { openCompositionWindow } from "../export/hyperframes-window";
@@ -617,6 +624,64 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     },
   },
 
+  {
+    name: "search_scenes",
+    description:
+      "Search the scene library: every scene of GenMotion's templates, each described by the job it does in its video (hook, problem, turn, reveal, feature, workflow, integrations, benefit, stat, data, proof, announcement, conversation, concept, comparison, recap, cta, logo, brand, transition, atmosphere). Use it once your beats are planned, once per beat you want a reference for, with the beat's job and visual idea in a few words ('hook: typed prompt floods the frame', 'integrations: app logos plug into a hub', 'funding number counts up'), not the brand. Results say what each scene shows and when to borrow it; open the best with get_scene.",
+    shape: {
+      query: z.string().max(300).default("").describe("What the scene should do or show. Name the beat and the visual idea."),
+      beat: z.enum(SCENE_BEATS).optional().describe("Only scenes doing this job."),
+      engine: z.enum(["three", "react"]).optional().describe("Only this engine. Ideas transfer across engines; usually leave it out."),
+      aspect: z.enum(["landscape", "portrait", "square"]).optional(),
+      limit: z.number().int().min(1).max(15).optional().describe("How many. Default 6."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { query, beat, engine, aspect, limit } = args as unknown as {
+        query?: string;
+        beat?: string;
+        engine?: string;
+        aspect?: string;
+        limit?: number;
+      };
+      const params = new URLSearchParams({ q: query ?? "", limit: String(limit ?? 6) });
+      if (beat) params.set("beat", beat);
+      if (engine) params.set("engine", engine);
+      if (aspect) params.set("aspect", aspect);
+      const res = await cloudFetch(`/api/templates/scenes?${params}`).catch(() => null);
+      if (!res?.ok) return failure("The scene library is unreachable right now. Plan the beat from the skills alone.");
+      const { scenes } = (await res.json()) as { scenes: SceneHit[] };
+      return text(
+        `${formatSceneHits(scenes)}\n\nNext: get_scene(<id>) for the frames and code of the ones worth borrowing from. Take the idea, the pacing and the technique; write your own scene for this brand.`,
+      );
+    },
+  },
+  {
+    name: "get_scene",
+    description:
+      "Open one scene from the library: three frames of it (entrance, key moment, end state), what it does, how it is built, where it sits in its template's story, and its code with the components it imports. Pass `file` to read one imported module that was too long to inline.",
+    shape: {
+      id: z.string().min(3).max(200).describe("Scene id from search_scenes, e.g. 'stripe-payment-links-launch-video/09-wheel'."),
+      file: z.string().max(200).optional().describe("A file the scene imports, e.g. components/chat.ts."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { id, file } = args as unknown as { id: string; file?: string };
+      const tail = id.split("/").map(encodeURIComponent).join("/");
+      const res = await cloudFetch(`/api/templates/scenes/${tail}`).catch(() => null);
+      if (!res?.ok) return failure(`No scene "${id}". Ids look like "<template>/<scene file stem>"; find one with search_scenes.`);
+      const scene = (await res.json()) as SceneReference;
+      let body: string;
+      try {
+        body = formatSceneReference(scene, file);
+      } catch (err) {
+        return failure(err instanceof Error ? err.message : String(err));
+      }
+      const still = file ? null : await cloudFetch(`/api/templates/scenes/${tail}/still`).catch(() => null);
+      const image = still?.ok ? { base64: Buffer.from(await still.arrayBuffer()).toString("base64"), mimeType: "image/jpeg" } : undefined;
+      return { text: body, ...(image ? { image } : {}) };
+    },
+  },
   {
     name: "recommend_integration",
     description:

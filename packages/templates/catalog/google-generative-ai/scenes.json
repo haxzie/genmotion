@@ -1,0 +1,65 @@
+{
+  "arc": "hook (photo-tile ring spins in around headline, panel swings to the next lines) → feature (deck of model art cards, last one opens full-bleed) → benefit (tagline over the dissolving art, mark lands) → logo (mark + name lockup)",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.tsx",
+      "title": "Spinning photo-tile ring with chained masked headlines",
+      "beat": "hook",
+      "alsoFits": ["transition"],
+      "summary": "Seven rounded photo tiles (whiteboard, factory, classroom, chip, Hubble, VR, microscope) sweep in along a huge ellipse, motion-blurred while moving, each angled to face the centre, around 'The best ideas'. The whole panel swings off left in 3D as a second panel swings in with 'Starts with a plan', whose words leave leftward; 'Same goes when building' slides in and pushes up out of its masks while 'Generative media applications' rises into the same slot, then exits right with blur. A deep blue radial field sweeps in from the left to own the last frame.",
+      "build": "Tiles are positioned by ringPosition() on an ellipse (rx 700, ry 900) with an eased sweep and constant slow orbit; per-frame velocity (sampling frame-1) drives a per-tile SVG feGaussianBlur directional motion blur, and random() seeds per-tile yaw/pitch. Two panels cross with perspective translateX + rotateY; local SlideLine/PushUpLine components do per-word masked enter/exit. Blue handoff lives in an <Overlay> using BLUE_RADIAL from components/brand.ts.",
+      "reuse": "Strong cold open for any 'ideas / real world' framing: swap the seven photos and the four lines. Steal the velocity-derived motion blur and the masked push-up line handoff separately. The blue push only matters if the next scene starts on the same field.",
+      "techniques": ["photo-media", "orbit", "kinetic-type", "mask-reveal", "depth-parallax", "whip-pan"],
+      "mood": ["light", "premium", "editorial"],
+      "videoTypes": ["launch-playbook", "brand-sting", "announce-feature"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.15, 0.45, 0.8]
+    },
+    {
+      "file": "scenes/02-generative.tsx",
+      "title": "Angled deck of art cards, last one opens full-bleed",
+      "beat": "feature",
+      "alsoFits": ["transition", "integrations"],
+      "summary": "On the blue radial field, four square generative-art cards slide in left→right one after another, overlapping like books pulled off a shelf, each yawed into depth with a thrown shadow and a white label: Gemini, Omni, Veo, Lyria. They float gently, then the first three slide out while the Lyria card grows and loses its radius until it fills the frame.",
+      "build": "<Camera> with a slight zoom-out keyframe and drift; StackCard positions each card from a STEP_X/STEP_Y/STEP_Z rest layout, stagger() entrance, and lerps left/top/width/height/borderRadius to HERO_FRAME (shared in components/brand.ts) for the card-becomes-frame cut. Labels sit over a radial scrim.",
+      "reuse": "Show a product family, model lineup or set of outputs as a card deck; swap images and words, change card count via PANELS. The card-opens-to-full-frame move is a reusable transition. Don't keep Google model names.",
+      "techniques": ["cards-stack", "photo-media", "depth-parallax", "zoom-through", "gradient-bg"],
+      "mood": ["premium", "dark", "cinematic"],
+      "videoTypes": ["launch-playbook", "announce-feature"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.25, 0.55, 0.9]
+    },
+    {
+      "file": "scenes/03-omni.tsx",
+      "title": "Tagline over dissolving art, mark springs in",
+      "beat": "benefit",
+      "alsoFits": ["transition"],
+      "summary": "Opens on the Lyria art filling the frame, which slowly scales up and dissolves into the blue field with a pulsing glow. 'One model. Every medium.' rises out of word masks, holds, exits, and the white Gemini mark springs in above centre at the very end.",
+      "build": "AbsoluteFill; hero art at HERO_FRAME fading out, a single <TextAnimation preset=\"riseMask\" exit=\"auto\"> in a <Sequence>, and a spring()-driven mark at MARK_SIZE/MARK_Y that scene 04 opens on unchanged.",
+      "reuse": "Only as a handoff pattern (full-frame image → brand field → mark). The text beat itself is one line; write your own tagline.",
+      "techniques": ["kinetic-type", "mask-reveal", "glow"],
+      "mood": ["premium", "dark", "calm"],
+      "videoTypes": ["launch-playbook", "brand-sting"],
+      "quality": "filler",
+      "standalone": false,
+      "sampleAt": [0.12, 0.45, 0.96]
+    },
+    {
+      "file": "scenes/04-lockup.tsx",
+      "title": "Breathing mark over name on blue halo",
+      "beat": "logo",
+      "alsoFits": ["cta"],
+      "summary": "The white Gemini mark sits above centre on the deep blue radial field, breathing slightly while a soft halo pulses behind it. 'Google generative AI' rises in word by word beneath it, holds with a breathe, and exits.",
+      "build": "AbsoluteFill with BLUE_RADIAL, a halo opacity tween, the mark scaled by a sine breathe, and <TextAnimation preset=\"riseMask\" hold=\"breathe\" exit=\"auto\">. Mark position comes from shared MARK_SIZE/MARK_Y so it matches scene 03's last frame.",
+      "reuse": "A simple, clean logo end card: swap the SVG mark, the name and the gradient. Don't ship the Gemini mark or Google naming.",
+      "techniques": ["kinetic-type", "glow", "gradient-bg"],
+      "mood": ["premium", "minimal", "dark"],
+      "videoTypes": ["launch-playbook", "brand-sting", "announce-feature"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.2, 0.5, 0.8]
+    }
+  ]
+}

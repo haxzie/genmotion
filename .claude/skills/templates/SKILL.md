@@ -131,9 +131,27 @@ all three, plus the checklist for adding a template in the first place.
    first scene's actual `interpolate`/`Sequence` timing to find a settled,
    legible frame and set `sampleAt` in `template.json`, then regenerate.
 
-8. **Render the video and upload to R2** — see the next section.
+8. **Describe every scene for the scene library** (`scenes.json`; a catalog
+   test fails without it). Agents building *other* videos search this to see
+   how a hook, an integrations beat or an end card was done, so write it for
+   them: one entry per scene file with its `beat` (the narrative job, from
+   `SCENE_BEATS` in `src/scene-search.ts`), a specific `title`, a `summary` of
+   what is on screen (quote the real copy), `build` (the reusable
+   implementation idea and the components that hold it), `reuse` (when to
+   borrow it, what to swap, what brand bits not to copy), `techniques`,
+   `mood`, `videoTypes` (owner skill ids), `quality` (`hero` / `solid` /
+   `filler`; filler is hidden from search) and `standalone`. Read every scene
+   and its components in full first; an existing `scenes.json` shows the
+   register. Then capture the three-frame filmstrips and look at a few:
+   ```sh
+   pnpm --filter @genmotion/templates scene-stills <id>
+   ```
+   Adjust an entry's `sampleAt` (three fractions) when a frame lands on a blank
+   fade. Neither file nor `stills/` travels with a remix.
 
-9. **Run the tests:**
+9. **Render the video and upload to R2** — see the next section.
+
+10. **Run the tests:**
    ```sh
    pnpm --filter @genmotion/templates test
    pnpm --filter @genmotion/templates typecheck

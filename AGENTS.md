@@ -149,6 +149,18 @@ pnpm changeset                        # describe a change to a published package
   repo they publish (which is why a template's README carries the links back to
   genmotion.dev). The catalog test compiles and smoke-renders every scene and
   holds every template to a README, so a template that rots fails CI.
+- **Scene library:** every template also carries `scenes.json` — one curated
+  entry per scene (its `beat`: hook, problem, reveal, feature, integrations,
+  stat, cta, logo…; what's on screen; how it's built; when to borrow it;
+  quality) — and `stills/<scene>.jpg`, a three-frame filmstrip
+  (`pnpm --filter @genmotion/templates scene-stills <id>`). Agents building
+  other videos search it per beat: `search_scenes`/`get_scene` (desktop tools
+  and MCP), `genmotion scenes search|show` (shell), all over the public
+  `/api/templates/scenes` routes; the CLI reads a local catalog instead when
+  `GM_TEMPLATES_DIR` is set. Ranking is BM25 plus beat-cue and quality boosts
+  (`src/scene-search.ts`), at most two hits per template. The capability is
+  `search-scenes`; the router skill's Step 7 sends agents to it. Neither file
+  travels with a remix.
 - **Auth:** better-auth (magic link + Google/GitHub OAuth + organization
   plugin). Every product request is scoped to `organizationId`. The desktop app
   signs in through the device-authorization grant (`/api/auth/device/*`): it

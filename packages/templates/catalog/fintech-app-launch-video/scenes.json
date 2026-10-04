@@ -1,0 +1,80 @@
+{
+  "arc": "hook → feature (deposit) → benefit (cashback) → feature (credit score) → logo/cta",
+  "scenes": [
+    {
+      "file": "scenes/01-hook.ts",
+      "title": "'Sending money is now instant' kinetic type with tumbling 3D coins and a lime flood",
+      "beat": "hook",
+      "alsoFits": ["benefit"],
+      "summary": "Paper-white frame. Black 'Sending money' rises in, then 'is now', then 'instant' lands big in electric blue with a small overshoot while twelve glossy 3D coins (lime, silver, ink, orange, blue faces with bolt, $, €, £, ¥) tumble in around it from off-frame. After landing, the coins are pulled into a tightening, accelerating spiral toward the centre and shrink, and a lime circle floods out from the centre to fill the frame for the cut.",
+      "build": "Perspective camera at CAM_Z with u(px) units so sizes are true pixels (components/text.ts). Type is label() canvas planes with enter/leave/pop helpers from components/motion.ts. Coins are makeCoin() (open cylinder edge + canvas-textured clearcoat faces) from components/props.ts, lit by studio() PMREM env; the spiral rotates each coin's position by an angle and scales toward 0 with an easeIn pull. Flood is a CircleGeometry scaled to cover the frame.",
+      "reuse": "Swap the three phrases and the accent colour for any 'X is now Y' hook; change coin kinds/glyphs or replace coins with your own 3D props. The radial colour flood is a clean handoff into a scene that opens on that colour. LightPay is a made-up brand.",
+      "techniques": ["kinetic-type", "word-by-word", "coins", "3d-objects", "orbit"],
+      "mood": ["bold", "playful", "light"],
+      "videoTypes": ["launch-playbook", "app-store-preview", "announce-feature"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.12, 0.62, 0.84]
+    },
+    {
+      "file": "scenes/02-deposit.ts",
+      "title": "Cursor taps a 'Deposit' pill that flies into a rising phone; balance rolls, coins burst",
+      "beat": "feature",
+      "alsoFits": ["workflow"],
+      "summary": "Opens inside the lime flood, which contracts into a glossy lime 'Deposit' pill with a download arrow on a warm peach wash. A cursor glides in and taps it (pulse ring), the pill flies down into slot 0 of the action row of a black phone rising beneath it (LightPay home screen: All/Card/Savings/Crypto chips, Send, Request, Recent rows). The balance slot-machine-rolls from $149,320 to $274,320, a lime '+$1,250' toast pops, and coins burst out of the top of the phone tumbling; a big lime bolt coin swoops to centre face-on as the phone drops away and the wash drains to white.",
+      "build": "makePhone() in components/props.ts: an extruded clearcoat body + a roundedPlane screen with a canvas painted once by drawHome(); live overlays are placed on the glass via phone.at(px, py). The balance is roller('$#,###.##') from components/text.ts — each digit is a window onto a 0–9 strip texture, rolled by texture offset with per-digit stagger. The pill's home flight lerps position and scale to the slot's world position; burst coins use seeded mulberry32 targets.",
+      "reuse": "The tap → button flies into the app → number rolls up → reward burst sequence fits any fintech/app action demo. Swap drawHome for your screen, the pill label/icon, the roll strings and the toast amount. roller() is the go-to for any slot-machine counter.",
+      "techniques": ["phone-mockup", "ui-mockup", "cursor-click", "counter", "coins", "3d-objects", "burst-confetti"],
+      "mood": ["playful", "warm", "energetic"],
+      "videoTypes": ["launch-playbook", "app-store-preview", "demo-walkthrough", "announce-feature"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.25, 0.6, 0.78]
+    },
+    {
+      "file": "scenes/03-cashback.ts",
+      "title": "Prize burst: sunburst rays, exploding notes and coins, glossy '2% cashback' slam",
+      "beat": "benefit",
+      "alsoFits": ["stat", "announcement"],
+      "summary": "The lime bolt coin sits centre while lime sunburst rays blast open behind it from a white core and keep slowly turning. The coin does a full spin and a shower of curled banknotes, coins and lime/ink sparkles explodes radially outward; the coin lifts away. Chunky glossy dark-green 3D '2% cashback' slams in from right in front of the lens with an overshoot onto a soft white plate, then the eyebrow 'REWARDS' and subline 'On every tap. Paid out instantly.' fade up. Everything clears outward before the cut while the rays keep turning.",
+      "build": "sunburst() is a canvas of soft-edged wedges masked by a radial fade; RAY_SPIN/RAY_START in components/motion.ts are shared with scene 04 so the rays line up across the cut. extrudedLabel() fakes 3D type by stacking 16 darker copies stepping back in z under a gradient face with a specular band. Prizes (makeBill curled-plane notes, makeCoin, sparkleGeometry) get radial directions and seeded spins.",
+      "reuse": "Use for any reward, prize, milestone or big-number beat: change the slammed text, eyebrow/subline, ray colour and prize objects. extrudedLabel is a cheap inflated-3D-text effect with no font loader.",
+      "techniques": ["burst-confetti", "coins", "kinetic-type", "glow", "3d-objects"],
+      "mood": ["bold", "playful", "energetic"],
+      "videoTypes": ["launch-playbook", "announce-feature", "announce-milestone", "app-store-preview"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.15, 0.42, 0.7]
+    },
+    {
+      "file": "scenes/04-score.ts",
+      "title": "LightScore gauge rolls to 812 with factor chips, then a credit line unlocks",
+      "beat": "data",
+      "alsoFits": ["stat", "feature"],
+      "summary": "The turning rays from 03 collapse into a 64-tick arc gauge; ticks sweep on and fill lime as the score slot-rolls from 300 to 812 under 'LIGHTSCORE', and a lime 'Excellent' badge pops. Four factor chips pop in around it, each with an icon, a progress ring that fills and a rolling '+NN' counter: On-time bills +32, Card spending +18, Savings held +27, Steady income +21. The gauge steps back and up, a grey 'Credit line / Locked' card rises, its padlock shackle lifts and spins off, the card turns lime with a bolt and '$500 unlocked', then expands to flood the frame lime.",
+      "build": "Ticks are 64 thin planes rotated around an arc whose material switches on/off by fill fraction. Score and chip counters use roller() from components/text.ts; chip rings are a custom ShaderMaterial (angle-based progress uniform on an annulus). The padlock is a TorusGeometry half + planes; the card flood scales the card plane to cover the frame. Rays use the shared RAY_SPIN so they continue from 03.",
+      "reuse": "Ideal for any score/metric reveal with contributing factors (credit score, health score, performance, NPS). Swap the roll target, factor titles/values/colours, and the unlock card copy. The ring shader is a reusable circular progress indicator.",
+      "techniques": ["dashboard", "counter", "ui-mockup", "glow"],
+      "mood": ["light", "playful", "techy"],
+      "videoTypes": ["launch-playbook", "app-store-preview", "announce-feature", "explainer"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.3, 0.5, 0.82]
+    },
+    {
+      "file": "scenes/05-outro.ts",
+      "title": "Glossy 3D bolt-tile logo lockup on lime with tagline and URL",
+      "beat": "logo",
+      "alsoFits": ["cta"],
+      "summary": "Opens on solid lime with faint white sunburst rays turning. A glossy black 3D rounded tile with an extruded emissive lime bolt drops out of the lens, turning to face camera with a small overshoot; the 'LightPay' wordmark slides out beside it, then the olive tagline 'Money at the speed of light.', a short rule and 'lightpay.app' rise in. Six silver and ink coins drift slowly around the edges while the camera pushes in gently for the ~2s hold.",
+      "build": "The mark is two ExtrudeGeometry meshes (roundedRectShape tile + boltShape from components/props.ts) with clearcoat MeshPhysicalMaterial lit by studio(). Lockup is laid out by measure() so mark + gap + wordmark centre together and scale to fit portrait frames. Drift coins use makeCoin; camera z glides over the whole duration.",
+      "reuse": "A solid closing lockup for any brand with a simple vector mark: replace the bolt shape with your logo shape, change the background colour, wordmark, tagline and URL. LightPay is fictional.",
+      "techniques": ["3d-objects", "coins", "kinetic-type", "glow"],
+      "mood": ["bold", "minimal", "playful"],
+      "videoTypes": ["launch-playbook", "brand-sting", "app-store-preview", "announce-feature"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.12, 0.3, 0.8]
+    }
+  ]
+}

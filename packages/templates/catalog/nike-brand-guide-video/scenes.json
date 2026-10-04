@@ -1,0 +1,80 @@
+{
+  "arc": "logo (mark draws on + glitch lockup) → brand palette (overlapping colour sheets) → brand type specimen (typed words on guideline rules) → brand collage (photos orbit a receding tagline) → logo/cta (blocks assemble into tagline, mark flashes, URL sign-off)",
+  "scenes": [
+    {
+      "file": "scenes/01-mark.tsx",
+      "title": "Swoosh draws on, 'DO IT LATER.' flash-glitches in, ink panel wipes",
+      "beat": "logo",
+      "alsoFits": ["hook", "brand"],
+      "summary": "On white (#FEFEFE) a 400px ink swoosh reveals left-to-right while lifting 26px, then breathes slightly. Below it the condensed 800-weight lockup 'DO IT LATER.' stutters into presence with a flicker glitch. At frames 51–59 a solid #101010 panel slides in from the right and owns the frame for the cut.",
+      "build": "Swoosh (components/Swoosh.tsx) is the SVG asset in an overflow-hidden box with a clip-path inset driven by `clip`. GlitchText/useGlitchFlash (components/GlitchText.tsx) returns a per-2-frame on/off/weak opacity from seeded random whose odds of being lit rise linearly through the entrance. The ink wipe is a full-frame div with translateX % interpolated.",
+      "reuse": "Use as a brand-guide or sting opener: swap the SVG mark and lockup text. The flash-glitch helper is reusable for any logo or word entrance. Don't ship the Nike swoosh or its parody lines for another brand.",
+      "techniques": ["mask-reveal", "kinetic-type"],
+      "mood": ["minimal", "bold", "editorial"],
+      "videoTypes": ["brand-sting", "freeform-video"],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [0.15, 0.45, 0.65]
+    },
+    {
+      "file": "scenes/02-palette.tsx",
+      "title": "Brand palette as overlapping sheets sliding in with hex labels",
+      "beat": "brand",
+      "alsoFits": ["transition"],
+      "summary": "On the ink field, colour sheets slide in from the right and stop at their resting edges — sand #D1C481, bone #D1CDC9, paper #FEFEFE — so the frame reads as four vertical bands, each labelled with its hex code centred in the visible sliver. Labels fade, then the white sheet keeps travelling left and floods the whole frame.",
+      "build": "Each sheet is a div from its interpolated `left` to the right edge (width 1920-left), stacked by zIndex, so the bands are slivers of earlier sheets. Labels compute their centre from their own left and the next sheet's left and fade when the sliver is narrower than ~150–260px. The last sheet has a 4-key interpolate (slide in, rest, flood).",
+      "reuse": "Drop-in palette reveal for any brand guide or design-system video: edit the SHEETS array (hex, label, rest x, start frame). The flood-to-last-colour ending hands off cleanly to the next scene.",
+      "techniques": ["mask-reveal", "kinetic-type"],
+      "mood": ["minimal", "editorial", "premium"],
+      "videoTypes": ["brand-sting", "freeform-video", "explainer"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.2, 0.45, 0.7]
+    },
+    {
+      "file": "scenes/03-specimen.tsx",
+      "title": "Type specimen: words type onto cap/median/baseline rules with a colour trail",
+      "beat": "brand",
+      "alsoFits": ["concept"],
+      "summary": "Three thin guideline rules draw out on white under a 'GUIDELINES' caption. Six words type on one at a time at ~190px, sitting exactly on the baseline — 'TOMORROW', 'SNOOZE', 'DOUBT IT.', 'SHRUG', 'FIND SNACKS.', 'DON’T DO IT.' — each with a parody face label below ('Procrastina Extrabold', 'Snooze Medium'…). The newest characters glow in that word's accent (green, purple, teal, orange, blue) and cool to ink four characters back, a tall block cursor rides the caret, and each word backspaces away before the next; the last holds.",
+      "build": "Word index = floor(frame / WORD_DUR) with type/hold/backspace phases (TYPE_DUR, HOLD_END in brand.ts). Only typed chars render so the cursor follows the caret; each char's colour is mix(accent, ink, dist/TRAIL). METRICS per family give font size and baseline shift so cap→baseline fills the 146px band exactly.",
+      "reuse": "Ideal for showing a typeface, a list of names, or punchy taglines in sequence. Swap the SPECIMEN array (text, face label, accent, family); re-measure METRICS if you change fonts. The parody copy is template-specific.",
+      "techniques": ["typewriter", "kinetic-type"],
+      "mood": ["editorial", "minimal", "humorous"],
+      "videoTypes": ["brand-sting", "freeform-video", "explainer"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.1, 0.5, 0.95]
+    },
+    {
+      "file": "scenes/04-collage.tsx",
+      "title": "Photo ring orbits a tagline that recedes into blurred depth",
+      "beat": "brand",
+      "alsoFits": ["atmosphere", "transition"],
+      "summary": "The held 'DON’T DO IT.' slides to centre, shrinks to ~0.3× and blurs as if falling away on Z while the rules clear. Nine food photos pop in one by one on a wide elliptical orbit around it, each tilted, wobbling and bobbing as the ring turns. Then six shots fade, three break orbit and straighten into white blocks at fixed positions, and the background cuts to ink.",
+      "build": "Card position = ellipse (RX 620, RY 330) at angle i/9·2π + frame·SPIN; per-card seeded tilt plus sin/cos wobble and bob. The tagline uses the same DOM/baseline maths as scene 03 so frame 0 is pixel-identical, with transform-origin set to its measured ink centre. SURVIVES maps three cards to OUTRO_BLOCKS (brand.ts) and lerps x/y/w/h with a white overlay crossfade.",
+      "reuse": "Borrow the elliptical photo orbit for any brand/applications/lifestyle collage: swap IMAGES and count. The receding-blur text is a nice depth device. The convergence to OUTRO_BLOCKS only matters if you also use scene 05.",
+      "techniques": ["orbit", "collage", "photo-media", "depth-parallax"],
+      "mood": ["editorial", "energetic", "premium"],
+      "videoTypes": ["brand-sting", "freeform-video", "launch-playbook"],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [0.2, 0.55, 0.95]
+    },
+    {
+      "file": "scenes/05-outro.tsx",
+      "title": "White blocks assemble into 'Don’t do it.', mark flashes, genmotion.dev sign-off",
+      "beat": "logo",
+      "alsoFits": ["cta"],
+      "summary": "On ink, three scattered white blocks travel into one centred row and crossfade into the white condensed words 'Don’t', 'do', 'it.' at 118px, floating together. The tagline flash-glitches out, a white swoosh flickers in centre, breathes and glitches away, and a GenMotion mark with 'genmotion.dev' flickers in to close.",
+      "build": "Block rects lerp from OUTRO_BLOCKS to measured TARGETS (glyph widths + GAP) with staggered starts; a white fill fades as the glyph span fades in. Three GlitchFlash groups (GlitchText.tsx) sequence tagline exit, mark in/out and sign-off in.",
+      "reuse": "Good end-card pattern: placeholder blocks resolving into words, then glitch-swap to logo and URL. Re-measure SIZES when changing words. Swap the swoosh and sign-off for your brand.",
+      "techniques": ["kinetic-type", "mask-reveal"],
+      "mood": ["bold", "minimal", "dark"],
+      "videoTypes": ["brand-sting", "freeform-video", "launch-playbook"],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [0.2, 0.55, 0.92]
+    }
+  ]
+}
