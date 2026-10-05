@@ -397,104 +397,113 @@ export function HeroComposer({
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        addFiles(e.dataTransfer.files);
-      }}
-      className={cx(
-        "w-full max-w-2xl rounded-2xl border bg-surface px-3 py-2.5 shadow-[0_12px_50px_rgba(0,0,0,0.35)] transition-colors duration-150 focus-within:border-[#2a2a31]",
-        dragging ? "border-accent/60 bg-accent/5" : "border-[#1f1f24]",
-      )}
-    >
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          addFiles(e.target.files);
-          e.target.value = "";
+    <div className="relative w-full max-w-2xl rounded-2xl">
+      {/* The bloom behind the box. Drawn before the form so the form's own
+          opaque surface covers the middle of it and only the bleed shows. */}
+      {!dragging && <div aria-hidden className="brand-bloom" />}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
         }}
-      />
-      {files.length > 0 && (
-        <div className="mb-1.5 flex flex-wrap gap-1.5 px-1">
-          {files.map((file) => (
-            <span
-              key={`${file.name}:${file.size}`}
-              className="inline-flex max-w-[16rem] items-center gap-1.5 rounded-full border border-border bg-surface-raised py-0.5 pl-2 pr-1 text-[0.857rem] text-text-secondary"
-              title={file.name}
-            >
-              <PaperclipIcon className="size-3.5 shrink-0 text-text-tertiary" />
-              <span className="truncate">{file.name}</span>
-              <span className="shrink-0 text-text-tertiary">{fileKind(file)}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${file.name}`}
-                onClick={() => setFiles((current) => current.filter((f) => f !== file))}
-                className="flex size-5 shrink-0 items-center justify-center rounded-full text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
-              >
-                <CloseIcon className="size-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="flex items-start gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.svg"
-          alt="GenMotion"
-          className="ml-1 mt-1.5 size-4 shrink-0 rounded-[4px]"
-        />
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          addFiles(e.dataTransfer.files);
+        }}
+        className={cx(
+          "relative w-full rounded-2xl border bg-surface px-3 py-2.5 shadow-[0_12px_50px_rgba(0,0,0,0.35)] transition-colors duration-150",
+          // Dragging keeps the plain accent treatment: the drop state has to
+          // read as a state, which it can't while the brand edge is lit.
+          dragging
+            ? "border-accent/60 bg-accent/5"
+            : "brand-edge border-transparent",
+        )}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = "";
           }}
-          onPaste={handlePaste}
-          placeholder={dragging ? "Drop to attach" : placeholder}
-          rows={2}
-          autoFocus
-          className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
         />
-      </div>
-      <div className="flex items-center justify-between gap-1.5 pt-1">
-        <div className="flex min-w-0 items-center gap-1">
-          <AddMenu
-            onAttachFile={() => fileInputRef.current?.click()}
-            onShareFolder={onShareFolder}
-            sharingFolder={sharingFolder}
+        {files.length > 0 && (
+          <div className="mb-1.5 flex flex-wrap gap-1.5 px-1">
+            {files.map((file) => (
+              <span
+                key={`${file.name}:${file.size}`}
+                className="inline-flex max-w-[16rem] items-center gap-1.5 rounded-full border border-border bg-surface-raised py-0.5 pl-2 pr-1 text-[0.857rem] text-text-secondary"
+                title={file.name}
+              >
+                <PaperclipIcon className="size-3.5 shrink-0 text-text-tertiary" />
+                <span className="truncate">{file.name}</span>
+                <span className="shrink-0 text-text-tertiary">{fileKind(file)}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${file.name}`}
+                  onClick={() => setFiles((current) => current.filter((f) => f !== file))}
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
+                >
+                  <CloseIcon className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-start gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt="GenMotion"
+            className="ml-1 mt-1.5 size-4 shrink-0 rounded-[4px]"
           />
-          {accessory}
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            onPaste={handlePaste}
+            placeholder={dragging ? "Drop to attach" : placeholder}
+            rows={2}
+            autoFocus
+            className="w-full resize-none bg-transparent px-1 py-0.5 text-base text-text-primary outline-none placeholder:text-text-tertiary"
+          />
         </div>
-        <div className="flex items-center gap-1.5">
-          <AspectDropdown value={aspect} onChange={setAspect} />
-          <button
-            type="submit"
-            aria-label="Create"
-            disabled={pending || !input.trim()}
-            className={cx(
-              "flex size-8 items-center justify-center rounded-full bg-cta text-background transition-all duration-150 hover:bg-cta-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent/40 outline-none",
-            )}
-          >
-            {pending ? (
-              <Spinner className="size-4 text-background" />
-            ) : (
-              <ArrowRightIcon className="size-[1.05rem]" />
-            )}
-          </button>
+        <div className="flex items-center justify-between gap-1.5 pt-1">
+          <div className="flex min-w-0 items-center gap-1">
+            <AddMenu
+              onAttachFile={() => fileInputRef.current?.click()}
+              onShareFolder={onShareFolder}
+              sharingFolder={sharingFolder}
+            />
+            {accessory}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <AspectDropdown value={aspect} onChange={setAspect} />
+            <button
+              type="submit"
+              aria-label="Create"
+              disabled={pending || !input.trim()}
+              className={cx(
+                "flex size-8 items-center justify-center rounded-full bg-cta text-background transition-all duration-150 hover:bg-cta-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent/40 outline-none",
+              )}
+            >
+              {pending ? (
+                <Spinner className="size-4 text-background" />
+              ) : (
+                <ArrowRightIcon className="size-[1.05rem]" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

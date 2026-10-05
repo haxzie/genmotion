@@ -68,3 +68,89 @@ body,
 .no-drag {
   -webkit-app-region: no-drag;
 }
+
+/*
+ * The home composer's brand edge: the logo's lime→teal gradient drawn twice —
+ * a hairline on the box's own border, and the same gradient blurred behind it
+ * as a bloom. A masked pseudo-element rather than `border-image`, which drops
+ * the rounded corners, and a separate element rather than a `box-shadow`,
+ * which can only glow in one flat colour.
+ *
+ * The gradient is conic and its angle is animated, so the lit arc travels
+ * around the box. That needs `@property`: a plain custom property is an
+ * untyped string and interpolates in jumps, where a registered `<angle>`
+ * tweens. Both layers run the same animation, so ring and bloom stay in step.
+ */
+@property --brand-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes brand-edge-spin {
+  to {
+    --brand-angle: 360deg;
+  }
+}
+
+.brand-edge::before,
+.brand-bloom {
+  background: conic-gradient(
+    from var(--brand-angle),
+    rgba(22, 245, 189, 0) 0deg,
+    #16f5bd 55deg,
+    #c6f91e 115deg,
+    rgba(198, 249, 30, 0.2) 195deg,
+    rgba(22, 245, 189, 0) 255deg,
+    rgba(22, 245, 189, 0) 360deg
+  );
+  animation: brand-edge-spin 8s linear infinite;
+}
+
+.brand-edge::before {
+  content: "";
+  position: absolute;
+  /* The border box, not the padding box, so the ring lands on the 1px border
+     the form already reserves (and keeps transparent) for it. */
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  /* Fill minus content box = the 1px ring. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.brand-edge:focus-within::before {
+  opacity: 0.9;
+}
+
+.brand-bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(20px);
+  opacity: 0.12;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.brand-bloom:has(~ .brand-edge:focus-within) {
+  opacity: 0.22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-edge::before,
+  .brand-bloom {
+    animation: none;
+    --brand-angle: 300deg;
+  }
+}
