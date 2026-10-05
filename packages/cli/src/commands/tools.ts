@@ -303,7 +303,7 @@ In a project, the project's own copy is in package.json:
 export const scenes: Command = {
   name: "scenes",
   summary: "Search the scene library: how a hook, integrations beat or end card was done in a template",
-  help: `Usage: genmotion scenes <search|show> [options]
+  help: `Usage: genmotion scenes <search|show|add> [options]
 
 Every scene of every template, described by the job it does in its video
 (its beat), what is on screen, how it's built and when to borrow it.
