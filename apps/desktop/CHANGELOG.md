@@ -1,5 +1,11 @@
 # @genmotion/desktop
 
+## 0.1.0
+
+### Minor Changes
+
+- 3688c84: Add the scene library: `genmotion scenes search|show|add` and the `search_scenes` / `get_scene` / `fork_scene` tools find how a beat (hook, integrations, stat, end card…) was done in GenMotion's templates, with notes, code and a three-frame filmstrip, and fork the closest scene into the project to re-skin.
+
 ## 0.0.32
 
 ### Patch Changes
