@@ -1,5 +1,11 @@
 # @genmotion/desktop
 
+## 0.1.1
+
+### Patch Changes
+
+- e9c0ee0: Home composer: a rotating brand-gradient hairline and bloom around the box.
+
 ## 0.1.0
 
 ### Minor Changes
