@@ -52,6 +52,10 @@ Next to the model picker on the start screen, there is now an engine picker. Cho
 
 If you are not sure, leave it on HyperFrames. It is where the agent has the most guidance, and the output is the most portable.
 
+## If you also use HyperFrames outside GenMotion
+
+The same engine has a known set of failure modes, and they are the same ones whether you hit them in the CLI or in an agent's output: [a black render](/answers/hyperframes-render-is-black), [a still image from a green check](/answers/hyperframes-first-render-is-a-still-image), [wrong fonts](/answers/hyperframes-fonts-wrong-in-render), [a slow render](/answers/hyperframes-render-is-slow). All are collected in the [HyperFrames answers](/answers/hyperframes).
+
 ## What's next
 
 The timeline for HyperFrames projects is read-only in this release. You can scrub and select, but reordering and retiming go through the agent for now. Writing those edits back into the HTML is the next thing we are doing. The HyperFrames component registry (`hyperframes add`) is not wired up yet either. The agent writes effects by hand from the blueprints in the meantime.

@@ -201,8 +201,14 @@ That's the bet GenMotion makes: that the loop matters more than the engine. A ti
 
 [Download GenMotion](/download) — macOS on Apple silicon, free, and it runs on the Claude Code or Codex subscription you already have.
 
+## If HyperFrames is what you have and something is broken
+
+Most of the pain people report is not a reason to leave. It is a short list of causes that repeat, and each one has a fix. The [HyperFrames answers](/answers/hyperframes) cover the ones that come up most: [a black render](/answers/hyperframes-render-is-black), [a check that passes while the video is wrong](/answers/hyperframes-check-passed-but-the-video-is-wrong), [renders that take 45 seconds longer than they should](/answers/hyperframes-render-takes-45-seconds-longer), and [the determinism rules in one checklist](/answers/hyperframes-determinism-rules).
+
 ## Where to go next
 
+- **[Best HyperFrames Studio alternatives](/blog/best-hyperframes-studio-alternatives)**: HyperFrames now has its own Studio and a desktop app, and this compares the tools against that.
+- **[HyperFrames answers](/answers/hyperframes)** and **[Remotion answers](/answers/remotion)**: sourced fixes for the errors people hit most.
 - **[Remotion alternatives](/blog/remotion-alternatives)** — the same comparison from the other direction, including what Remotion's licence actually costs.
 - **[How to make a product launch video](/blog/how-to-make-a-product-launch-video)** — the script structure, if the video is the problem rather than the tooling.
 - **[Timeline editor](/features/timeline-editor)** and **[AI voiceover](/features/ai-voiceover)** — the two features this article leans on most.

@@ -4,7 +4,7 @@ import { SITE_URL } from "@/lib/marketing/site";
 const BASE = SITE_URL;
 
 // The authenticated app, editor, admin console, and API are never indexable.
-// Everything else (marketing, features, tools, blog, glossary, showcase) is
+// Everything else (marketing, features, tools, blog, answers, glossary, showcase) is
 // public and we WANT it discovered.
 //
 // Every entry is a PREFIX, not a path segment: `/templates` would disallow

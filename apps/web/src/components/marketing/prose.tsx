@@ -20,6 +20,12 @@ import { Streamdown } from "streamdown";
  * ever tried. This content is ours, written in the repo and reviewed in a PR, so
  * links render as real anchors — which also matters for crawlers, since a button
  * carries no href to follow.
+ *
+ * Code blocks get the same treatment. Streamdown wraps every fenced block in a
+ * card with a language label, a copy button and its own scroll containers. An
+ * article wants a bare <pre><code>, so `pre` and `code` are replaced with plain
+ * elements and styled by the className below. The cost is Streamdown's syntax
+ * highlighting, which lives inside that wrapper.
  */
 export function Prose({ children }: { children: string }) {
   return (
@@ -27,6 +33,13 @@ export function Prose({ children }: { children: string }) {
       controls={false}
       linkSafety={{ enabled: false }}
       components={{
+        // Streamdown wraps images with its own chrome (a download control, a placeholder).
+        // A tutorial screenshot should be an <img> and nothing else, lazy so a long
+        // article does not load every one up front.
+        // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text -- alt comes from the markdown
+        img: ({ node: _node, className: _className, ...props }) => <img {...props} loading="lazy" decoding="async" />,
+        pre: ({ node: _node, className: _className, ...props }) => <pre {...props} />,
+        code: ({ node: _node, className: _className, ...props }) => <code {...props} />,
         table: ({ node: _node, className: _className, ...props }) => (
           <div className="overflow-x-auto">
             <table
@@ -67,6 +80,8 @@ export function Prose({ children }: { children: string }) {
         "[&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-5 [&_li]:marker:text-text-tertiary",
         "[&_code]:rounded [&_code]:bg-surface-raised [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em]",
         "[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-surface [&_pre]:p-4",
+        // Inline-code chrome must not leak into a block: the same <code> element.
+        "[&_pre_code]:rounded-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-[0.9rem] [&_pre_code]:leading-relaxed [&_pre_code]:text-text-primary",
         "[&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-4 [&_blockquote]:text-text-tertiary",
         "[&_img]:rounded-lg [&_img]:border [&_img]:border-border",
       ].join(" ")}

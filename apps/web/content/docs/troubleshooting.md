@@ -5,7 +5,7 @@ description: "Fix common GenMotion problems: Chromium or ffmpeg not found, slow 
 group: Reference
 order: 4
 keywords: [GenMotion troubleshooting, genmotion npm 404, "@genmotion/cli", genmotion render error, Chromium not found, ffmpeg not found, MCP server not connecting, blank Three.js render]
-updated: 2026-10-01
+updated: 2026-10-05
 faqs:
   - q: Why is there no genmotion package on npm?
     a: npm refuses the name genmotion as too similar to the existing emotion package. The CLI is published as @genmotion/cli, and it installs the genmotion command. Use npx @genmotion/cli or npm install -g @genmotion/cli.
@@ -89,3 +89,7 @@ Older versions of the Studio wrote a launcher script to `/usr/local/bin/genmotio
 ### HyperFrames projects in the CLI
 
 The CLI renders Three.js and React projects. Open HyperFrames projects in the Studio.
+
+## Errors in HyperFrames and Remotion projects
+
+If the problem is in the composition rather than in GenMotion, the answers are collected at [/answers](/answers): [HyperFrames](/answers/hyperframes) (black renders, slow renders, fonts, install) and [Remotion](/answers/remotion) (delayRender timeouts, stuck renders, licensing). Two to start with are [why a HyperFrames render is black](/answers/hyperframes-render-is-black) and [why a green check can still mean a wrong video](/answers/hyperframes-check-passed-but-the-video-is-wrong).

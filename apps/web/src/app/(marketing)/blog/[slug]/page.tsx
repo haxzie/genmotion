@@ -7,6 +7,7 @@ import { Prose } from "@/components/marketing/prose";
 import { FaqSection } from "@/components/marketing/faq";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { VideoPlayer } from "@/components/marketing/video-player";
+import { SidebarCard } from "@/components/marketing/sidebar-card";
 import { getAllPosts, getPostBySlug, parseBody } from "@/lib/marketing/content";
 import { formatDate } from "@/lib/marketing/format";
 import { pageMetadata } from "@/lib/marketing/seo";
@@ -76,7 +77,12 @@ export default async function BlogPostPage({ params }: Params) {
     <>
     <JsonLd data={jsonLd} />
     <Section>
-      <Container className="max-w-3xl">
+      <Container className="max-w-6xl">
+        {/* Two columns from xl: the post, and a card that stays in view beside it.
+            Below that it is one column and the card is not shown; the page's own
+            call to action at the end carries the offer. */}
+        <div className="grid justify-center gap-x-14 xl:grid-cols-[minmax(0,48rem)_19rem]">
+        <article className="mx-auto w-full max-w-3xl xl:max-w-none">
         <Link
           href="/blog"
           className="inline-flex items-center gap-1.5 text-[0.9rem] text-text-tertiary transition-colors hover:text-green"
@@ -127,6 +133,13 @@ export default async function BlogPostPage({ params }: Params) {
         <div className="mt-16 flex items-center justify-between gap-4 border-t border-border pt-10">
           <p className="text-text-secondary">Ready to make your own?</p>
           <DownloadButton />
+        </div>
+        </article>
+        <aside className="hidden xl:block" aria-label="About GenMotion">
+          <div className="sticky top-24 pt-[4.5rem]">
+            <SidebarCard tool="general" />
+          </div>
+        </aside>
         </div>
       </Container>
     </Section>

@@ -8,7 +8,8 @@
     "start": "next start --port 4000",
     "typecheck": "tsc --noEmit",
     "predev": "node scripts/copy-esbuild-wasm.mjs && node scripts/copy-install-script.mjs",
-    "prebuild": "node scripts/copy-esbuild-wasm.mjs && node scripts/copy-install-script.mjs"
+    "prebuild": "node scripts/copy-esbuild-wasm.mjs && node scripts/copy-install-script.mjs",
+    "check:answers": "node scripts/check-answers.mjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.200",

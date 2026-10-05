@@ -166,8 +166,13 @@ If you're building your own pipeline, steal the idea: ban non-determinism at the
 
 **You need marketing videos — launches, changelogs, feature announcements — and you don't want to build or maintain a rendering pipeline** → a studio. That's the case [GenMotion](/) is built for.
 
+## If you are staying on Remotion
+
+If the licence is fine and the problem is a failing render, you do not need an alternative, you need the cause. The [Remotion answers](/answers/remotion) cover the common ones: [what a delayRender timeout means](/answers/remotion-delayrender-was-called-but-not-cleared), [why a render is stuck](/answers/remotion-render-stuck), [why more concurrency makes it slower](/answers/remotion-render-is-slow), and [what the licence counts as a render](/answers/remotion-do-i-need-a-company-license). If you are weighing a move, see [whether Remotion is worth it for feature and launch videos](/answers/is-remotion-worth-it-for-saas-feature-videos) and [how to port a composition to HyperFrames](/answers/port-remotion-to-hyperframes).
+
 ## Where to go next
 
+- **[Remotion answers](/answers/remotion)** and **[Deterministic rendering](/glossary/deterministic-rendering)**: the fixes, and the principle behind them.
 - **[How to make a product launch video](/blog/how-to-make-a-product-launch-video)** — the script structure, if the video itself is the problem rather than the pipeline.
 - **[Pixel-identical export](/features/pixel-identical-export)** — how the shared-runtime guarantee works.
 - **[AI scene authoring](/features/ai-scene-authoring)** — what the agent actually writes.

@@ -13,3 +13,5 @@ faqs:
 In GenMotion, rendering happens on a headless worker that drives the **same** deterministic runtime as the browser preview, then encodes the frames with ffmpeg. Because both surfaces share one runtime, the rendered MP4 is pixel-identical to what you previewed.
 
 See also: [Frame](/glossary/frame), [Aspect Ratio](/glossary/aspect-ratio).
+
+Rendering with code-to-video tools can go wrong in ways a preview hides. See [Deterministic Rendering](/glossary/deterministic-rendering) for why, and our [answers to common render errors](/answers) for the fixes.

@@ -3,6 +3,7 @@ import { FEATURES } from "@/lib/marketing/features";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 import { TOOLS } from "@/lib/marketing/tools";
 import {
+  getAllAnswers,
   getAllPosts,
   getAllShowcaseVideos,
   getAllTerms,
@@ -25,6 +26,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/use-cases",
     "/blog",
     "/glossary",
+    "/answers",
+    "/answers/hyperframes",
+    "/answers/remotion",
     "/tools",
     "/showcase",
     "/templates",
@@ -60,6 +64,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${BASE}/blog/${p.slug}`,
     lastModified: p.updated || p.date || undefined,
     changeFrequency: "monthly" as const,
+  }));
+
+  // The long tail. `lastModified` is what search engines read as freshness, and
+  // an answer is revised whenever the upstream issue it cites changes status.
+  const answerRoutes = getAllAnswers().map((a) => ({
+    url: `${BASE}/answers/${a.slug}`,
+    lastModified: a.updated || a.date || undefined,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
   }));
 
   const termRoutes = getAllTerms().map((t) => ({
@@ -104,6 +117,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...useCaseRoutes,
     ...toolRoutes,
     ...postRoutes,
+    ...answerRoutes,
     ...termRoutes,
     ...showcaseRoutes,
     ...templateRoutes,

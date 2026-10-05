@@ -2,10 +2,12 @@ import { FEATURES } from "@/lib/marketing/features";
 import { USE_CASES } from "@/lib/marketing/use-cases";
 import { TOOLS } from "@/lib/marketing/tools";
 import {
+  getAllAnswers,
   getAllPosts,
   getAllShowcaseVideos,
   getAllTerms,
 } from "@/lib/marketing/content";
+import { TOOL_META, answerMarkdownHref } from "@/lib/marketing/answers";
 import { SITE_URL } from "@/lib/marketing/site";
 import { listSharedVideos } from "@/lib/marketing/shares";
 import { docMarkdownHref, getAllDocs } from "@/lib/docs/content";
@@ -81,6 +83,19 @@ export async function GET() {
       (v) => `- [${v.title}](${BASE}/showcase/${v.slug}): ${v.description}`,
     ),
   );
+
+  // One section per tool, each answer by its Markdown twin: an agent handed
+  // an error string wants the page without the HTML around it.
+  const answers = getAllAnswers();
+  for (const tool of ["hyperframes", "remotion", "general"] as const) {
+    const forTool = answers.filter((a) => a.tool === tool);
+    if (forTool.length === 0) continue;
+    const meta = TOOL_META[tool];
+    section(`Answers: ${meta.name}`, [
+      ...(meta.href ? [`- [All ${meta.name} answers](${BASE}${meta.href}): ${meta.tagline}`] : []),
+      ...forTool.map((a) => `- [${a.title}](${BASE}${answerMarkdownHref(a.slug)}): ${a.description}`),
+    ]);
+  }
 
   section(
     "Blog",

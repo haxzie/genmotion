@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/docs.md", destination: "/docs-md/introduction" },
         { source: "/docs/:slug([a-z0-9-]+)\\.md", destination: "/docs-md/:slug" },
+        // Same for every answer: `/answers/<slug>.md` is its plain-text twin.
+        { source: "/answers/:slug([a-z0-9-]+)\\.md", destination: "/answers-md/:slug" },
       ],
       afterFiles: [],
       fallback: [],
