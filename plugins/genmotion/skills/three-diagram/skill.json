@@ -1,0 +1,78 @@
+{
+  "id": "three-diagram",
+  "title": "Diagrams (Three.js)",
+  "description": "Forty-four diagram and chart types for Three.js scenes, on three kits: nodes, zones, lanes, lifelines and orthogonal connectors that draw themselves on; scales, axes and marks; and circles, ribbons and a real axonometric projection. Architecture, flowchart, sequence, state, ER, UML, schema, timeline, swimlane, quadrant, radar, loop, tree, layers, exploded views, Venn, funnel, bar, waterfall, treemap, heatmap, line, Gantt, scatter, Sankey, fishbone, Wardley, kanban, journey and more, with the editorial design system, automatic routing, and an audit that fails the check on a broken picture.",
+  "summary": "Forty-four diagram and chart types with editorial taste: automatic routing, label placement, draw-on reveals, and an audit that catches the rest.",
+  "kind": "technique",
+  "category": "Craft",
+  "tags": [
+    "diagram",
+    "chart",
+    "architecture",
+    "threejs",
+    "technical",
+    "explainer",
+    "dataviz"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5"
+  ],
+  "duration": {
+    "minSeconds": 3,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three"
+  ],
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Routing and legibility are frame checks, not code checks."
+    },
+    {
+      "kind": "capability",
+      "id": "validate",
+      "why": "The audit reports through the error channel, so the check is where it surfaces."
+    },
+    {
+      "kind": "capability",
+      "id": "save-asset",
+      "why": "The sans and mono files come into assets/ so the export draws the real faces."
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    }
+  ],
+  "models": [],
+  "triggers": [
+    "draw our architecture",
+    "make a chart of this",
+    "animate a system diagram",
+    "the arrows in my diagram overlap",
+    "show the request flow end to end",
+    "explode this into its parts",
+    "show the schema",
+    "chart the drop-off"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "0.2.0",
+  "icon": "🗺️"
+}
