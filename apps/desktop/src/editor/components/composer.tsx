@@ -36,6 +36,20 @@ function FolderIcon({ className }: { className?: string }) {
   );
 }
 
+// Solar "Clapperboard Edit" (line duotone) — https://creativecommons.org/licenses/by/4.0/
+function ClapperboardEditIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <path
+        strokeLinecap="round"
+        d="M21.998 10.5c-.016-3.732-.162-5.735-1.463-7.036C19.072 2 16.714 2 12 2S4.929 2 3.464 3.464C2 4.93 2 7.286 2 12s0 7.071 1.464 8.535c1.241 1.241 3.123 1.43 6.536 1.46"
+      />
+      <path strokeLinecap="round" d="M21.5 8h-19M7 8l3.5-5.5m3 5.5L17 2.5" opacity=".5" />
+      <path d="m18.562 13.935l.417-.417a1.77 1.77 0 1 1 2.503 2.503l-.417.417m-2.503-2.503s.052.887.834 1.669s1.669.834 1.669.834m-2.503-2.503l-3.835 3.835c-.26.26-.39.39-.5.533a3 3 0 0 0-.338.545c-.078.164-.136.338-.252.686l-.372 1.116l-.12.36m7.92-4.572l-3.835 3.835c-.26.26-.39.39-.533.5a3 3 0 0 1-.545.338c-.164.078-.338.136-.686.252l-1.116.372l-.36.12m0 0l-.362.12a.477.477 0 0 1-.604-.603l.12-.361m.845.844l-.844-.844" />
+    </svg>
+  );
+}
+
 function CloseIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -291,6 +305,11 @@ export const USE_CASES = [
  * `defaultAspect` is what Settings stores. It seeds the picker rather than
  * controlling it: someone who changes the ratio for one video has changed it
  * for that video, not for every video after it.
+ *
+ * `attachment` is a chip for something the message is built *from* rather than
+ * carries — today, a template about to be remixed. It makes the box sendable
+ * on its own, because "remix this, I'll say what I want once it's open" is a
+ * complete request.
  */
 export function HeroComposer({
   onSubmit,
@@ -299,11 +318,14 @@ export function HeroComposer({
   defaultAspect,
   onShareFolder,
   sharingFolder,
+  attachment,
 }: {
   onSubmit: (prompt: string, dims: { width: number; height: number }, files: File[]) => void;
   pending: boolean;
   accessory?: ReactNode;
   defaultAspect?: { width: number; height: number };
+  /** Something the prompt will be applied to, shown ahead of the file chips. */
+  attachment?: { label: string; thumbnail?: string | null; onRemove: () => void } | null;
   /** "Share a folder" in the `+` menu. Absent on a host with no filesystem to share. */
   onShareFolder?: () => void;
   sharingFolder?: boolean;
@@ -386,7 +408,7 @@ export function HeroComposer({
 
   function submit() {
     const prompt = input.trim();
-    if (!prompt || pending) return;
+    if ((!prompt && !attachment) || pending) return;
     onSubmit(prompt, { width: aspect.width, height: aspect.height }, files);
     // Both belong to the new project now. Clearing here rather than on the
     // shell's word keeps the box ready for the next video as soon as the tab
@@ -430,6 +452,34 @@ export function HeroComposer({
             e.target.value = "";
           }}
         />
+        {attachment && (
+          <div className="mb-1.5 flex flex-wrap gap-1.5 px-1">
+            <span
+              className="inline-flex max-w-[20rem] items-center gap-1.5 rounded-full border border-accent/40 bg-accent-muted py-0.5 pl-1 pr-1 text-[0.857rem] text-accent"
+              title={`Remix ${attachment.label}`}
+            >
+              {attachment.thumbnail ? (
+                <img
+                  src={attachment.thumbnail}
+                  alt=""
+                  draggable={false}
+                  className="size-5 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <ClapperboardEditIcon className="ml-1 size-3.5 shrink-0" />
+              )}
+              <span className="truncate">Remix {attachment.label}</span>
+              <button
+                type="button"
+                aria-label={`Don’t remix ${attachment.label}`}
+                onClick={attachment.onRemove}
+                className="flex size-5 shrink-0 items-center justify-center rounded-full text-accent/70 hover:bg-accent/10 hover:text-accent"
+              >
+                <CloseIcon className="size-3" />
+              </button>
+            </span>
+          </div>
+        )}
         {files.length > 0 && (
           <div className="mb-1.5 flex flex-wrap gap-1.5 px-1">
             {files.map((file) => (
@@ -490,7 +540,7 @@ export function HeroComposer({
             <button
               type="submit"
               aria-label="Create"
-              disabled={pending || !input.trim()}
+              disabled={pending || (!input.trim() && !attachment)}
               className={cx(
                 "flex size-8 items-center justify-center rounded-full bg-cta text-background transition-all duration-150 hover:bg-cta-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent/40 outline-none",
               )}

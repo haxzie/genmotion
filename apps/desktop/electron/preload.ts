@@ -44,6 +44,13 @@ const api: DesktopApi = {
       ipcRenderer.off(IPC.projectOpened, handler);
     };
   },
+  onTemplateRequested: (listener) => {
+    const handler = (_event: unknown, templateId: string) => listener(templateId);
+    ipcRenderer.on(IPC.templateRequested, handler);
+    return () => {
+      ipcRenderer.off(IPC.templateRequested, handler);
+    };
+  },
   onProjectClosed: (listener) => {
     const handler = (_event: unknown, dir: string) => listener(dir);
     ipcRenderer.on(IPC.projectClosed, handler);

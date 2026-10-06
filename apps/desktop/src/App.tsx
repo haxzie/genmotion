@@ -13,6 +13,7 @@ import { TabStrip } from "./tabs/tab-strip";
 import { TabHost } from "./tabs/tab-host";
 import { HOME_TAB, useTabsStore } from "./tabs/tabs-store";
 import { useRecentProjectsStore } from "./screens/recent-projects-store";
+import { usePendingTemplateStore } from "./screens/pending-template-store";
 import { useAuth } from "./lib/use-auth";
 import { DevPanel } from "./dev/dev-panel";
 import { ReactGrab } from "./dev/react-grab";
@@ -110,24 +111,39 @@ function Shell() {
     [adopt, activate],
   );
 
+  /**
+   * The start screen's send button: make the project, then hand the prompt to
+   * its chat.
+   *
+   * `templateId` is the composer's chip. A template is *copied* rather than
+   * scaffolded, and that is the only difference: the download and the folder
+   * happen here, on send, so browsing the gallery (or following the web site's
+   * remix link) never writes a project nobody asked for. The template's own
+   * dimensions win over the aspect picker — it is already that shape.
+   */
   const create = useCallback(
     async ({
       prompt,
       width,
       height,
       files,
+      templateId,
     }: {
       prompt: string;
       width: number;
       height: number;
       files: File[];
+      templateId?: string;
     }) => {
       setBusy(true);
       try {
         // Name the project from the opening words of the prompt; the agent can
-        // rename it once it knows what the video actually is.
+        // rename it once it knows what the video actually is. A remix keeps the
+        // template's name, which already describes the video.
         const name = prompt.split(/\s+/).slice(0, 6).join(" ").slice(0, 48);
-        const project = await api.createProject({ name, width, height });
+        const project = templateId
+          ? await api.remixTemplate({ templateId })
+          : await api.createProject({ name, width, height });
         // Files attached on the start screen go into the new project's
         // assets now, before the tab opens, so the first message can carry
         // them as context the way a drop into the chat would. One that fails
@@ -142,7 +158,9 @@ function Shell() {
         // The chat panel picks this up and sends it as the first message —
         // the same handoff the web app uses. `adopt` brings the new tab to
         // the front, so the first turn streams into the tab being looked at.
-        sessionStorage.setItem(`gm-initial-prompt-${project.dir}`, prompt);
+        // A remix sent with an empty box has nothing to say yet: the project
+        // simply opens, and the chat is there when they do.
+        if (prompt) sessionStorage.setItem(`gm-initial-prompt-${project.dir}`, prompt);
         adopt(project);
       } finally {
         setBusy(false);
@@ -223,8 +241,22 @@ function Shell() {
     [client],
   );
 
-  // Opened from outside the renderer — a `genmotion://` remix link.
+  // Opened from outside the renderer — `genmotion clone`, or a deep link.
   useEffect(() => api.onProjectOpened(adopt), [adopt]);
+
+  // The web site's "Open in the app" on a template. It loads into the start
+  // screen's composer as a chip and is remixed when that message is sent, so
+  // the only thing to do here is make sure the user is looking at the box
+  // the chip just landed in.
+  useEffect(
+    () =>
+      api.onTemplateRequested((templateId) => {
+        usePendingTemplateStore.getState().pickById(templateId);
+        useTabsStore.getState().setHomeView("create");
+        activate(HOME_TAB);
+      }),
+    [activate],
+  );
   // Deleted from the editor, or otherwise released by the main process.
   useEffect(() => api.onProjectClosed(forget), [forget]);
 

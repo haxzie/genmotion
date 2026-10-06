@@ -485,6 +485,14 @@ export interface DesktopApi {
   persistTabs(tabs: StoredTabs): void;
   /** A project was opened from outside the renderer — a deep link — and needs a tab. */
   onProjectOpened(listener: (project: DesktopProject) => void): () => void;
+  /**
+   * The web site asked for a template (`genmotion://templates/<id>/remix`).
+   *
+   * Only the *ask* crosses: nothing is downloaded here. The renderer puts the
+   * template on the start screen's composer as a chip, and the remix runs
+   * when that message is sent — the same flow as pressing Remix on a card.
+   */
+  onTemplateRequested(listener: (templateId: string) => void): () => void;
   /** A project was closed from the main process — deleted — and its tab should go. */
   onProjectClosed(listener: (dir: string) => void): () => void;
   /** A tab shortcut from the OS menu. */
@@ -587,6 +595,7 @@ export const IPC = {
   closeProject: "project:close",
   activateProject: "project:activate",
   projectOpened: "project:opened",
+  templateRequested: "template:requested",
   projectClosed: "project:closed",
   restoreTabs: "tabs:restore",
   persistTabs: "tabs:persist",
