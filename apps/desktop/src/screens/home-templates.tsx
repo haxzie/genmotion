@@ -188,6 +188,26 @@ function ClapperboardEditIcon({ className }: { className?: string }) {
   );
 }
 
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m5 12.5 4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+/**
+ * How long the card says so after a pick.
+ *
+ * Long enough to read on the way past as the page scrolls back to the
+ * composer, short enough that a card left under the pointer goes back to
+ * offering the thing it offers.
+ */
+const ADDED_MS = 1800;
+
+/** How long the card keeps the page still so its confirmation can be read. */
+const SCROLL_HOLD_MS = 420;
+
 /**
  * One template: its poster, and its own pre-rendered video on hover.
  *
@@ -209,6 +229,24 @@ function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick:
     const timer = setTimeout(() => setPreviewing(true), 150);
     return () => clearTimeout(timer);
   }, [hovered]);
+
+  // Picking scrolls the page back to the composer, which takes the card out
+  // from under the pointer — so the card has to say what happened itself,
+  // rather than leaving the chip arriving somewhere off screen as the only
+  // sign the click landed. Keyed on a counter so picking the same card twice
+  // restarts the window instead of doing nothing the second time.
+  const [picks, setPicks] = useState(0);
+  const added = picks > 0;
+  useEffect(() => {
+    if (picks === 0) return;
+    const timer = setTimeout(() => setPicks(0), ADDED_MS);
+    return () => clearTimeout(timer);
+  }, [picks]);
+
+  function pick() {
+    setPicks((n) => n + 1);
+    onPick();
+  }
 
   return (
     <motion.div
@@ -232,7 +270,7 @@ function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick:
     >
       <button
         type="button"
-        onClick={onPick}
+        onClick={pick}
         aria-label={`Remix ${template.title}`}
         className="absolute inset-0 block size-full outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
       >
@@ -259,20 +297,31 @@ function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick:
           the same thing, so a click that lands on either is the same pick. */}
       <button
         type="button"
-        onClick={onPick}
+        onClick={pick}
         aria-label={`Remix ${template.title}`}
         title={`Remix ${template.title}`}
         className={cx(
           "absolute right-2 top-2 flex h-8 items-center gap-1.5 rounded-full pl-2 pr-3",
           // Dark rather than a light frost: a poster can be any colour, and a
           // white pill vanished on every pale one.
-          "border border-white/15 bg-black/65 text-[0.857rem] font-medium text-white backdrop-blur-xl",
-          "opacity-0 transition-all duration-150 group-hover:opacity-100 focus-visible:opacity-100",
-          "hover:bg-black/85 outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
+          "border text-[0.857rem] font-medium text-white backdrop-blur-xl",
+          "transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
+          added
+            ? "border-green-strong/40 bg-green/85 opacity-100"
+            : "border-white/15 bg-black/65 opacity-0 hover:bg-black/85 group-hover:opacity-100 focus-visible:opacity-100",
         )}
       >
-        <ClapperboardEditIcon className="size-[1.05rem]" />
-        Remix
+        {added ? (
+          <>
+            <CheckIcon className="size-[0.95rem]" />
+            Added to chat
+          </>
+        ) : (
+          <>
+            <ClapperboardEditIcon className="size-[1.05rem]" />
+            Remix
+          </>
+        )}
       </button>
     </motion.div>
   );
@@ -427,7 +476,22 @@ export function HomeTemplates({
               <TemplateCard
                 key={template.id}
                 template={template}
-                onPick={() => pick(template)}
+                onPick={() => {
+                  pick(template);
+                  // The chip lands in the composer, which is a screen's
+                  // height above here — a confirmation nobody can see is not
+                  // one. `smooth` so it reads as the page moving rather than
+                  // as a different page.
+                  //
+                  // Held for a beat first: Chromium starts a smooth scroll on
+                  // the same frame as the click, which carried the card's own
+                  // "Added to chat" off screen before it had rendered. The
+                  // pause is what makes the two reads as one gesture — the
+                  // card confirms, then the page takes you to where it went.
+                  setTimeout(() => {
+                    scrollRoot.current?.scrollTo({ top: 0, behavior: "smooth" });
+                  }, SCROLL_HOLD_MS);
+                }}
               />
             ))}
           </motion.div>
