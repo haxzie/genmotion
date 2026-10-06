@@ -524,6 +524,7 @@ function registerIpc(): void {
     // The renderer is mounted and listening; anything the command line asked
     // for at launch can be acted on now.
     setImmediate(drainPendingClone);
+    setImmediate(drainPendingTemplate);
     return context;
   });
   ipcMain.handle(IPC.cliStatus, async () => cliStatus());
@@ -621,10 +622,14 @@ function registerAssetProtocol(): void {
  *   dev run, and any unsigned build — only costs the rest of the poll
  *   interval.
  * - `genmotion://templates/<id>/remix` — the web site's "Open in the app"
- *   button. Runs the exact same remix the in-app button does.
+ *   button. It does *not* remix on arrival: the id goes to the start screen's
+ *   composer as a chip, and the copy is made when that message is sent. A
+ *   link followed out of curiosity should not write a project folder, and
+ *   arriving with the prompt box already loaded is the same flow as pressing
+ *   Remix on a card in the app.
  *
- * Either way the window comes to the front first, so a slow remix is at
- * least visibly the foreground app rather than a background surprise.
+ * Either way the window comes to the front first, so the link visibly lands
+ * somewhere rather than being a background surprise.
  */
 function handleDeepLink(url: string): void {
   if (!url.startsWith(`${DESKTOP_PROTOCOL}://`)) return;
@@ -637,22 +642,34 @@ function handleDeepLink(url: string): void {
   const parsed = new URL(url);
   const [, templateId, action] = parsed.pathname.split("/");
   if (parsed.hostname === "templates" && templateId && action === "remix") {
-    remixTemplateAndOpen(templateId)
-      .then((project) => {
-        // Opened from outside the renderer, so it has to be told there is a
-        // new project to put a tab on.
-        window?.webContents.send(IPC.projectOpened, project);
-      })
-      .catch((err: unknown) => {
-      dialog.showErrorBox(
-        "Couldn’t open that template",
-        err instanceof Error ? err.message : "Something went wrong.",
-      );
-      });
+    requestTemplate(templateId);
     return;
   }
 
   desktopAuth.pollNow();
+}
+
+/**
+ * A template asked for from outside the renderer.
+ *
+ * Held until the renderer asks for its launch context when the link is what
+ * started the app — a push sent before the listener is mounted is simply
+ * lost, the same problem `pendingClone` has.
+ */
+let pendingTemplate: string | null = null;
+
+function requestTemplate(templateId: string): void {
+  if (!window || window.webContents.isLoading()) {
+    pendingTemplate = templateId;
+    return;
+  }
+  window.webContents.send(IPC.templateRequested, templateId);
+}
+
+function drainPendingTemplate(): void {
+  const templateId = pendingTemplate;
+  pendingTemplate = null;
+  if (templateId) window?.webContents.send(IPC.templateRequested, templateId);
 }
 
 /**

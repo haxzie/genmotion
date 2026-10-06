@@ -4,7 +4,7 @@ import { UpdateModal } from "../components/update-modal";
 import { useUpdate } from "../lib/use-update";
 import { useTabsStore } from "../tabs/tabs-store";
 import { Home } from "./Home";
-import { Templates } from "./Templates";
+import { Projects } from "./Projects";
 import { Exports } from "./Exports";
 import { Settings } from "./settings";
 import { Marketplace } from "./marketplace";
@@ -28,7 +28,13 @@ export function HomeShell({
 }: {
   busy: boolean;
   onOpen: (dir: string) => void;
-  onCreate: (input: { prompt: string; width: number; height: number; files: File[] }) => void;
+  onCreate: (input: {
+    prompt: string;
+    width: number;
+    height: number;
+    files: File[];
+    templateId?: string;
+  }) => void;
   /** A remixed template or a cloned repository arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
   /** From the Exports page: bring that project's tab up, opening it if need be. */
@@ -59,13 +65,12 @@ export function HomeShell({
           {tab === "create" ? (
             <Home
               busy={busy}
-              onOpen={onOpen}
               onCreate={onCreate}
               onAdopt={onAdopt}
               onOpenUpdate={() => setUpdateOpen(true)}
             />
-          ) : tab === "templates" ? (
-            <Templates onRemixed={onAdopt} />
+          ) : tab === "projects" ? (
+            <Projects onOpen={onOpen} onAdopt={onAdopt} />
           ) : tab === "marketplace" ? (
             <Marketplace />
           ) : tab === "exports" ? (

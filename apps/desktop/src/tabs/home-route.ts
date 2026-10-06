@@ -11,7 +11,7 @@ import { SETTINGS_SECTIONS, type SettingsSection } from "../screens/settings/sec
  * link can name a screen.
  */
 
-const HOME_TABS: readonly HomeTab[] = ["create", "templates", "marketplace", "exports", "settings"];
+const HOME_TABS: readonly HomeTab[] = ["create", "projects", "marketplace", "exports", "settings"];
 
 export interface HomeRoute {
   homeView: HomeTab;

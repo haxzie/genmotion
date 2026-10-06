@@ -52,10 +52,11 @@ function DownloadIcon({ className }: { className?: string }) {
  * A page can't write a project to disk itself, so pressing it doesn't remix
  * on the spot — it offers the ways that lead there: a prompt for the user's
  * own coding agent, which remixes through the CLI; a hand-off to an
- * already-installed app (a `genmotion://` deep link the desktop app answers
- * by running the exact same remix its own button does); getting the app
- * first; or the one CLI command. None of them needs an account: the template
- * files come from the public `/api/templates/:id/files`.
+ * already-installed app (a `genmotion://` deep link the desktop app answers by
+ * loading the template into its prompt box, exactly as its own Remix button
+ * does, and copying it when that message is sent); getting the app first; or
+ * the one CLI command. None of them needs an account: the template files come
+ * from the public `/api/templates/:id/files`.
  */
 export function TemplateRemixButton({
   templateId,
@@ -165,7 +166,7 @@ export function TemplateRemixButton({
                 Open in the app
               </span>
               <span className="block text-[0.8rem] text-text-tertiary">
-                Already have GenMotion installed
+                Loads it into the prompt box, ready to remix
               </span>
             </span>
           </a>
