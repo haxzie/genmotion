@@ -41,7 +41,7 @@ So this is not a takedown. HyperFrames is a well built, genuinely open project w
 | | What it is | Agent | Visual editing | Runs on | Price (checked October 5, 2026) |
 | --- | --- | --- | --- | --- | --- |
 | **HyperFrames Studio** (baseline) | Web editor plus desktop app | Claude Code or Codex, in the app | Canvas, timeline, keyframes, audio | App: Mac, Linux. Web editor: wherever the CLI runs | Framework is Apache 2.0. App price not listed |
-| **GenMotion** | Desktop studio | Your Claude Code or Codex | Frame-accurate preview and timeline | macOS, Apple silicon | Free (5 exports a month), Pro $19 a month, Max $199 a month for 5 seats |
+| **[GenMotion](/)** | Desktop studio | Your Claude Code or Codex | Frame-accurate preview and timeline | macOS, Apple silicon | Free (5 exports a month), Pro $19 a month, Max $199 a month for 5 seats |
 | **Midrender** | Browser editor | Your own, over MCP or a CLI | Timeline, properties, keyframes | Browser | Free, Pro $20 a month, Business $100 a month |
 | **Remotion Studio** | Studio that ships with Remotion | Hand-off to your coding agent | Preview and timeline of your Sequences | Wherever Node runs | Free up to 3 people, then $25 per seat a month or $0.01 per render |
 | **Motion Canvas** | Library plus web editor | None built in | Editor timeline, audio sync | Wherever Node runs | MIT, free |
@@ -69,7 +69,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 
 **Two things to know before you commit.** Sending a request in the app requires a HeyGen account. And the app's default agent setting is Full access, which the documentation describes as able to install, use the internet and run anything with no checks, with an Auto mode that blocks risky steps instead.
 
-## 1. GenMotion: our pick for most people
+## 1. [GenMotion](/): our pick for most people
 
 ![GenMotion Studio: an agent chat on the left, and on the right a video preview above its timeline](/blog/best-hyperframes-studio-alternatives/genmotion.webp)
 

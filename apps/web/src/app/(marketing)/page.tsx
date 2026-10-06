@@ -32,10 +32,10 @@ const homeJsonLd = {
 export const metadata: Metadata = pageMetadata({
   title: "GenMotion - AI video editor for agents",
   description:
-    "Generate a product launch video with AI. Describe it in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
+    "Create and edit videos using Claude Code. Describe a change in plain language and GenMotion's agent animates it as real scenes, previews it frame-accurately, and exports a pixel-perfect MP4.",
   path: "/",
   ogDescription:
-    "Generate a product launch video with AI — describe it, preview it frame-accurately, export a pixel-perfect MP4.",
+    "Create and edit videos using Claude Code: describe it, preview it frame-accurately, export a pixel-perfect MP4.",
 });
 
 const FAQS: Faq[] = [
@@ -93,7 +93,7 @@ export default async function HomePage() {
         }}
         title={
           <>
-            Create product launch videos using{" "}
+            Create and edit videos using{" "}
             {/* Kept on one line as a unit: the mark belongs to the name, and a
                 wrap between them would leave it orphaned at a line end. */}
             <span className="inline-flex items-center gap-2 whitespace-nowrap align-baseline sm:gap-3">
