@@ -1,5 +1,13 @@
 # @genmotion/desktop
 
+## 0.2.2
+
+### Patch Changes
+
+- 3a44de7: MCP connections: one server per marketplace entry (a second Connect resumes the first rather than adding a duplicate), and the main process pushes reachability changes to the renderer so a row flips to Connected the moment an OAuth redirect lands, instead of waiting on a poll the window being backgrounded had paused.
+- 3a44de7: Marketplace icons are the vendors' own filled app tiles rather than Simple Icons' monochrome glyphs, and fill their box edge to edge. Replicate's gradient mark ships inline.
+- 3a44de7: First-run onboarding: pick the coding agent (installing one from npm if it isn't there, with opencode and Grok CLI marked coming soon), then connect the generative-media MCP servers.
+
 ## 0.2.1
 
 ### Patch Changes
