@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { DownloadButton } from "@/components/marketing/download-button";
 import { InstallCommand } from "@/components/marketing/install-command";
-import { CopyTextButton } from "@/components/marketing/copy";
-import { SETUP_PROMPT } from "@/lib/marketing/setup";
 import { HeroShaderBackground } from "@/components/marketing/hero-shader-background";
-import { AgentBadges, AgentGlyphs } from "@/components/marketing/agent-badges";
+import { AgentBadges } from "@/components/marketing/agent-badges";
 import { TiltedScreenshot } from "@/components/marketing/tilted-screenshot";
 import { TemplateMasonry } from "@/components/marketing/template-masonry";
 import { Container, Eyebrow, LinkButton, Section } from "@/components/marketing/primitives";
@@ -61,7 +59,7 @@ export async function LandingHero({
   title,
   lede,
   compact = false,
-  setupPrompt = false,
+  inlineInstall = false,
   children,
 }: {
   badge?: HeroBadge;
@@ -69,8 +67,8 @@ export async function LandingHero({
   lede: React.ReactNode;
   /** No room left under the hero for a screenshot to be pulled into. */
   compact?: boolean;
-  /** A "Copy prompt" button beside the download, for the CLI path, in place of the install command. */
-  setupPrompt?: boolean;
+  /** Put the terminal install beside the download rather than above it. */
+  inlineInstall?: boolean;
   /** Anything extra under the download, e.g. a secondary link. */
   children?: React.ReactNode;
 }) {
@@ -109,21 +107,18 @@ export async function LandingHero({
         <p className="mt-6 max-w-xl text-lg text-text-secondary">{lede}</p>
         <AgentBadges className="mt-6" />
         <div className="mt-8 flex w-full flex-col items-center">
-          {setupPrompt ? (
+          {inlineInstall ? (
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {/* First: the no-install path. The prompt has the agent run the
-                  CLI, so it works on any machine the agent runs on, Mac or not. */}
-              <CopyTextButton
-                size="lg"
-                text={SETUP_PROMPT}
-                label="Copy prompt"
-                copiedLabel="Paste it into your agent"
-                ariaLabel="Copy a prompt that sets up GenMotion in Claude Code, Codex or OpenCode"
-                icon={<AgentGlyphs />}
-              />
-              {/* To /download rather than the dmg: that page offers the Studio
+              {/* The download leads. "for free" because the price is the first
+                  question people have about a desktop app, and the answer is
+                  worth more here than the word it costs.
+
+                  To /download rather than the dmg: that page offers the Studio
                   and the CLI, and this hero is for both. */}
-              <DownloadButton size="lg" />
+              <DownloadButton size="lg" label="Download for free" />
+              {/* Beside it rather than above: the same release, for people who
+                  would rather not leave the terminal. */}
+              <InstallCommand compact />
             </div>
           ) : (
             <>

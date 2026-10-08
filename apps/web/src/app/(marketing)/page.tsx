@@ -85,7 +85,7 @@ export default async function HomePage() {
     <>
       <JsonLd data={homeJsonLd} />
       <LandingHero
-        setupPrompt
+        inlineInstall
         badge={{
           label: "Announcement",
           text: "Launching GenMotion",

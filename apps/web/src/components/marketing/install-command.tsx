@@ -18,10 +18,19 @@ import { CheckIcon, CopyIcon, useCopy } from "@/components/marketing/copy";
  */
 export function InstallCommand({
   command = STUDIO_INSTALL_COMMAND,
+  compact = false,
   className,
   onCopy,
 }: {
   command?: string;
+  /**
+   * Tighter type and padding, and the command clipped to a fixed width, for
+   * the hero — where this sits beside the download button rather than on a
+   * line of its own, and a pill as wide as the command is long outweighs the
+   * button it is meant to sit behind. Only the display is clipped; the copy,
+   * the `title` and the label a screen reader gets are the whole command.
+   */
+  compact?: boolean;
   className?: string;
   /** Called on each copy, e.g. to record which way in someone took. */
   onCopy?: () => void;
@@ -36,8 +45,12 @@ export function InstallCommand({
         void copy();
       }}
       aria-label={copied ? "Command copied" : `Copy: ${command}`}
+      title={command}
       className={[
-        "group flex max-w-full cursor-pointer items-center gap-2 rounded-full border border-border bg-surface-raised/70 py-1.5 pl-4 pr-1.5",
+        "group flex max-w-full cursor-pointer items-center rounded-full border border-border bg-surface-raised/70",
+        // `h-12` is the lg DownloadButton's own height, so the two line up
+        // beside each other in the hero without either being nudged.
+        compact ? "h-12 gap-1.5 pl-4 pr-1.5" : "gap-2 py-1.5 pl-4 pr-1.5",
         "transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover",
         "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         className,
@@ -45,7 +58,17 @@ export function InstallCommand({
         .filter(Boolean)
         .join(" ")}
     >
-      <code className="overflow-x-auto whitespace-nowrap font-mono text-[0.8rem] text-text-secondary sm:text-[0.9rem]">
+      <code
+        className={[
+          "whitespace-nowrap font-mono text-text-secondary",
+          compact
+            // Ellipsised rather than scrolled: there is nothing to do with a
+            // scrollbar on a string you are going to copy whole anyway, and
+            // the first few words are enough to recognise it by.
+            ? "max-w-[11rem] overflow-hidden text-ellipsis text-[0.72rem] sm:max-w-[14rem] sm:text-[0.78rem]"
+            : "overflow-x-auto text-[0.8rem] sm:text-[0.9rem]",
+        ].join(" ")}
+      >
         <span className="select-none text-text-tertiary">$ </span>
         {command}
       </code>
