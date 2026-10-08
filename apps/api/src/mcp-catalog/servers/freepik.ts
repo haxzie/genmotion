@@ -1,12 +1,12 @@
 import { defineMcpCatalogEntry } from "@genmotion/shared";
-import { brand, favicon } from "../icons";
+import { favicon } from "../icons";
 
 export default defineMcpCatalogEntry({
   id: "freepik",
   name: "Freepik",
   description: "Stock photos, vectors and icons, plus Mystic image generation.",
   category: "Stock & assets",
-  iconUrl: brand("freepik", "1273EB"),
+  iconUrl: favicon("freepik.com"),
   homepage: "https://www.pulsemcp.com/servers/freepik",
   transport: "http",
   url: "https://api.freepik.com/mcp",

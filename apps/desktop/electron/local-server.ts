@@ -18,6 +18,7 @@ import {
   type ProjectManifest,
 } from "@genmotion/project";
 import { ENTRY_FILE, splitAudioClip as splitHyperframesAudioClip } from "@genmotion/hyperframes";
+import { IPC } from "./shared";
 import type { ProjectFileContent, ProjectFileNode } from "./shared";
 import type { ProjectSession } from "./project-session";
 import { getSession, listSessions } from "./session-registry";
@@ -369,6 +370,14 @@ export async function startLocalServer(
     // project — the start screen offers the choice before a folder exists.
     if (rest[0] === "agents") {
       send(res, 200, await agentRoutes(method, req));
+      return;
+    }
+
+    // First run: which coding agents this machine has, and whether the
+    // walkthrough has been through. Above the project gate for the same
+    // reason the harness is — it runs before any folder exists.
+    if (rest[0] === "onboarding") {
+      send(res, 200, await onboardingRoutes(method, rest.slice(1), req));
       return;
     }
 
@@ -815,6 +824,34 @@ export async function startLocalServer(
     // wrong, which outranks any cooldown of ours.
     const refresh = new URL(req.url ?? "/", "http://localhost").searchParams.has("refresh");
     return harnessState(refresh);
+  }
+
+  /**
+   * First-run onboarding: the walkthrough's own flag, and the one action it
+   * takes that the rest of the app has no use for — installing a harness.
+   *
+   * `POST /install` answers with the fresh `HarnessState` rather than a bare
+   * ok, because a successful install is only interesting insofar as the row
+   * now says "Installed" — and that answer has to come from a re-detect, not
+   * from the cache the install just invalidated.
+   */
+  async function onboardingRoutes(
+    method: string,
+    rest: string[],
+    req: http.IncomingMessage,
+  ): Promise<unknown> {
+    const { completeOnboarding, onboardingState } = await import("./preferences");
+    if (rest[0] === "install") {
+      if (method !== "POST") throw new Error("POST only");
+      const { id } = await readJson<{ id?: string }>(req);
+      if (!id) throw new Error("Missing harness id");
+      const { installHarness } = await import("./agent/install");
+      const result = await installHarness(id);
+      const { harnessState } = await import("./agent/registry");
+      return { ...result, harness: await harnessState(true) };
+    }
+    if (method === "POST") return completeOnboarding();
+    return onboardingState();
   }
 
   /**
@@ -1633,6 +1670,16 @@ export async function startLocalServer(
     setCallbackUrl(`${origin}${MCP_OAUTH_CALLBACK_PATH}`);
     let timer: NodeJS.Timeout | null = null;
     mcpManager.onChange(() => {
+      // Tell the renderer at once, debounce only the expensive half. The
+      // moment this matters most is an OAuth redirect landing while the app
+      // sits behind the browser — react-query pauses a refetch interval on a
+      // window Chromium considers hidden, so the list can stay on
+      // "needs-auth" long after the server is in fact connected.
+      void import("electron").then(({ BrowserWindow }) => {
+        for (const window of BrowserWindow.getAllWindows()) {
+          if (!window.isDestroyed()) window.webContents.send(IPC.mcpChanged);
+        }
+      });
       if (timer) clearTimeout(timer);
       timer = setTimeout(async () => {
         timer = null;

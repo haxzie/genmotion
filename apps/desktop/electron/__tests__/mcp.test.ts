@@ -131,6 +131,25 @@ describe("McpManager", () => {
     expect(view.tools).toEqual([]);
   });
 
+  it("keeps one row per marketplace entry, and leaves custom servers alone", async () => {
+    const entry = { name: "Fixture Echo", transport: "http" as const, url: open.url, catalogId: "fixture-echo" };
+    const first = await mcpManager.add(entry);
+    const second = await mcpManager.add(entry);
+    // The second Connect is the same row: a duplicate would be the same
+    // account and the same tools under a second `mcp__…__` prefix.
+    expect(second.id).toBe(first.id);
+    expect((await readSettings()).mcpServers).toHaveLength(1);
+
+    // Two of someone's own servers on one host is a reasonable thing to want.
+    await mcpManager.add({ name: "Mine", transport: "http", url: open.url });
+    await mcpManager.add({ name: "Mine", transport: "http", url: open.url });
+    expect((await readSettings()).mcpServers?.map((s) => s.id)).toEqual([
+      "fixture-echo",
+      "mine",
+      "mine-2",
+    ]);
+  });
+
   it("reports an error for a server that is not there", async () => {
     const added = await mcpManager.add({ name: "Gone", transport: "http", url: closedUrl });
     const view = await mcpManager.refresh(added.id);

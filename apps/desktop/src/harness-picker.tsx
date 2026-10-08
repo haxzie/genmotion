@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cx, Spinner } from "@/components/ui";
-import { EFFORT_LEVELS, useHarness, type EffortLevel, type HarnessId } from "./lib/use-harness";
-
-/**
- * Claude Code's mark, from simple-icons (CC0). Inlined rather than pulling in
- * the package for one path — 3,453 icons is a lot of bundle for one glyph.
- */
-const CLAUDE_PATH =
-  "M21 10.5h3v3h-3v3h-1.5v3H18v-3h-1.5v3H15v-3H9v3H7.5v-3H6v3H4.5v-3H3v-3H0v-3h3v-6h18Zm-15 0h1.5v-3H6Zm10.5 0H18v-3h-1.5z";
+import { HarnessIcon } from "./components/harness-icon";
+import { EFFORT_LEVELS, useHarness, type EffortLevel } from "./lib/use-harness";
 
 /** The slider thumb's diameter, in px — the native input's thumb is sized to match. */
 const THUMB = 20;
@@ -19,47 +13,6 @@ const EFFORT_LABEL: Record<EffortLevel, string> = {
   xhigh: "Extra high",
   max: "Max",
 };
-
-function HarnessIcon({ id, className }: { id: HarnessId; className?: string }) {
-  if (id === "claude-code") {
-    return (
-      <svg viewBox="0 0 24 24" className={className} fill="#D97757" aria-hidden>
-        <path d={CLAUDE_PATH} />
-      </svg>
-    );
-  }
-  if (id === "codex") {
-    // OpenAI ships no public SVG of this mark and it isn't in the icon set we
-    // use, so the glyph is the template image from the installed Codex app —
-    // the same monochrome mark it puts in the macOS menu bar. Painted through
-    // a mask so it inherits `currentColor` like the other icons here.
-    return (
-      <span
-        role="img"
-        aria-hidden
-        className={className}
-        style={{
-          display: "inline-block",
-          backgroundColor: "currentColor",
-          maskImage: "url(/codex-mark.png)",
-          WebkitMaskImage: "url(/codex-mark.png)",
-          maskSize: "contain",
-          WebkitMaskSize: "contain",
-          maskRepeat: "no-repeat",
-          WebkitMaskRepeat: "no-repeat",
-          maskPosition: "center",
-          WebkitMaskPosition: "center",
-        }}
-      />
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-      <circle cx="8.5" cy="12" r="4" />
-      <path d="M12 12h9M17.5 12v3M20.5 12v2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 /**
  * The model driving the chat, and what else this machine could run.

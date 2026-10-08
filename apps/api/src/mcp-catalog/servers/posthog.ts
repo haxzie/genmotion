@@ -1,12 +1,12 @@
 import { defineMcpCatalogEntry } from "@genmotion/shared";
-import { brand, favicon } from "../icons";
+import { favicon } from "../icons";
 
 export default defineMcpCatalogEntry({
   id: "posthog",
   name: "PostHog",
   description: "Product analytics — real numbers for a stats or growth video.",
   category: "Data",
-  iconUrl: brand("posthog", "F9BD2B"),
+  iconUrl: favicon("posthog.com"),
   homepage: "https://posthog.com/docs/model-context-protocol",
   transport: "http",
   url: "https://mcp.posthog.com/mcp",

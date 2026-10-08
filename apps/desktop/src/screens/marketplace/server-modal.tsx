@@ -116,6 +116,43 @@ function joinArgs(args: string[]): string {
   return args.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ");
 }
 
+/**
+ * The two parties to the connection, as a pair of marks.
+ *
+ * GenMotion's tile and the vendor's, leaning into each other and overlapping —
+ * the shape of the thing the dialog is about to do, said before the sentence
+ * under it says it. The vendor's sits on top because it is the one the user
+ * picked; GenMotion's is the constant and gives way.
+ *
+ * `rounded-[28%]` is the squircle the login screen's mark already uses, so an
+ * app icon lands in the same silhouette everywhere it is framed.
+ */
+function ConnectionMarks({ name, iconUrl }: { name: string; iconUrl: string }) {
+  const tile =
+    "flex size-14 items-center justify-center overflow-hidden rounded-[28%] shadow-[0_8px_24px_rgba(0,0,0,0.45)]";
+  return (
+    <div className="mb-5 flex items-center justify-center" aria-hidden>
+      <span className={cx(tile, "-rotate-[7deg] border border-border bg-surface-raised")}>
+        <img src="/logo.svg" alt="" className="size-7" />
+      </span>
+      {/* Over GenMotion's corner and lifted above it, with a cut of the
+          dialog's own background ringing it — without that the two tiles
+          merge into one shape at a glance, and the overlap stops reading as
+          two things meeting. */}
+      <span
+        className={cx(
+          tile,
+          "relative z-10 -ml-3 rotate-[7deg] bg-surface",
+          "shadow-[0_0_0_4px_var(--color-surface),0_8px_24px_rgba(0,0,0,0.45)]",
+        )}
+        title={name}
+      >
+        <img src={iconUrl} alt="" className="size-full object-cover" />
+      </span>
+    </div>
+  );
+}
+
 export function McpServerModal({
   mode,
   onClose,
@@ -182,7 +219,13 @@ export function McpServerModal({
   const managed = mode.kind === "edit" ? mode.entry : mode.kind === "token" ? mode.entry : undefined;
   const keyAuth = managed?.auth.kind === "header" ? managed.auth : null;
   const title =
-    mode.kind === "add" ? "New MCP server" : mode.kind === "edit" ? `Edit ${mode.server.name}` : `Connect ${mode.entry.name}`;
+    mode.kind === "add"
+      ? "New MCP server"
+      : mode.kind === "edit"
+        ? `Edit ${mode.server.name}`
+        // Both parties named, in the order the marks above sit in: this is a
+        // key being handed from one to the other, not a switch being flipped.
+        : `Connect your ${mode.entry.name} to GenMotion`;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -233,13 +276,31 @@ export function McpServerModal({
     !(mode.kind === "edit" && managed && !keyAuth);
 
   return (
-    <Modal open={open} onClose={onClose} labelledBy="mcp-server-title" dismissible={!pending}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      labelledBy="mcp-server-title"
+      dismissible={!pending}
+      // A marketplace server asks for one field; at the Add form's width that
+      // reads as a page with a gap in it. The Add form keeps the wider panel,
+      // which it needs for transport, URL and the key/value rows.
+      className={managed ? "max-w-sm" : undefined}
+    >
       <form onSubmit={submit} className="p-6">
-        <h2 id="mcp-server-title" className="font-display text-lg font-semibold tracking-tight">
+        {managed && <ConnectionMarks name={managed.name} iconUrl={managed.iconUrl} />}
+        <h2
+          id="mcp-server-title"
+          className={cx(
+            "font-display text-lg font-semibold tracking-tight",
+            // Centred under the pair of marks; the plain Add form has no
+            // marks to centre under and stays a left-aligned form.
+            managed && "text-center",
+          )}
+        >
           {title}
         </h2>
         {managed ? (
-          <p className="mt-1 text-[0.9rem] text-text-secondary">
+          <p className="mt-1 text-center text-[0.9rem] text-text-secondary">
             {keyAuth
               ? `${managed.name} needs an API key. It's kept encrypted on this machine and sent only to ${managed.name}.`
               : `${managed.name} is set up from the marketplace; there's nothing to change here. Use Authenticate on its row to sign in again.`}
@@ -362,13 +423,15 @@ export function McpServerModal({
 
         {error && <p className="mt-3 text-[0.857rem] text-danger">{error}</p>}
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={pending} className="h-9">
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={pending || !canSubmit} className={cx("h-9")}>
+        {/* Stacked and full width: one obvious thing to press, with the way
+            out under it, rather than two small targets sharing a corner. */}
+        <div className="mt-6 flex flex-col gap-2">
+          <Button type="submit" variant="primary" disabled={pending || !canSubmit} className="h-9 w-full">
             {pending && <Spinner className="size-3.5 text-background" />}
             {mode.kind === "edit" ? "Save" : "Connect"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={pending} className="h-9 w-full">
+            Cancel
           </Button>
         </div>
       </form>

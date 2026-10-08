@@ -124,13 +124,13 @@ body,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.55;
+  opacity: 0.38;
   transition: opacity 200ms ease;
   pointer-events: none;
 }
 
 .brand-edge:focus-within::before {
-  opacity: 0.9;
+  opacity: 0.7;
 }
 
 .brand-bloom {

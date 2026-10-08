@@ -1,12 +1,12 @@
 import { defineMcpCatalogEntry } from "@genmotion/shared";
-import { brand } from "../icons";
+import { favicon } from "../icons";
 
 export default defineMcpCatalogEntry({
   id: "github",
   name: "GitHub",
   description: "Repositories, pull requests and releases — the raw material for a PR walkthrough or launch video.",
   category: "Content sources",
-  iconUrl: brand("github", "FFFFFF"),
+  iconUrl: favicon("github.com"),
   homepage: "https://github.com/github/github-mcp-server",
   transport: "http",
   url: "https://api.githubcopilot.com/mcp",

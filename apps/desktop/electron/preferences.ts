@@ -60,3 +60,25 @@ export async function setProjectDefaults(
   await update((settings) => ({ ...settings, defaults: merged }));
   return merged;
 }
+
+/**
+ * Whether first-run onboarding has been through.
+ *
+ * A property of the machine rather than of the account: what it sets up — which
+ * coding agent drives the chat, which MCP servers this install may reach — is
+ * stored on this machine, so a second Mac signed into the same account has its
+ * own first run to do.
+ */
+export async function onboardingState(): Promise<{ completed: boolean }> {
+  const settings = await readSettings();
+  // A machine that already chose a harness has been using the app since before
+  // the walkthrough existed, and has nothing to be walked through. Without
+  // this, shipping onboarding would put it in front of every existing install
+  // exactly once, which is the one audience it is not for.
+  return { completed: typeof settings.onboardedAt === "number" || typeof settings.harness === "string" };
+}
+
+export async function completeOnboarding(): Promise<{ completed: boolean }> {
+  await update((settings) => ({ ...settings, onboardedAt: Date.now() }));
+  return { completed: true };
+}

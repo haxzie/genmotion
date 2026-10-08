@@ -15,6 +15,8 @@ import { HOME_TAB, useTabsStore } from "./tabs/tabs-store";
 import { useRecentProjectsStore } from "./screens/recent-projects-store";
 import { usePendingTemplateStore } from "./screens/pending-template-store";
 import { useAuth } from "./lib/use-auth";
+import { useOnboarding } from "./lib/use-onboarding";
+import { Onboarding } from "./screens/onboarding";
 import { DevPanel } from "./dev/dev-panel";
 import { ReactGrab } from "./dev/react-grab";
 
@@ -45,6 +47,7 @@ export function App() {
 
 function Shell() {
   const auth = useAuth();
+  const onboarding = useOnboarding();
   const [busy, setBusy] = useState(false);
   const client = useQueryClient();
 
@@ -374,6 +377,17 @@ function Shell() {
   }
 
   if (auth.status !== "signed-in") return <LoginScreen state={auth} />;
+
+  // First run, after the gate: the walkthrough needs a signed-in account (its
+  // second step browses the hosted marketplace) and it has to be ahead of the
+  // tab strip, which is the shell of an app you have not set up yet. Nothing
+  // is rendered while the flag is in flight, for the same reason the login
+  // screen isn't: flashing a walkthrough at someone who finished it months
+  // ago would be a lie every launch.
+  if (onboarding.isLoading) return <div className="h-screen bg-background" />;
+  if (onboarding.state?.completed === false) {
+    return <Onboarding onDone={() => onboarding.complete.mutate()} />;
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { catalogEntryToInput, type McpCatalogEntry, type McpServerView } from "@genmotion/shared";
+import type { McpServerView } from "@genmotion/shared";
 import { Button, Input, cx } from "@/components/ui";
 import { useMcpCatalog } from "../../lib/use-mcp-catalog";
-import { useMcpServers } from "../../lib/use-mcp-servers";
 import { CatalogGrid, CatalogSkeleton } from "./catalog-grid";
 import { ServerList } from "./server-list";
-import { McpServerModal, type ServerModalMode, type ServerModalSubmit } from "./server-modal";
+import { McpServerModal } from "./server-modal";
+import { useCatalogConnect } from "./use-catalog-connect";
 
 /**
  * MCP servers, in one place: the ones this machine has, then the ones it
@@ -35,14 +35,21 @@ function matches(query: string, ...fields: (string | string[] | undefined)[]): b
 }
 
 export function Marketplace() {
-  const { servers, isLoading: serversLoading, add, update, remove, refresh, authenticate } = useMcpServers();
+  const {
+    servers: { servers, isLoading: serversLoading, update, remove, refresh, authenticate },
+    connect: connectFromCatalog,
+    busyIds: busyCatalog,
+    connectedId: highlightId,
+    setConnectedId: setHighlightId,
+    modal,
+    setModal,
+    submitModal,
+    error: modalError,
+    pending: modalPending,
+  } = useCatalogConnect();
   const catalog = useMcpCatalog();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
-  const [modal, setModal] = useState<ServerModalMode | null>(null);
-  const [modalError, setModalError] = useState<string | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [busyCatalog, setBusyCatalog] = useState<Set<string>>(new Set());
   const [busyServers, setBusyServers] = useState<Set<string>>(new Set());
 
   // Flash the row a server just landed in, and bring it into view.
@@ -51,7 +58,7 @@ export function Marketplace() {
     document.getElementById(`mcp-server-${highlightId}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     const timer = setTimeout(() => setHighlightId(null), 1800);
     return () => clearTimeout(timer);
-  }, [highlightId]);
+  }, [highlightId, setHighlightId]);
 
   const mark = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string, on: boolean) =>
     set((current) => {
@@ -69,41 +76,6 @@ export function Marketplace() {
       // The row shows the outcome; a toast would say the same thing twice.
     } finally {
       mark(setBusyServers, id, false);
-    }
-  }
-
-  async function connectFromCatalog(entry: McpCatalogEntry) {
-    if (entry.auth.kind === "header") {
-      setModalError(null);
-      setModal({ kind: "token", entry });
-      return;
-    }
-    mark(setBusyCatalog, entry.id, true);
-    try {
-      const created = await add.mutateAsync(catalogEntryToInput(entry));
-      setHighlightId(created.id);
-      if (entry.auth.kind === "oauth") await authenticate.mutateAsync(created.id);
-    } catch {
-      /* the row carries the error */
-    } finally {
-      mark(setBusyCatalog, entry.id, false);
-    }
-  }
-
-  async function submitModal(input: ServerModalSubmit) {
-    setModalError(null);
-    try {
-      if ("id" in input) {
-        const { id, ...patch } = input;
-        await update.mutateAsync({ id, ...patch });
-        setHighlightId(id);
-      } else {
-        const created = await add.mutateAsync(input);
-        setHighlightId(created.id);
-      }
-      setModal(null);
-    } catch (err) {
-      setModalError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
@@ -132,7 +104,6 @@ export function Marketplace() {
       void withServerBusy(server.id, update.mutateAsync({ id: server.id, enabled })),
     onRefresh: (server: McpServerView) => void withServerBusy(server.id, refresh.mutateAsync(server.id)),
     onEdit: (server: McpServerView) => {
-      setModalError(null);
       setModal({
         kind: "edit",
         server,
@@ -150,7 +121,6 @@ export function Marketplace() {
           <Button
             variant="primary"
             onClick={() => {
-              setModalError(null);
               setModal({ kind: "add" });
             }}
           >
@@ -185,7 +155,6 @@ export function Marketplace() {
                 size="sm"
                 className="mt-4"
                 onClick={() => {
-                  setModalError(null);
                   setModal({ kind: "add" });
                 }}
               >
@@ -202,7 +171,6 @@ export function Marketplace() {
               actions={actions}
               highlightId={highlightId}
               onNew={() => {
-                setModalError(null);
                 setModal({ kind: "add" });
               }}
             />
@@ -264,7 +232,7 @@ export function Marketplace() {
         mode={modal}
         onClose={() => setModal(null)}
         onSubmit={submitModal}
-        pending={add.isPending || update.isPending}
+        pending={modalPending}
         error={modalError}
       />
     </div>

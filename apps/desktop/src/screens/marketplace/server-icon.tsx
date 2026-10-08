@@ -22,22 +22,31 @@ export function ServerIcon({
 }) {
   const [failed, setFailed] = useState(false);
   const box = size === "lg" ? "size-12 rounded-xl" : size === "md" ? "size-10 rounded-lg" : "size-7 rounded-md";
-  const glyph = size === "lg" ? "size-7" : size === "md" ? "size-5" : "size-3.5";
   const letter = size === "lg" ? "text-lg" : size === "md" ? "text-base" : "text-[0.786rem]";
+  const drawn = Boolean(iconUrl) && !failed;
 
   return (
     <span className={cx("relative inline-flex shrink-0", className)}>
       <span
         className={cx(
-          "flex items-center justify-center overflow-hidden border border-border bg-surface",
+          "flex items-center justify-center overflow-hidden",
           box,
+          // A vendor's icon is a tile in its own right — brand ground, brand
+          // mark — so it fills the box and brings its own background. The
+          // surface square underneath is for the fallback letter only; left
+          // under an icon it reads as a frame around a sticker, and the
+          // hairline border does the same to an icon that is already dark.
+          drawn ? "ring-1 ring-inset ring-white/10" : "border border-border bg-surface",
         )}
       >
-        {iconUrl && !failed ? (
+        {drawn ? (
+          // `cover`, not `contain`: a few of these arrive with a hair of
+          // transparent padding baked in, which `contain` would honour as a
+          // gap between the colour and the corner radius.
           <img
             src={iconUrl}
             alt=""
-            className={cx("object-contain", glyph)}
+            className="size-full object-cover"
             onError={() => setFailed(true)}
           />
         ) : (

@@ -181,8 +181,24 @@ export async function addServer(input: McpServerInput): Promise<McpServerConfig>
   // `genmotion` is the app's own server; a user's cannot shadow its tools.
   const reserved = new Set(["genmotion"]);
   let created: McpServerConfig | null = null;
+  let duplicate: McpServerConfig | null = null;
   await update((settings) => {
     const existing = settings.mcpServers ?? [];
+    // One row per marketplace entry. A second ElevenLabs is never what
+    // anyone meant — it is the same account, the same tools, and the agent
+    // would see all of them twice under different prefixes. Checked inside
+    // `update`, which serialises writes, so two Connects landing together
+    // can't both read "nothing there" and both write.
+    //
+    // A custom server has no `catalogId` and is not covered: two URLs on one
+    // host are a reasonable thing to want.
+    if (input.catalogId) {
+      const already = existing.find((s) => s.catalogId === input.catalogId);
+      if (already) {
+        duplicate = already;
+        return settings;
+      }
+    }
     const taken = new Set([...reserved, ...existing.map((s) => s.id)]);
     created = {
       id: uniqueId(input.name, taken),
@@ -201,6 +217,10 @@ export async function addServer(input: McpServerInput): Promise<McpServerConfig>
     };
     return { ...settings, mcpServers: [...existing, created] };
   });
+  // Already connected: hand back the row that exists rather than a second
+  // one, and leave its stored key alone — the caller decides whether to
+  // replace it, through Edit.
+  if (duplicate) return duplicate;
   const config = created!;
   const headers = clean(input.headers);
   const env = clean(input.env);

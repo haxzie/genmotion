@@ -172,7 +172,7 @@ export function Home({
           transition={{ duration: 0.45, ease: enterEase }}
         >
           <h1 className="font-display text-3xl tracking-tight">
-            What do you want to animate?
+            What do you want to create?
           </h1>
         </motion.div>
 

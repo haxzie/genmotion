@@ -1,5 +1,5 @@
 import { defineMcpCatalogEntry } from "@genmotion/shared";
-import { brand, favicon } from "../icons";
+import { favicon } from "../icons";
 
 export default defineMcpCatalogEntry({
   id: "exa",

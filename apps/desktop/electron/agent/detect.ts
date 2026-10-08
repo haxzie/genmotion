@@ -42,6 +42,22 @@ function versionManagerBins(home: string): string[] {
 let cachedPath: string | null = null;
 
 /**
+ * Folders learned at runtime rather than guessed — today, the bin folder of
+ * whichever npm installed a harness for us.
+ *
+ * A machine whose npm prefix is somewhere the list below never guesses would
+ * otherwise install a CLI successfully and still be told it isn't there.
+ */
+const learned = new Set<string>();
+
+/** Put a folder on the search path for every probe and child process after this. */
+export function addSearchDir(dir: string): void {
+  if (!dir || learned.has(dir)) return;
+  learned.add(dir);
+  cachedPath = null;
+}
+
+/**
  * GUI apps on macOS don't inherit a login shell's PATH, so a CLI installed by
  * a version manager or into ~/.local/bin is invisible unless we look there.
  *
@@ -65,6 +81,7 @@ function searchPath(): string {
     `${home}/.asdf/shims`,
     `${home}/.npm-global/bin`,
     ...versionManagerBins(home),
+    ...learned,
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",

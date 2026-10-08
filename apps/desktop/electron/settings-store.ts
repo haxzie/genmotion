@@ -28,6 +28,8 @@ export interface Settings {
   mcpServers?: McpServerConfig[];
   /** Which skills are switched off, and which the user installed. See `skills/store.ts`. */
   skills?: SkillSettings;
+  /** When first-run onboarding was finished. Absent until it has been. */
+  onboardedAt?: number;
 }
 
 function settingsFile(): string {

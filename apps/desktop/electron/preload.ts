@@ -72,6 +72,13 @@ const api: DesktopApi = {
       ipcRenderer.off(IPC.scaffoldChanged, handler);
     };
   },
+  onMcpChanged: (listener) => {
+    const handler = () => listener();
+    ipcRenderer.on(IPC.mcpChanged, handler);
+    return () => {
+      ipcRenderer.off(IPC.mcpChanged, handler);
+    };
+  },
   retryScaffold: (dir) => ipcRenderer.invoke(IPC.retryScaffold, dir),
   filmstrips: (dir) => ipcRenderer.invoke(IPC.filmstrips, dir),
   onFilmstripChanged: (listener) => {

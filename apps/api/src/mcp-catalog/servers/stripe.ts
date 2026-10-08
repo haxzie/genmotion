@@ -1,12 +1,12 @@
 import { defineMcpCatalogEntry } from "@genmotion/shared";
-import { brand, favicon } from "../icons";
+import { favicon } from "../icons";
 
 export default defineMcpCatalogEntry({
   id: "stripe",
   name: "Stripe",
   description: "Customers, products and revenue from your Stripe account.",
   category: "Data",
-  iconUrl: brand("stripe", "635BFF"),
+  iconUrl: favicon("stripe.com"),
   homepage: "https://docs.stripe.com/mcp",
   transport: "http",
   url: "https://mcp.stripe.com",

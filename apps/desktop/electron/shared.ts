@@ -499,6 +499,16 @@ export interface DesktopApi {
   onTabCommand(listener: (command: TabCommand) => void): () => void;
   /** The install behind a new HyperFrames project moved; the banner follows it. */
   onScaffoldChanged(listener: (dir: string, state: ScaffoldState) => void): () => void;
+  /**
+   * An MCP server's configuration or reachability changed in the main process.
+   *
+   * A bare signal, not the list: the renderer reads servers over the loopback
+   * (`McpServerView` is built there), so all this has to do is tell it that
+   * what it holds is stale. The push matters because the moment that matters
+   * most — an OAuth redirect landing — is one where the app window is behind
+   * the browser, and a poll alone can be paused exactly then.
+   */
+  onMcpChanged(listener: () => void): () => void;
   /** Run the HyperFrames install again for a project whose first attempt failed. */
   retryScaffold(dir: string): Promise<ScaffoldState>;
   /** Every scene filmstrip the main process has for a project, keyed by scene id. */
@@ -619,6 +629,7 @@ export const IPC = {
   cliInstall: "cli:install",
   projectChanged: "project:changed",
   scaffoldChanged: "project:scaffold-changed",
+  mcpChanged: "mcp:changed",
   retryScaffold: "project:scaffold-retry",
   filmstrips: "filmstrip:list",
   filmstripChanged: "filmstrip:changed",

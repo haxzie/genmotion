@@ -15,12 +15,15 @@ export function Modal({
   children,
   dismissible = true,
   labelledBy,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   dismissible?: boolean;
   labelledBy?: string;
+  /** Appended to the panel, for a dialog that wants a width other than `max-w-md`. */
+  className?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -55,7 +58,7 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}
-            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+            className={`relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.6)] ${className ?? ""}`}
             variants={{
               hidden: { opacity: 0, scale: 0.96, y: 12 },
               visible: { opacity: 1, scale: 1, y: 0 },
