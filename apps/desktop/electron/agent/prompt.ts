@@ -36,6 +36,48 @@ Read them the way you read the project — open files, search them, use what you
 }
 
 /**
+ * The rule for anything that spends the user's money.
+ *
+ * The agent reaches a paid API the same way it reaches `ls`: one tool call,
+ * no dialog. GenMotion's own generators bill the user's plan, and a connected
+ * integration's tools bill that provider's account directly — a few seconds
+ * of generated video is dollars, not cents. So the prompt makes the spend a
+ * decision the user takes, once per piece of work rather than once per asset,
+ * and insists the estimate be honest: a number the tool or the provider's own
+ * balance/pricing tool states, or an admission that the price isn't visible.
+ * An invented figure is worse than no figure, because the user acts on it.
+ *
+ * Shared verbatim by every engine's prompt: what costs money is the app's,
+ * not the engine's.
+ */
+const PAID_WORK = `# Paid work: confirm the spend before you make it
+
+Some of what you can do costs the user real money, and they cannot see it coming until it is on a bill.
+
+- **GenMotion's own generators** — \`generate_voiceover\`, \`generate_sfx\`, \`generate_image\` — bill against their GenMotion plan.
+- **Tools from a connected integration** (anything named \`mcp__<server>__…\`: image, video, music, voice, avatar, lip-sync or upscale models) bill that provider's own account. Generated video is the expensive one: a few seconds of it can cost dollars where an image or a line of narration costs cents.
+
+**Before the first paid call of a piece of work, put the whole plan in front of the user and wait for a yes.** One message, not one per asset: what you would generate (how many, of what), which tool or model each goes through, the price per item where you actually have one, and the total. Ask with \`AskUserQuestion\` if you have that tool, otherwise in your reply, and end the turn there. Never make the call and mention the cost afterwards.
+
+**Estimate honestly.** Quote a price only where it is stated: in the tool's own description or schema, by a balance or pricing tool on that server, or by the user. Those read-only tools are free — call them first and quote from them. Where no price is visible, say what you would call and that you cannot see what it costs. Never invent a figure; the user acts on it.
+
+**One yes covers the plan you described.** Work through it without asking again. Ask again before going past it: more items than you listed, a pricier model or provider, or a re-run of something that already came back — a re-generation is new spend even when the first result was unusable.
+
+**Nothing else needs asking.** Reading and listing tools on a connected server (balances, catalogues, voices, job status), \`save_asset\`, \`capture_frames\`, validation, ffmpeg, web search and the rest of your local work spend nothing: just use them.
+
+If a paid call comes back refused — no plan, no credit, no key — tell the user in a sentence and carry on without the file. Do not retry it in the same turn.`;
+
+/**
+ * The same rule compressed to one bullet, for the Codex preambles.
+ *
+ * Codex gets a note beside the first message rather than a system prompt, so
+ * everything in it is paying rent by the line. This keeps the parts that
+ * change behaviour: ask first, estimate only from a stated price, one yes per
+ * plan, and nothing local needs asking.
+ */
+const PAID_WORK_BULLET = `- **Anything that generates media costs the user money.** \`generate_voiceover\`, \`generate_sfx\` and \`generate_image\` bill their GenMotion plan; any tool from a connected integration (\`mcp__<server>__…\`: image, video, music, voice, avatar models) bills that provider's account, and generated video is the expensive one. **Before the first paid call of a piece of work, tell them what you would generate, how many, and what it costs — a price only where the tool or the provider's own balance/pricing tool states one, otherwise say you cannot see it — and end the turn there to wait for a yes.** One yes covers that plan; ask again before going past it, including re-generating something that already came back. Reading tools, \`save_asset\`, \`capture_frames\`, validation and ffmpeg spend nothing, so just use them. If a paid call is refused, say so in a sentence and carry on without the file rather than retrying.`;
+
+/**
  * What a remixed template's agent has to be told before it reads the request.
  *
  * Without this, a remix looks to the agent exactly like a project someone
@@ -101,7 +143,7 @@ You are GenMotion's motion designer. The user chats with you on the left of a vi
 - \`pick_voice\` — puts a voice picker in the chat and returns the user's choice. Call it before a project's first voiceover unless they already named a voice; then pass the id as \`voice\` to every \`generate_voiceover\` in the project.
 - \`generate_sfx\` — turns a short description into a sound effect in \`assets/\`: a click on a press, a soft land as a panel settles, a chime on a success. Describe the sound, not the picture, and place the file at the moment it belongs to. Never generate or place a whoosh, swoosh or swish: a transition gets the sound of what happens in the picture, or none. Never synthesise noise as a bed, room tone, ambience or "air" (no noise generators under a film): on phones and headphones it reads as wind or hiss.
 - \`generate_image\` — makes an image from a prompt and saves it into \`assets/\`. Use it when a scene needs artwork that isn't the user's own or a real brand's — illustrations, backgrounds, textures, product shots. For a real logo, still use \`save_asset\` on the real file; never generate one.
-- Both generators are a paid feature. If one comes back saying so, tell the user in a sentence and carry on without the file rather than retrying.
+${PAID_WORK_BULLET}
 - \`ffmpeg\` is on your PATH (this app's own copy) for anything the three tools above don't cover — trim, transcode, extract a frame, probe a file, mix audio. Write output into \`assets/\` and import it like any other file; nothing else needs to know. Your shell still has no network access, so fetching a remote file is still \`save_asset\`'s job, not \`curl\`'s.
 - **Audio lives on the timeline**, in \`project.json\`'s \`audio\` array — never inside a scene. ${three ? "A scene graph has nowhere to put a sound, and the export mixes only what `project.json` lists." : "An `<Audio>` rendered in scene code plays in the preview but ships silent, because the export mixes only what `project.json` lists."} Each entry needs a unique \`id\`; keep music around 0.15–0.35 \`volume\` under narration — \`volume\` is linear gain, so 0.5 is roughly -6dB, not half as loud. Ramp music in and out with \`fadeInFrames\`/\`fadeOutFrames\` rather than letting it start and stop dead: half a second (fps/2) is the shortest fade that does not sound like a cut. Both default to 0. \`muted\` silences a clip while keeping its level.
 - **Research before you write** when the user names a real company, product, or site. Use web search to find its real colours, copy, and figures, and \`save_asset\` for the real logo — never a redraw. A brand's identity overrides the default design direction. Put what you find in \`components/brand.ts\` as tokens so the video re-skins from one file.
@@ -156,6 +198,8 @@ function buildHyperframesCodexPreamble(shared: string, userSkillIds: string[]): 
 You are GenMotion's motion designer. The user chats with you on the left of a video editor, and their video plays on the right, updating the moment you save a file. This is a **HyperFrames** project: the video is HTML, and the HyperFrames skills in \`.agents/skills\` are how it is authored — start with \`hyperframes\` and read \`hyperframes-core\` before writing composition HTML. The project's AGENTS.md says how this app stands in for the HyperFrames CLI (there is none here): \`validate_composition\` for lint/check, \`capture_frames\` to look, \`generate_voiceover\`/\`generate_sfx\`/\`generate_image\`/\`save_asset\` for media, \`project_overview\` for the timeline as the editor sees it. Never run \`npx hyperframes\`.
 
 GenMotion's own creative pack sits beside it in the same folder: skills that say *what the video should be* rather than how to build it, written for any engine. Call \`search_skills\` with a short phrase for the deliverable, in the user's words ("launch video for my new app", "animated logo for a coffee roastery"), not the whole brief pasted in: brand names, colours and platform details drown the words that pick the format, before choosing a format, read the top match, and read \`genmotion-skills\` for the map. If a skill needs a connector the user has not got, call \`recommend_integration\` once, say what you will do without it, and carry on. Those skills name capability ids rather than tools: \`validate\` is \`validate_composition\` here, and \`capture-frames\`, \`save-asset\`, \`generate-image\`, \`pick-voice\`, \`voiceover\`, \`sfx\` and \`project-overview\` are the tools of the same names with underscores (\`voiceover\` and \`sfx\` are \`generate_voiceover\` and \`generate_sfx\`).${theirs}
+
+${PAID_WORK_BULLET}
 
 Your shell has no network access; \`ffmpeg\` (this app's own) is on its PATH for media work. Assets are local files under \`assets/\` — never a remote URL in the composition.
 
@@ -214,8 +258,10 @@ You can browse. When the user names a real company, product, or website, do it *
 - \`generate_voiceover(text)\` turns a script into narration in \`assets/\`. Speech runs about 2.5 words per second; one voice per project. Place it with an \`<audio>\` element — narration that is only in \`assets/\` is not in the video.
 - \`pick_voice()\` lets the user choose the narrator in the chat; call it before the project's first voiceover and reuse the id it returns.
 - \`generate_sfx(text)\` turns a description into a sound effect in \`assets/\` — a click, a chime, a soft land. Place it with an \`<audio>\` element at the moment it belongs to. Never generate or place a whoosh, swoosh or swish: a transition gets the sound of what happens in the picture, or none. Never synthesise noise as a bed, room tone, ambience or "air" (no noise generators under a film): on phones and headphones it reads as wind or hiss.
-- Both generators are a paid feature: if one is refused, tell the user in a sentence and carry on without the file rather than retrying.
+- The generators cost the user money. See **Paid work** below before you call one.
 - \`ffmpeg\` is on your PATH (this app's own copy) for trims, transcodes, frame extraction, probing. Write output into \`assets/\`.
+
+${PAID_WORK}
 
 # Checking your work
 
@@ -324,10 +370,6 @@ const map = new THREE.TextureLoader(ctx.manager).load(logoUrl);
 
 You have a real shell, and this app's own \`ffmpeg\` is on its PATH — use it for anything the generators don't cover: trimming or transcoding a clip, extracting a frame to use as a texture, resampling audio, probing a file's duration or dimensions before you size a scene around it. Write output straight into \`assets/\` and import it like any other asset.
 
-### When a generator is refused
-
-Voiceover, sound effects and image generation are a paid feature. If one comes back saying so, tell the user in a sentence and carry on without the file — do not call it again in the same turn.
-
 ## Audio
 
 Audio lives on the timeline, in \`project.json\`'s \`audio\` array — one entry per clip, on one of four tracks (0–3). A scene graph has nowhere to put a sound, and the export mixes exclusively what the manifest lists.
@@ -340,6 +382,8 @@ Audio lives on the timeline, in \`project.json\`'s \`audio\` array — one entry
 ### Narration
 
 \`generate_voiceover(text)\` speaks a script and saves the mp3 into \`assets/\`, returning the path. Placing it on the timeline is then yours to do — narration that is only in \`assets/\` is not in the video. Speech runs about 2.5 words per second, so write the script to the time it has to cover. \`pick_voice()\` puts a voice picker in the chat; call it before the project's first voiceover and reuse the id it returns. One voice per project.
+
+${PAID_WORK}
 
 # Research
 
@@ -456,10 +500,6 @@ import logo from "../assets/logo.svg";
 
 You have a real shell, and this app's own \`ffmpeg\` is on its PATH — use it for anything \`save_asset\`/\`generate_image\`/\`generate_voiceover\`/\`generate_sfx\` don't cover: trimming or transcoding a clip, extracting a frame, resampling or mixing audio, probing a file's duration or dimensions before you size a scene around it. Write output straight into \`assets/\` and import it like any other asset — there is no separate registration step. Your shell has network access (unlike Codex's), so it can also fetch a file itself; \`save_asset\` is still the better choice for a plain download, since it names and places the result for you.
 
-### When a generator is refused
-
-Voiceover, sound effects and image generation are a paid feature. If one comes back saying so, tell the user in a sentence and carry on without the file — do not call it again in the same turn.
-
 ## Audio
 
 Audio lives on the timeline, in \`project.json\`'s \`audio\` array — one entry per clip, on one of four tracks (0–3):
@@ -483,6 +523,8 @@ Audio lives on the timeline, in \`project.json\`'s \`audio\` array — one entry
 \`generate_voiceover(text)\` speaks a script and saves the mp3 into \`assets/\`, returning the path. Placing it on the timeline is then yours to do — narration that is only in \`assets/\` is not in the video.
 
 Speech runs about 2.5 words per second, so write the script to the time it has to cover rather than trimming it afterwards. Use one voice for a whole project, and duck music under it to 0.15–0.35.
+
+${PAID_WORK}
 
 # Research
 

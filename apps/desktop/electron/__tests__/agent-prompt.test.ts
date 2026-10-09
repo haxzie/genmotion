@@ -57,6 +57,23 @@ describe("the desktop system prompt", () => {
     expect(hyperframes).toContain("HyperFrames");
     expect(hyperframes).not.toContain("# @genmotion/motion API");
   });
+
+  /**
+   * Spending the user's money is the one thing no engine may differ on: the
+   * generators and the connected integrations are the app's, and an agent
+   * that was never told to ask simply bills them.
+   */
+  it("makes every engine confirm a paid call before making it", () => {
+    for (const prompt of [react, three, hyperframes]) {
+      expect(prompt).toContain("# Paid work: confirm the spend before you make it");
+      expect(prompt).toContain("wait for a yes");
+      expect(prompt).toContain("Never invent a figure");
+    }
+    // The old "tell them afterwards" wording, which this replaced.
+    for (const prompt of [react, three, hyperframes]) {
+      expect(prompt).not.toContain("are a paid feature");
+    }
+  });
 });
 
 describe("the Codex preamble", () => {
@@ -71,5 +88,13 @@ describe("the Codex preamble", () => {
     // `<Audio>` is a React component; a three-engine scene cannot render one.
     expect(three).not.toContain("<Audio>");
     expect(react).toContain("<Audio>");
+  });
+
+  it("carries the spend rule too, in its one-bullet form", () => {
+    for (const engine of ["react", "three", "hyperframes"] as const) {
+      const preamble = buildCodexPreamble([], null, engine);
+      expect(preamble).toContain("Anything that generates media costs the user money");
+      expect(preamble).toContain("end the turn there to wait for a yes");
+    }
   });
 });
