@@ -127,28 +127,26 @@ function HelpButton() {
 }
 
 function UpgradeCard({ hidden }: { hidden: boolean }) {
-  const { plan, exports: exportMeter, openUpgrade } = useUpgrade();
+  const { plan, trial, openUpgrade } = useUpgrade();
   if (hidden || plan?.id !== "free") return null;
 
-  // The meter is the whole point of the card, so it says nothing until it has
-  // one. A card that reads "0 exports left" while /limits is still in flight
-  // would be a lie for the first second of every launch.
-  const left = exportMeter?.remaining ?? null;
-
+  // The clock is the whole point of the card, so it says nothing specific
+  // until it has one. A card that reads "0 days left" while /limits is still
+  // in flight would be a lie for the first second of every launch.
   return (
     <div className="mb-2 rounded-md border border-border bg-surface-raised p-3">
-      <p className="text-[0.857rem] font-medium text-text-primary">Free plan</p>
+      <p className="text-[0.857rem] font-medium text-text-primary">Free trial</p>
       <p className="mt-0.5 text-[0.786rem] leading-snug text-text-tertiary">
-        {left === null
+        {!trial
           ? "Upgrade for unlimited exports and chat plugins."
-          : left === 0
-            ? "No exports left this month. Upgrade to export as many as you like."
-            : `${left} export${left === 1 ? "" : "s"} left this month. Upgrade for unlimited exports and chat plugins.`}
+          : trial.active
+            ? `${trial.daysLeft} day${trial.daysLeft === 1 ? "" : "s"} left. Upgrade to keep exporting after it ends.`
+            : "Your trial has ended. Upgrade to keep exporting."}
       </p>
       <Button
         size="sm"
         variant="primary"
-        onClick={() => openUpgrade("exports")}
+        onClick={() => openUpgrade("trial")}
         className="mt-2.5 w-full"
       >
         Upgrade

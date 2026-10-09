@@ -41,7 +41,7 @@ So this is not a takedown. HyperFrames is a well built, genuinely open project w
 | | What it is | Agent | Visual editing | Runs on | Price (checked October 5, 2026) |
 | --- | --- | --- | --- | --- | --- |
 | **HyperFrames Studio** (baseline) | Web editor plus desktop app | Claude Code or Codex, in the app | Canvas, timeline, keyframes, audio | App: Mac, Linux. Web editor: wherever the CLI runs | Framework is Apache 2.0. App price not listed |
-| **[GenMotion](/)** | Desktop studio | Your Claude Code or Codex | Frame-accurate preview and timeline | macOS, Apple silicon | Free (5 exports a month), Pro $19 a month, Max $199 a month for 5 seats |
+| **[GenMotion](/)** | Desktop studio | Your Claude Code or Codex | Frame-accurate preview and timeline | macOS, Apple silicon | 7-day free trial, Pro $19 a month, Max $199 a month for 5 seats |
 | **Midrender** | Browser editor | Your own, over MCP or a CLI | Timeline, properties, keyframes | Browser | Free, Pro $20 a month, Business $100 a month |
 | **Remotion Studio** | Studio that ships with Remotion | Hand-off to your coding agent | Preview and timeline of your Sequences | Wherever Node runs | Free up to 3 people, then $25 per seat a month or $0.01 per render |
 | **Motion Canvas** | Library plus web editor | None built in | Editor timeline, audio sync | Wherever Node runs | MIT, free |
@@ -81,7 +81,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 
 1. **You describe it, it gets built, and you stay in control.** The agent builds every scene inside the app. You scrub a frame-accurate preview that uses the same runtime as the export, drag scenes to reorder them and trim them to the frame on the timeline, and ask for changes in plain language.
 2. **The audio is part of the loop.** On Pro, the agent generates narration, sound effects and images in the same chat. Narration comes back with per-sentence timings so motion can cue to the words, and rewriting a line means regenerating it, not re-measuring offsets by hand.
-3. **It ends in a finished file, with no meter running.** Exports render on your machine, with no render queue and no per-render fee. Free includes five exports a month with no watermark, and Pro is a flat monthly price for unlimited exports.
+3. **It ends in a finished file, with no meter running.** Exports render on your machine, with no render queue and no per-render fee. The 7-day trial includes exports with no watermark, and Pro is a flat monthly price for unlimited exports.
 4. **A studio, a CLI and an MCP server.** `npx @genmotion/cli init` scaffolds a project, `genmotion check` validates every scene in a headless browser, and `genmotion render` exports MP4, WebM or GIF from a terminal or a CI job. Every command has JSON output, and the MCP server lets your own agent drive the same project.
 5. **Bring your own models and tools.** The Marketplace connects third-party MCP servers to the agent: ElevenLabs for voice, fal.ai, Runway, Replicate and Hugging Face for image and video generation, plus research, design, data and publishing servers. You connect them with your own API key or sign-in, and you can add a custom MCP server of your own. Keys are stored encrypted on your machine and sent only to the provider, and nothing is resold.
 6. **Your work stays yours.** Projects are plain folders on your disk, so they stay yours if you cancel.

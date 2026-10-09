@@ -53,7 +53,7 @@ function resetLabel(iso: string): string {
 }
 
 export function BillingSection() {
-  const { plan, seats, exports: exportMeter, subscription, usage, openUpgrade } = useUpgrade();
+  const { plan, seats, trial, subscription, usage, openUpgrade } = useUpgrade();
   const paid = subscription?.paid ?? false;
   const renews = subscription?.currentPeriodEnd ? resetLabel(subscription.currentPeriodEnd) : null;
 
@@ -65,19 +65,21 @@ export function BillingSection() {
         ) : (
           <>
             <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-lg text-text-primary">{plan.name}</span>
+              <span className="text-lg text-text-primary">
+                {paid ? plan.name : trial?.active === false ? "Trial ended" : plan.name}
+              </span>
               {paid ? (
                 <span className="text-[0.857rem] text-text-secondary">
                   {planPrice(plan.id)} a month · {plan.seats} {plan.seats === 1 ? "seat" : "seats"}
                   {renews && (subscription?.cancelAtPeriodEnd ? ` · ends ${renews}` : ` · renews ${renews}`)}
                 </span>
-              ) : exportMeter?.limit != null ? (
+              ) : trial?.active ? (
                 <span className="text-[0.857rem] text-text-secondary">
-                  {exportMeter.used} of {exportMeter.limit} exports used this month · voiceover, sound effects and images need Pro
+                  {trial.daysLeft} {trial.daysLeft === 1 ? "day" : "days"} left · voiceover, sound effects and images need Pro
                 </span>
               ) : (
                 <span className="text-[0.857rem] text-text-secondary">
-                  Voiceover, sound effects and images need Pro.
+                  Upgrade to keep exporting.
                 </span>
               )}
             </div>

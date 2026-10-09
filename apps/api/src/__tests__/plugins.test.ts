@@ -4,16 +4,16 @@ import { PAYWALL_STATUS, QUOTA_STATUS, PLUGIN_ALLOWANCE, isPaywallBody, isQuotaB
 import { dbReady, truncateAll } from "./helpers/db";
 import { createOrg, createUser, setSubscription } from "./helpers/factories";
 import { createSession, request, requestJson } from "./helpers/http";
-import { exportState } from "../limits";
+import { checkPaywall } from "../limits";
 
 /**
  * Chat plugins.
  *
  * These are the only endpoints in the product that spend money per call, which
- * is why they are the only ones gated on `paid` outright. A Free org with
- * exports still left is refused here and nowhere else, so that asymmetry is
- * what most of this file pins: it is easy to "simplify" the route to the
- * export gate later and quietly hand the provider bill to anyone who signs up.
+ * is why they are the only ones gated on `paid` outright. An org still inside
+ * its trial is refused here and nowhere else, so that asymmetry is what most
+ * of this file pins: it is easy to "simplify" the route to the export gate
+ * later and quietly hand the provider bill to anyone who signs up.
  *
  * The provider itself is stubbed. What is under test is the gate, the
  * bookkeeping and the response shape — not whether ElevenLabs is up.
@@ -71,14 +71,14 @@ describe.skipIf(!dbReady)("chat plugins", () => {
   });
 
   /**
-   * The whole point of the decision. A Free org can still export; it cannot
-   * still generate, because provider credit spent on an account that never
-   * converts is money we do not get back.
+   * The whole point of the decision. An org inside its trial can still
+   * export; it cannot still generate, because provider credit spent on an
+   * account that never converts is money we do not get back.
    */
-  it("refuses a Free org that has exports left", async () => {
+  it("refuses a Free org whose trial is still running", async () => {
     const { session, orgId } = await signedIn();
-    // A brand-new org has its whole allowance — the export gate would allow it.
-    expect((await exportState(orgId)).remaining).toBeGreaterThan(0);
+    // A brand-new org is inside its week — the export gate would allow it.
+    expect(await checkPaywall(orgId)).toBeNull();
 
     const { status, body } = await requestJson(IMAGE, {
       as: session,

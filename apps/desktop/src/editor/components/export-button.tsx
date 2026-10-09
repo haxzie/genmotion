@@ -91,7 +91,7 @@ export function ExportButton({
   composition?: CompositionSummary;
 }) {
   const queryClient = useQueryClient();
-  const { openUpgrade, handleLimitError, plan, exports: exportMeter } = useUpgrade();
+  const { openUpgrade, handleLimitError, plan, trial } = useUpgrade();
   const [open, setOpen] = useState(false);
   const [job, setJob] = useState<ExportJobData | null>(null);
   const [format, setFormat] = useState<ExportFormat>(() => {
@@ -187,11 +187,10 @@ export function ExportButton({
   );
 
   function runExport(event: ReactMouseEvent<HTMLButtonElement>) {
-    // No client-side pre-gate, even though Free exports are now metered: the
-    // count that matters is the server's, and a renderer holding a stale copy
-    // of it would refuse an export the account is actually owed. The claim is
-    // made server-side, which answers 402 and opens the modal via
-    // handleLimitError below.
+    // No client-side pre-gate: the clock that matters is the server's, and a
+    // renderer holding a stale copy of it would refuse an export the account
+    // is actually owed. The claim is made server-side, which answers 402 and
+    // opens the modal via handleLimitError below.
     exportedSig.current = currentSig;
     try {
       localStorage.setItem(sigKey, currentSig);
@@ -310,25 +309,25 @@ export function ExportButton({
             </div>
           </div>
 
-          {/* What the export will cost the month's allowance, said before the
-              button rather than after the refusal. Only once the meter has
-              actually arrived — see the note on the sidebar card — and only on
-              a plan that has one. A button, not a link: this window has no
+          {/* How long exports keep working, said before the button rather
+              than after the refusal. Only once the trial has actually arrived
+              — see the note on the sidebar card — and only on a plan that has
+              a clock. A button, not a link: this window has no
               /settings/billing to navigate to, and the upgrade modal is what
               knows how to get there (the browser). */}
-          {plan?.id === "free" && exportMeter?.remaining != null && (
+          {plan?.id === "free" && trial && (
             <p className="mt-3 rounded-md border border-border bg-surface-raised px-3 py-2 text-[0.786rem] text-text-secondary">
-              {exportMeter.remaining === 0
-                ? `No exports left this month. `
-                : `${exportMeter.remaining} of ${exportMeter.limit} exports left this month. `}
+              {trial.active
+                ? `${trial.daysLeft} day${trial.daysLeft === 1 ? "" : "s"} left in your trial. `
+                : `Your trial has ended. `}
               <button
                 type="button"
-                onClick={() => openUpgrade("exports")}
+                onClick={() => openUpgrade("trial")}
                 className="cursor-pointer font-medium text-text-primary underline underline-offset-2 hover:text-accent"
               >
                 Upgrade
               </button>{" "}
-              to export as many as you like.
+              to keep exporting.
             </p>
           )}
 

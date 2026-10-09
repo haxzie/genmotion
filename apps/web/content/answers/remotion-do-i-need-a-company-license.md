@@ -18,7 +18,7 @@ sources:
 genmotion:
   heading: "No per-render fee to model"
   body: |-
-    GenMotion exports are not charged per render: the free plan includes a monthly allowance, and Pro is a flat monthly price for unlimited exports. Details are on the [pricing page](/pricing). GenMotion does not render Remotion projects: it builds Three.js and HyperFrames videos. If the licence is what brought you here, [Remotion alternatives, compared honestly](/blog/remotion-alternatives) covers when to simply pay for Remotion.
+    GenMotion exports are not charged per render: the free trial includes them for 7 days, and Pro is a flat monthly price for unlimited exports. Details are on the [pricing page](/pricing). GenMotion does not render Remotion projects: it builds Three.js and HyperFrames videos. If the licence is what brought you here, [Remotion alternatives, compared honestly](/blog/remotion-alternatives) covers when to simply pay for Remotion.
 faqs:
   - q: "Who can use Remotion for free?"
     a: "An organisation or team of individuals with up to 3 people qualifies for the Free License. A Company License applies to collaborations and companies of 4 or more people. The cutoff is headcount, not revenue or usage."

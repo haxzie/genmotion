@@ -269,12 +269,12 @@ export async function startExport(
     );
   }
 
-  // One export comes off the month's allowance here: after the composition has
-  // been found to have something in it, so a project with no duration never
-  // costs a Free user one of their five, and before a job exists to be queued,
-  // so a refusal starts nothing. `ExportPaywallError` propagates out for the
-  // loopback route to turn into the same 402 shape the export button's
-  // `handleLimitError` already knows how to catch.
+  // The trial is checked here: after the composition has been found to have
+  // something in it, so a project with no duration never reads as a paywall,
+  // and before a job exists to be queued, so a refusal starts nothing.
+  // `ExportPaywallError` propagates out for the loopback route to turn into
+  // the same 402 shape the export button's `handleLimitError` already knows
+  // how to catch.
   await claimExport({ format: input.format, totalFrames });
 
   const id = `exp_${Date.now().toString(36)}_${randomBytes(3).toString("hex")}`;

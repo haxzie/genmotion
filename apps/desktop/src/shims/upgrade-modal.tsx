@@ -12,14 +12,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MAX_PRICE_USD,
   PAYWALL_STATUS,
-  FREE_EXPORTS_PER_MONTH,
   PLANS,
   SEAT_PRICE_USD,
+  TRIAL_DAYS,
   isPaywallBody,
-  type ExportUsage,
   type PlanId,
   type PluginUsage,
   type TeamPolicy,
+  type TrialState,
   type UpgradeReason,
 } from "@genmotion/shared";
 import { ApiError, api } from "@/lib/api";
@@ -43,9 +43,9 @@ import { api as desktop } from "../api";
  */
 
 const COPY: Record<UpgradeReason, { title: string; body: string }> = {
-  exports: {
-    title: "You have used this month's free exports",
-    body: `${PLANS.free.name} includes ${FREE_EXPORTS_PER_MONTH} exports a month. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month and export as many as you like.`,
+  trial: {
+    title: "Your free trial has ended",
+    body: `The ${TRIAL_DAYS}-day trial covered the whole studio. Upgrade to ${PLANS.pro.name} for $${SEAT_PRICE_USD} a month to keep exporting.`,
   },
   seats: {
     title: `Teammates are on ${PLANS.max.name}`,
@@ -53,18 +53,18 @@ const COPY: Record<UpgradeReason, { title: string; body: string }> = {
   },
   plugin: {
     title: `Chat plugins are part of ${PLANS.pro.name}`,
-    body: `Voiceover, sound effects and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of ${PLANS.free.name}. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
+    body: `Voiceover, sound effects and image generation run on providers we pay for per use, so unlike the rest of the app they aren't part of the trial. Upgrade for $${SEAT_PRICE_USD} a month to use them.`,
   },
 };
 
 /**
- * The export dialog offers an upgrade while exports are still left, so the
- * modal cannot assume it was opened by a refusal — "you have used this month's
- * free exports" would be a lie there.
+ * The export dialog and the sidebar offer an upgrade while the trial is still
+ * running, so the modal cannot assume it was opened by a refusal — "your trial
+ * has ended" would be a lie there.
  */
-const EXPORTS_REMAINING = {
-  title: `${PLANS.pro.name} lifts the export limit`,
-  body: `${PLANS.free.name} includes ${FREE_EXPORTS_PER_MONTH} exports a month, unbranded and at any resolution. ${PLANS.pro.name} removes the ceiling and adds voiceover, sound effects and image generation in chat — $${SEAT_PRICE_USD} a month.`,
+const TRIAL_STILL_ACTIVE = {
+  title: `${PLANS.pro.name} keeps the studio going`,
+  body: `Your trial has everything else: unlimited projects, scenes and exports, unbranded and at any resolution. ${PLANS.pro.name} removes the ${TRIAL_DAYS}-day clock and adds voiceover, sound effects and image generation in chat, for $${SEAT_PRICE_USD} a month.`,
 };
 
 export const limitsQueryKey = ["billing-limits"] as const;
@@ -83,9 +83,9 @@ export interface LimitsResponse {
   team?: TeamPolicy;
   /** This month's plugin meters. Absent from an API older than the meters. */
   usage?: PluginUsage;
-  /** This month's export meter. Absent from an API older than it. */
-  exports?: ExportUsage;
-  /** Paying, or with free exports left. Not enough for a plugin — see `subscription.paid`. */
+  /** Where the free week stands. Absent from an API older than it. */
+  trial?: TrialState;
+  /** Paying, or still in trial. Not enough for a plugin — see `subscription.paid`. */
   entitled: boolean;
   subscription: {
     status: string;
@@ -102,7 +102,7 @@ interface UpgradeContextValue {
   handleAuthClientError: (err: unknown) => boolean;
   plan?: PlanPayload;
   seats?: LimitsResponse["seats"];
-  exports?: ExportUsage;
+  trial?: TrialState;
   subscription?: LimitsResponse["subscription"];
   usage?: PluginUsage;
   team?: TeamPolicy;
@@ -205,7 +205,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       handleAuthClientError,
       plan: data?.plan,
       seats: data?.seats,
-      exports: data?.exports,
+      trial: data?.trial,
       subscription: data?.subscription,
       usage: data?.usage,
       team: data?.team,
@@ -220,7 +220,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
       {children}
       <UpgradeModal
         reason={reason}
-        exportsLeft={data?.exports?.remaining ?? null}
+        trialActive={data?.trial?.active ?? false}
         onClose={() => setReason(null)}
         onLeaveForBrowser={watchForUpgrade}
       />
@@ -246,20 +246,20 @@ export function useUpgrade(): UpgradeContextValue {
 
 function UpgradeModal({
   reason,
-  exportsLeft,
+  trialActive,
   onClose,
   onLeaveForBrowser,
 }: {
   reason: UpgradeReason | null;
-  /** Free exports left this month; `null` on a plan with no ceiling. */
-  exportsLeft: number | null;
+  /** Whether the free week is still running. */
+  trialActive: boolean;
   onClose: () => void;
   onLeaveForBrowser: () => void;
 }) {
   const [opening, setOpening] = useState(false);
   const copy =
-    reason === "exports" && exportsLeft !== 0
-      ? EXPORTS_REMAINING
+    reason === "trial" && trialActive
+      ? TRIAL_STILL_ACTIVE
       : reason
         ? COPY[reason]
         : null;

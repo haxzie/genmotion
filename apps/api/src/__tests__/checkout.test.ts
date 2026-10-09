@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq, db, schema } from "@genmotion/db";
-import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
+import { TRIAL_DAYS } from "@genmotion/shared";
 
 /**
  * The SDK is stubbed at its single boundary (`../dodo`) rather than at the
@@ -445,12 +445,12 @@ describe.skipIf(!dbReady)("POST /api/billing/portal", () => {
 });
 
 describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
-  it("reports a new org as Free with its whole export allowance", async () => {
+  it("reports a new org as Free with its whole trial ahead of it", async () => {
     const { session } = await ownerSession();
     const { status, body } = await requestJson<{
       plan: { id: string; seats: number; canInvite: boolean };
       seats: { used: number; max: number };
-      exports: { used: number; limit: number | null; remaining: number | null };
+      trial: { active: boolean; daysLeft: number; endsAt: string | null };
       entitled: boolean;
       subscription: { manageable: boolean; paid: boolean };
     }>("/api/billing/limits", { as: session });
@@ -459,26 +459,29 @@ describe.skipIf(!dbReady)("GET /api/billing/limits", () => {
     expect(body.plan.id).toBe("free");
     expect(body.plan.canInvite).toBe(false);
     expect(body.seats).toEqual({ used: 1, max: 1 });
-    // Free does not expire, so a brand-new org may export without paying —
-    // right up until it has spent the month's allowance.
-    expect(body.exports.used).toBe(0);
-    expect(body.exports.limit).toBe(FREE_EXPORTS_PER_MONTH);
-    expect(body.exports.remaining).toBe(FREE_EXPORTS_PER_MONTH);
+    // The clock starts with the organization, so a brand-new org may export
+    // without paying — for its first TRIAL_DAYS.
+    expect(body.trial.active).toBe(true);
+    expect(body.trial.daysLeft).toBe(TRIAL_DAYS);
+    expect(body.trial.endsAt).not.toBeNull();
     expect(body.entitled).toBe(true);
     expect(body.subscription.paid).toBe(false);
     expect(body.subscription.manageable).toBe(false);
   });
 
-  it("reports a paid org as having no export ceiling at all", async () => {
+  it("entitles a paid org whatever its trial says", async () => {
     const { orgId, session } = await ownerSession();
+    await db
+      .update(schema.organization)
+      .set({ createdAt: new Date(Date.now() - 90 * 86_400_000) })
+      .where(eq(schema.organization.id, orgId));
     await setSubscription(orgId, { plan: "pro", status: "active" });
     const { body } = await requestJson<{
-      exports: { limit: number | null; remaining: number | null };
+      trial: { active: boolean };
       entitled: boolean;
     }>("/api/billing/limits", { as: session });
 
-    expect(body.exports.limit).toBeNull();
-    expect(body.exports.remaining).toBeNull();
+    expect(body.trial.active).toBe(false);
     expect(body.entitled).toBe(true);
   });
 

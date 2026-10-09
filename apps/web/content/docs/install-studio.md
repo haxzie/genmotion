@@ -20,7 +20,7 @@ GenMotion Studio is the desktop app: your agent's chat, a frame-accurate preview
 | Mac | Apple silicon (M1 or later). Intel Macs are not supported |
 | macOS | A current release of macOS |
 | Agent | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://github.com/openai/codex), installed and signed in |
-| Account | A GenMotion account. The free plan needs no card |
+| Account | A GenMotion account. The 7-day free trial needs no card |
 
 GenMotion drives the agent subscription you already have. It doesn't sell or meter model access.
 
@@ -79,5 +79,5 @@ Older versions of the app wrote their own `genmotion` script to `/usr/local/bin`
 The app checks for a new version when it starts and asks before downloading anything. Installing quits the app, so it's a separate click. `genmotion upgrade` updates the app and the command from the terminal.
 
 ::: tip
-Voiceover, sound effects and image generation in chat are part of the Pro plan. Everything else, including export, is on the free plan. See [pricing](/pricing).
+The free trial is 7 days of the whole studio, exports included. After that, exporting needs Pro. Voiceover, sound effects and image generation in chat are part of Pro throughout. See [pricing](/pricing).
 :::

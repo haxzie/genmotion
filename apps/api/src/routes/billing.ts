@@ -5,7 +5,7 @@ import { and, desc, eq, gte, isNotNull, sql, db, schema } from "@genmotion/db";
 import { CHAT_MODEL_ID } from "@genmotion/ai";
 import { PLANS } from "@genmotion/shared";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
-import { exportState } from "../limits";
+import { trialState } from "../limits";
 import { pluginUsage, pluginUsageByMember } from "../plugin-usage";
 import {
   countSeats,
@@ -56,23 +56,6 @@ const RATES_PER_MTOK: Record<
 const FALLBACK_RATE =
   RATES_PER_MTOK[CHAT_MODEL_ID] ?? RATES_PER_MTOK["kimi-k2.7-code"]!;
 
-/**
- * The `trial` block desktop builds up to 0.0.20 still expect, kept alive on
- * purpose. DELETE once 0.0.20 is out of the field.
- *
- * Those builds do `data?.trial.active` inside the upgrade provider that wraps
- * the whole window, so a response without the key is not a degraded feature —
- * it is a TypeError on render, and the app is a white screen for anyone who
- * has not updated yet.
- *
- * `active: true` is the deliberate value. Their export gate refuses only on an
- * explicit `trial.active === false`, so this keeps an old client exporting,
- * badge and all, until it updates; anything else would lock a paying-attention
- * user out of their own local renders over a field we no longer believe in.
- * Newer builds read `exports` and ignore this entirely.
- */
-const LEGACY_TRIAL = { active: true, daysLeft: 0, endsAt: null } as const;
-
 /** The plan half of a billing response — shared by /limits and /usage. */
 function planPayload(ent: Entitlements) {
   return {
@@ -101,10 +84,10 @@ function subscriptionPayload(ent: Entitlements) {
  */
 billingRoutes.get("/limits", async (c) => {
   const organizationId = c.get("organizationId");
-  const [ent, seatsUsed, exportMeter] = await Promise.all([
+  const [ent, seatsUsed, trial] = await Promise.all([
     getEntitlements(organizationId),
     countSeats(organizationId),
-    exportState(organizationId),
+    trialState(organizationId),
   ]);
   // The three plugin meters, from the same rows that gate a call. One
   // GROUP BY — cheap enough for a poll.
@@ -123,14 +106,13 @@ billingRoutes.get("/limits", async (c) => {
     // The team policy, decided here: whether an invite may go, what to say,
     // and which plan to pitch. The apps render it and branch on nothing.
     team,
-    // The export meter: what Free is bounded by, and what the desktop app
-    // reads to decide whether the next render may start and whether it carries
-    // the badge. `limit: null` on a paid plan.
-    exports: exportMeter,
-    trial: LEGACY_TRIAL,
-    // Whether the app may export right now. A paid plan always may; a Free one
-    // may while the month's allowance has something left in it.
-    entitled: ent.paid || (exportMeter.remaining ?? 1) > 0,
+    // The clock Free runs on: what every surface counts down, and what the
+    // export gate turns on. Reported for a paid plan too, where it is simply
+    // irrelevant — the app branches on `entitled`, not on this.
+    trial,
+    // Whether the app may export right now. A paid plan always may; an unpaid
+    // one may while its free week is still running.
+    entitled: ent.paid || trial.active,
     subscription: subscriptionPayload(ent),
   });
 });
@@ -609,10 +591,10 @@ billingRoutes.get("/usage", async (c) => {
 
   // Same resolver as /limits, so the two endpoints can never disagree about
   // which plan an org is on.
-  const [ent, seatsUsed, exportMeter, team, role] = await Promise.all([
+  const [ent, seatsUsed, trial, team, role] = await Promise.all([
     getEntitlements(organizationId),
     countSeats(organizationId),
-    exportState(organizationId),
+    trialState(organizationId),
     teamPolicy(organizationId),
     memberRole(organizationId, c.get("user").id),
   ]);
@@ -622,11 +604,10 @@ billingRoutes.get("/usage", async (c) => {
     seats: { used: seatsUsed, max: ent.seats },
     team,
     role,
-    // The billing page is where an org learns it has run out of exports, so it
-    // needs the same meter /limits carries.
-    exports: exportMeter,
-    trial: LEGACY_TRIAL,
-    entitled: ent.paid || (exportMeter.remaining ?? 1) > 0,
+    // The billing page is where an org learns its week is nearly up, so it
+    // needs the same clock /limits carries.
+    trial,
+    entitled: ent.paid || trial.active,
     subscription: subscriptionPayload(ent),
     period: { start: start.toISOString(), end: now.toISOString() },
     totals: {

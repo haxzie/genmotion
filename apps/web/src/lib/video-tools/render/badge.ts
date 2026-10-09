@@ -6,10 +6,10 @@
  * restyle it, and it can't affect layout.
  *
  * The only badge left in the product. Studio exports used to carry a matching
- * one on the Free plan and no longer do — a free export is now byte-for-byte
- * what a paid one would be — so the geometry here answers to nothing but
- * itself. These tools are anonymous and account-free, which is the whole
- * reason the badge is still worth its place here.
+ * one on the free tier and no longer do — a trial export is byte-for-byte what
+ * a paid one would be — so the geometry here answers to nothing but itself.
+ * These tools are anonymous and account-free, which is the whole reason the
+ * badge is still worth its place here.
  */
 
 /** Lockup width, in px, for a composition whose shorter edge is 1080. */

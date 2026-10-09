@@ -32,7 +32,7 @@ GenMotion turns a description into a finished video. Your coding agent writes th
 | Runs on | macOS on Apple silicon | Node 22 or newer on macOS or Linux |
 | Your agent | Claude Code or Codex, inside the app | Any coding agent, or your own terminal |
 | Export | One click | `npx @genmotion/cli render` |
-| Account | Free plan, no card | None |
+| Account | 7-day free trial, no card | None |
 
 ![GenMotion Studio: the agent chat on the left, a frame-accurate preview in the middle and a timeline of scenes and audio below](/editor-screenshot.webp "GenMotion Studio")
 

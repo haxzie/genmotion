@@ -14,7 +14,7 @@ import type { AnswerTool } from "@/lib/marketing/content";
  * someone shopping for a replacement. Comparisons belong in the closing section,
  * where they can be specific and honest.
  *
- * Every line is a claim the site already makes elsewhere: the free plan and its
+ * Every line is a claim the site already makes elsewhere: the free trial and its
  * unbranded exports (pricing page), the frame-accurate timeline, the local export.
  */
 const CARD_COPY = {

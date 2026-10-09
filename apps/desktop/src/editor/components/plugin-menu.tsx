@@ -79,9 +79,9 @@ export function PluginMenu({
     activate(HOME_TAB);
   }
 
-  // Paid, specifically — not `entitled`, which a Free org with exports left
+  // Paid, specifically — not `entitled`, which an org still inside its trial
   // also satisfies. Chat plugins spend provider credit, so they are the one
-  // thing Free does not include at all.
+  // thing the trial does not include at all.
   const paid = subscription?.paid ?? false;
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, db, schema } from "@genmotion/db";
-import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
 
 /**
  * `planForProduct` is the one step of processing that can be made to throw on
@@ -25,7 +24,7 @@ vi.mock("../dodo", async (importOriginal) => {
 });
 
 const { getEntitlements } = await import("../entitlements");
-const { exportState } = await import("../limits");
+const { checkPaywall } = await import("../limits");
 const { dbReady, truncateAll } = await import("./helpers/db");
 const { createOrg } = await import("./helpers/factories");
 const { postWebhook, signWebhook, subscriptionEvent } = await import("./helpers/dodo");
@@ -33,29 +32,22 @@ const { postWebhook, signWebhook, subscriptionEvent } = await import("./helpers/
 const PRO = "pdt_test_pro";
 
 /**
- * Spend the org's whole free export allowance, so the only thing that can let
- * it export again is a subscription. The stand-in for what used to be an
- * expired trial: the state a webhook has to rescue an org out of.
+ * Backdate an org past its trial.
+ *
+ * Entitlement is only observable once the free week is over — before that
+ * every org may work regardless of what the webhook wrote, which would make
+ * these assertions pass for the wrong reason.
  */
-async function spendFreeExports(orgId: string) {
-  const [owner] = await db
-    .select({ userId: schema.member.userId })
-    .from(schema.member)
-    .where(eq(schema.member.organizationId, orgId));
-  await db.insert(schema.exportEvents).values(
-    Array.from({ length: FREE_EXPORTS_PER_MONTH }, () => ({
-      organizationId: orgId,
-      userId: owner!.userId,
-      source: "desktop" as const,
-      plan: "free" as const,
-    })),
-  );
+async function pastTrial(orgId: string) {
+  await db
+    .update(schema.organization)
+    .set({ createdAt: new Date(Date.now() - 60 * 86_400_000) })
+    .where(eq(schema.organization.id, orgId));
 }
 
-/** Whether the org may export right now: paying, or with free exports left. */
+/** Whether the org may export right now: paying, or still inside its trial. */
 async function mayExport(orgId: string): Promise<boolean> {
-  if ((await getEntitlements(orgId)).paid) return true;
-  return ((await exportState(orgId)).remaining ?? 1) > 0;
+  return (await checkPaywall(orgId)) === null;
 }
 const OTHER_PRODUCT = "pdt_not_ours";
 
@@ -263,13 +255,13 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
 
   it("drops to Free on expiry and paywalls again", async () => {
     const { orgId } = await createOrg();
-    await spendFreeExports(orgId);
+    await pastTrial(orgId);
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
       ),
     );
-    // Paying, so the spent free allowance does not matter.
+    // Paying, so the spent trial does not matter.
     expect(await mayExport(orgId)).toBe(true);
 
     await postWebhook(
@@ -354,7 +346,7 @@ describe.skipIf(!dbReady)("subscription lifecycle", () => {
   });
   it("keeps entitlement through a pause until the paid period ends", async () => {
     const { orgId } = await createOrg();
-    await spendFreeExports(orgId);
+    await pastTrial(orgId);
     await postWebhook(
       signWebhook(
         subscriptionEvent("subscription.active", { organizationId: orgId, productId: PRO }),
@@ -566,7 +558,7 @@ describe.skipIf(!dbReady)("delivery semantics", () => {
    */
   it("ignores trailing events from a subscription the org has moved on from", async () => {
     const { orgId } = await createOrg();
-    await spendFreeExports(orgId);
+    await pastTrial(orgId);
     const t0 = new Date(Date.now() - 3000);
     await postWebhook(
       signWebhook(
@@ -631,7 +623,7 @@ describe.skipIf(!dbReady)("checkout to entitlement", () => {
    */
   it("upgrades the org that started the checkout", async () => {
     const { orgId } = await createOrg();
-    await spendFreeExports(orgId);
+    await pastTrial(orgId);
     expect(await mayExport(orgId)).toBe(false);
 
     await postWebhook(

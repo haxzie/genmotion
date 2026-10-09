@@ -281,14 +281,15 @@ export const exportEvents = pgTable(
     source: text("source", { enum: ["desktop", "cloud"] }).notNull(),
     /**
      * The plan at the moment of the claim, so a later upgrade never rewrites
-     * history — a month's free exports stay countable after the org has paid.
+     * history: the exports made during a trial stay tellable apart after the
+     * org has paid.
      */
     plan: text("plan", { enum: ["free", "pro", "max"] }).notNull(),
     format: text("format"),
     /**
      * The composition's length, for the same reason `plugin_calls` keeps
-     * `units`: a per-export cap is only defensible if we know what an export
-     * typically is. Null when the caller did not say.
+     * `units`: what an export typically is, in case it ever has to be priced.
+     * Null when the caller did not say.
      */
     totalFrames: integer("total_frames"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

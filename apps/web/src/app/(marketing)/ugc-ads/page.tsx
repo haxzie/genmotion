@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FREE_EXPORTS_PER_MONTH } from "@genmotion/shared";
+import { TRIAL_DAYS } from "@genmotion/shared";
 import { FaqSection } from "@/components/marketing/faq";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Capabilities } from "@/components/marketing/capabilities";
@@ -74,8 +74,8 @@ const FAQS: Faq[] = [
     a: "Yes. The browser preview and the headless renderer share one deterministic runtime, so the exported MP4 is pixel-for-pixel and frame-for-frame identical to the cut you approved.",
   },
   {
-    q: "Is there a free plan?",
-    a: `Yes, and it does not expire. The free plan gives you the whole studio with no credit card: unlimited projects, unlimited chat with your own agent, and ${FREE_EXPORTS_PER_MONTH} finished exports a month at any resolution, with no watermark on any of them. Pro lifts the ${FREE_EXPORTS_PER_MONTH}-a-month limit and adds voiceover and image generation in chat.`,
+    q: "Is there a free trial?",
+    a: `Yes, ${TRIAL_DAYS} days of the whole studio with no credit card: unlimited projects, unlimited chat with your own agent, and as many finished exports as you like at any resolution, with no watermark on any of them. When the ${TRIAL_DAYS} days are up, exports stop until you upgrade. Pro keeps them going and adds voiceover and image generation in chat.`,
   },
 ];
 
