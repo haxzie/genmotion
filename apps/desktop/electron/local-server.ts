@@ -52,6 +52,15 @@ export interface LocalServer {
   readonly url: string;
   /** Origin the renderer itself is served from. */
   readonly origin: string;
+  /**
+   * Whether the listener is still accepting.
+   *
+   * The quit path closes the server before the process has actually gone, and
+   * a quit that stalls leaves the app running with this `false`. A window
+   * opened then would load a refused URL and sit blank forever, so
+   * `createWindow` checks it and brings the server back first.
+   */
+  readonly listening: boolean;
   close(): Promise<void>;
 }
 
@@ -1699,6 +1708,9 @@ export async function startLocalServer(
   return {
     url: `${origin}${prefix}`,
     origin,
+    get listening() {
+      return server.listening;
+    },
     close: () =>
       new Promise((resolve) => {
         server.close(() => resolve());

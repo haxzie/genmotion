@@ -77,6 +77,46 @@ let window: BrowserWindow | null = null;
 let localServer: LocalServer | null = null;
 
 /**
+ * Set the moment a quit starts, and never cleared.
+ *
+ * The quit path tears the loopback server down *before* the process is
+ * actually gone (see `before-quit`), so everything that would open a window
+ * has to know a quit is under way — a window created after the teardown would
+ * load a refused URL and stay blank.
+ */
+let quitting = false;
+
+/** Whether this process won the single-instance lock. See the lock below. */
+let hasInstanceLock = true;
+
+/**
+ * How many times a window that failed to load has been given another go.
+ *
+ * Module-level rather than per-window because one of the recoveries *is*
+ * replacing the window, and a budget that reset with it would be no budget at
+ * all. Cleared by a load that succeeds.
+ */
+let blankRecoveries = 0;
+const MAX_BLANK_RECOVERIES = 3;
+
+/**
+ * The loopback server, started if it isn't up.
+ *
+ * Normally this is a no-op — `whenReady` starts it once. It earns its keep on
+ * the path that produced blank windows: a quit runs the teardown, closes the
+ * server, and then fails to actually end the process (a stalled
+ * `quitAndInstall`, say). The app lives on, and the next window — from the
+ * dock icon, via `activate` — was being pointed at a port nothing was
+ * listening on, with no error anywhere. Bringing the server back is both
+ * cheap and the only way that window can work.
+ */
+async function ensureLocalServer(): Promise<LocalServer> {
+  if (localServer?.listening) return localServer;
+  localServer = await startLocalServer(path.join(dirname, "../renderer"));
+  return localServer;
+}
+
+/**
  * Assets live on disk inside the project, and scene bundles reference them as
  * `gm-asset://<key>/<relative path>`. Registering the scheme as standard and
  * streaming keeps `<video>`/`<audio>` range requests working, which plain
@@ -730,7 +770,15 @@ function registerProtocolClient(): void {
   app.setAsDefaultProtocolClient(DESKTOP_PROTOCOL);
 }
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
+  // A quit is under way and the loopback server is already closed. Putting a
+  // window up now would show a blank one for the moment before the process
+  // goes — and forever if the quit stalls.
+  if (quitting) return;
+  // Not awaited for its value: `createWindow` reads `localServer` below, and
+  // the window's launch argument has to carry a URL that is actually live.
+  await ensureLocalServer().catch(() => {});
+
   window = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -759,6 +807,14 @@ function createWindow(): void {
     // Served over the loopback origin rather than file://, so the web app's
     // root-absolute asset paths (/logo.svg) resolve.
     void window.loadURL(`${localServer.origin}/index.html`);
+  } else {
+    // Nothing to load, so nothing would ever paint and no `did-fail-load`
+    // would fire either — the one shape of blank window that has to be said
+    // out loud rather than left on screen.
+    dialog.showErrorBox(
+      "GenMotion couldn’t start",
+      "The app’s local server didn’t come up. Quit and open the app again.",
+    );
   }
 
   // The export button "downloads" the finished file by clicking a link at it.
@@ -823,12 +879,66 @@ function createWindow(): void {
   window.on("closed", () => {
     window = null;
   });
+
+  // The last line of defence against a blank window.
+  //
+  // `loadURL` is fire-and-forget, and a renderer that never loaded is simply a
+  // window painted in `backgroundColor` with nothing in it and nothing in any
+  // log — which is exactly how this reached users. Anything that leaves the
+  // document unreachable (a loopback server closed by a quit that then
+  // stalled, Vite not up yet in dev) lands here. Bring the server back and
+  // try again, and if the retries run out say so rather than leaving an empty
+  // window on screen.
+  window.webContents.on("did-fail-load", (_event, code, description, _url, isMainFrame) => {
+    // -3 is ERR_ABORTED, which is what a navigation we replaced reports.
+    if (!isMainFrame || code === -3 || quitting) return;
+    const target = ownDocument;
+    if (!target || blankRecoveries >= MAX_BLANK_RECOVERIES) {
+      dialog.showErrorBox(
+        "GenMotion couldn’t start",
+        `The editor failed to load (${description}). Quit and open the app again.`,
+      );
+      return;
+    }
+    blankRecoveries += 1;
+    void (async () => {
+      // A beat before trying again: in dev the usual cause is Vite not being
+      // up yet, and three retries back to back would spend the budget in the
+      // time it takes the dev server to bind.
+      await new Promise((resolve) => setTimeout(resolve, 600 * blankRecoveries));
+      const server = DEV_SERVER ? null : await ensureLocalServer().catch(() => null);
+      if (!window || window.isDestroyed() || quitting) return;
+      // A restarted server may be on a different port, and the renderer reads
+      // its API base URL from a launch argument fixed when the window was
+      // built — so a window that never loaded has to be replaced rather than
+      // reloaded. `blankRecoveries` is module-level for exactly this: the
+      // replacement window gets a handler of its own, and the budget has to
+      // outlive the one that spent it.
+      if (server && server.origin !== new URL(target).origin) {
+        window.destroy();
+        void createWindow();
+        return;
+      }
+      void window.loadURL(target);
+    })();
+  });
+
+  // Loaded, so whatever was wrong is over and the next failure is a fresh one.
+  window.webContents.on("did-finish-load", () => {
+    blankRecoveries = 0;
+  });
 }
 
 // A second launch is how Windows and Linux deliver a deep link; without the
 // lock it would start a whole second app instead of reaching this one.
 if (!app.requestSingleInstanceLock()) {
-  app.quit();
+  // `app.quit()` alone is not enough: the `whenReady` handler below is already
+  // registered and still runs, so a process that only exists to hand its
+  // arguments to the real one would start a second loopback server, install a
+  // menu and put up a window of its own before it went. `hasInstanceLock`
+  // makes it do nothing at all, and `exit` leaves no quit to stall.
+  hasInstanceLock = false;
+  app.exit(0);
 } else {
   app.on("second-instance", (_event, argv) => {
     const url = deepLinkFromArgv(argv);
@@ -871,6 +981,9 @@ app.on("open-url", (event, url) => {
 });
 
 void app.whenReady().then(async () => {
+  // A second copy of the app, already on its way out. It must not start a
+  // server or a window — see the lock above.
+  if (!hasInstanceLock) return;
   // Before anything else reads it: a project opened during startup shares it.
   setLaunchDir(launchDirFromArgv(process.argv));
   pendingClone = cloneSourceFromArgv(process.argv);
@@ -879,9 +992,9 @@ void app.whenReady().then(async () => {
   registerAssetProtocol();
   // Must be listening before the window exists: its URL is handed to the
   // renderer as a launch argument.
-  localServer = await startLocalServer(path.join(dirname, "../renderer"));
+  await ensureLocalServer();
   installMenu(() => window);
-  createWindow();
+  await createWindow();
 
   // A scene strip finished rendering; the timeline card swaps it in.
   onFilmstripChanged((dir, sceneId, strip) => {
@@ -939,7 +1052,7 @@ void app.whenReady().then(async () => {
   if (launchUrl) handleDeepLink(launchUrl);
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) void createWindow();
   });
 });
 
@@ -951,21 +1064,47 @@ app.on("window-all-closed", () => {
  * Quit waits for the sessions to close.
  *
  * Each close may capture a project card, and with several tabs open a
- * fire-and-forget teardown would lose every one of them. The flag is what
- * lets the second `quit()` through once the work is done.
+ * fire-and-forget teardown would lose every one of them. The `quitting` flag
+ * is what lets the second `quit()` through once the work is done.
+ *
+ * Every step is bounded, and the whole thing is backed by `app.exit`. A quit
+ * that prevents itself and then does not finish is the worst outcome there
+ * is: the loopback server has already been closed, the window is gone, and
+ * the process goes on holding the single-instance lock — so the dock icon
+ * (and every later launch, which the lock folds into this one) opens a window
+ * against a dead port and the app is simply blank until it is force-quit.
+ * There is no state worth keeping that is worth that, so the deadline wins.
  */
-let quitting = false;
+const QUIT_DEADLINE_MS = 8000;
 app.on("before-quit", (event) => {
   if (quitting) return;
   quitting = true;
   event.preventDefault();
+  // Armed before the teardown rather than after it, so a step that never
+  // settles is covered too — the point is that the process always goes.
+  const deadline = setTimeout(() => app.exit(0), QUIT_DEADLINE_MS);
   void (async () => {
-    await flushTabs();
-    await Promise.race([
-      closeAllSessions(),
-      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
-    ]).catch(() => {});
-    await localServer?.close().catch(() => {});
+    try {
+      await Promise.race([
+        (async () => {
+          await flushTabs();
+          await Promise.race([
+            closeAllSessions(),
+            new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+          ]);
+          await localServer?.close();
+        })(),
+        new Promise<void>((resolve) => setTimeout(resolve, QUIT_DEADLINE_MS - 500)),
+      ]);
+    } catch {
+      // A failed capture or a session that refused to dispose is not a reason
+      // to keep the app alive.
+    }
+    clearTimeout(deadline);
     app.quit();
+    // `quit()` is a request: a prevented window close, or an updater handing
+    // off to Squirrel and not coming back, leaves the process up. Nothing is
+    // left to save by this point, so make the exit unconditional.
+    setTimeout(() => app.exit(0), 2000);
   })();
 });
