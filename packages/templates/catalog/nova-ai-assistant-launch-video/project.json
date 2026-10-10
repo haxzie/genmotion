@@ -1,0 +1,110 @@
+{
+  "name": "Nova AI assistant launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-introducing.ts",
+      "durationInFrames": 201,
+      "name": "Introducing"
+    },
+    {
+      "file": "scenes/02-every-project.ts",
+      "durationInFrames": 84,
+      "name": "For every project"
+    },
+    {
+      "file": "scenes/03-made-to-listen.ts",
+      "durationInFrames": 42,
+      "name": "Made to listen"
+    },
+    {
+      "file": "scenes/04-your-craft.ts",
+      "durationInFrames": 81,
+      "name": "Your craft"
+    },
+    {
+      "file": "scenes/05-workspace.ts",
+      "durationInFrames": 206,
+      "name": "Workspace"
+    },
+    {
+      "file": "scenes/06-plugged-in.ts",
+      "durationInFrames": 209,
+      "name": "Plugged in"
+    },
+    {
+      "file": "scenes/07-mapping-it-out.ts",
+      "durationInFrames": 362,
+      "name": "Mapping it out"
+    },
+    {
+      "file": "scenes/08-team-of-helpers.ts",
+      "durationInFrames": 132,
+      "name": "Team of helpers"
+    },
+    {
+      "file": "scenes/09-works-in-the-cloud.ts",
+      "durationInFrames": 405,
+      "name": "Works in the cloud"
+    },
+    {
+      "file": "scenes/10-while-you-rest.ts",
+      "durationInFrames": 161,
+      "name": "While you rest"
+    },
+    {
+      "file": "scenes/11-wherever-you-work.ts",
+      "durationInFrames": 359,
+      "name": "Wherever you work"
+    },
+    {
+      "file": "scenes/12-pick-the-brain.ts",
+      "durationInFrames": 188,
+      "name": "Pick the brain"
+    },
+    {
+      "file": "scenes/13-stays-private.ts",
+      "durationInFrames": 243,
+      "name": "Stays private"
+    },
+    {
+      "file": "scenes/14-every-task-lighter.ts",
+      "durationInFrames": 283,
+      "name": "Every task, lighter"
+    },
+    {
+      "file": "scenes/15-end-card.ts",
+      "durationInFrames": 104,
+      "name": "End card"
+    }
+  ],
+  "audio": [
+    {
+      "id": "music-bed",
+      "file": "assets/nova-ambient-bed.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 3060,
+      "startFrom": 0,
+      "volume": 1.9952623149688795,
+      "fadeInFrames": 30,
+      "fadeOutFrames": 60,
+      "muted": false
+    },
+    {
+      "id": "sfx",
+      "file": "assets/nova-sfx.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 3060,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false
+    }
+  ]
+}
