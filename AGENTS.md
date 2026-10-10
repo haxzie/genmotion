@@ -62,7 +62,7 @@ packages/
              capture, chunked parallel ffmpeg encode, audio mix, `check`,
              the `genmotion dev` studio page. Private — bundled into the CLI
   cli/       `@genmotion/cli` on npm, the `genmotion` command: init/dev/render/still/check/info/
-             scene/mcp/skills/templates/browser/doctor, `--json` everywhere,
+             scene/x-video/mcp/skills/templates/browser/doctor, `--json` everywhere,
              and the stdio MCP server. Published to npm
   create-genmotion/ `npm create genmotion` → `genmotion init`. Published
 examples/three-starter/  what `genmotion init` produces, plus a render CI

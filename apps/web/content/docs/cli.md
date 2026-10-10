@@ -36,6 +36,7 @@ Failures say what went wrong and how to fix it, and exit with code 1:
 | `info` | Size, fps, scenes with start frames, audio, assets |
 | `scene add <name>` | Create a scene and register it in `project.json` |
 | `audio <action>` | Add, move, trim, mute or remove timeline audio |
+| `x-video <post url>` | Save the video from a public post on X into `assets/` |
 | `skills <action>` | List, search, read and install skills |
 | `templates` | List the template catalog |
 | `mcp` | Run the MCP server over stdio |
@@ -122,6 +123,26 @@ npx @genmotion/cli audio list
 | `--mute`, `--unmute` | Silence a clip and keep its level (`set`) |
 
 Times use the same spellings as everywhere else: `48` (frames), `2s`, `500ms`, and `50%` for `--at`.
+
+## x-video
+
+```sh
+npx @genmotion/cli x-video https://x.com/someone/status/1988283207138324487
+```
+
+Takes the link to the post, not a media URL: the MP4 sits behind an id only the
+post knows. The post is resolved through X's own embed endpoint, so there is no
+key, no account and no login, and the file comes straight from X into
+`assets/`.
+
+`--quality smallest` takes the lowest rendition instead of the best, which is
+what you want for a clip that plays inside a phone mock. `--index <n>` picks one
+video out of a post that carries several, and `--filename <name>` overrides the
+default `x-<handle>-<quality>.mp4`.
+
+An animated GIF comes back as a silent MP4, which is what X stores. The clip's
+own audio is not mixed into a render: pull it out with ffmpeg and place it with
+`audio add` if it matters.
 
 ## skills
 

@@ -50,6 +50,12 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     mcp: "`save_asset`",
     shell: "download it into `assets/` with your own shell",
   },
+  "x-video": {
+    label: "Save the video from a public post on X (Twitter) into `assets/`",
+    desktop: "`download_x_video`",
+    mcp: "`download_x_video`",
+    shell: "`npx @genmotion/cli x-video <post url> --json`",
+  },
   "generate-image": {
     label: "Generate artwork",
     desktop: "`generate_image`",
@@ -151,6 +157,7 @@ export const TOOL_CAPABILITIES: Record<string, SkillCapability> = {
   capture_frames: "capture-frames",
   project_overview: "project-overview",
   save_asset: "save-asset",
+  download_x_video: "x-video",
   generate_image: "generate-image",
   pick_voice: "pick-voice",
   generate_voiceover: "voiceover",

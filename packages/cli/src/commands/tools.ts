@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { readManifest } from "@genmotion/project";
 import { ensureFfmpeg, findChromium, installChromium, launchBrowser } from "@genmotion/render";
 import { runMcpServer } from "../mcp";
+import { downloadXPostVideo } from "../x-video";
 import { wireAgents } from "../agents";
 import { installSkills, installedSkills, listPack, readSkill, searchPack } from "../skills";
 import { SKILL_KINDS, type SkillKind } from "@genmotion/shared";
@@ -31,10 +32,69 @@ Speaks MCP over stdio. New projects already carry the config (.mcp.json,
 
 Tools: search_skills, get_skill, search_scenes, get_scene, project_overview, create_project,
 add_scene, validate_scene, check_project, capture_frames, render_video,
-save_asset, add_package, get_guide, list_templates.`,
+save_asset, download_x_video, add_package, get_guide, list_templates.`,
   options: {},
   async run({ values }) {
     await runMcpServer({ dir: str(values.dir) });
+  },
+};
+
+export const xVideo: Command = {
+  name: "x-video",
+  summary: "Save the video from a public post on X into assets/",
+  help: `Usage: genmotion x-video <post url> [options]
+
+Takes the link to the post, not a media URL: the MP4 is behind an id only the
+post knows. Resolved through X's own embed endpoint, so there is no key, no
+account and no login; the file comes straight from X.
+
+  genmotion x-video https://x.com/someone/status/1988283207138324487
+  genmotion x-video https://x.com/someone/status/198... --quality smallest --json
+
+An animated GIF comes back as a silent MP4, which is what X stores. The clip's
+own audio is not mixed into a render: extract it with ffmpeg and place it with
+\`genmotion audio add\` if it matters.
+
+Options
+  --quality <best|smallest>  Which rendition (default best)
+  --index <n>                For a post with several videos (default 0)
+  --filename <name>          Save as this name instead of x-<handle>-<quality>.mp4
+  --dir, -C <project>
+  --json`,
+  options: {
+    quality: { type: "string" },
+    index: { type: "string" },
+    filename: { type: "string" },
+  },
+  async run({ values, positionals, out }) {
+    const url = positionals[0];
+    if (!url) {
+      throw new CliError("Which post?", { fix: "genmotion x-video https://x.com/<handle>/status/<id>" });
+    }
+    const quality = str(values.quality) ?? "best";
+    if (quality !== "best" && quality !== "smallest") {
+      throw new CliError(`Unknown quality "${quality}"`, { fix: "--quality best|smallest" });
+    }
+    const dir = resolveProjectDir(str(values.dir));
+
+    out.info("Resolving the post…");
+    const saved = await downloadXPostVideo(dir, url, {
+      quality,
+      index: num(values.index, "index"),
+      filename: str(values.filename),
+    });
+
+    const size = `${(saved.bytes / 1e6).toFixed(1)}MB`;
+    const frames = saved.durationInFrames === null ? "" : ` · ${saved.durationInFrames} frames`;
+    out.result(
+      { ...saved },
+      [
+        `${green("✓")} ${bold(saved.path)} ${dim(`${size} · ${saved.label} · ${saved.width}x${saved.height} · ${saved.durationSeconds.toFixed(1)}s${frames}`)}`,
+        `${dim("from")} @${saved.post.author.handle}${saved.post.author.name ? ` (${saved.post.author.name})` : ""}: ${saved.post.text.replace(/\s+/g, " ").trim()}`,
+        ...(saved.skipped.length ? [dim(`skipped ${saved.skipped.join(", ")} — over the 100MB limit`)] : []),
+        ...(saved.smaller.length ? [dim(`smaller renditions: ${saved.smaller.join(", ")}`)] : []),
+      ].join("\n"),
+    );
   },
 };
 

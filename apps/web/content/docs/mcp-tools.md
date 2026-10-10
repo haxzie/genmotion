@@ -25,6 +25,7 @@ updated: 2026-10-01
 | `update_audio` | Move, retime, trim, re-level, fade, rename or mute a clip by id or name |
 | `remove_audio` | Take a clip off the timeline. The file stays in `assets/` |
 | `save_asset` | Download a remote image, audio, video, font or 3D model into `assets/` (up to 25 MB) |
+| `download_x_video` | Save the video from a public post on X (Twitter) into `assets/`, with the author and the post's text |
 | `add_package` | Install a browser-safe npm package, with lifecycle scripts disabled |
 | `search_skills` | Find the skill that owns this kind of video, from the user's own words |
 | `get_skill` | Read a skill and, when needed, one of its reference files |

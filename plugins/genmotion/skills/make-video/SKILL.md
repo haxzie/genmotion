@@ -47,6 +47,7 @@ Skills name what to do as backticked capability ids, never tool names. What each
 | `capture-frames` | Render frames and look at them | `capture_frames` |
 | `project-overview` | The project's scenes, timing, audio and assets | `project_overview` |
 | `save-asset` | Copy a remote image, video, font or audio file into `assets/` | `save_asset` |
+| `x-video` | Save the video from a public post on X (Twitter) into `assets/` | `download_x_video` |
 | `generate-image` | Generate artwork | not available — ask the user for the image, or build the visual from geometry and type instead |
 | `pick-voice` | Choose a narration voice | not available — ask the user which voice, or skip if there is no narration |
 | `voiceover` | Narration | not available — use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type |

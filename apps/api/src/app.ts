@@ -20,6 +20,7 @@ import { sampleRoutes } from "./routes/samples";
 import { mcpCatalogRoutes } from "./routes/mcp-catalog";
 import { skillsRoutes } from "./routes/skills";
 import { feedbackRoutes } from "./routes/feedback";
+import { xVideoRoutes } from "./routes/x-video";
 import { dodoWebhookRoutes } from "./routes/webhooks/dodo";
 
 export const app = new Hono();
@@ -85,6 +86,9 @@ app.route("/api/mcp", mcpCatalogRoutes);
 app.route("/api/skills", skillsRoutes);
 // Help & feedback from both apps, straight to a Slack channel.
 app.route("/api/feedback", feedbackRoutes);
+// Public X posts resolved to the video files X serves — metadata only; the
+// desktop agent fetches the bytes from X itself.
+app.route("/api/x-video", xVideoRoutes);
 // Render control-plane — token-authed (not requireAuth); used by remote renderers.
 app.route("/api/render", renderRoutes);
 // Payment webhooks — signature-authed (not requireAuth); called by the provider.

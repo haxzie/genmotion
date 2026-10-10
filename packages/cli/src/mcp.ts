@@ -12,6 +12,7 @@ import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/va
 import { checkProject, launchBrowser, parseDuration, renderProject, renderStills, type Codec } from "@genmotion/render";
 import { projectOverview } from "./commands/project";
 import { downloadAsset } from "./assets";
+import { downloadXPostVideo } from "./x-video";
 import { addAudio, removeAudio, setAudio } from "./audio";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
@@ -267,6 +268,22 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     async ({ dir, url, filename }) => {
       const saved = await downloadAsset(project(dir), url, filename);
       return { ...saved, importAs: `import url from "../${saved.path}";` };
+    },
+  );
+
+  tool(
+    "download_x_video",
+    "Save the video from a public post on X (Twitter) into the project's assets/, and return the path plus who posted it and what the post said. Give it the post link, not a media URL: save_asset cannot fetch one of these. Animated GIFs come back as silent MP4s, which is what X stores. The clip's own audio is not mixed by a render unless you extract it and add it with add_audio. One post per call.",
+    {
+      ...dirArg,
+      url: z.string().describe("Link to the post, e.g. https://x.com/someone/status/1988283207138324487"),
+      quality: z.enum(["best", "smallest"]).optional().describe("Which rendition. Default best; smallest for a clip that plays small on screen."),
+      index: z.number().int().min(0).optional().describe("For a post with several videos: which one, in the order X lists them. Default 0."),
+      filename: z.string().optional().describe('File name to save as, e.g. "reaction-clip.mp4".'),
+    },
+    async ({ dir, url, quality, index, filename }) => {
+      const saved = await downloadXPostVideo(project(dir), url, { quality, index, filename });
+      return { ...saved, importAs: `import clip from "../${saved.path}";` };
     },
   );
 

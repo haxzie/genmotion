@@ -42,6 +42,7 @@ Skills name what to do as backticked capability ids, never tool names. What each
 | `capture-frames` | Render frames and look at them | `capture_frames` | `npx @genmotion/cli still --at <time> --json`, then open the PNGs |
 | `project-overview` | The project's scenes, timing, audio and assets | `project_overview` | `npx @genmotion/cli info --json` |
 | `save-asset` | Copy a remote image, video, font or audio file into `assets/` | `save_asset` | download it into `assets/` with your own shell |
+| `x-video` | Save the video from a public post on X (Twitter) into `assets/` | `download_x_video` | `npx @genmotion/cli x-video <post url> --json` |
 | `generate-image` | Generate artwork | not available — ask the user for the image, or build the visual from geometry and type instead | not available — ask the user for the image, or build the visual from geometry and type instead |
 | `pick-voice` | Choose a narration voice | not available — ask the user which voice, or skip if there is no narration | not available — ask the user which voice, or skip if there is no narration |
 | `voiceover` | Narration | not available — use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type | not available — use an audio file the user provides (put it in `assets/` and place it with `place-audio`), or carry the words as on-screen type |

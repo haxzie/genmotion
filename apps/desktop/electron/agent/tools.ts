@@ -4,7 +4,7 @@ import type { NativeImage } from "electron";
 import { z } from "zod";
 import { forkScene, readManifest, type ProjectEngine, type SceneFork } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
-import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
+import { PAYWALL_STATUS, QUOTA_STATUS, type XResolvedPost } from "@genmotion/shared";
 import { formatFinding } from "@genmotion/hyperframes";
 import { cloudFetch, desktopAuth } from "../auth";
 import {
@@ -432,6 +432,39 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       } catch (err) {
         return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
       }
+    },
+  },
+
+  {
+    name: "download_x_video",
+    description:
+      "Save the video from a public post on X (Twitter) into the project's assets/, and return the path plus what the post said and who posted it. Use it whenever a request carries an x.com or twitter.com link with a clip in it — a reaction to cut into a video, a demo someone posted, footage to quote. It takes the post link, not a media URL: `save_asset` cannot fetch one of these, because the file sits behind a link only the post knows. Animated GIFs come back as silent MP4s, which is what X actually stores. One post per call.",
+    shape: {
+      url: z
+        .string()
+        .describe("Link to the post, e.g. https://x.com/someone/status/1988283207138324487"),
+      quality: z
+        .enum(["best", "smallest"])
+        .optional()
+        .describe(
+          "Which rendition to take. Default `best`. Use `smallest` when the clip plays small on screen — a phone mock, a quarter-frame inset — and the full-size file would be wasted bytes.",
+        ),
+      index: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("For a post with several videos: which one, in the order X lists them. Default 0."),
+      filename: z.string().optional().describe('Preferred filename, e.g. "reaction-clip.mp4"'),
+    },
+    async run(session, args) {
+      const { url, quality = "best", index = 0, filename } = args as unknown as {
+        url: string;
+        quality?: "best" | "smallest";
+        index?: number;
+        filename?: string;
+      };
+      return downloadXVideo(session, { url, quality, index, filename });
     },
   },
 
@@ -970,6 +1003,125 @@ function selectableNote(objects: { id: string; type: string }[]): string {
 }
 
 /**
+ * Videos are bigger than the assets a scene normally pulls in, and this is one
+ * the user asked for by name. Past this, the clip belongs on the machine
+ * already rather than coming down a tool call.
+ */
+const MAX_X_VIDEO_BYTES = 100 * 1024 * 1024;
+
+/**
+ * Save the video from a public X post into `assets/`.
+ *
+ * Two hops, and only the first is ours: the API resolves the post to the files
+ * X serves, and then this fetches the chosen one straight from
+ * `video.twimg.com`. The bytes never touch our server — see the note at the top
+ * of `apps/api/src/x-video.ts`.
+ *
+ * The rendition is chosen here rather than by the model: the ladder differs
+ * per post, so asking for "1080p" is asking for something that may not exist,
+ * while "the best one" always does.
+ */
+async function downloadXVideo(
+  session: ProjectSession,
+  opts: { url: string; quality: "best" | "smallest"; index: number; filename?: string },
+): Promise<ToolResult> {
+  const res = await desktopAuth
+    .request<XResolvedPost | { error?: string }>(
+      `/api/x-video?url=${encodeURIComponent(opts.url)}`,
+    )
+    .catch((err: unknown) => ({
+      ok: false as const,
+      status: 0,
+      body: { error: err instanceof Error ? err.message : String(err) },
+    }));
+
+  if (!res.ok) {
+    const detail = (res.body as { error?: string } | null)?.error ?? "";
+    if (res.status === 0) {
+      return failure(
+        `FAILED — could not reach GenMotion${detail ? `: ${detail}` : "."} Tell the user, and carry on without the clip.`,
+      );
+    }
+    if (res.status === 401) {
+      return failure(
+        "FAILED — this needs a signed-in GenMotion account. Tell the user to sign in from the account menu, and carry on without the clip.",
+      );
+    }
+    if (res.status === 429) {
+      return failure(`FAILED — ${detail || "too many X links in the last hour."} Don't retry this turn.`);
+    }
+    // 400 and 404 are about the link itself — not a link to a post, or a post
+    // nobody can see. Retrying the same one cannot work, so say so plainly.
+    return failure(
+      `FAILED — ${detail || `X lookup failed (${res.status}).`}${res.status === 404 || res.status === 400 ? " Ask the user for a different post, or build the shot without it." : ""}`,
+    );
+  }
+
+  const post = res.body as XResolvedPost;
+  const media = post.media[opts.index];
+  if (!media) {
+    return failure(
+      `FAILED — that post has ${post.media.length} video${post.media.length === 1 ? "" : "s"}, so there is no index ${opts.index}.`,
+    );
+  }
+
+  // The API answers best-first, so the chosen rung and everything smaller than
+  // it is a slice — which is also the order to step through when a file turns
+  // out to be too big to save.
+  const ladder = media.variants.slice(opts.quality === "smallest" ? media.variants.length - 1 : 0);
+
+  // The clip's length in frames is the number that decides how it is placed, so
+  // it is worth saying — but a project whose manifest is mid-edit shouldn't fail
+  // a download over it.
+  const fps = await readManifest(session.dir)
+    .then((m) => m.fps)
+    .catch(() => null);
+
+  const skipped: string[] = [];
+  for (const variant of ladder) {
+    try {
+      const saved = await downloadAsset(
+        session.dir,
+        variant.url,
+        opts.filename ?? `x-${post.author.handle || post.id}`,
+        { maxBytes: MAX_X_VIDEO_BYTES, timeoutMs: 5 * 60_000 },
+      );
+      const seconds = media.durationMs / 1000;
+      // Only the ones below this rung: a bigger rendition is no use to someone
+      // who has just been handed a file they think is too heavy.
+      const smaller = ladder.slice(ladder.indexOf(variant) + 1).map((v) => v.label);
+      return text(
+        [
+          `Saved to ${saved}`,
+          "",
+          `${media.kind === "gif" ? "GIF (a silent MP4, as X stores it)" : "Video"} · ${variant.label} · ${variant.width}×${variant.height}${seconds > 0 ? ` · ${seconds.toFixed(1)}s${fps ? ` (${Math.round(seconds * fps)} frames at ${fps}fps)` : ""}` : ""}`,
+          `From @${post.author.handle}${post.author.name ? ` (${post.author.name})` : ""}: ${post.text.replace(/\s+/g, " ").trim() || "(no text)"}`,
+          ...(skipped.length ? [`Skipped ${skipped.join(", ")} — over the 100MB limit.`] : []),
+          ...(smaller.length ? [`Smaller renditions, if this one is too heavy: ${smaller.join(", ")}.`] : []),
+          "",
+          usageFor(saved, session.engine),
+          media.kind === "gif"
+            ? "It loops and has no audio, so it needs no timeline audio entry."
+            : "It carries its own audio, which the export does NOT mix — only `project.json`'s `audio` entries are muxed. If the clip's sound matters, extract it with ffmpeg and place that file on the timeline.",
+        ].join("\n"),
+      );
+    } catch (err) {
+      // Too big is the one failure worth stepping down for: the next rung is
+      // the same clip, smaller. Anything else would fail the same way on every
+      // rung, so it is reported rather than retried three more times.
+      if (!(err instanceof AssetTooLargeError)) {
+        return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
+      }
+      skipped.push(variant.label);
+    }
+  }
+
+  return failure(
+    `FAILED — every rendition of that clip is over the 100MB limit (${skipped.join(", ")}). Ask the user to download it themselves and drop the file in.`,
+  );
+}
+
+/**
  * Ask the hosted API for generated media and land it in `assets/`.
  *
  * The providers are ours, not the user's — we hold the ElevenLabs and Gemini
@@ -1210,6 +1362,15 @@ function usageFor(rel: string, engine: ProjectEngine = "react"): string {
 
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 
+/**
+ * The file came down whole and was too big to keep.
+ *
+ * Its own type because one caller acts on it: `download_x_video` steps down to
+ * a smaller rendition of the same clip, which only makes sense for this
+ * failure and not for a 404 or a wrong content type.
+ */
+class AssetTooLargeError extends Error {}
+
 /** content-type → extension, for URLs that don't carry a usable one. */
 const ASSET_TYPES: Record<string, string> = {
   "image/png": ".png",
@@ -1238,6 +1399,13 @@ async function downloadAsset(
   projectDir: string,
   url: string,
   preferred?: string,
+  /**
+   * Both raised only by `download_x_video`, which is fetching a whole video the
+   * user asked for by name rather than a logo a scene happens to want: a
+   * 1080p X clip is routinely 90MB, which is over the ceiling where a file that
+   * size would be a mistake and over the time an image is allowed to take.
+   */
+  { maxBytes = MAX_ASSET_BYTES, timeoutMs = 30_000 }: { maxBytes?: number; timeoutMs?: number } = {},
 ): Promise<string> {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
@@ -1246,7 +1414,7 @@ async function downloadAsset(
 
   const response = await fetch(url, {
     redirect: "follow",
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(timeoutMs),
     headers: { accept: "image/*,video/*,audio/*,font/*,*/*;q=0.5" },
   });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText} for ${url}`);
@@ -1261,8 +1429,10 @@ async function downloadAsset(
 
   const body = Buffer.from(await response.arrayBuffer());
   if (body.byteLength === 0) throw new Error("The file was empty");
-  if (body.byteLength > MAX_ASSET_BYTES) {
-    throw new Error(`The file is ${(body.byteLength / 1024 / 1024).toFixed(1)}MB, over the 25MB limit`);
+  if (body.byteLength > maxBytes) {
+    throw new AssetTooLargeError(
+      `The file is ${(body.byteLength / 1024 / 1024).toFixed(1)}MB, over the ${Math.round(maxBytes / 1024 / 1024)}MB limit`,
+    );
   }
 
   const fromUrl = path.basename(decodeURIComponent(parsed.pathname));

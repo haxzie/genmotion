@@ -52,6 +52,8 @@ function describeTool(name: string, input: unknown): string {
       return "Reading a page";
     case "mcp__genmotion__save_asset":
       return short ? `Saving ${short}` : "Saving an asset";
+    case "mcp__genmotion__download_x_video":
+      return "Getting the video from X";
     case "AskUserQuestion":
       return "Waiting for your answer";
     case "mcp__genmotion__pick_voice":

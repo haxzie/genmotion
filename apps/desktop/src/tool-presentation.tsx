@@ -413,6 +413,16 @@ registerToolPresentation({
     },
   },
 
+  mcp__genmotion__download_x_video: {
+    labels: { active: "Getting video from X", done: "Got video from X" },
+    icon: DownloadGlyph,
+    subject: (part) => str(part, "filename") ?? str(part, "url"),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
   mcp__genmotion__validate_scene: {
     labels: { active: "Checking scene", done: "Checked scene" },
     icon: CheckGlyph,

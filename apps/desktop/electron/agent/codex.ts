@@ -195,6 +195,8 @@ function statusFor(item: CodexItem, projectDir: string): string | null {
           return "Reading the timeline";
         case "save_asset":
           return "Saving an asset";
+        case "download_x_video":
+          return "Getting the video from X";
         default:
           return item.tool ?? "Using a tool";
       }

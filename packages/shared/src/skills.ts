@@ -97,6 +97,8 @@ export const SKILL_CAPABILITIES = [
   "project-overview",
   /** Copy a remote image, video, font or audio file into `assets/`. */
   "save-asset",
+  /** Save the video from a public post on X (Twitter) into `assets/`. */
+  "x-video",
   /** Generate artwork. */
   "generate-image",
   /** Choose a voice before narrating. */

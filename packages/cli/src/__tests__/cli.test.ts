@@ -208,6 +208,25 @@ describe("genmotion --json", () => {
     expect(await fs.readFile(path.join(dir, ".gitignore"), "utf8")).toContain("!.agents/skills/");
   });
 
+  /**
+   * The resolver has its own suite in `@genmotion/shared`. What is worth
+   * asserting through a real process is that a link to anywhere but X is
+   * refused before any request is made — the host check is the only thing
+   * standing between this command and fetching whatever URL it is handed.
+   */
+  it("x-video refuses a link that is not a post on X", () => {
+    const { code, json } = gm(["x-video", "https://example.com/someone/status/20"], path.join(tmp, "video"));
+    expect(code).toBe(1);
+    expect(json.ok).toBe(false);
+    expect(json.error.message).toContain("post on X");
+  });
+
+  it("x-video asks which post when given none", () => {
+    const { code, json } = gm(["x-video"], path.join(tmp, "video"));
+    expect(code).toBe(1);
+    expect(json.error.fix).toContain("x-video https://x.com/");
+  });
+
   it("explains being outside a project", () => {
     const { code, json } = gm(["info"], os.tmpdir());
     expect(code).toBe(1);
@@ -232,6 +251,7 @@ describe("genmotion mcp", () => {
           "capture_frames",
           "render_video",
           "save_asset",
+          "download_x_video",
           "add_audio",
           "update_audio",
           "remove_audio",
