@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { resolveXPost, type XResolveFailureReason } from "@genmotion/shared";
+import { resolveXPost, type XResolveFailureReason } from "@genmotion/shared/x-video";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
 /**

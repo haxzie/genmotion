@@ -12,7 +12,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./render-token": "./src/render-token.ts"
+    "./render-token": "./src/render-token.ts",
+    "./x-video": "./src/x-video.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

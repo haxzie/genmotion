@@ -13,6 +13,11 @@
  * is honest about who serves what. It lives in `shared` because three callers
  * want the same copy: the API route the desktop app resolves through, the CLI's
  * `download_x_video` tool, and `genmotion x-video` on a shell.
+ *
+ * Imported via `@genmotion/shared/x-video`, and workspace-only: unlike the
+ * main entry it calls `fetch`, so it is kept out of `publishConfig.exports`
+ * and off the published package's surface, which stays pure types and frame
+ * math. The same arrangement as `./render-token`.
  */
 
 export interface XVideoVariant {

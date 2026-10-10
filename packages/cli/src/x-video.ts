@@ -1,5 +1,5 @@
 import { readManifest } from "@genmotion/project";
-import { resolveXPost, type XResolvedPost, type XVideoVariant } from "@genmotion/shared";
+import { resolveXPost, type XResolvedPost, type XVideoVariant } from "@genmotion/shared/x-video";
 import { downloadAsset } from "./assets";
 import { CliError } from "./output";
 

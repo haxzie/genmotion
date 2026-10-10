@@ -4,7 +4,8 @@ import type { NativeImage } from "electron";
 import { z } from "zod";
 import { forkScene, readManifest, type ProjectEngine, type SceneFork } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
-import { PAYWALL_STATUS, QUOTA_STATUS, type XResolvedPost } from "@genmotion/shared";
+import { PAYWALL_STATUS, QUOTA_STATUS } from "@genmotion/shared";
+import type { XResolvedPost } from "@genmotion/shared/x-video";
 import { formatFinding } from "@genmotion/hyperframes";
 import { cloudFetch, desktopAuth } from "../auth";
 import {
