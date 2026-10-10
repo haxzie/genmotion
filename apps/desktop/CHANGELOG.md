@@ -1,5 +1,28 @@
 # @genmotion/desktop
 
+## 0.3.1
+
+### Patch Changes
+
+- 6899508: Desktop: never open a blank window.
+
+  A quit tears the loopback server down before the process has actually gone. If
+  the quit then stalls — a prevented window close, an updater handing off to
+  Squirrel and not coming back — the app lived on holding the single-instance
+  lock with its server closed, so the dock icon (and every later launch, which
+  the lock folds into that process) opened a window against a dead port. The
+  window painted its background colour and nothing else, with no error anywhere,
+  until the app was force-quit.
+
+  The quit is now bounded and backed by `app.exit`, so it always ends the
+  process; `createWindow` brings the server back if it is down; a main-frame load
+  failure retries instead of leaving an empty window, and says so plainly if the
+  retries run out. A second instance no longer starts a server, a menu or a
+  window on its way out.
+
+- 7ce1037: The studio agent now confirms the spend before it makes a paid call. Both harnesses' prompts carry one rule: the GenMotion generators and any connected integration's tools cost real money, so the agent puts the whole plan in front of the user first (what it would generate, how many, which model, what it costs) and waits for a yes. It may only quote a price the tool or the provider's own balance tool actually states, never an invented one, and one yes covers that plan, with a fresh ask before going past it or re-generating something that already came back. Local work (capture, validate, ffmpeg, save_asset) still needs no permission.
+- 75b522f: Agents can pull the video out of a post on X. In the studio, paste an x.com link in the chat and `download_x_video` lands the clip in the project's `assets/`, with who posted it and what the post said, so it can be quoted on screen. The CLI has the same thing without an account: `genmotion x-video <post url>`, and `download_x_video` over MCP. Posts are resolved through X's own embed endpoint, which needs no key and no login, and the file comes straight from `video.twimg.com`, so no video passes through our servers. The best rendition is taken by default (`--quality smallest` for a clip that plays inside a phone mock), stepping down the ladder when the top one is over 100MB. Skills name it as the `x-video` capability.
+
 ## 0.3.0
 
 ### Minor Changes
