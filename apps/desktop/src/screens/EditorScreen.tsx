@@ -81,10 +81,13 @@ type ViewTab = (typeof VIEW_TABS)[number]["id"];
 export function EditorScreen({
   project: initial,
   onClose,
+  onAdopt,
 }: {
   project: DesktopProject;
   /** The project is gone (deleted from here); drop its tab. */
   onClose: () => void;
+  /** A duplicate made from the title menu: give the copy a tab of its own. */
+  onAdopt: (project: DesktopProject) => void;
 }) {
   const projectId = initial.dir;
   const [tab, setTab] = useState<ViewTab>("preview");
@@ -109,6 +112,19 @@ export function EditorScreen({
     splitScene,
     splitAudioClip,
   } = useProjectMutations(projectId);
+
+  // The copy is written in the main process — tens of megabytes of
+  // node_modules on a project the agent has installed into — so the menu row
+  // says it is working rather than looking like it did nothing.
+  const [duplicating, setDuplicating] = useState(false);
+  const duplicate = useCallback(async () => {
+    setDuplicating(true);
+    try {
+      onAdopt(await api.duplicateProject(projectId));
+    } finally {
+      setDuplicating(false);
+    }
+  }, [onAdopt, projectId]);
 
   const editorStore = useEditorStoreApi();
   const requestFix = useEditorStore((s) => s.requestFix);
@@ -154,6 +170,8 @@ export function EditorScreen({
         startResize={startResize}
         onClose={onClose}
         onRename={(name) => renameProject.mutate(name)}
+        onDuplicate={() => void duplicate()}
+        duplicating={duplicating}
         onReorder={(ids) => reorderScenes.mutate(ids)}
         onDeleteScenes={handleDeleteScenes}
         onToggleMute={(sceneId, muted) => updateScene.mutate({ sceneId, audioVolume: muted ? 0 : 1 })}
@@ -184,6 +202,8 @@ function EditorBody({
   startResize,
   onClose,
   onRename,
+  onDuplicate,
+  duplicating,
   onReorder,
   onDeleteScenes,
   onToggleMute,
@@ -204,6 +224,8 @@ function EditorBody({
   startResize: (e: ReactPointerEvent<HTMLDivElement>) => void;
   onClose: () => void;
   onRename: (name: string) => void;
+  onDuplicate: () => void;
+  duplicating: boolean;
   onReorder: (ids: string[]) => void;
   onDeleteScenes: (ids: string[]) => void;
   onToggleMute: (sceneId: string, muted: boolean) => void;
@@ -250,37 +272,16 @@ function EditorBody({
           <Topbar
             projectName={project.name}
             onRename={onRename}
-            action={
-              <button
-                type="button"
-                aria-label="Delete project"
-                title="Delete project"
-                onClick={() => {
-                  void api.deleteProject(project.dir).then(({ deleted }) => {
-                    // The main process has already released the session; this
-                    // is only the renderer catching up to an editor whose
-                    // project no longer exists.
-                    if (deleted) void onClose();
-                  });
-                }}
-                className={cx(
-                  "rounded p-1.5 text-text-tertiary transition-colors duration-150",
-                  "hover:bg-danger/10 hover:text-danger",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40",
-                )}
-              >
-                <svg
-                  className="size-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                >
-                  <path d="M4 7h16M10 4h4M9.5 7l.6 12M14.5 7l-.6 12M6.5 7l.8 13.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7" />
-                </svg>
-              </button>
-            }
+            onDuplicate={onDuplicate}
+            duplicating={duplicating}
+            onDelete={() => {
+              void api.deleteProject(project.dir).then(({ deleted }) => {
+                // The main process has already released the session; this is
+                // only the renderer catching up to an editor whose project no
+                // longer exists.
+                if (deleted) void onClose();
+              });
+            }}
           />
           <ChatPanel
             projectId={project.dir}

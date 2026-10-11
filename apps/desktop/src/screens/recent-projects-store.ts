@@ -15,6 +15,8 @@ import type { DesktopProject, RecentProject } from "../api";
 interface RecentProjectsStore {
   pending: RecentProject[];
   add(project: DesktopProject): void;
+  /** A project was renamed while its pending card was still standing in. */
+  rename(dir: string, name: string): void;
   clear(dir: string): void;
 }
 
@@ -41,6 +43,11 @@ export const useRecentProjectsStore = create<RecentProjectsStore>((set) => ({
   add(project) {
     set((state) => ({
       pending: [toRecentProject(project), ...state.pending.filter((p) => p.dir !== project.dir)],
+    }));
+  },
+  rename(dir, name) {
+    set((state) => ({
+      pending: state.pending.map((p) => (p.dir === dir ? { ...p, name } : p)),
     }));
   },
   clear(dir) {

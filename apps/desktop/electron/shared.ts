@@ -542,6 +542,27 @@ export interface DesktopApi {
    * ran agent-authored code cannot fake or skip it.
    */
   deleteProject(dir: string): Promise<{ deleted: boolean }>;
+  /**
+   * Rename a project: the manifest's `name`, which is what every surface
+   * shows it by.
+   *
+   * The folder keeps the slug it was created with. That path is what the
+   * recents index, the open tabs, `genmotion <path>`, any read grant the agent
+   * holds and the project's own git remote all name, and none of it is worth
+   * breaking to make a directory read nicely. Returns the name as stored —
+   * trimmed, and refused outright when there is nothing left of it.
+   */
+  renameProject(dir: string, name: string): Promise<{ name: string }>;
+  /**
+   * Copy a project into a new one beside it, and open it.
+   *
+   * Everything the video is made of comes along — scenes, assets, the
+   * installed packages, the card image — so the copy previews the moment it
+   * opens. What belongs to the original stays there: its chat, its agent
+   * thread, its exports and its git remote. Resolves with the copy, ready for
+   * a tab, exactly as cloning and adopting do.
+   */
+  duplicateProject(dir: string): Promise<DesktopProject>;
   /** Where the app is in the update cycle, and how to move it along. */
   update: {
     state(): Promise<UpdateState>;
@@ -615,6 +636,8 @@ export const IPC = {
   seedSampleProjects: "project:seed-samples",
   revealProject: "project:reveal",
   deleteProject: "project:delete",
+  renameProject: "project:rename",
+  duplicateProject: "project:duplicate",
   updateState: "update:state",
   updateCheck: "update:check",
   updateDownload: "update:download",

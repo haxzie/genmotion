@@ -5,6 +5,7 @@ import { api, type RecentProject } from "../api";
 import { useTabActive } from "../tabs/active-tab";
 import { useRecentProjectsStore } from "./recent-projects-store";
 import { CloneFromGitHub } from "./clone-from-github";
+import { ProjectActions } from "../components/project-actions";
 import type { DesktopProject } from "../../electron/shared";
 
 const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
@@ -60,49 +61,138 @@ function FilmIcon({ className }: { className?: string }) {
   );
 }
 
-function TrashIcon({ className }: { className?: string }) {
+/**
+ * Rename in place, rather than a dialog.
+ *
+ * The card's own title becomes the field, so the name is edited where it is
+ * read. Enter commits, Escape and blur abandon — blur rather than commit
+ * because the thing most likely to steal focus here is a click on another
+ * card, and that click means "open that one", not "accept this".
+ */
+function RenameField({
+  value,
+  onCommit,
+  onCancel,
+}: {
+  value: string;
+  onCommit: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.select();
+  }, []);
+
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <path d="M4 7h16M10 4h4M9.5 7l.6 12M14.5 7l-.6 12M6.5 7l.8 13.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7" />
-    </svg>
+    <input
+      ref={inputRef}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      // The row and the card are both click targets that open the project.
+      onClick={(event) => event.stopPropagation()}
+      onBlur={onCancel}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          const name = draft.trim();
+          if (name && name !== value) onCommit(name);
+          else onCancel();
+        }
+        if (event.key === "Escape") onCancel();
+      }}
+      aria-label={`Rename ${value}`}
+      className={cx(
+        "w-full min-w-0 rounded border border-accent/50 bg-background px-1.5 py-0.5",
+        "text-[0.929rem] text-text-primary outline-none ring-2 ring-accent/20",
+      )}
+    />
   );
 }
 
 /**
- * Delete, revealed on hover.
+ * One of the older projects, as a compact row.
  *
- * Kept visible on keyboard focus as well: a control that only exists under a
- * pointer is a control a keyboard cannot reach.
+ * Its own component because of the title: the row's open target is a real
+ * button, for the keyboard, and an input inside a button is invalid markup
+ * that a pointer cannot reliably reach. So while the name is being edited the
+ * wrapper is a plain div instead, and the easiest way to say that once is
+ * here.
  */
-function DeleteButton({
-  name,
+function ProjectRow({
+  project,
+  renaming,
+  duplicating,
+  onOpen,
+  onStartRename,
+  onRename,
+  onCancelRename,
+  onDuplicate,
   onDelete,
-  className,
 }: {
-  name: string;
+  project: RecentProject;
+  renaming: boolean;
+  duplicating: boolean;
+  onOpen: () => void;
+  onStartRename: () => void;
+  onRename: (name: string) => void;
+  onCancelRename: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
-  className?: string;
 }) {
+  const body = (
+    <>
+      <span className="flex aspect-video w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-background text-text-tertiary">
+        {project.thumbnail ? (
+          <img src={project.thumbnail} alt="" className="size-full object-cover" draggable={false} />
+        ) : (
+          <FilmIcon className="size-4 opacity-40" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        {renaming ? (
+          <RenameField value={project.name} onCommit={onRename} onCancel={onCancelRename} />
+        ) : (
+          <span className="block truncate text-[0.929rem] text-text-primary">{project.name}</span>
+        )}
+        <span className="mt-0.5 block text-[0.786rem] text-text-tertiary">
+          {formatDate(project.createdAt)}
+        </span>
+      </span>
+      <span className="shrink-0 text-[0.786rem] text-text-tertiary">
+        {project.sceneCount} {project.sceneCount === 1 ? "scene" : "scenes"}
+        {project.totalFrames > 0 && ` · ${formatDuration(project.totalFrames / project.fps)}`}
+      </span>
+    </>
+  );
+  const content = "flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left";
+
   return (
-    <button
-      type="button"
-      aria-label={`Delete ${name}`}
-      title={`Delete ${name}`}
-      onClick={(event) => {
-        // The whole card and the whole row are click targets that open the
-        // project. Without this, deleting would open it first.
-        event.stopPropagation();
-        onDelete();
-      }}
+    // A row, not a button: the actions menu is a button of its own and
+    // nesting one inside another is invalid, so the open target is the button
+    // and the row is what holds them both.
+    <div
       className={cx(
-        "shrink-0 rounded p-1.5 text-text-tertiary opacity-0 transition-all duration-150",
-        "hover:bg-danger/10 hover:text-danger focus-visible:opacity-100",
-        "group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40",
-        className,
+        "group flex items-center gap-3 border-b border-border px-1",
+        "transition-colors duration-150 hover:bg-surface-hover",
       )}
     >
-      <TrashIcon className="size-4" />
-    </button>
+      {renaming ? (
+        <div className={content}>{body}</div>
+      ) : (
+        <button type="button" onClick={onOpen} className={content}>
+          {body}
+        </button>
+      )}
+      <ProjectActions
+        name={project.name}
+        duplicating={duplicating}
+        onRename={onStartRename}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      />
+    </div>
   );
 }
 
@@ -129,6 +219,11 @@ export function Projects({
   const pending = useRecentProjectsStore((s) => s.pending);
   const [cursor, setCursor] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Which project's title is currently a text field, and which is being
+  // copied — one at a time each, because both start from a menu that closes
+  // behind them.
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState<string | null>(null);
   // How many have been *asked* for, which is what the next offset follows from.
   // Counting what came back instead would stall the moment a project's manifest
   // failed to parse and it dropped out of its page.
@@ -172,6 +267,42 @@ export function Projects({
     setCursor(cursorRef.current);
     useRecentProjectsStore.getState().clear(dir);
   }, []);
+
+  /**
+   * Rename: patch the entry in place rather than refetch.
+   *
+   * Same reason `remove` does — the list is paged, and a refetch would mean
+   * replaying every page to change one string. The manifest is the source of
+   * truth and the next visit re-reads it; this is the list catching up now.
+   */
+  const rename = useCallback(async (dir: string, name: string) => {
+    setRenaming(null);
+    const stored = await api.renameProject(dir, name).catch(() => null);
+    if (!stored) return;
+    setProjects(
+      (prev) => prev?.map((p) => (p.dir === dir ? { ...p, name: stored.name } : p)) ?? prev,
+    );
+    useRecentProjectsStore.getState().rename(dir, stored.name);
+  }, []);
+
+  /**
+   * Duplicate: the copy opens in its own tab.
+   *
+   * Which is also what puts it on this list — `onAdopt` goes through the
+   * pending store, the same path a newly created project takes, so the card
+   * is there when the user comes back to this screen.
+   */
+  const duplicate = useCallback(
+    async (dir: string) => {
+      setDuplicating(dir);
+      try {
+        onAdopt(await api.duplicateProject(dir));
+      } finally {
+        setDuplicating((current) => (current === dir ? null : current));
+      }
+    },
+    [onAdopt],
+  );
 
   useEffect(() => {
     void loadMore();
@@ -344,11 +475,14 @@ export function Projects({
                   variants={cardVariants}
                   onClick={() => onOpen(project.dir)}
                   className={cx(
-                    "group cursor-pointer overflow-hidden rounded-md border border-border bg-surface-raised",
+                    // Not `overflow-hidden`: the actions menu opens out of the
+                    // card's own footer, and a card that clips would clip it.
+                    // The frame below rounds its own top corners instead.
+                    "group cursor-pointer rounded-md border border-border bg-surface-raised",
                     "transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover",
                   )}
                 >
-                  <div className="flex aspect-video items-center justify-center overflow-hidden bg-background text-text-tertiary">
+                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded-t-[5px] bg-background text-text-tertiary">
                     {project.thumbnail ? (
                       <img
                         src={project.thumbnail}
@@ -362,15 +496,31 @@ export function Projects({
                   </div>
                   <div className="flex items-start gap-2 p-3">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[0.929rem] text-text-primary">{project.name}</div>
+                      {renaming === project.dir ? (
+                        <RenameField
+                          value={project.name}
+                          onCommit={(name) => void rename(project.dir, name)}
+                          onCancel={() => setRenaming(null)}
+                        />
+                      ) : (
+                        <div className="truncate text-[0.929rem] text-text-primary">
+                          {project.name}
+                        </div>
+                      )}
                       <div className="mt-0.5 text-[0.786rem] text-text-tertiary">
                         {project.sceneCount} {project.sceneCount === 1 ? "scene" : "scenes"}
                         {project.totalFrames > 0 &&
                           ` · ${formatDuration(project.totalFrames / project.fps)}`}
                       </div>
                     </div>
-                    <DeleteButton
+                    <ProjectActions
                       name={project.name}
+                      // The footer is the card's bottom edge, so there is more
+                      // room above the dots than below them.
+                      placement="up"
+                      duplicating={duplicating === project.dir}
+                      onRename={() => setRenaming(project.dir)}
+                      onDuplicate={() => void duplicate(project.dir)}
                       onDelete={() => void remove(project.dir)}
                       className="-mr-1 -mt-0.5"
                     />
@@ -382,49 +532,18 @@ export function Projects({
             {rows.length > 0 && (
               <div className="mt-6 border-t border-border">
                 {rows.map((project) => (
-                  // A row, not a button: the delete control is a button of
-                  // its own and nesting one inside another is invalid, so the
-                  // open target is the button and the row is what holds them.
-                  <div
+                  <ProjectRow
                     key={project.dir}
-                    className={cx(
-                      "group flex items-center gap-3 border-b border-border px-1",
-                      "transition-colors duration-150 hover:bg-surface-hover",
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => onOpen(project.dir)}
-                      className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
-                    >
-                      <span className="flex aspect-video w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-background text-text-tertiary">
-                        {project.thumbnail ? (
-                          <img
-                            src={project.thumbnail}
-                            alt=""
-                            className="size-full object-cover"
-                            draggable={false}
-                          />
-                        ) : (
-                          <FilmIcon className="size-4 opacity-40" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.929rem] text-text-primary">
-                          {project.name}
-                        </span>
-                        <span className="mt-0.5 block text-[0.786rem] text-text-tertiary">
-                          {formatDate(project.createdAt)}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-[0.786rem] text-text-tertiary">
-                        {project.sceneCount} {project.sceneCount === 1 ? "scene" : "scenes"}
-                        {project.totalFrames > 0 &&
-                          ` · ${formatDuration(project.totalFrames / project.fps)}`}
-                      </span>
-                    </button>
-                    <DeleteButton name={project.name} onDelete={() => void remove(project.dir)} />
-                  </div>
+                    project={project}
+                    renaming={renaming === project.dir}
+                    duplicating={duplicating === project.dir}
+                    onOpen={() => onOpen(project.dir)}
+                    onStartRename={() => setRenaming(project.dir)}
+                    onRename={(name) => void rename(project.dir, name)}
+                    onCancelRename={() => setRenaming(null)}
+                    onDuplicate={() => void duplicate(project.dir)}
+                    onDelete={() => void remove(project.dir)}
+                  />
                 ))}
               </div>
             )}

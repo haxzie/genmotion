@@ -104,6 +104,9 @@ const api: DesktopApi = {
     };
   },
   deleteProject: (dir: string) => ipcRenderer.invoke(IPC.deleteProject, dir),
+  renameProject: (dir: string, name: string) =>
+    ipcRenderer.invoke(IPC.renameProject, dir, name),
+  duplicateProject: (dir: string) => ipcRenderer.invoke(IPC.duplicateProject, dir),
   openWeb: (path: string) => ipcRenderer.invoke(IPC.openWeb, path),
   paths: () => ipcRenderer.invoke(IPC.paths),
   revealPath: (target: string) => ipcRenderer.invoke(IPC.revealPath, target),

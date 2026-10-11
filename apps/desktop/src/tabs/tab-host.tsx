@@ -3,6 +3,7 @@ import { PlaybackStoreProvider, createPlaybackStore } from "@genmotion/player";
 import { Spinner } from "@/components/ui";
 import { EditorStoreProvider } from "@/stores/editor-store";
 import { EditorScreen } from "../screens/EditorScreen";
+import type { DesktopProject } from "../api";
 import { TabActiveProvider } from "./active-tab";
 import { HOME_TAB, useTabsStore, type ProjectTab } from "./tabs-store";
 
@@ -40,10 +41,12 @@ function ProjectPane({
   tab,
   active,
   onClose,
+  onAdopt,
 }: {
   tab: ProjectTab;
   active: boolean;
   onClose: () => void;
+  onAdopt: (project: DesktopProject) => void;
 }) {
   // Each tab gets its own playback clock and its own selection: two projects
   // on one store would have one tab's timeline scrubbing the other's preview.
@@ -69,7 +72,7 @@ function ProjectPane({
         <EditorStoreProvider>
           <PlaybackStoreProvider store={playback}>
             {tab.project ? (
-              <EditorScreen project={tab.project} onClose={onClose} />
+              <EditorScreen project={tab.project} onClose={onClose} onAdopt={onAdopt} />
             ) : (
               <div className="flex h-full items-center justify-center" role="status" aria-label="Opening">
                 <Spinner />
@@ -92,9 +95,12 @@ function ProjectPane({
 export function TabHost({
   home,
   onCloseTab,
+  onAdopt,
 }: {
   home: ReactNode;
   onCloseTab: (dir: string) => void;
+  /** A project born inside a tab — a duplicate — wants a tab of its own. */
+  onAdopt: (project: DesktopProject) => void;
 }) {
   const tabs = useTabsStore((s) => s.tabs);
   const activeId = useTabsStore((s) => s.activeId);
@@ -110,6 +116,7 @@ export function TabHost({
           tab={tab}
           active={activeId === tab.dir}
           onClose={() => onCloseTab(tab.dir)}
+          onAdopt={onAdopt}
         />
       ))}
     </div>

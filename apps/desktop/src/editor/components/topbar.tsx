@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ProjectActions } from "../../components/project-actions";
 
 export function Topbar({
   projectName,
   onRename,
-  action,
+  onDuplicate,
+  onDelete,
+  duplicating = false,
 }: {
   projectName: string;
   onRename: (name: string) => void;
   /**
-   * Trailing control for the header's right edge. The hosted editor has
-   * nothing to put there; the desktop app puts Delete project in it, which
-   * only means anything where a project is a folder you own.
+   * The actions menu beside the title. Both or neither: it is one menu, and
+   * the hosted editor had no business offering either — a project there was a
+   * row in a database, not a folder you own.
    */
-  action?: ReactNode;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  duplicating?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(projectName);
@@ -70,7 +75,19 @@ export function Topbar({
           {projectName}
         </button>
       )}
-      {action && <div className="flex shrink-0 items-center">{action}</div>}
+      {onDuplicate && onDelete && (
+        // Rename is the title itself — clicking it has always edited it in
+        // place — so the menu's own row just puts the caret there, rather
+        // than opening a second way to type the same string.
+        <ProjectActions
+          name={projectName}
+          duplicating={duplicating}
+          onRename={() => setEditing(true)}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+          className="shrink-0"
+        />
+      )}
     </header>
   );
 }

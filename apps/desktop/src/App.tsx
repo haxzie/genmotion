@@ -401,6 +401,7 @@ function Shell() {
       />
       <TabHost
         onCloseTab={forget}
+        onAdopt={adopt}
         home={
           <HomeShell
             busy={busy}

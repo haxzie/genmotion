@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { BrowserWindow, app, dialog, ipcMain, protocol, session as electronSession, shell } from "electron";
-import { createProject, readManifest } from "@genmotion/project";
+import { createProject, readManifest, writeManifest } from "@genmotion/project";
 import { GSAP_VERSION, HYPERFRAMES_AUTHORING_GUIDE, HYPERFRAMES_VERSION } from "@genmotion/hyperframes";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
@@ -557,6 +557,43 @@ function registerIpc(): void {
     // to whatever project is later created at the same path.
     await import("./agent/read-roots").then((m) => m.clearReadRoots(dir));
     return { deleted: true };
+  });
+
+  /**
+   * Rename a project.
+   *
+   * The manifest, and only the manifest — see `DesktopApi.renameProject` for
+   * why the folder keeps its path. Written the same way the loopback route
+   * behind the editor's own title does it, so an open project needs nothing
+   * extra here: its watcher sees `project.json` change and pushes a fresh
+   * payload, which is what re-labels the tab.
+   */
+  ipcMain.handle(IPC.renameProject, async (_event, dir: string, name: string) => {
+    if (typeof dir !== "string" || typeof name !== "string") {
+      throw new Error("Expected a project folder and a name");
+    }
+    // Long enough for any title a video deserves, short enough that it cannot
+    // be used to write a megabyte into the manifest.
+    const next = name.trim().slice(0, 120);
+    if (!next) throw new Error("A project needs a name");
+    const manifest = await readManifest(dir);
+    if (manifest.name !== next) await writeManifest(dir, { ...manifest, name: next });
+    return { name: next };
+  });
+
+  /**
+   * Duplicate a project and open the copy.
+   *
+   * No confirmation: unlike delete, the worst case is a folder the user did
+   * not want, which the same menu can delete. `openSession` puts it in the
+   * recents index and photographs it, like any other way a project arrives.
+   */
+  ipcMain.handle(IPC.duplicateProject, async (_event, dir: string) => {
+    if (typeof dir !== "string") throw new Error("Expected a project folder");
+    const { duplicateProject } = await import("./duplicate");
+    const copy = await duplicateProject(dir);
+    track("project_duplicated");
+    return openSession(copy.dir);
   });
 
   ipcMain.handle(IPC.launchContext, async () => {
