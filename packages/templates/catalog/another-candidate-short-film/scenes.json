@@ -1,0 +1,65 @@
+{
+  "arc": "problem (six applications, accelerating clicks, counter to 247) → transition (a phone wakes in the dark with the notification) → turn (the inbox opens the mail, focus narrows, the rejection line is selected in red) → recap (montage of eight rejections behind the same locked line, pull-back to a wall of them, black, then Easy Apply again at 248)",
+  "scenes": [
+    {
+      "file": "scenes/01-apply.ts",
+      "title": "Cursor clicks Apply across six job boards, cuts accelerating into a blur with a counter in the letterbox",
+      "beat": "problem",
+      "alsoFits": ["hook", "workflow"],
+      "summary": "11s of someone applying for jobs, shot like a thriller. Six shots in a row, each a different fictional job board rendered as a full web page: a LinkedIn style job post and Easy Apply modal, an Indeed style post and review screen, an ATS review page, and a plain hosted form. In every shot the whole screen is dark, cold and blurred except the one button the cursor is travelling toward, and the lens racks into focus as it arrives: Easy Apply, Submit application, Apply now, Submit your application, Submit, Submit Application. A counter in the bottom letterbox bar reads APPLICATIONS SENT and ticks 1, 2, 3, 4. Then 23 cuts of the same pages at random angles, each shorter than the last, while the counter runs to 247. It ends on a confirmation page, \"Application sent\", and the screen fades to black.",
+      "build": "Pages are painted once into a 2D canvas by the `Kit` immediate-mode painter in `components/page.ts` and shown on a plane whose shader is a focus lens, not a mask: a 40 tap golden angle disc blur in linear light whose radius grows with distance from a focus rectangle, with desaturation and a cool dim falling off alongside it. `placeOn()` positions the rotated page so a given page pixel lands on the world origin, so \"frame this button\" is one call. Every shot, its click frame and its counter value comes from `APPLY` in `components/timeline.ts`; the 23 rapid cuts are generated from a length table with a seeded `rng(247)` for their angles and offsets, so every export is the same film. `makeCursor` draws a macOS pointer that lives in page coordinates, `pressShade` darkens a button while the mouse is down, and `mousePath` gives the travel a wrist like arc. The letterbox, vignette, grain and the one frame white flash on each click are `makeFilm` in `components/film.ts`.",
+      "reuse": "Take it whenever a video needs to show repetition wearing someone down: forms, tickets, approvals, retries, any loop of the same action on different screens. The reusable parts are the focus lens (one sharp thing in a dark frame reads as cinema rather than a screen recording), the accelerating cut table, and the counter that ticks on a click. Swap the pages in `components/sites.ts` for your own screens and the button labels and counter label with them. Do not copy the fictional employer names wholesale if your video names a real company.",
+      "techniques": ["ui-mockup", "cursor-click", "focus-pull", "grain-texture", "counter", "sound-sync", "3d-camera-move", "match-cut"],
+      "mood": ["cinematic", "dark", "editorial"],
+      "videoTypes": ["freeform-video", "ugc-problem-solution", "explainer"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.1, 0.42, 0.93]
+    },
+    {
+      "file": "scenes/02-notification.ts",
+      "title": "A 3D phone lying on a dark table wakes with an email notification as the camera leans in",
+      "beat": "transition",
+      "alsoFits": ["announcement", "atmosphere"],
+      "summary": "3.5s in a dark room. A phone lies face up on a table, left where it was dropped rather than squared to it. Its screen lights up to a near black lock screen reading Tuesday, October 14 and 9:41, and the light falls on the table around it. A notification rises in: a Gmail icon, \"Halcyon Labs Recruiting\", \"now\", \"Update on your application\", and a truncated preview line. The camera leans over the phone, the table tilting toward flat, until the notification fills the frame, then cuts.",
+      "build": "The phone is a real object, not a mockup image: an `ExtrudeGeometry` from a rounded shape with a bevel, a two material assignment so the face is clearcoated black glass and the rim is brushed metal, plus four box side buttons. Reflections come from a tiny studio baked on the fly with `PMREMGenerator` from three emissive panels in a black box, so the metal has something to catch with no HDR file to ship. The screen and the notification card are separate `OffscreenCanvas` textures on rounded plane geometries with UVs derived from position, so a canvas maps edge to edge. A `PointLight` at the screen's position scales with its brightness and lights the table; the contact shadow is a blurred rounded rect drawn into a canvas. The lean in interpolates the world's rotation and the camera's distance together while a diagonal sheen texture slides across the glass.",
+      "reuse": "Use it for any moment a message arrives: a notification, an alert, an order confirmation, a DM. The phone body, the baked studio env map and the screen light rig are worth lifting whole, and the lock screen and card are just two canvas draw functions to rewrite. Swap the app icon in `assets/`, the sender and the subject line. It is one of the few scenes here that does not need the focus lens, so it transplants easily.",
+      "techniques": ["phone-mockup", "3d-objects", "3d-camera-move", "notifications", "glow", "grain-texture", "push-in"],
+      "mood": ["cinematic", "dark", "premium"],
+      "videoTypes": ["freeform-video", "announce-feature", "ugc-problem-solution"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.2, 0.5, 0.92]
+    },
+    {
+      "file": "scenes/03-inbox.ts",
+      "title": "An inbox opens the rejection email and the cursor drag selects one sentence in red",
+      "beat": "turn",
+      "alsoFits": ["reveal", "problem"],
+      "summary": "9s. A Gmail style inbox fades up in the dark, the cursor comes in from the bottom right, hesitates over the unread row, and clicks. Cut to the mail itself. Five mouse wheel notches scroll it, the camera pushes in, and the focus narrows in two stages: the whole page, then the paragraph, then one line. The pointer becomes an I-beam, travels to the start of the line, presses, and drags a red selection across \"we have decided to move forward with another candidate.\" word by word, the ink flipping to white as the highlight passes. The cursor leaves. The line breathes, then shudders through a two frame glitch on the cut out.",
+      "build": "Both screens are `Kit` painted pages with the same focus lens. The line itself is `punchLine()` in `components/page.ts`: the sentence redrawn at 4x over the page's own copy so it stays razor sharp when the camera is pushed into it, with a highlight quad swept behind it and a second white copy clipped to the sweep. Focus is interpolated between three rectangles with `mixRect` (page, paragraph, line), so the narrowing is one eased value rather than three cuts. The scroll is five independent eased steps summed, which reads as notches rather than a slide. Everything is timed from `INBOX_T`, and the scene hands off to Act III by ending with the line locked dead centre at the framing's `lock` zoom, so the next scene can open on the identical image.",
+      "reuse": "Borrow this when one sentence is the whole point: a clause in a contract, a line in a log, a number in a report, a quote. The three stage focus narrowing and the word by word selection sweep are the reusable mechanics, and the handoff trick (end a scene on the exact pose the next one opens on) is how you cut between scenes without a transition. Swap the sentence in `MAILS` in `components/sites.ts` and the highlight colour in `HILITE`.",
+      "techniques": ["ui-mockup", "cursor-click", "focus-pull", "word-by-word", "scroll-list", "push-in", "grain-texture", "match-cut"],
+      "mood": ["cinematic", "dark", "editorial"],
+      "videoTypes": ["freeform-video", "explainer", "demo-walkthrough"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.15, 0.6, 0.88]
+    },
+    {
+      "file": "scenes/04-montage.ts",
+      "title": "Eight rejection emails flick past behind one locked red line, then a pull-back to a wall of them",
+      "beat": "recap",
+      "alsoFits": ["problem", "atmosphere"],
+      "summary": "14s in four movements. The red selection stays dead centre, the same size, while the email underneath it changes: Gmail, Outlook, a plain no-reply, dark mode, eight in all, each saying the same thing differently (\"we will not be moving forward\", \"the position has been filled\", \"your experience does not align with our current needs\"). 24 cuts, each shorter than the last, down to two frames with a frame of shake on them. Then the camera stops cutting and pulls back, rolling as it goes, and the single email turns out to be one tile in a 15 by 15 wall of identical red selections that tips away and sinks into blur and black. A beat of silence. Then a job page wakes, the cursor finds Easy Apply, hovers a breath too long, clicks, and the counter ticks from 247 to 248. Black.",
+      "build": "Eight `mailPage()` instances are built once and toggled per shot, each with its own `punchLine` pre-positioned at the frame centre, so a cut is a visibility swap with nothing to re-layout. The wall is 224 extra meshes sharing those eight geometries and materials, offset on a grid with an index pattern that spreads the styles so no two dark tiles clump; it lives in a rig group with the live email so both roll and tip as one. The pull-back is a single continuous move: zoom is exponential (lerped in log space from the lock zoom to 0.03) so it gathers speed and never stops, the camera rolls on a power curve, and the lens shader is widened at the same time so the wall's painted selections defocus with their pages instead of staying sharp. Black is reached perceptually, not linearly. The final loop reuses the Act I job page and cursor rig at the same framing as the opening shot, which is what makes the film read as a loop.",
+      "reuse": "Use it for \"and it happened again, and again\": repeated outcomes, repeated errors, repeated charges. Two independently useful pieces here. First, the locked element: hold one thing fixed in frame and change everything behind it, which is cheaper and harder-hitting than animating the thing itself. Second, the pull-back reveal: build the wide shot as real geometry from the same meshes the close-up used, then fly out to it in one take. Swap the eight variants in `MAILS` and the grid size. Do not keep the 247/248 counter copy.",
+      "techniques": ["ui-mockup", "3d-camera-move", "zoom-through", "match-cut", "focus-pull", "counter", "cursor-click", "grain-texture", "sound-sync"],
+      "mood": ["cinematic", "dark", "bold"],
+      "videoTypes": ["freeform-video", "ugc-problem-solution", "brand-sting"],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [0.25, 0.65, 0.95]
+    }
+  ]
+}
