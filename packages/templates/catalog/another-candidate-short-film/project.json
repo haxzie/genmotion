@@ -1,0 +1,331 @@
+{
+  "name": "Another candidate short film",
+  "engine": "three",
+  "fps": 30,
+  "width": 1080,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-apply.ts",
+      "durationInFrames": 330,
+      "name": "Apply"
+    },
+    {
+      "file": "scenes/02-notification.ts",
+      "durationInFrames": 105,
+      "name": "Notification"
+    },
+    {
+      "file": "scenes/03-inbox.ts",
+      "durationInFrames": 280,
+      "name": "The email"
+    },
+    {
+      "file": "scenes/04-montage.ts",
+      "durationInFrames": 422,
+      "name": "Montage"
+    }
+  ],
+  "audio": [
+    {
+      "id": "score-music",
+      "file": "assets/score-music.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1137,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-easy-apply-job",
+      "file": "assets/sfx/01-click-easy-apply-job.mp3",
+      "track": 1,
+      "startFrame": 38,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-submit-modal",
+      "file": "assets/sfx/02-click-submit-modal.mp3",
+      "track": 2,
+      "startFrame": 82,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-apply-now-indeed",
+      "file": "assets/sfx/03-click-apply-now-indeed.mp3",
+      "track": 3,
+      "startFrame": 121,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-submit-indeedApply",
+      "file": "assets/sfx/04-click-submit-indeedApply.mp3",
+      "track": 1,
+      "startFrame": 155,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-submit-ats",
+      "file": "assets/sfx/05-click-submit-ats.mp3",
+      "track": 2,
+      "startFrame": 185,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-submit-form",
+      "file": "assets/sfx/06-click-submit-form.mp3",
+      "track": 3,
+      "startFrame": 210,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-rapid-clicks-burst",
+      "file": "assets/sfx/07-rapid-clicks-burst.mp3",
+      "track": 1,
+      "startFrame": 216,
+      "durationInFrames": 138,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-hit-application-sent",
+      "file": "assets/sfx/08-hit-application-sent.mp3",
+      "track": 2,
+      "startFrame": 292,
+      "durationInFrames": 96,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-notification-chime",
+      "file": "assets/sfx/09-notification-chime.mp3",
+      "track": 3,
+      "startFrame": 342,
+      "durationInFrames": 40,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-open-email",
+      "file": "assets/sfx/10-click-open-email.mp3",
+      "track": 1,
+      "startFrame": 523,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-scroll-ticks-1",
+      "file": "assets/sfx/11-scroll-ticks-1.mp3",
+      "track": 3,
+      "startFrame": 551,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-scroll-ticks-2",
+      "file": "assets/sfx/12-scroll-ticks-2.mp3",
+      "track": 2,
+      "startFrame": 563,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-scroll-ticks-3",
+      "file": "assets/sfx/13-scroll-ticks-3.mp3",
+      "track": 1,
+      "startFrame": 575,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-scroll-ticks-4",
+      "file": "assets/sfx/14-scroll-ticks-4.mp3",
+      "track": 3,
+      "startFrame": 589,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-scroll-ticks-5",
+      "file": "assets/sfx/15-scroll-ticks-5.mp3",
+      "track": 2,
+      "startFrame": 605,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-reverse-swell-into-selection",
+      "file": "assets/sfx/16-reverse-swell-into-selection.mp3",
+      "track": 1,
+      "startFrame": 631,
+      "durationInFrames": 48,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-select-down",
+      "file": "assets/sfx/17-click-select-down.mp3",
+      "track": 3,
+      "startFrame": 651,
+      "durationInFrames": 1,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-hit-selection-lands",
+      "file": "assets/sfx/18-hit-selection-lands.mp3",
+      "track": 2,
+      "startFrame": 679,
+      "durationInFrames": 110,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-glitch-line",
+      "file": "assets/sfx/19-glitch-line.mp3",
+      "track": 3,
+      "startFrame": 708,
+      "durationInFrames": 4,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-montage-cut-hits-burst",
+      "file": "assets/sfx/20-montage-cut-hits-burst.mp3",
+      "track": 1,
+      "startFrame": 727,
+      "durationInFrames": 362,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-hit-wall-reveal",
+      "file": "assets/sfx/21-hit-wall-reveal.mp3",
+      "track": 3,
+      "startFrame": 949,
+      "durationInFrames": 87,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-thud-cut-to-black",
+      "file": "assets/sfx/22-thud-cut-to-black.mp3",
+      "track": 2,
+      "startFrame": 1047,
+      "durationInFrames": 12,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-click-easy-apply-again",
+      "file": "assets/sfx/23-click-easy-apply-again.mp3",
+      "track": 1,
+      "startFrame": 1115,
+      "durationInFrames": 3,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "sfx-hit-final-cut",
+      "file": "assets/sfx/24-hit-final-cut.mp3",
+      "track": 3,
+      "startFrame": 1117,
+      "durationInFrames": 20,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

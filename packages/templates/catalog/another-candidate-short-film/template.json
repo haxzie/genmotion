@@ -1,0 +1,17 @@
+{
+  "id": "another-candidate-short-film",
+  "title": "Another candidate animated short film",
+  "description": "A 38 second animated short film about the job hunt, shot like a thriller: a cursor clicks Apply across six job boards, a phone lights up in the dark, and one rejection sentence locks dead centre while the emails behind it keep changing.",
+  "metaTitle": "Animated Short Film Template (Three.js) — GenMotion",
+  "category": "social",
+  "tags": [
+    "Social Media",
+    "Promotional"
+  ],
+  "publishedAt": "2026-10-11",
+  "featured": true,
+  "order": 36,
+  "posterScene": 3,
+  "sampleAt": 0.62,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/another-candidate-short-film/video.mp4"
+}
