@@ -1,0 +1,21 @@
+{
+  "name": "@genmotion/keysound",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Procedural keyboard and mouse sounds, and the typing rhythm that drives them.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@genmotion/config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  },
+  "sideEffects": false
+}

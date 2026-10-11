@@ -58,6 +58,12 @@ function describeTool(name: string, input: unknown): string {
       return "Waiting for your answer";
     case "mcp__genmotion__pick_voice":
       return "Waiting for you to pick a voice";
+    case "mcp__genmotion__pick_keyboard_sound":
+      return "Waiting for you to pick a sound";
+    case "mcp__genmotion__generate_typing_sound":
+      return "Typing it out";
+    case "mcp__genmotion__generate_click_sound":
+      return "Making the clicks";
     default: {
       const mcp = parseMcpToolName(name);
       return mcp ? `${mcp.tool} · ${mcp.server}` : name;
@@ -238,9 +244,9 @@ async function turnOptions(
           updatedInput: answered ? { ...input, answers } : input,
         };
       }
-      // Our voice picker rides the same rails: the chat shows the voices,
-      // the click lands as an answer, and the tool runs with the choice on
-      // its input. Unanswered, it runs without one and says so.
+      // Our pickers ride the same rails: the chat shows the options, the click
+      // lands as an answer, and the tool runs with the choice on its input.
+      // Unanswered, it runs without one and says so.
       if (toolName === "mcp__genmotion__pick_voice") {
         const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
         const answers = await waitForAnswer(toolUseID, signal);
@@ -248,6 +254,16 @@ async function turnOptions(
           behavior: "allow" as const,
           updatedInput: answers?.voiceId
             ? { ...input, voiceId: answers.voiceId, voiceName: answers.voiceName }
+            : input,
+        };
+      }
+      if (toolName === "mcp__genmotion__pick_keyboard_sound") {
+        const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
+        const answers = await waitForAnswer(toolUseID, signal);
+        return {
+          behavior: "allow" as const,
+          updatedInput: answers?.soundId
+            ? { ...input, soundId: answers.soundId, soundName: answers.soundName }
             : input,
         };
       }

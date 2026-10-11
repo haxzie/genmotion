@@ -127,7 +127,7 @@ Never let a damped swing stand in for this, and never decay the amplitude to zer
 | Click / tap | press **4f in, 6f out**, scale −8 to −15%; ring 8–14f outCubic |
 | Finger tap | approach 22f, dip 4f / release 9f, ripple 18f |
 | Cursor travel | **16–26f**: x outCubic + y inOutCubic gives a natural arc; 9f fast, up to 50f when the camera leads |
-| Typing (UI) | 2–3 frames per character, finishing ~4f before the press; caret solid while typing, blinking 8f only when idle |
+| Typing (UI) | 2–3 frames per character, finishing ~4f before the press; caret solid while typing, blinking 8f only when idle. **This is the silent convention**: if the typing is heard, it runs at 4–6 f/char from `keystroke-sound`'s own timings instead, because 2–3 f/char is 12–15 keys a second and reads as a buzz (`sound-design`) |
 | Count-up | small stats 40–48f, hero 120–210f, outCubic; land punch 1.06 (5f up, 13f down); celebration within ±2f of the land |
 | Layout morph | 24f on `bezier(0.65, 0, 0.35, 1)`, one every ~50f |
 | List row grows | 11f on `bezier(0.2, 1.1, 0.3, 1)` (small overshoot), slot opens before content |

@@ -107,6 +107,11 @@ export const SKILL_CAPABILITIES = [
   "voiceover",
   /** Clicks, taps, chimes, ambience. */
   "sfx",
+  /**
+   * Typing and mouse-click sounds, synthesised locally, with the keystroke
+   * timings that drive the matching animation.
+   */
+  "keystroke-sound",
   /** A music bed or score: generated, or found under a licence that allows the use. */
   "music",
   /** Words with timestamps from speech, for cutting footage by what is said. */

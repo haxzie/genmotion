@@ -581,6 +581,134 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     },
   },
 
+
+  {
+    name: "generate_typing_sound",
+    description:
+      "Synthesise the sound of someone typing a piece of text, and the keystroke timings that go with it. Saves a WAV into the project's assets/ plus a `.timing.json` beside it holding what the text says on every frame, so the sound and whatever draws the text come from ONE plan and cannot drift. Use it whenever a video shows text being typed — a prompt into a chat box, a command into a terminal, a search query, code appearing in an editor. The rhythm is modelled, not spaced evenly: digraphs cost what they cost on a real keyboard (a doubled letter is quick, one finger reaching across two rows is slow), the tempo drifts into bursts and lulls, there are pauses at punctuation and before long words, and by default the typist occasionally slips onto a neighbouring key, notices and backspaces it out. It runs on this machine, costs nothing and no credits, and the same text and seed give the same file every time. Pick the keyboard yourself (the default is `thock`, which sits under narration) — only call `pick_keyboard_sound` if the user asks to choose or change it.",
+    shape: {
+      text: z
+        .string()
+        .min(1)
+        .max(2000)
+        .describe("The text being typed. Newlines are Return presses, which sound different and pause after."),
+      profile: z
+        .string()
+        .optional()
+        .describe(
+          "Keyboard: `thock` (default — deep and soft, the safest under a voiceover), `linear`, `tactile`, `clicky` (brightest, fights narration), `phone` (an iPhone's on-screen keyboard).",
+        ),
+      wpm: z
+        .number()
+        .min(10)
+        .max(160)
+        .optional()
+        .describe(
+          "Words per minute, a word being five characters. 40 unhurried, 62 ordinary (default), 90 fast, 120 is a demo nobody believes. Code and shell commands come out slower than prose at the same setting, as they do in life.",
+        ),
+      fitSeconds: z
+        .number()
+        .min(0.2)
+        .max(120)
+        .optional()
+        .describe(
+          "Make the typing fill exactly this long, overriding `wpm`. The rhythm's shape is kept and only the tempo scales. Use it when the typing has to fit a scene you have already timed. Asking for a length that would need implausible typing is clamped, and the result says what it landed on.",
+        ),
+      typoRate: z
+        .number()
+        .min(0)
+        .max(0.1)
+        .optional()
+        .describe(
+          "Chance per character of a slip that gets backspaced out. Default 0.01, which is a mistake every sentence or two. Pass 0 when the text must appear cleanly — a headline, a brand name, anything the viewer reads as a claim.",
+        ),
+      hesitation: z
+        .number()
+        .min(0)
+        .max(2)
+        .optional()
+        .describe("Scales the thinking pauses. 0 types straight through, 1 is ordinary (default), 2 is composing as they go."),
+      seed: z
+        .string()
+        .max(64)
+        .optional()
+        .describe("Fixes the rhythm. Vary it only to get a different take of the same text; the default is stable."),
+      filename: z.string().optional().describe('Preferred filename, e.g. "typing-prompt.wav"'),
+    },
+    async run(session, args) {
+      const { text: typed, ...rest } = args as unknown as { text: string } & TypingToolArgs;
+      return generateTypingSound(session, typed, rest);
+    },
+  },
+
+  {
+    name: "generate_click_sound",
+    description:
+      "Synthesise mouse clicks at given moments and save a WAV into the project's assets/. For a cursor pressing a button, a tab, a checkbox — the cue that makes a UI demo read as something being used rather than something being animated. Place the click on the frame the press happens, not the frame the thing it opens appears. Local, free and deterministic, like generate_typing_sound. The default `soft` is a trackpad-ish tap that sits under narration; only call `pick_keyboard_sound` if the user asks to choose.",
+    shape: {
+      at: z
+        .array(z.number().min(0).max(600))
+        .min(1)
+        .max(200)
+        .describe("Seconds from the start of the file, one per click. A single click is `[0]`, which you then place on the frame you want."),
+      profile: z
+        .string()
+        .optional()
+        .describe(
+          "Click: `soft` (default), `hush` (darkest, safest under a voice), `mechanical`, `walnut`, `beige`, `tok`, `pebble`, `tink` (brightest), `pop`, `quack`.",
+        ),
+      seed: z.string().max(64).optional().describe("Fixes the variation between clicks."),
+      filename: z.string().optional().describe('Preferred filename, e.g. "clicks.wav"'),
+    },
+    async run(session, args) {
+      const { at, profile, seed, filename } = args as unknown as {
+        at: number[];
+        profile?: string;
+        seed?: string;
+        filename?: string;
+      };
+      return generateClickSound(session, at, { ...(profile ? { profile } : {}), ...(seed ? { seed } : {}), ...(filename ? { filename } : {}) });
+    },
+  },
+
+  {
+    name: "pick_keyboard_sound",
+    description:
+      "Ask the user to choose the keyboard or mouse-click sound. Shows the options in the chat with a play button on each, and returns the one they picked — pass that id as `profile` to every generate_typing_sound (or generate_click_sound) in the project. Do NOT call this by default: the defaults are chosen to sit under narration, and a picker nobody asked for is an interruption. Call it only when the user asks to pick, change, or hear the options. They may also decline, in which case keep the default.",
+    shape: {
+      kind: z
+        .enum(["keyboard", "click", "both"])
+        .optional()
+        .describe("Which list to show. Default `keyboard`."),
+      question: z
+        .string()
+        .max(200)
+        .optional()
+        .describe('What to ask, e.g. "Which keyboard should the typing sound like?"'),
+      // Filled in by the app once the user has clicked — the harness parks the
+      // call until then (see `canUseTool`). The model never sets these.
+      soundId: z.string().optional().describe("Set by the app. Leave empty."),
+      soundName: z.string().optional().describe("Set by the app. Leave empty."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { soundId, soundName, kind } = args as unknown as {
+        soundId?: string;
+        soundName?: string;
+        kind?: "keyboard" | "click" | "both";
+      };
+      const tool = kind === "click" ? "generate_click_sound" : "generate_typing_sound";
+      if (soundId) {
+        return text(
+          `The user chose ${soundName ?? soundId} (id "${soundId}"). Pass profile "${soundId}" to every ${tool} call in this project, and note the choice in VIDEO.md so a later turn uses it too.`,
+        );
+      }
+      return text(
+        "The user did not pick a sound. Keep the default (omit `profile`), and don't ask again this turn.",
+      );
+    },
+  },
+
   {
     name: "generate_image",
     description:
@@ -1449,6 +1577,166 @@ async function downloadAsset(
  * rather than three. `fallbackExt` is used only when the preferred name carries
  * no extension of its own.
  */
+
+/**
+ * Typing and click sounds, synthesised here rather than bought.
+ *
+ * Unlike the voiceover and SFX tools above, nothing in this pair leaves the
+ * machine: `@genmotion/keysound` is arithmetic over a table of resonances, so a
+ * typing run costs a tenth of a second of CPU, no credits and no network. That
+ * is what makes it a tool the agent can use freely on every scene that shows
+ * text being typed, where a generated SFX clip would be a charge and a
+ * round-trip per take.
+ *
+ * The timing sidecar is the other half of the point. A typing sound and a
+ * typing *animation* that were planned separately drift, and the drift is the
+ * thing viewers notice without being able to name. So the plan is written next
+ * to the audio as frame steps, and the scene draws from the same file the sound
+ * came from.
+ */
+
+interface TypingToolArgs {
+  profile?: string;
+  wpm?: number;
+  fitSeconds?: number;
+  typoRate?: number;
+  hesitation?: number;
+  seed?: string;
+  filename?: string;
+}
+
+/** The sidecar's name, derived from the audio's so the pair is obvious on disk. */
+function timingPathFor(wavRel: string): string {
+  return wavRel.replace(/\.wav$/i, ".timing.json");
+}
+
+async function generateTypingSound(
+  session: ProjectSession,
+  typed: string,
+  args: TypingToolArgs,
+): Promise<ToolResult> {
+  const keysound = await import("@genmotion/keysound");
+  const manifest = await readManifest(session.dir).catch(() => null);
+  const fps = manifest?.fps ?? 30;
+
+  let render;
+  try {
+    render = keysound.renderTyping(typed, {
+      fps,
+      ...(args.profile ? { profile: args.profile } : {}),
+      ...(args.wpm !== undefined ? { wpm: args.wpm } : {}),
+      ...(args.fitSeconds !== undefined ? { fitMs: args.fitSeconds * 1_000 } : {}),
+      ...(args.typoRate !== undefined ? { typoRate: args.typoRate } : {}),
+      ...(args.hesitation !== undefined ? { hesitation: args.hesitation } : {}),
+      ...(args.seed ? { seed: args.seed } : {}),
+    });
+  } catch (err) {
+    return failure(err instanceof Error ? err.message : String(err));
+  }
+
+  const stem = args.filename ?? "typing";
+  const wavRel = await saveAssetBytes(session.dir, Buffer.from(render.wav), stem, ".wav");
+  const timingRel = timingPathFor(wavRel);
+  const durationInFrames = Math.max(1, Math.ceil((render.durationMs / 1_000) * fps));
+  await fs.writeFile(
+    path.join(session.dir, timingRel),
+    `${JSON.stringify(
+      {
+        text: render.plan.text,
+        fps,
+        durationInFrames,
+        durationMs: render.durationMs,
+        keyboard: render.profile,
+        effectiveWpm: render.plan.effectiveWpm,
+        mistakes: render.plan.mistakes,
+        // What the text says on each frame. A scene is a pure function of the
+        // frame, so this is the only shape it can use.
+        steps: render.steps ?? [],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const asked = args.fitSeconds !== undefined ? ` (asked to fill ${args.fitSeconds}s)` : "";
+  return text(
+    [
+      `Saved ${wavRel} — ${(render.durationMs / 1_000).toFixed(2)}s, ${durationInFrames} frames at ${fps}fps${asked}.`,
+      `${render.plan.keystrokes.length} keystrokes at ${render.plan.effectiveWpm} wpm, keyboard "${render.profile}", ${render.plan.mistakes} corrected ${render.plan.mistakes === 1 ? "slip" : "slips"}.`,
+      "",
+      `The timings are in ${timingRel}: \`steps\` is \`{ frame, text }\`, one entry per frame the text changes on.`,
+      "Drive the on-screen text from it so the picture and the sound are the same plan:",
+      "",
+      "```ts",
+      `import timing from "../${timingRel}";`,
+      "",
+      "// `frame` is relative to the scene; add the frame the audio clip starts on.",
+      "function typedSoFar(frame: number): string {",
+      "  let shown = \"\";",
+      "  for (const step of timing.steps) {",
+      "    if (step.frame > frame) break;",
+      "    shown = step.text;",
+      "  }",
+      "  return shown;",
+      "}",
+      "```",
+      "",
+      "Then put the WAV on the TIMELINE — an entry in project.json's `audio` array",
+      "with a unique `id`, `file`, a `track` (0-3), `startFrame`, `durationInFrames`",
+      "and `volume`. The clip's `startFrame` and the scene's frame 0 have to line up,",
+      "or the keys land off the letters.",
+      "",
+      "Keys belong well under everything else in the mix: at least 6dB under any",
+      "impact in the picture, so `volume` around 0.4-0.5 under narration and 0.6-0.7",
+      "when the typing is the only sound. Do NOT import the WAV into a scene and",
+      "render it there — that plays in the preview but is dropped from the export,",
+      "which only mixes audio listed in project.json.",
+    ].join("\n"),
+  );
+}
+
+async function generateClickSound(
+  session: ProjectSession,
+  at: number[],
+  args: { profile?: string; seed?: string; filename?: string },
+): Promise<ToolResult> {
+  const keysound = await import("@genmotion/keysound");
+  const manifest = await readManifest(session.dir).catch(() => null);
+  const fps = manifest?.fps ?? 30;
+
+  let render;
+  try {
+    render = keysound.renderClicks(
+      at.map((seconds) => seconds * 1_000),
+      {
+        ...(args.profile ? { profile: args.profile } : {}),
+        ...(args.seed ? { seed: args.seed } : {}),
+      },
+    );
+  } catch (err) {
+    return failure(err instanceof Error ? err.message : String(err));
+  }
+
+  const wavRel = await saveAssetBytes(session.dir, Buffer.from(render.wav), args.filename ?? "click", ".wav");
+  const durationInFrames = Math.max(1, Math.ceil((render.durationMs / 1_000) * fps));
+  const merged = at.length - render.cues.length;
+  return text(
+    [
+      `Saved ${wavRel} — ${render.cues.length} ${render.cues.length === 1 ? "click" : "clicks"} on "${render.profile}", ${(render.durationMs / 1_000).toFixed(2)}s, ${durationInFrames} frames at ${fps}fps.`,
+      ...(merged > 0
+        ? [
+            `${merged} ${merged === 1 ? "click was" : "clicks were"} closer than 12ms to another and became one sound, which is what the ear does with them anyway.`,
+          ]
+        : []),
+      "",
+      "Put it on the timeline (project.json's `audio`) with `startFrame` on the frame",
+      "the press happens — not the frame the thing it opens appears, which reads as",
+      "late. `volume` 0.5-0.7; a click repeated through a demo wants to be quieter",
+      "than one click in isolation.",
+    ].join("\n"),
+  );
+}
+
 async function saveAssetBytes(
   projectDir: string,
   body: Buffer,

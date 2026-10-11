@@ -136,6 +136,49 @@ describe("genmotion --json", () => {
     expect(gm(["audio", "remove", "Music"], dir).json.ok).toBe(false);
   }, 60_000);
 
+  it("keysound synthesises typing, its timings and the timeline clip", async () => {
+    const dir = path.join(tmp, "video");
+    const typed = gm(["keysound", "typing", "npm run build", "--place", "1s", "--seed", "t"], dir);
+    expect(typed.json).toMatchObject({
+      ok: true,
+      file: "assets/typing.wav",
+      timing: "assets/typing.timing.json",
+      profile: "thock",
+      text: "npm run build",
+      keystrokes: 13,
+      clip: { startFrame: 24 },
+    });
+
+    // A 48kHz stereo WAV, as long as the plan says.
+    const wav = await fs.readFile(path.join(dir, typed.json.file));
+    expect(wav.subarray(0, 4).toString()).toBe("RIFF");
+    expect(wav.readUInt32LE(24)).toBe(48_000);
+    expect(wav.readUInt16LE(22)).toBe(2);
+
+    // And the timings beside it, which the typing animation is drawn from.
+    const timing = JSON.parse(await fs.readFile(path.join(dir, typed.json.timing), "utf8"));
+    expect(timing.fps).toBe(24);
+    expect(timing.steps.at(-1)).toMatchObject({ text: "npm run build" });
+    const frames = timing.steps.map((s: { frame: number }) => s.frame);
+    expect(frames).toEqual([...frames].sort((a: number, b: number) => a - b));
+    // The point of the whole thing: the reveal is not evenly spaced.
+    const gaps = frames.slice(1).map((f: number, i: number) => f - frames[i]);
+    expect(new Set(gaps).size).toBeGreaterThan(2);
+
+    // The same text and seed give the same file, so a re-render never re-times.
+    const again = gm(["keysound", "typing", "npm run build", "--seed", "t"], dir);
+    expect(Buffer.compare(wav, await fs.readFile(path.join(dir, again.json.file)))).toBe(0);
+
+    const clicks = gm(["keysound", "click", "--at", "0,1.4,2.1", "--profile", "hush"], dir);
+    expect(clicks.json).toMatchObject({ ok: true, profile: "hush", clicks: 3, merged: 0 });
+
+    expect(gm(["keysound", "typing", "x", "--profile", "ibm-model-m"], dir).json).toMatchObject({
+      ok: false,
+      error: { message: expect.stringContaining("No keyboard sound") },
+    });
+    expect(gm(["keysound", "list"], dir).json.keyboards[0]).toMatchObject({ id: "thock", isDefault: true });
+  }, 60_000);
+
   it("check --static passes a fresh project", () => {
     const { code, json } = gm(["check", "--static"], path.join(tmp, "video"));
     expect(code).toBe(0);
@@ -258,6 +301,9 @@ describe("genmotion mcp", () => {
           "get_guide",
           "search_skills",
           "get_skill",
+          "generate_typing_sound",
+          "generate_click_sound",
+          "list_sound_profiles",
         ]),
       );
       const overview = await client.callTool({ name: "project_overview", arguments: {} });

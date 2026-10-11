@@ -42,6 +42,7 @@ import { useShareFolder } from "../../folder-access";
 import { ToolRun, type RunItem, type ToolPartLike } from "./tool-card";
 import { AskQuestionPanel, questionsOf } from "./ask-question-panel";
 import { VoicePickerPanel } from "./voice-picker";
+import { KeyboardPickerPanel, type SoundKind } from "./keyboard-picker";
 import { Spinner, cx } from "@/components/ui";
 
 /**
@@ -503,6 +504,7 @@ function MessageBubble({
     // transcript — see `ComposerPanel`. A tool line here would duplicate it.
     if (p.type === "tool-AskUserQuestion") return false;
     if (p.type === "tool-mcp__genmotion__pick_voice") return false;
+    if (p.type === "tool-mcp__genmotion__pick_keyboard_sound") return false;
     if (p.type === "text") return Boolean(p.text.trim());
     if (p.type === "reasoning") return Boolean((p as { text?: string }).text?.trim());
     return p.type.startsWith("tool-") || p.type === "dynamic-tool";
@@ -858,16 +860,30 @@ function ChatPanelInner({
       const part = last.parts[i]!;
       const isQuestion = part.type === "tool-AskUserQuestion";
       const isVoice = part.type === "tool-mcp__genmotion__pick_voice";
-      if (!isQuestion && !isVoice) continue;
+      const isKeyboard = part.type === "tool-mcp__genmotion__pick_keyboard_sound";
+      if (!isQuestion && !isVoice && !isKeyboard) continue;
       if ((part as { state?: string }).state !== "input-available") return null;
       const id = (part as { toolCallId?: string }).toolCallId;
       if (!id || dismissedPrompts.includes(id)) return null;
-      const input = (part as { input?: { question?: string } }).input;
+      const input = (part as { input?: { question?: string; kind?: SoundKind } }).input;
       if (isVoice) {
         return {
           kind: "voice" as const,
           id,
           question: input?.question || "Which voice should narrate this video?",
+        };
+      }
+      if (isKeyboard) {
+        const which: SoundKind = input?.kind ?? "keyboard";
+        return {
+          kind: "keyboard" as const,
+          id,
+          soundKind: which,
+          question:
+            input?.question ||
+            (which === "click"
+              ? "Which click should the mouse make?"
+              : "Which keyboard should the typing sound like?"),
         };
       }
       const questions = questionsOf(input);
@@ -1535,6 +1551,15 @@ function ChatPanelInner({
             key={pendingPrompt.id}
             toolCallId={pendingPrompt.id}
             question={pendingPrompt.question}
+            onDone={() => dismissPrompt(pendingPrompt.id)}
+          />
+        )}
+        {pendingPrompt?.kind === "keyboard" && (
+          <KeyboardPickerPanel
+            key={pendingPrompt.id}
+            toolCallId={pendingPrompt.id}
+            question={pendingPrompt.question}
+            kind={pendingPrompt.soundKind}
             onDone={() => dismissPrompt(pendingPrompt.id)}
           />
         )}

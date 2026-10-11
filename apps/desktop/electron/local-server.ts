@@ -553,6 +553,37 @@ export async function startLocalServer(
       return;
     }
 
+    // Keyboard and mouse sounds, and a few seconds of each to hear — for the
+    // picker the agent puts in the chat. Nothing here touches the account or a
+    // project: the sounds are synthesised on this machine from a fixed table
+    // (`@genmotion/keysound`), so the list is the same signed out and the demo
+    // costs a hundred milliseconds of CPU. The audio comes back through this
+    // server because the renderer's CSP plays media from this server only.
+    if (rest[0] === "keysound" && method === "GET") {
+      const keysound = await import("@genmotion/keysound");
+      if (rest[1] === "profiles") {
+        send(res, 200, keysound.listProfiles());
+        return;
+      }
+      if (rest[1] === "demo" && rest[2]) {
+        try {
+          const demo = keysound.renderDemo(rest[2]);
+          res.writeHead(200, {
+            "content-type": "audio/wav",
+            "content-length": String(demo.wav.byteLength),
+            // Fixed seed, fixed table: a demo is the same bytes forever.
+            "cache-control": "private, max-age=86400",
+          });
+          res.end(Buffer.from(demo.wav));
+        } catch (err) {
+          send(res, 404, { error: err instanceof Error ? err.message : String(err) });
+        }
+        return;
+      }
+      send(res, 404, { error: `No route for GET /${rest.join("/")}` });
+      return;
+    }
+
     // Entitlement is a property of the account, not of a folder, so this sits
     // above the "no project is open" check with the harness route.
     if (rest[0] === "billing" && rest[1] === "limits") {

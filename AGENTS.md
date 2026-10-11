@@ -54,6 +54,12 @@ packages/
   three-engine/ the Three.js runtime scenes are written against: scene
              context, `mountThreeRenderHost`, `interpolate`/`Easing`.
              Published to npm (a project's types come from it)
+  keysound/  typing and mouse-click sounds, synthesised: the modal synth, the
+             keyboard/mouse profile tables, and the typing-rhythm model that
+             turns text into keystroke moments (digraph costs off the board's
+             geometry, a drifting tempo, pauses, Shift held across capitals,
+             typos backspaced out). Pure, deterministic, dependency-free, and
+             the same code on the desktop, the CLI and MCP
   skills/    GenMotion's own skill pack — one skill per video type plus
              craft skills — its catalog, search, and the capability map
              (`./capabilities`) every surface renders. Read by the desktop
@@ -234,6 +240,23 @@ pnpm changeset                        # describe a change to a published package
   everything is a pure function of the current frame. Inline styles only; never
   mix a CSS shorthand and its longhand (e.g. `background` + `backgroundColor`)
   on one element.
+- **Typing sounds and timings (`packages/keysound`):** a shot of text being
+  typed gets `generate_typing_sound` (desktop, MCP) / `genmotion keysound typing`
+  (shell), never a generated SFX loop or one click per character. It is local,
+  free and deterministic — a keystroke is arithmetic over a table of resonances,
+  so there is no sample library, no key and no credit behind it, and the same
+  text and seed give the same bytes forever (a re-export must never re-time).
+  It writes a `.timing.json` beside the WAV holding what the text says on each
+  frame, and the picture is drawn from *that*: one plan for the sound and the
+  animation is the only way the two cannot drift. The rhythm is modelled, not
+  jittered — the digraph cost ordering (a doubled letter fastest, a same-finger
+  reach slowest) and the AR(1) tempo drift are what make it read as a person,
+  and `src/__tests__/typing.test.ts` pins those orderings rather than the
+  numbers. `GM_KEYSOUND_LISTEN=1 pnpm --filter @genmotion/keysound test` writes
+  every profile's demo into `.context/keysound/` to check by ear. The pickers
+  the agent can open for keyboard, click or voice are one component
+  (`editor/components/sound-picker.tsx`); the default is deliberate, so
+  `pick_keyboard_sound` is only for when the user asks.
 - **Text motion:** use `<TextAnimation>` (46 effects in
   `packages/motion/src/text/effects.ts`, `exit="auto"`, `hold`, `order`) plus
   `Typewriter`/`TextSwap`/`CountText`/`HighlightText` — don't hand-roll per-word

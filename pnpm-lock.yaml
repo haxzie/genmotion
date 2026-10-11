@@ -133,6 +133,9 @@ importers:
       '@genmotion/hyperframes':
         specifier: workspace:*
         version: link:../../packages/hyperframes
+      '@genmotion/keysound':
+        specifier: workspace:*
+        version: link:../../packages/keysound
       '@genmotion/motion':
         specifier: workspace:*
         version: link:../../packages/motion
@@ -533,6 +536,9 @@ importers:
       '@genmotion/config':
         specifier: workspace:*
         version: link:../config
+      '@genmotion/keysound':
+        specifier: workspace:*
+        version: link:../keysound
       '@genmotion/project':
         specifier: workspace:*
         version: link:../project
@@ -652,6 +658,18 @@ importers:
       vitest:
         specifier: ^3.2.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+
+  packages/keysound:
+    devDependencies:
+      '@genmotion/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
 
   packages/motion:
     dependencies:

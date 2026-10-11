@@ -8,11 +8,12 @@ import { render, still } from "./commands/render";
 import { check } from "./commands/check";
 import { info, scene } from "./commands/project";
 import { audio } from "./commands/audio";
+import { keysound } from "./commands/keysound";
 import { browser, doctor, mcp, scenes, skills, templates, upgrade, xVideo } from "./commands/tools";
 import { openDesktop } from "./desktop";
 import { VERSION } from "./version";
 
-const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, audio, templates, scenes, xVideo, mcp, skills, browser, doctor, upgrade];
+const COMMANDS: Command[] = [init, dev, render, still, check, info, scene, audio, keysound, templates, scenes, xVideo, mcp, skills, browser, doctor, upgrade];
 const ALIASES: Record<string, string> = {
   create: "init",
   new: "init",

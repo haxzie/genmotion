@@ -41,6 +41,11 @@
     },
     {
       "kind": "capability",
+      "id": "keystroke-sound",
+      "why": "Any shot of text being typed: the keys, and the keystroke timings the animation is drawn from."
+    },
+    {
+      "kind": "capability",
       "id": "place-audio",
       "why": "Every clip goes on the timeline with frames, gain and fades."
     },
@@ -83,8 +88,9 @@
     "add sound effects to the transitions",
     "mix the audio and fix the loudness",
     "the export sounds quiet or distorted",
-    "where do I get music I'm allowed to use",
-    "cut the scenes to the beat of the track"
+    "cut the scenes to the beat of the track",
+    "add typing sounds to this video",
+    "make the keyboard sound mechanical"
   ],
   "templates": [
     "notchbrowser-app-launch-video",
@@ -96,6 +102,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.4.0",
-  "icon": "🎚️"
+  "version": "1.5.0",
+  "icon": "\ud83c\udf9a\ufe0f"
 }

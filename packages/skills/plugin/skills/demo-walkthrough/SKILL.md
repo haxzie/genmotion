@@ -121,7 +121,8 @@ If "the one workflow" honestly has three answers, build three walkthroughs of 60
 | --- | --- | --- |
 | The real workflow | `save-asset` for the recording or screenshots; `screen-capture` for crop, scale and cursor recipes | Rebuild the UI from screenshots; never skip a step |
 | Narration | `pick-voice`, then `voiceover` | Chapter cards and on-screen step lines carry the structure |
-| Clicks, typing, chime | `sfx` | Credited CC0 UI sounds, or VO only |
+| Clicks and typing | `keystroke-sound` | none needed: synthesised locally, with the timings the typing animation is drawn from |
+| Chimes and other cues | `sfx` | Credited CC0 UI sounds, or VO only |
 | A minimal bed | `music` | None |
 | Chapter-share check | `project-overview` | Add up the scene lengths from `project.json` |
 | Seeing it | `capture-frames` | None |

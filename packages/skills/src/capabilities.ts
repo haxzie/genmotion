@@ -91,6 +91,18 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     shell: null,
     fallback: "place sound files the user provides with `place-audio`; or credited CC0 sounds found with `web-research`; or placeholders synthesised with `ffmpeg` (tested recipes in `sound-design`; tonal cues, never a noise bed, room tone or air), named as placeholders to the user; silence only where the skill allows it",
   },
+  "keystroke-sound": {
+    label:
+      "The sound of text being typed, or a mouse clicking — with the keystroke timings, so the animation and the sound are one plan",
+    desktop: "`generate_typing_sound` / `generate_click_sound` (and `pick_keyboard_sound` only if the user asks to choose)",
+    mcp: "`generate_typing_sound` / `generate_click_sound` (`list_sound_profiles` for the options)",
+    shell: '`npx @genmotion/cli keysound typing "<text>" --place <time> --json` (and `keysound click --at`, `keysound list`)',
+    // No fallback: it is synthesised locally on every surface, so there is
+    // nowhere this is missing. The nearest thing — a generated or sourced
+    // typing loop — is worse than what this does for free, because a loop has
+    // no keystroke timings and so cannot be animated against.
+  },
+
   music: {
     label: "A music bed or score: generated, or found under a licence that allows the use",
     desktop: null,
@@ -162,6 +174,9 @@ export const TOOL_CAPABILITIES: Record<string, SkillCapability> = {
   pick_voice: "pick-voice",
   generate_voiceover: "voiceover",
   generate_sfx: "sfx",
+  generate_typing_sound: "keystroke-sound",
+  generate_click_sound: "keystroke-sound",
+  pick_keyboard_sound: "keystroke-sound",
   search_skills: "search-skills",
   search_scenes: "search-scenes",
   recommend_integration: "recommend-integration",

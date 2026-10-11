@@ -1,7 +1,7 @@
 {
   "name": "@genmotion/cli",
   "version": "0.7.0",
-  "description": "Make videos with code and coding agents. Three.js scenes, a live studio, headless MP4 rendering, and an MCP server — one CLI.",
+  "description": "Make videos with code and coding agents. Three.js scenes, a live studio, headless MP4 rendering, and an MCP server \u2014 one CLI.",
   "license": "Apache-2.0",
   "keywords": [
     "video",
@@ -55,6 +55,7 @@
   "devDependencies": {
     "@genmotion/ai": "workspace:*",
     "@genmotion/config": "workspace:*",
+    "@genmotion/keysound": "workspace:*",
     "@genmotion/project": "workspace:*",
     "@genmotion/render": "workspace:*",
     "@genmotion/shared": "workspace:*",

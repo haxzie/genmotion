@@ -172,6 +172,12 @@ const SoundGlyph = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const KeyboardGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="14" height="8" rx="1.5" />
+    <path d="M3.5 6.5h.01M6 6.5h.01M8.5 6.5h.01M11 6.5h.01M13 6.5h.01M5 9.5h6" />
+  </svg>
+);
 const MicGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
     <rect x="6" y="1.5" width="4" height="8" rx="2" />
@@ -494,6 +500,36 @@ registerToolPresentation({
       const text = outputText(part);
       return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
     },
+  },
+
+  mcp__genmotion__generate_typing_sound: {
+    labels: { active: "Typing it out", done: "Made the typing sound" },
+    icon: KeyboardGlyph,
+    // The text being typed, which is what the user wants to check — the
+    // keyboard it used is in the output.
+    subject: (part) => truncate(str(part, "text"), 60),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__generate_click_sound: {
+    labels: { active: "Making the clicks", done: "Made the clicks" },
+    icon: SoundGlyph,
+    subject: () => undefined,
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  // Like the voice picker, the list itself lives above the composer
+  // (`KeyboardPickerPanel`) and `chat-panel` keeps the call out of the transcript.
+  mcp__genmotion__pick_keyboard_sound: {
+    labels: { active: "Waiting for you to pick a sound", done: "Picked a sound" },
+    icon: KeyboardGlyph,
+    subject: () => undefined,
   },
 
   mcp__genmotion__generate_image: {

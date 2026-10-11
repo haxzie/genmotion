@@ -14,6 +14,7 @@ import { projectOverview } from "./commands/project";
 import { downloadAsset } from "./assets";
 import { downloadXPostVideo } from "./x-video";
 import { addAudio, removeAudio, setAudio } from "./audio";
+import { clickSound, profiles as soundProfiles, typingSound } from "./keysound";
 import { resolveProjectDir } from "./project-dir";
 import { createFromTemplate, listTemplates } from "./templates";
 import { BEAT_HELP, forkNextSteps, formatSceneHits, formatSceneReference, readSceneFork, readSceneReference, readSceneStill, searchSceneLibrary } from "./scenes";
@@ -40,7 +41,7 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     { name: "genmotion", version: VERSION },
     {
       instructions:
-        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), plan the beats, then search_scenes per beat, get_scene the best ones and fork_scene the closest (then re-skin it), then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
+        "Tools for making a GenMotion video in the current project folder. For a new video: search_skills with the user's request, pick ONE workflow/style skill and read it with get_skill (also get_skill('genmotion-skills') for the routing rules), plan the beats, then search_scenes per beat, get_scene the best ones and fork_scene the closest (then re-skin it), then build: project_overview → add_scene / edit scene files → add_audio for music, narration and effects (generate_typing_sound for any shot of text being typed) → check_project → capture_frames (look at the images) → render_video when asked. Read get_guide('three') before writing your first Three.js scene.",
     },
   );
 
@@ -234,6 +235,46 @@ export async function runMcpServer(options: { dir?: string }): Promise<void> {
     name: z.string().optional().describe("A label; accepted in place of the id later."),
     muted: z.boolean().optional(),
   };
+
+  tool(
+    "generate_typing_sound",
+    "Synthesise the sound of someone typing a piece of text, and the keystroke timings that go with it. Writes a WAV into assets/ plus a `.timing.json` beside it holding what the text says on every frame, so the sound and whatever draws the text come from ONE plan and cannot drift. Use it on any scene that shows text being typed — a prompt into a chat box, a command into a terminal, a search query, code appearing. The rhythm is modelled rather than evenly spaced: digraphs cost what they cost on a real keyboard (a doubled letter is quick, one finger reaching across two rows is slow), the tempo drifts into bursts and lulls, there are pauses at punctuation and before long words, and by default the typist occasionally slips onto a neighbouring key, notices and backspaces it out. It runs on this machine with no key, no credits and no network, and the same text and seed give the same file forever. Use `place` to put it on the timeline in the same call. Default keyboard is `thock`; list them with `list_sound_profiles`.",
+    {
+      ...dirArg,
+      text: z.string().min(1).max(2000).describe("The text being typed. A newline is a Return press, which sounds different and pauses after."),
+      profile: z.string().optional().describe("Keyboard: thock (default), linear, tactile, clicky, phone."),
+      wpm: z.number().min(10).max(160).optional().describe("Words per minute, a word being five characters. 40 unhurried, 62 ordinary (default), 90 fast. Code and shell commands come out slower than prose at the same setting, as they do in life."),
+      fitSeconds: z.number().min(0.2).max(120).optional().describe("Fill exactly this many seconds instead, overriding wpm. The rhythm's shape is kept and only the tempo scales; a length needing implausible typing is clamped."),
+      typoRate: z.number().min(0).max(0.1).optional().describe("Chance per character of a slip that gets backspaced out. Default 0.01. Use 0 when the text must appear cleanly — a headline, a brand name."),
+      hesitation: z.number().min(0).max(2).optional().describe("Scales the thinking pauses. 0 types straight through, 1 ordinary (default), 2 composing as they go."),
+      seed: z.string().max(64).optional().describe("Fixes the rhythm. Vary it only for a different take of the same text."),
+      filename: z.string().optional().describe("Name in assets/, e.g. 'typing-prompt.wav'."),
+      place: z.string().optional().describe("Also put it on the timeline at this time: '2s', '48', '500ms'. Line it up with the frame the typing starts on screen."),
+    },
+    async ({ dir, text, ...args }) => ({ ...(await typingSound(project(dir), text, args)) }),
+  );
+
+  tool(
+    "generate_click_sound",
+    "Synthesise mouse clicks at given moments and write a WAV into assets/. For a cursor pressing a button, a tab, a checkbox — the cue that makes a UI demo read as something being used rather than something being animated. Local, free and deterministic, like generate_typing_sound. Place a click on the frame the press happens, not the frame the thing it opens appears. Default is `soft`.",
+    {
+      ...dirArg,
+      at: z.array(z.number().min(0).max(600)).min(1).max(200).describe("Seconds from the start of the file, one per click. A single click is [0], which you then place where you want it."),
+      profile: z.string().optional().describe("Click: soft (default), hush (safest under a voice), mechanical, walnut, beige, tok, pebble, tink, pop, quack."),
+      seed: z.string().max(64).optional().describe("Fixes the variation between clicks."),
+      filename: z.string().optional().describe("Name in assets/, e.g. 'clicks.wav'."),
+      place: z.string().optional().describe("Also put it on the timeline at this time."),
+    },
+    async ({ dir, at, ...args }) => ({ ...(await clickSound(project(dir), at, args)) }),
+  );
+
+  tool(
+    "list_sound_profiles",
+    "Every keyboard and mouse-click sound generate_typing_sound and generate_click_sound can use, with a line on what each sounds like and which is the default. Read it when the user asks for a different keyboard, or names one ('make it sound mechanical'); the defaults are chosen to sit under narration, so there is no need to consult this to make an ordinary typing sound.",
+    {},
+    async () => ({ ...soundProfiles() }),
+    { readOnlyHint: true },
+  );
 
   tool(
     "add_audio",

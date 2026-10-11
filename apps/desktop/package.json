@@ -30,6 +30,7 @@
     "@genmotion/compiler": "workspace:*",
     "@genmotion/config": "workspace:*",
     "@genmotion/hyperframes": "workspace:*",
+    "@genmotion/keysound": "workspace:*",
     "@genmotion/motion": "workspace:*",
     "@genmotion/player": "workspace:*",
     "@genmotion/project": "workspace:*",
