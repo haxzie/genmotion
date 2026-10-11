@@ -10,7 +10,30 @@ export { disposeSceneGraph, disposeRenderer } from "./dispose";
 export type { ReadinessCheck, MediaReadinessController } from "./readiness";
 export { createMediaReadinessController, createLoadingTracker } from "./readiness";
 export type { EasingFunction } from "./interpolate";
-export { Easing, interpolate } from "./interpolate";
+export { Easing, interpolate, trunc, bezier } from "./interpolate";
+export {
+  clamp01,
+  lerp,
+  prog,
+  between,
+  hash1,
+  hash2,
+  track,
+  springValue,
+  springIn,
+} from "./motion";
+export type {
+  Rect,
+  NamedRect,
+  Element,
+  Padding,
+  BoxSpec,
+  Layout,
+  PlaceOptions,
+  AuditOptions,
+  AuditFinding,
+} from "./layout";
+export { solve, auditRects } from "./layout";
 export { capturePixelRatio } from "./pixel-ratio";
 export type {
   ThreeCompiledScene,

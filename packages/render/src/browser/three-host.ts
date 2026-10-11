@@ -36,6 +36,10 @@ window.__gmInit = (payload) => {
     getTotalFrames: handle.getTotalFrames,
     getLastError: handle.getLastError,
     dispose: handle.dispose,
+    // The drawn frame's objects as composition-pixel boxes. The desktop host
+    // has always exposed this (its editor overlay reads it); the render page
+    // did not, so `check` had no way to inspect what a frame is made of.
+    describe: handle.describeActiveScene,
   };
   return {};
 };

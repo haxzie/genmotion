@@ -29,6 +29,8 @@ export interface HostHandle {
   getTotalFrames(): number;
   getLastError(): string | null;
   dispose?(): void;
+  /** Three.js only: the drawn frame's objects as composition-pixel boxes. */
+  describe?(): { id: string; type: string; left: number; top: number; width: number; height: number }[];
 }
 
 declare global {
