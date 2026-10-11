@@ -1,5 +1,21 @@
 # @genmotion/shared
 
+## 0.3.0
+
+### Minor Changes
+
+- 93c8127: Typing and mouse-click sounds, synthesised locally.
+
+  A shot of text being typed gets `generate_typing_sound`: the sound of someone typing it, plus a `.timing.json` beside the WAV saying what the text says on every frame, so the sound and whatever draws the text come from one plan and cannot drift. `generate_click_sound` does the same for mouse clicks, and `pick_keyboard_sound` offers the five keyboards and ten click sounds in the chat with a play button on each, for when the user wants to choose. From a shell or over MCP the same three are `genmotion keysound typing|click|list|demo` and the `generate_typing_sound` / `generate_click_sound` / `list_sound_profiles` tools; `--place` puts the clip on the timeline in the same call.
+
+  No key, no credits and no network: a keystroke is synthesised from a table of resonances, which is also why it is the one audio capability every surface has. The rhythm is modelled rather than evenly spaced — digraphs cost what they cost on a real keyboard, the tempo drifts into bursts and lulls, there are pauses at punctuation, and by default the typist occasionally slips onto a neighbouring key and backspaces it out. The same text and seed give the same file byte for byte, so re-rendering a project never re-times its typing.
+
+  The voice picker and the new keyboard picker are now one component.
+
+### Patch Changes
+
+- 75b522f: Agents can pull the video out of a post on X. In the studio, paste an x.com link in the chat and `download_x_video` lands the clip in the project's `assets/`, with who posted it and what the post said, so it can be quoted on screen. The CLI has the same thing without an account: `genmotion x-video <post url>`, and `download_x_video` over MCP. Posts are resolved through X's own embed endpoint, which needs no key and no login, and the file comes straight from `video.twimg.com`, so no video passes through our servers. The best rendition is taken by default (`--quality smallest` for a clip that plays inside a phone mock), stepping down the ladder when the top one is over 100MB. Skills name it as the `x-video` capability.
+
 ## 0.2.0
 
 ### Minor Changes
