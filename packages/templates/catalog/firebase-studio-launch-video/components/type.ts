@@ -255,6 +255,25 @@ export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
 export interface FontFile { family: string; url: string; weight?: string; features?: string }
 
 /**
+ * The face already registered for a file — matched on family + weight, and on
+ * the URL it loaded from.
+ *
+ * The URL is the point: the editor keeps one document across every rebuild, so
+ * a face left behind by an older file outlives the scene. Matching on the
+ * family name alone made swapping the file behind a family a no-op in the
+ * preview while every fresh render showed the new one.
+ */
+type TaggedFace = FontFace & { __gmUrl?: string };
+const WEIGHT = (f: FontFile) => f.weight ?? "100 900";
+const faceInSlot = (doc: Document, f: FontFile): TaggedFace | null => {
+  let hit: TaggedFace | null = null;
+  doc.fonts.forEach((face) => {
+    if (face.family.replace(/"/g, "") === f.family && face.weight === WEIGHT(f)) hit = face as TaggedFace;
+  });
+  return hit;
+};
+
+/**
  * Build the scene only once the project's fonts are loaded, so no texture is ever drawn
  * in a fallback face. The load is registered on ctx.manager, so the export's frame barrier
  * waits for it; when it lands, the builder runs and the last requested frame is re-posed
@@ -262,11 +281,18 @@ export interface FontFile { family: string; url: string; weight?: string; featur
  */
 export function withFonts(ctx: ThreeSceneContext, fonts: FontFile[], build: () => ThreeSceneUpdate): ThreeSceneUpdate {
   const doc = ctx.canvas.ownerDocument;
-  const loaded = new Set<string>();
-  doc.fonts.forEach((face) => {
-    if (face.status === "loaded") loaded.add(face.family.replace(/"/g, ""));
+  const stale: FontFace[] = [];
+  const ready = fonts.every((f) => {
+    const face = faceInSlot(doc, f);
+    if (!face) return false;
+    // An untagged face came from the host page, not from us: leave it alone.
+    if (face.__gmUrl !== undefined && face.__gmUrl !== f.url) {
+      stale.push(face);
+      return false;
+    }
+    return face.status === "loaded";
   });
-  const ready = fonts.every((f) => loaded.has(f.family));
+  for (const face of stale) (doc.fonts as unknown as Set<FontFace>).delete(face);
   if (ready) return build();
 
   let update: ThreeSceneUpdate | null = null;
@@ -275,9 +301,12 @@ export function withFonts(ctx: ThreeSceneContext, fonts: FontFile[], build: () =
   ctx.manager.itemStart(key);
   Promise.all(
     fonts.map((f) =>
-      new FontFace(f.family, `url(${f.url})`, { weight: f.weight ?? "100 900", ...(f.features ? { featureSettings: f.features } : {}) }).load().then((face) => {
-        (doc.fonts as unknown as Set<FontFace>).add(face); // typed only with the DOM.Iterable lib
-      }),
+      new FontFace(f.family, `url(${f.url})`, { weight: WEIGHT(f), ...(f.features ? { featureSettings: f.features } : {}) })
+        .load()
+        .then((face) => {
+          (face as TaggedFace).__gmUrl = f.url;
+          (doc.fonts as unknown as Set<FontFace>).add(face);
+        }),
     ),
   )
     .catch(() => undefined) // a missing font must not hang the export; the fallback face draws instead

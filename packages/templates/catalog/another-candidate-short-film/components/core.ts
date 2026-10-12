@@ -105,13 +105,25 @@ export const FONT = 'Inter, "Helvetica Neue", Arial, sans-serif';
 /**
  * Build the scene only once Inter has loaded, inside the export's frame
  * barrier, so no texture is ever drawn in a fallback face.
+ *
+ * The registered face is matched on the URL it loaded from, not on the family
+ * name: the editor keeps one document across every rebuild, so a face left
+ * behind by an older file outlives the scene, and matching on the name alone
+ * would make swapping the file a no-op in the preview while every fresh render
+ * showed the new one.
  */
 export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate): ThreeSceneUpdate {
   const doc = ctx.canvas.ownerDocument;
+  type TaggedFace = FontFace & { __gmUrl?: string };
   let ready = false;
+  let stale: FontFace | null = null;
   doc.fonts.forEach((face) => {
-    if (face.status === "loaded" && face.family.replace(/"/g, "") === "Inter") ready = true;
+    if (face.family.replace(/"/g, "") !== "Inter") return;
+    const tag = (face as TaggedFace).__gmUrl;
+    if (tag !== undefined && tag !== interUrl) stale = face;
+    else if (face.status === "loaded") ready = true;
   });
+  if (stale) (doc.fonts as unknown as Set<FontFace>).delete(stale);
   if (ready) return build();
 
   let update: ThreeSceneUpdate | null = null;
@@ -121,6 +133,7 @@ export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate)
   new FontFace("Inter", `url(${interUrl})`, { weight: "100 900" })
     .load()
     .then((face) => {
+      (face as TaggedFace).__gmUrl = interUrl;
       (doc.fonts as unknown as Set<FontFace>).add(face);
     })
     .catch(() => undefined)

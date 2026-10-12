@@ -25,7 +25,10 @@ export interface ThreeScaffoldVersions {
 
 export const DEFAULT_THREE_VERSIONS: ThreeScaffoldVersions = {
   cli: "^0.3.0",
-  threeEngine: "^0.1.0",
+  // Keep in step with `@genmotion/three-engine`'s published version: a scene
+  // may import anything the engine exports (`withFonts` since 0.3), and the
+  // folder's own `tsc` resolves it from here.
+  threeEngine: "^0.3.0",
   three: "^0.185.1",
   threeTypes: "^0.185.4",
   typescript: "^5.9.3",

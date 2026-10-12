@@ -10,7 +10,7 @@ Contents: 1 The module · 2 API at a glance · 3 Fonts · 4 Why it is built this
 
 ```ts
 import * as THREE from "three";
-import type { ThreeFrame, ThreeSceneContext, ThreeSceneUpdate } from "@genmotion/three-engine";
+import type { ThreeSceneContext, ThreeSceneUpdate } from "@genmotion/three-engine";
 import { PX, RES } from "./stage";
 
 export const FONT = 'Inter, "SF Pro Display", -apple-system, "Helvetica Neue", Arial, sans-serif';
@@ -246,45 +246,29 @@ export function onTop<T extends THREE.Object3D>(obj: T, order = 100): T {
 
 /* ------------------------------------------------------------------ fonts */
 
-export interface FontFile { family: string; url: string; weight?: string; features?: string }
-
 /**
- * Build the scene only once the project's fonts are loaded, so no texture is ever drawn
- * in a fallback face. The load is registered on ctx.manager, so the export's frame barrier
- * waits for it; when it lands, the builder runs and the last requested frame is re-posed
- * before the barrier releases.
+ * `withFonts(ctx, files, build)` comes from the engine, not from this kit: it
+ * builds the scene only once its font files have loaded, registering the load
+ * on `ctx.manager` so the export's frame barrier waits for it, then re-poses
+ * the last requested frame. One implementation, host-provided at runtime, so
+ * it is the same code in the editor, in `genmotion render` and in an export.
+ *
+ * A file is `{ family, url, weight?, style?, features?, variation? }`:
+ *
+ * - `url` is what the bundler turned `import … from "../assets/X.woff2"` into,
+ *   so it changes whenever the file does. That is what the engine tracks a
+ *   face by — swapping the file behind a family must not be a no-op in the
+ *   editor, whose document outlives every rebuild.
+ * - `features` turns on OpenType features: `'"tnum" 1'` for tabular figures.
+ * - `variation` pins variable-font axes, e.g. `"'opsz' 58"`. Canvas 2D has no
+ *   `font-optical-sizing`, so a variable face always draws its default
+ *   instance however large the type is; an `opsz` font at display size looks
+ *   nothing like its specimen until the axis is pinned by hand.
+ * - `family` + `weight` + `style` is a slot: one family can hold several files
+ *   (400 beside 500, an italic beside its roman).
  */
-export function withFonts(ctx: ThreeSceneContext, fonts: FontFile[], build: () => ThreeSceneUpdate): ThreeSceneUpdate {
-  const doc = ctx.canvas.ownerDocument;
-  const loaded = new Set<string>();
-  doc.fonts.forEach((face) => {
-    if (face.status === "loaded") loaded.add(face.family.replace(/"/g, ""));
-  });
-  const ready = fonts.every((f) => loaded.has(f.family));
-  if (ready) return build();
-
-  let update: ThreeSceneUpdate | null = null;
-  let last: ThreeFrame | null = null;
-  const key = `fonts:${fonts.map((f) => f.url).join(",")}`;
-  ctx.manager.itemStart(key);
-  Promise.all(
-    fonts.map((f) =>
-      new FontFace(f.family, `url(${f.url})`, { weight: f.weight ?? "100 900", ...(f.features ? { featureSettings: f.features } : {}) }).load().then((face) => {
-        (doc.fonts as unknown as Set<FontFace>).add(face); // typed only with the DOM.Iterable lib
-      }),
-    ),
-  )
-    .catch(() => undefined) // a missing font must not hang the export; the fallback face draws instead
-    .then(() => {
-      update = build();
-      if (last) update(last);
-    })
-    .finally(() => ctx.manager.itemEnd(key));
-  return (frame) => {
-    last = frame;
-    update?.(frame);
-  };
-}
+export type { FontFile } from "@genmotion/three-engine";
+export { withFonts } from "@genmotion/three-engine";
 
 /* ---------------------------------------------------------------- counter */
 

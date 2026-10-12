@@ -369,15 +369,48 @@ const FONTS: FontFile[] = [
   { family: "Open Sans", url: openUrl, weight: "300 800" },
 ];
 
+/**
+ * The face already registered for a file's slot — family + weight + style (one
+ * family holds several here) — tagged with the URL it loaded from.
+ *
+ * The URL is the point: the editor keeps one document across every rebuild, so
+ * a face left behind by an older file outlives the scene. Matching on the name
+ * alone made swapping the file behind a family a no-op in the preview while
+ * every fresh render showed the new one.
+ */
+type TaggedFace = FontFace & { __gmUrl?: string };
+const WEIGHT = (f: FontFile) => f.weight ?? "400";
+const STYLE = (f: FontFile) => f.style ?? "normal";
+
 /** Build the scene only once every font has loaded, inside the export's frame barrier. */
 export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate): ThreeSceneUpdate {
   const doc = ctx.canvas.ownerDocument;
   const set = doc.fonts as unknown as Set<FontFace> & { forEach: (cb: (f: FontFace) => void) => void };
-  const loaded = new Set<string>();
-  set.forEach((face) => {
-    if (face.status === "loaded") loaded.add(`${face.family.replace(/"/g, "")}|${face.weight}|${face.style}`);
+  const faceInSlot = (f: FontFile): TaggedFace | null => {
+    let hit: TaggedFace | null = null;
+    set.forEach((face) => {
+      if (
+        face.family.replace(/"/g, "") === f.family &&
+        face.weight === WEIGHT(f) &&
+        face.style === STYLE(f)
+      ) {
+        hit = face as TaggedFace;
+      }
+    });
+    return hit;
+  };
+
+  const stale: FontFace[] = [];
+  const ready = FONTS.every((f) => {
+    const face = faceInSlot(f);
+    if (!face) return false;
+    if (face.__gmUrl !== undefined && face.__gmUrl !== f.url) {
+      stale.push(face);
+      return false;
+    }
+    return face.status === "loaded";
   });
-  const ready = FONTS.every((f) => loaded.has(`${f.family}|${f.weight ?? "400"}|${f.style ?? "normal"}`));
+  for (const face of stale) set.delete(face);
   if (ready) return build();
 
   type Frame = Parameters<ThreeSceneUpdate>[0];
@@ -387,9 +420,10 @@ export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate)
   ctx.manager.itemStart(key);
   Promise.all(
     FONTS.map((f) =>
-      new FontFace(f.family, `url(${f.url})`, { weight: f.weight ?? "400", style: f.style ?? "normal" })
+      new FontFace(f.family, `url(${f.url})`, { weight: WEIGHT(f), style: STYLE(f) })
         .load()
         .then((face) => {
+          (face as TaggedFace).__gmUrl = f.url;
           set.add(face);
         }),
     ),

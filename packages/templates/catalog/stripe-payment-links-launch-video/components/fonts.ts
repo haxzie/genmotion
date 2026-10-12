@@ -10,14 +10,40 @@ const FONTS = [
   { family: "JetBrains Mono", url: monoUrl, weight: "400" },
 ];
 
-/** Run the builder only once Inter + JetBrains Mono are loaded (through the frame barrier). */
+type TaggedFace = FontFace & { __gmUrl?: string };
+
+/**
+ * Run the builder only once Inter + JetBrains Mono are loaded (through the
+ * frame barrier).
+ *
+ * A registered face is matched on the URL it loaded from, not on the family
+ * name: the editor keeps one document across every rebuild, so a face left
+ * behind by an older file outlives the scene, and matching on the name alone
+ * would make swapping the file a no-op in the preview while every fresh render
+ * showed the new one.
+ */
 export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate): ThreeSceneUpdate {
   const doc = ctx.canvas.ownerDocument;
-  const loaded = new Set<string>();
-  doc.fonts.forEach((face) => {
-    if (face.status === "loaded") loaded.add(face.family.replace(/"/g, ""));
+  const faceFor = (family: string): TaggedFace | null => {
+    let hit: TaggedFace | null = null;
+    doc.fonts.forEach((face) => {
+      if (face.family.replace(/"/g, "") === family) hit = face as TaggedFace;
+    });
+    return hit;
+  };
+
+  const stale: FontFace[] = [];
+  const ready = FONTS.every((f) => {
+    const face = faceFor(f.family);
+    if (!face) return false;
+    if (face.__gmUrl !== undefined && face.__gmUrl !== f.url) {
+      stale.push(face);
+      return false;
+    }
+    return face.status === "loaded";
   });
-  if (FONTS.every((f) => loaded.has(f.family))) return build();
+  for (const face of stale) (doc.fonts as unknown as Set<FontFace>).delete(face);
+  if (ready) return build();
 
   let update: ThreeSceneUpdate | null = null;
   let last: ThreeFrame | null = null;
@@ -26,6 +52,7 @@ export function withFonts(ctx: ThreeSceneContext, build: () => ThreeSceneUpdate)
   Promise.all(
     FONTS.map((f) =>
       new FontFace(f.family, `url(${f.url})`, { weight: f.weight }).load().then((face) => {
+        (face as TaggedFace).__gmUrl = f.url;
         (doc.fonts as unknown as Set<FontFace>).add(face);
       }),
     ),

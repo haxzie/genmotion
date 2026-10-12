@@ -34,6 +34,8 @@ export type {
   AuditFinding,
 } from "./layout";
 export { solve, auditRects } from "./layout";
+export type { FontFile } from "./fonts";
+export { withFonts } from "./fonts";
 export { capturePixelRatio } from "./pixel-ratio";
 export type {
   ThreeCompiledScene,
