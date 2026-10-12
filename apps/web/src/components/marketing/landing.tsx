@@ -59,6 +59,7 @@ export async function LandingHero({
   title,
   lede,
   compact = false,
+  tight = false,
   inlineInstall = false,
   children,
 }: {
@@ -67,6 +68,11 @@ export async function LandingHero({
   lede: React.ReactNode;
   /** No room left under the hero for a screenshot to be pulled into. */
   compact?: boolean;
+  /**
+   * Tighter still: whatever sits under this hero is tall and has to be in the
+   * fold with it. Implies `compact`.
+   */
+  tight?: boolean;
   /** Put the terminal install beside the download rather than above it. */
   inlineInstall?: boolean;
   /** Anything extra under the download, e.g. a secondary link. */
@@ -84,7 +90,11 @@ export async function LandingHero({
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       <Container
         className={`relative flex flex-col items-center text-center ${
-          compact ? "pb-20 pt-24 sm:pb-24 sm:pt-32" : "pb-32 pt-24 sm:pb-40 sm:pt-32"
+          tight
+            ? "pb-10 pt-12 sm:pb-14 sm:pt-16"
+            : compact
+              ? "pb-20 pt-24 sm:pb-24 sm:pt-32"
+              : "pb-32 pt-24 sm:pb-40 sm:pt-32"
         }`}
       >
         {badge && (

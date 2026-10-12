@@ -21,3 +21,7 @@ apps/web/public/install.sh
 # them one `git rm --cached` away from being silently untrackable.
 /index.html
 /main.cjs
+
+# Template masters pulled down by apps/web's showreel encode. The clips it
+# writes into public/ are committed; the 1080p sources they come from are not.
+apps/web/.showreel-cache/

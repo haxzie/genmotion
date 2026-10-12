@@ -6,10 +6,10 @@ import { Capabilities } from "@/components/marketing/capabilities";
 import { AgentMarks } from "@/components/marketing/agent-badges";
 import { IntegrationsSection } from "@/components/marketing/integrations-section";
 import {
-  EditorShot,
   LandingHero,
   TemplatesStrip,
 } from "@/components/marketing/landing";
+import { Showreel } from "@/components/marketing/showreel";
 import type { Faq } from "@/lib/marketing/faq";
 import { getPostBySlug } from "@/lib/marketing/content";
 import { getAllTemplateSummaries } from "@/lib/marketing/templates";
@@ -85,6 +85,10 @@ export default async function HomePage() {
     <>
       <JsonLd data={homeJsonLd} />
       <LandingHero
+        // No screenshot hanging below the headline any more, and the reel
+        // under it is tall: both of them have to land in the first screen, so
+        // the hero gives up the padding it was keeping for a screenshot.
+        tight
         inlineInstall
         badge={{
           label: "Announcement",
@@ -105,9 +109,14 @@ export default async function HomePage() {
         lede="AI-powered motion graphics editor for your product videos."
       />
 
-      <EditorShot />
+      {/* The reel rather than the editor screenshot: the first thing under
+          the headline should be the work, moving, not a picture of the tool
+          that made it. The app itself is further down, in `Capabilities` and
+          in the templates gallery — both of which land better once you have
+          seen what comes out. */}
+      <Showreel />
 
-      {/* The marketplace, straight under the app: what it plugs into, and
+      {/* The marketplace, straight under the reel: what it plugs into, and
           whose models it runs. */}
       <IntegrationsSection />
 
