@@ -1,0 +1,156 @@
+{
+  "arc": "hook (the film opens inside a ruled panel, the Eiffel Tower inks in, the panel opens to full bleed as the camera drops down the Champ de Mars) → atmosphere (the Golden Gate span, fog banks drifting across the strait) → atmosphere (the Thames, Big Ben's dial and the London Eye turning) → cta (the climb up the Burj Khalifa through the cloud deck, closing line \"Some words travel far.\")",
+  "scenes": [
+    {
+      "file": "scenes/01-paris.ts",
+      "title": "An engraved Eiffel Tower inks in inside a ruled page panel, which opens to full bleed as the camera flies",
+      "beat": "hook",
+      "alsoFits": [
+        "atmosphere",
+        "transition"
+      ],
+      "summary": "9s opening. A paper white frame, a hairline rectangle drawing itself in, and inside it an engraving of Paris: the Eiffel Tower in full lattice, Haussmann blocks to the horizon, tree rows down the Champ de Mars, the Seine in broken horizontal strokes. A serif caption sets word by word in a ruled box underneath, \"A letter left Paris\", with \"letter\" in periwinkle. At frame 78 the caption drops away and the panel opens out to full bleed while the camera is already moving, chasing a letter folded into a paper plane down the park, under the tower and out through the arch. It ends trucking right past a leg pedestal that fills the lens.",
+      "build": "The whole look is one shader family in `components/ink.ts`: surfaces are paper white and shaded only by hatching that lives in world space, so lines stick to a face as the camera flies instead of swimming across it, get denser as the face turns from the light, and fade to flat grey before they are small enough to shimmer. `boxes()` instances hatched buildings with window grids and mansards, `blobs()` plus `hull()` makes contour shaded trees and clouds, `plane()` makes water and lawn as broken strokes, `lines()` and `beams()` draw ink structure. The tower is not a model: an outer half width `hw(y) = 2.5 + 60 * exp(-y / 88)` and a leg depth that converges at the second level generate the whole lattice, the four arches are sampled half circles, the platforms are box rings. `createFrame` in `components/frame.ts` is the page grammar, parented to the camera at a fixed distance, with four paper mask rects lerped outward to open the panel. The camera is `cameraRig` in `components/camera.ts`: Hermite interpolation in time, so every key is hit on its exact frame and velocity is continuous through it, with the aim interpolated as a normalised direction so it turns at a steady angular rate.",
+      "reuse": "Take this when a video needs a hand drawn or editorial opening that is still a real 3D flight: an atlas, a travel piece, a company history, a book trailer. The reusable parts are the engraving shader, the ruled panel that opens to full bleed (a cheap and striking way to start a film on a page), and the time Hermite camera rig. Swap the landmark profile function and the caption words. The palette in `components/brand.ts` is five values, so sepia or graphite is a one file change.",
+      "techniques": [
+        "3d-camera-move",
+        "custom-shader",
+        "hatching",
+        "procedural-geometry",
+        "kinetic-typography",
+        "match-cut",
+        "reveal"
+      ],
+      "mood": [
+        "editorial",
+        "cinematic",
+        "elegant"
+      ],
+      "videoTypes": [
+        "freeform-video",
+        "explainer",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.45,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/02-san-francisco.ts",
+      "title": "The Golden Gate Bridge as an engraving, the camera running the span through fog and up over the north tower",
+      "beat": "atmosphere",
+      "alsoFits": [
+        "transition"
+      ],
+      "summary": "9s. The scene opens out from behind the south tower leg, carrying the motion of the Paris cut. A ruled paper caption card rises into the lower third, \"It crossed the fog\" with \"fog\" in periwinkle, holds for about two and a half seconds and drops away. The camera runs the deck toward the far tower while the paper plane flies just ahead of it, then rises past the north tower crown strut. The Marin headlands and the Presidio are contour hatched hills, downtown San Francisco sits on the same height field with the Transamerica Pyramid as a cone, and sixteen fog banks drift across the strait.",
+      "build": "The bridge is solved, not modelled: `cableY(x)` is a parabola inside the towers and a modified curve out to the anchorage, and the main cables, suspenders, deck truss and tower cross members are all generated from it. The towers are tiers of hatched boxes stepping inward. The headlands are a plane geometry displaced by `fbm` from `components/rand.ts` and shaded with the ink shader's contour mode, and the city blocks from `city()` are then dropped onto that same height function so buildings sit on the hills. Fog is `cloudPuffs` plus `blobs` with a low tone and a wide hatch, scattered in three bands and translated on x by `time`. One tower leg and the crown strut are set to `tone: -1`, plain stone white with no windows: they are what sweep the lens to mask the cuts at either end of the scene.",
+      "reuse": "Use it for any bridge, span, cable or infrastructure shot, or as a reference for generating a real structure from its own engineering curve rather than importing a model. The terrain recipe (noise displaced plane plus contour hatching plus a shared height function for building placement) transplants to any city on hills. The masked cut is the part worth copying: put a plain untextured surface in the scene where the camera passes close, and a hard cut hides inside it.",
+      "techniques": [
+        "3d-camera-move",
+        "custom-shader",
+        "hatching",
+        "procedural-geometry",
+        "terrain",
+        "match-cut",
+        "parallax"
+      ],
+      "mood": [
+        "editorial",
+        "cinematic",
+        "calm"
+      ],
+      "videoTypes": [
+        "freeform-video",
+        "explainer",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.88
+      ]
+    },
+    {
+      "file": "scenes/03-london.ts",
+      "title": "Westminster in ink: the Thames, the London Eye turning, and a push into Big Ben's clock face",
+      "beat": "atmosphere",
+      "alsoFits": [
+        "transition",
+        "concept"
+      ],
+      "summary": "9s. The camera rises over the Thames south parapet, caption card \"It outran every clock\" with \"clock\" in periwinkle. It crosses the river past the Palace of Westminster, Victoria Tower and the pinnacled roofline, with the London Eye turning slowly in the background and Westminster Bridge arches below, then pushes straight into the Elizabeth Tower's clock face. The hands tick on from ten past ten as it arrives, and the shot ends inside the blank lower half of the dial.",
+      "build": "The clock is the detail piece: four faces, each built from a normal and an up vector so the same code places all of them, five concentric rings of 72 segments, 60 minute marks with every fifth drawn heavier, a gothic square surround with corner diagonals, and hour and minute hands on pivot groups rotated from `time` (kept in the upper half of the dial so they read well on camera). The Eye is a rim, 96 spokes crossed in a double helix, an A frame back stay and 32 capsule blobs, with wheel and pods counter rotating together. The palace is a dozen hatched boxes with a gothic window pitch plus cones for every spire and an `InstancedMesh` of 60 roofline pinnacles. The south parapet is `tone: -1`, the masked cut the scene opens out of.",
+      "reuse": "Lift the clock face whenever a video needs a real dial rather than a flat icon: deadlines, time saved, history, anything where a clock is the subject. The four face construction from a normal and an up vector is a clean pattern for anything with identical faces on a tower or a cube. The Eye is a reusable ferris wheel, and the pinnacle instancing is how to get a detailed roofline for one draw call. Swap the landmarks and the caption; the river, bridge and embankment trees are generic.",
+      "techniques": [
+        "3d-camera-move",
+        "custom-shader",
+        "hatching",
+        "procedural-geometry",
+        "clock",
+        "push-in",
+        "instancing"
+      ],
+      "mood": [
+        "editorial",
+        "cinematic",
+        "elegant"
+      ],
+      "videoTypes": [
+        "freeform-video",
+        "explainer",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.18,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/04-dubai.ts",
+      "title": "A worm's eye climb up the Burj Khalifa through a hatched cloud deck, closing line over the spire",
+      "beat": "cta",
+      "alsoFits": [
+        "atmosphere",
+        "recap"
+      ],
+      "summary": "9s closer. A whip pan off a podium wall into a rolled worm's eye shot looking straight up the Burj Khalifa between two framing towers, caption \"It climbed past the clouds\" with \"clouds\" in periwinkle. The camera spirals up the tower with the paper plane ahead of it, breaks through a deck of 46 hatched cumulus at 470 metres, and circles the spire. At frame 165 the closing line sets large in the upper third, \"Some words travel far.\", and the move eases to rest.",
+      "build": "The Burj is 24 tiers of a Y shaped plan: three wings at 120 degrees whose lengths step back one at a time as the tiers rise and whose width tapers linearly, so the spiral setback falls out of two counters rather than being keyed. A hex cylinder core runs the full height and a cone plus zigzag line rings make the 196 metre spire. 400 downtown towers are scattered on a radial distribution with a `sightline()` test that keeps the opening shot's line of sight clear, which is how a random city stays readable from one specific camera. The camera rig carries a `roll` channel here, interpolated with position, for the roll out of the whip pan. `createFrame`'s `finale` option is the closing line: larger type, upper third, word by word, with a slow scale creep that keeps it alive on a held frame.",
+      "reuse": "Use it as an end card that is still a shot: a closing line over a climb reads better than a cut to a logo on black. The setback generator is worth borrowing for any tapering tower, and the sightline clearing trick solves the general problem of scattering a crowd of objects without blocking the hero. Swap the closing line in the `finale` block and the landmark; the cloud deck, palms and lake are generic set dressing.",
+      "techniques": [
+        "3d-camera-move",
+        "custom-shader",
+        "hatching",
+        "procedural-geometry",
+        "kinetic-typography",
+        "camera-roll",
+        "end-card"
+      ],
+      "mood": [
+        "editorial",
+        "cinematic",
+        "elegant"
+      ],
+      "videoTypes": [
+        "freeform-video",
+        "explainer",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.92
+      ]
+    }
+  ]
+}

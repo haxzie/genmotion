@@ -1,0 +1,43 @@
+{
+  "name": "Cities in Ink - Concept Video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-paris.ts",
+      "durationInFrames": 270,
+      "name": "Paris"
+    },
+    {
+      "file": "scenes/02-san-francisco.ts",
+      "durationInFrames": 270,
+      "name": "San Francisco"
+    },
+    {
+      "file": "scenes/03-london.ts",
+      "durationInFrames": 270,
+      "name": "London"
+    },
+    {
+      "file": "scenes/04-dubai.ts",
+      "durationInFrames": 270,
+      "name": "Dubai"
+    }
+  ],
+  "audio": [
+    {
+      "id": "score",
+      "file": "assets/score-cities-in-ink.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1080,
+      "startFrom": 0,
+      "volume": 1.3,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false
+    }
+  ]
+}
