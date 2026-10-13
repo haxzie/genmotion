@@ -2,7 +2,7 @@ import { z } from "zod";
 /**
  * MCP servers a user connects to the chat agent.
  *
- * Three parties read this file: the API serves the marketplace catalog, the
+ * Three parties read this file: the API serves the plugin catalog, the
  * desktop main process keeps the configured servers and probes them, and the
  * renderer draws both. Like `plugins.ts`, it is pure and browser-safe so the
  * same types describe a server on every side of the loopback.
@@ -15,7 +15,7 @@ import { z } from "zod";
 export type McpTransport = "http" | "stdio";
 
 /**
- * How a server expects to be authenticated, as the marketplace declares it.
+ * How a server expects to be authenticated, as the catalog declares it.
  *
  * `oauth` — the server publishes OAuth metadata and takes either a
  * dynamically registered client or a URL client id, so "Authenticate" is one
@@ -72,7 +72,7 @@ const serverUrl = z.union([httpsUrl, z.url({ protocol: /^http$/, hostname: /^(12
 const iconUrl = z.union([httpsUrl, z.string().regex(/^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/=]+$/)]);
 
 /**
- * The shape every marketplace entry is checked against on the way in — see
+ * The shape every catalog entry is checked against on the way in — see
  * `defineMcpCatalogEntry`. A header entry has to say which header and how to
  * get a token; an HTTP entry has to have a URL; a command entry, a command.
  */
@@ -109,7 +109,7 @@ export const mcpCatalogEntrySchema = z
   });
 
 /**
- * Declare a marketplace entry. Validates at module load, so a bad entry
+ * Declare a plugin catalog entry. Validates at module load, so a bad entry
  * fails the API's startup (and its tests) rather than landing in a user's
  * "Needs attention".
  */
@@ -133,7 +133,7 @@ export interface McpServerView {
   command?: string;
   args?: string[];
   enabled: boolean;
-  source: "marketplace" | "custom";
+  source: "plugin" | "custom";
   catalogId?: string;
   /** The icon to draw. For a custom server this is its domain's favicon, by way of the API. */
   iconUrl?: string;

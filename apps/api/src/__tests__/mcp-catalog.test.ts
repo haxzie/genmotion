@@ -6,7 +6,7 @@ import { defineMcpCatalogEntry, mcpServerId, type McpCatalog } from "@genmotion/
 import { createMcpCatalog } from "../mcp-catalog/registry";
 
 /**
- * The MCP marketplace.
+ * The MCP plugin catalog.
  *
  * The list is static, so what can go wrong is the list itself: an id that
  * collides, or one that would not survive as a tool-name prefix. Both are

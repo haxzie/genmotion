@@ -65,7 +65,7 @@ async function readLoose(dir: string): Promise<SkillMeta | null> {
  * Every skill on this machine, enabled or not.
  *
  * `resolveSkills` filters disabled ones out, so this asks it for the *paths*
- * and then reads the bundled index separately: the marketplace has to list a
+ * and then reads the bundled index separately: the catalog has to list a
  * skill the user switched off, which is exactly what the agent must not see.
  */
 export async function loadCatalog(projectDir?: string): Promise<Cached> {

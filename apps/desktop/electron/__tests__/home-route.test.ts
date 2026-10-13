@@ -3,7 +3,7 @@ import { formatHomeRoute, parseHomeRoute } from "../../src/tabs/home-route";
 
 describe("home route hash", () => {
   it("names a view, and a settings section", () => {
-    expect(parseHomeRoute("#/marketplace")).toEqual({ homeView: "marketplace" });
+    expect(parseHomeRoute("#/plugins")).toEqual({ homeView: "plugins" });
     expect(parseHomeRoute("#/settings/agent")).toEqual({ homeView: "settings", settingsSection: "agent" });
     expect(parseHomeRoute("#/settings")).toEqual({ homeView: "settings" });
   });
@@ -13,7 +13,7 @@ describe("home route hash", () => {
     expect(parseHomeRoute("#/settings/nope")).toEqual({ homeView: "settings" });
   });
   it("round-trips", () => {
-    for (const hash of ["#/create", "#/marketplace", "#/settings/account"]) {
+    for (const hash of ["#/create", "#/plugins", "#/settings/account"]) {
       expect(formatHomeRoute(parseHomeRoute(hash)!)).toBe(hash);
     }
   });

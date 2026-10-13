@@ -81,7 +81,7 @@ app.route("/api/shares", shareRoutes);
 // The projects a new account's workspace is seeded with. Session-authed:
 // they are handed out once per account, and the user row keeps the score.
 app.route("/api/samples", sampleRoutes);
-// MCP marketplace. Public for the same reasons as the templates.
+// The plugin catalog. Public for the same reasons as the templates.
 app.route("/api/mcp", mcpCatalogRoutes);
 app.route("/api/skills", skillsRoutes);
 // Help & feedback from both apps, straight to a Slack channel.

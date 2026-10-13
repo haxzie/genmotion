@@ -216,7 +216,7 @@ Then check the two things that quietly gate everything else: whether you need to
 
 ## Where this plugs into GenMotion
 
-GenMotion's desktop app has a Marketplace that lets the agent authoring your video call generative models directly, on your own API key or credits. Nothing is resold, and the audio category today runs through ElevenLabs, fal.ai, Replicate and Hugging Face, with ElevenLabs voices being the model named for narration specifically. In practice, that means you can tell the agent what a scene needs ("narrate this section in a warm, confident voice") and it generates the voiceover with ElevenLabs and drops it onto the timeline already aligned to the beats of the cut, instead of you generating a clip in a separate tab and re-importing it.
+GenMotion's desktop app has a Plugins catalog that lets the agent authoring your video call generative models directly, on your own API key or credits. Nothing is resold, and the audio category today runs through ElevenLabs, fal.ai, Replicate and Hugging Face, with ElevenLabs voices being the model named for narration specifically. In practice, that means you can tell the agent what a scene needs ("narrate this section in a warm, confident voice") and it generates the voiceover with ElevenLabs and drops it onto the timeline already aligned to the beats of the cut, instead of you generating a clip in a separate tab and re-importing it.
 
 It's the same ElevenLabs pricing and model behavior described above. GenMotion doesn't change the cost or the voice quality, it just removes the round trip between "this scene needs narration" and having it timed correctly in the project.
 

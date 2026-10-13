@@ -1,10 +1,10 @@
 /**
- * The marketplace, as the homepage shows it.
+ * The plugins, as the homepage shows it.
  *
  * A curated mirror of `apps/api/src/mcp-catalog`, not a fetch of it: the
  * homepage is static and the copy here is marketing rather than the
  * catalog's tool descriptions. When an entry is added to the catalog, add it
- * here too. Icons come from the same two sources the desktop marketplace
+ * here too. Icons come from the same two sources the desktop Plugins tab
  * uses, so the marks match what people see in the app.
  */
 
@@ -19,11 +19,11 @@ export type Integration = {
   id: string;
   name: string;
   iconUrl: string;
-  /** The marketplace category, as the app's pills read. */
+  /** The plugin category, as the app's pills read. */
   category: string;
 };
 
-/** In marketplace order: what a video needs first. */
+/** In catalog order: what a video needs first. */
 export const INTEGRATIONS: Integration[] = [
   { id: "elevenlabs", name: "ElevenLabs", iconUrl: brand("elevenlabs", "FFFFFF"), category: "Voice & audio" },
   { id: "fal", name: "fal.ai", iconUrl: favicon("fal.ai"), category: "Generative media" },
@@ -32,6 +32,7 @@ export const INTEGRATIONS: Integration[] = [
   { id: "huggingface", name: "Hugging Face", iconUrl: brand("huggingface", "FFD21E"), category: "Generative media" },
   { id: "freepik", name: "Freepik", iconUrl: brand("freepik", "1273EB"), category: "Stock & assets" },
   { id: "cloudinary", name: "Cloudinary", iconUrl: brand("cloudinary", "3448C5"), category: "Stock & assets" },
+  { id: "mapbox", name: "Mapbox", iconUrl: brand("mapbox", "FFFFFF"), category: "Maps" },
   { id: "canva", name: "Canva", iconUrl: favicon("canva.com"), category: "Design & brand" },
   { id: "mobbin", name: "Mobbin", iconUrl: favicon("mobbin.com"), category: "Design & brand" },
   { id: "notion", name: "Notion", iconUrl: brand("notion", "FFFFFF"), category: "Content sources" },

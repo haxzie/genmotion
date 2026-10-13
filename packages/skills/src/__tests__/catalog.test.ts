@@ -15,7 +15,7 @@ import { CAPABILITIES, TOOL_CAPABILITIES } from "../capabilities";
  * Every rule here exists because breaking it fails somewhere the author would
  * not look: a script the desktop app refuses to run, a relative path into a
  * pack that lives in a different plugin directory, a card that promises a
- * connector the marketplace has never heard of.
+ * connector the plugin catalog has never heard of.
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");

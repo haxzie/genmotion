@@ -40,7 +40,7 @@ function ChevronIcon({ className }: { className?: string }) {
 function SourcePill({ source }: { source: McpServerView["source"] }) {
   return (
     <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[0.714rem] text-text-tertiary">
-      {source === "marketplace" ? "Marketplace" : "Custom"}
+      {source === "plugin" ? "Plugin" : "Custom"}
     </span>
   );
 }

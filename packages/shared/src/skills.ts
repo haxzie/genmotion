@@ -136,7 +136,7 @@ export type SkillCapability = (typeof SKILL_CAPABILITIES)[number];
 /**
  * Something a skill needs that may or may not be there.
  *
- * `mcp` names a marketplace catalog id, which is what lets the agent say
+ * `mcp` names a plugin catalog id, which is what lets the agent say
  * "this wants ElevenLabs, and you don't have it" and offer to connect it.
  * `capability` is one of `SKILL_CAPABILITIES`, which each surface resolves to
  * its own tool. `tool` names a desktop tool directly — kept for user skills
@@ -196,7 +196,7 @@ const httpsUrl = z.url({ protocol: /^https$/ });
  *
  * `description` is duplicated from the SKILL.md frontmatter on purpose and the
  * catalog test holds the two equal: the frontmatter copy is what routes the
- * agent, this copy is what feeds search and the marketplace card, and a drift
+ * agent, this copy is what feeds search and the plugin card, and a drift
  * between them means the card promises something the agent won't do.
  */
 export const skillMetaSchema = z
@@ -255,7 +255,7 @@ export type SkillMeta = z.infer<typeof skillMetaSchema>;
 
 /**
  * Declare a skill. Validates at module load, so a bad sidecar fails the
- * package's own test rather than landing in a user's marketplace.
+ * package's own test rather than landing in a user's Plugins tab.
  */
 export function defineSkill(meta: SkillMeta): SkillMeta {
   return skillMetaSchema.parse(meta);

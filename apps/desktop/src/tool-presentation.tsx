@@ -551,7 +551,7 @@ const PlugGlyph = ({ className }: { className?: string }) => (
 
 /**
  * The mark on a call to a user's MCP server: the server's own icon, looked up
- * from the same list the Marketplace draws, with the plug for a server that
+ * from the same list the Plugins tab draws, with the plug for a server that
  * has since been removed — the transcript outlives the config.
  */
 function McpServerGlyph({ server, className }: { server: string; className?: string }) {

@@ -955,7 +955,7 @@ export function ToolRun({
   if (calls < 3) return <>{withStatus.map(render)}</>;
 
   const runStatus = aggregateStatus(settled.map((x) => x.status));
-  // Unique by glyph, not by name: a marketplace server's tools all wear
+  // Unique by glyph, not by name: a plugin server's tools all wear
   // the server's icon, so three Sequel tools are one mark, not three.
   const tools: string[] = [];
   const marks = new Set<string>();

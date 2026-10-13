@@ -4,7 +4,7 @@ import { MCP_CATALOG } from "../mcp-catalog/index";
 import { env } from "../env";
 
 /**
- * The MCP marketplace, and the icons for servers that are not in it.
+ * The plugin catalog, and the icons for servers that are not in it.
  *
  * Public and anonymous like `/api/templates`: the list is the same for every
  * account, holds nothing private, and the desktop app browses it through its

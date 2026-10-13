@@ -268,7 +268,7 @@ class McpManager {
 
   async add(input: McpServerInput): Promise<McpServerView> {
     const config = await addServer(input);
-    // Which integrations people reach for is the marketplace's whole
+    // Which integrations people reach for is the Plugins tab's whole
     // question. A custom server is counted without its URL — that is
     // theirs.
     track("mcp_server_added", integrationProps(config));
@@ -549,12 +549,12 @@ function describeError(err: unknown): string {
 export const mcpManager = new McpManager();
 
 /**
- * What an event says about a server: the catalog id for a marketplace one,
+ * What an event says about a server: the catalog id for a plugin,
  * only "custom" for one the user typed in — its name and URL are theirs.
  */
 function integrationProps(config: { source: string; catalogId?: string; transport: string; auth: string }) {
   return {
-    integration: config.source === "marketplace" ? (config.catalogId ?? "marketplace") : "custom",
+    integration: config.source === "plugin" ? (config.catalogId ?? "plugin") : "custom",
     source: config.source,
     transport: config.transport,
     auth: config.auth,

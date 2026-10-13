@@ -156,7 +156,7 @@ export function runTurnAsUiStream(input: {
           }
 
           case "tool-start": {
-            // A call to one of the user's servers is the marketplace being
+            // A call to one of the user's servers is a plugin being
             // used — the event names the server and the tool, never the
             // input. Our own genmotion tools are not integrations.
             const mcp = parseMcpToolName(event.name);

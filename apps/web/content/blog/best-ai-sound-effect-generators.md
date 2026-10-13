@@ -167,7 +167,7 @@ Generation earns its keep when the sound is *specific to your scene* rather than
 
 ## Where this plugs into GenMotion
 
-GenMotion's desktop app has a Marketplace that lets the agent authoring your video call generative models directly, on your own API key or credits. Nothing is resold, and the SFX category today runs through ElevenLabs, fal.ai and Replicate. In practice, that means you can describe a sound in plain language ("a soft whoosh as the title slides in," "a subtle click when the button appears") and the agent generates it with ElevenLabs Sound Effects and drops it onto the timeline at the exact beat it belongs to, without you leaving the project to go generate a clip somewhere else and re-import it.
+GenMotion's desktop app has a Plugins catalog that lets the agent authoring your video call generative models directly, on your own API key or credits. Nothing is resold, and the SFX category today runs through ElevenLabs, fal.ai and Replicate. In practice, that means you can describe a sound in plain language ("a soft whoosh as the title slides in," "a subtle click when the button appears") and the agent generates it with ElevenLabs Sound Effects and drops it onto the timeline at the exact beat it belongs to, without you leaving the project to go generate a clip somewhere else and re-import it.
 
 It's the same generation quality and pricing described above for ElevenLabs specifically. GenMotion doesn't change the model or the cost; it just removes the round trip between "I need a sound here" and having it timed correctly.
 

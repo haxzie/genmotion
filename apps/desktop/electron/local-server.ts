@@ -397,7 +397,7 @@ export async function startLocalServer(
       return;
     }
 
-    // MCP servers are a property of the machine too, and the marketplace is
+    // MCP servers are a property of the machine too, and the plugin catalog is
     // browsed from the start screen before any project is open.
     if (rest[0] === "mcp-servers") {
       send(res, 200, await mcpServerRoutes(method, rest.slice(1), req));
@@ -744,7 +744,7 @@ export async function startLocalServer(
   }
 
   /**
-   * The MCP marketplace and its favicons, proxied from the hosted API for the
+   * The plugin catalog and its favicons, proxied from the hosted API for the
    * same reason the templates are: the renderer's CSP only lets it talk to
    * this server.
    */
@@ -767,7 +767,7 @@ export async function startLocalServer(
   }
 
   /**
-   * "Create a token" on a marketplace card: open the vendor's page for it.
+   * "Create a token" on a plugin card: open the vendor's page for it.
    *
    * The renderer names a catalog entry, not a URL — the catalog is served by
    * us, so the browser only ever opens somewhere we listed. Agent-authored

@@ -19,7 +19,7 @@ import { Choices } from "../settings/section";
  * `add` is the blank form behind "New MCP Server". `edit` is the same form
  * over an existing server — with the twist that the renderer never has its
  * secrets, so a header the user does not touch is left as it is. `token` is
- * the short version a marketplace card opens when its server wants a pasted
+ * the short version a plugin card opens when its server wants a pasted
  * key: name and URL are already known, only the token is asked for.
  */
 /** What the form hands back: a new server, or a patch with the id it is for. */
@@ -30,7 +30,7 @@ export type ServerModalMode =
   | {
       kind: "edit";
       server: McpServerView;
-      /** For a server from the marketplace: its entry, so the form stays a key field. */
+      /** For a server from the catalog: its entry, so the form stays a key field. */
       entry?: McpCatalogEntry;
     }
   | { kind: "token"; entry: McpCatalogEntry };
@@ -162,7 +162,7 @@ export function McpServerModal({
 }: {
   mode: ServerModalMode | null;
   onClose: () => void;
-  /** An add (or a marketplace token) is an `McpServerInput`; an edit is a patch with its id. */
+  /** An add (or a plugin's token) is an `McpServerInput`; an edit is a patch with its id. */
   onSubmit: (input: ServerModalSubmit) => void;
   pending: boolean;
   error: string | null;
@@ -214,7 +214,7 @@ export function McpServerModal({
   if (!mode) return null;
 
   const tokenMode = mode.kind === "token";
-  // A marketplace server is ours to configure: the user never sees headers,
+  // A catalog server is ours to configure: the user never sees headers,
   // transport or URL for it — only the key, when it takes one.
   const managed = mode.kind === "edit" ? mode.entry : mode.kind === "token" ? mode.entry : undefined;
   const keyAuth = managed?.auth.kind === "header" ? managed.auth : null;
@@ -281,7 +281,7 @@ export function McpServerModal({
       onClose={onClose}
       labelledBy="mcp-server-title"
       dismissible={!pending}
-      // A marketplace server asks for one field; at the Add form's width that
+      // A catalog server asks for one field; at the Add form's width that
       // reads as a page with a gap in it. The Add form keeps the wider panel,
       // which it needs for transport, URL and the key/value rows.
       className={managed ? "max-w-sm" : undefined}
@@ -303,7 +303,7 @@ export function McpServerModal({
           <p className="mt-1 text-center text-[0.9rem] text-text-secondary">
             {keyAuth
               ? `${managed.name} needs an API key. It's kept encrypted on this machine and sent only to ${managed.name}.`
-              : `${managed.name} is set up from the marketplace; there's nothing to change here. Use Authenticate on its row to sign in again.`}
+              : `${managed.name} is set up as a plugin; there's nothing to change here. Use Authenticate on its row to sign in again.`}
           </p>
         ) : (
           <p className="mt-1 text-[0.9rem] text-text-secondary">

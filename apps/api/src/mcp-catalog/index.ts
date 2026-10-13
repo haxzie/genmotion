@@ -6,6 +6,7 @@ import fal from "./servers/fal";
 import huggingface from "./servers/huggingface";
 import freepik from "./servers/freepik";
 import cloudinary from "./servers/cloudinary";
+import mapbox from "./servers/mapbox";
 import canva from "./servers/canva";
 import mobbin from "./servers/mobbin";
 import mux from "./servers/mux";
@@ -22,7 +23,7 @@ import context7 from "./servers/context7";
 import deepwiki from "./servers/deepwiki";
 
 /**
- * The marketplace: remote MCP servers the desktop app offers to connect.
+ * The plugin catalog: remote MCP servers the desktop app offers to connect.
  *
  * Chosen for what a video needs — a voice, generated or stock footage, the
  * brand it should match, somewhere to publish, and the facts the script is
@@ -51,6 +52,8 @@ export const MCP_CATALOG = createMcpCatalog([
   // Stock & assets
   freepik,
   cloudinary,
+  // Maps
+  mapbox,
   // Design & brand — no Figma: the hosted server registers only partner
   // IDEs (403 for anyone else), and the desktop one ties a card to an app
   // that has to be open. Back once Figma lists GenMotion.

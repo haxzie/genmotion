@@ -2,18 +2,18 @@ import { useMemo } from "react";
 import type { McpCatalogEntry } from "@genmotion/shared";
 import { Button, Spinner } from "@/components/ui";
 import { useMcpCatalog } from "../../lib/use-mcp-catalog";
-import { ServerIcon } from "../marketplace/server-icon";
-import { McpServerModal } from "../marketplace/server-modal";
-import { useCatalogConnect } from "../marketplace/use-catalog-connect";
+import { ServerIcon } from "../plugins/server-icon";
+import { McpServerModal } from "../plugins/server-modal";
+import { useCatalogConnect } from "../plugins/use-catalog-connect";
 import { DoneBadge, OnboardingRow, OnboardingStep, PendingNote } from "./layout";
 
 /**
  * Step two: the model providers whose keys the agent will use.
  *
- * A short list, not the whole marketplace — the point of the step is "you can
+ * A short list, not the whole catalog — the point of the step is "you can
  * bring your own models", and twenty cards would make it a shopping trip. The
  * five below are the ones that generate the media a video is made of; the rest
- * of the catalog is a click away in the Marketplace tab, which is what the
+ * of the catalog is a click away in the Plugins tab, which is what the
  * hint says.
  *
  * Preferred ids rather than a category filter so the order is ours, but with a
@@ -66,7 +66,7 @@ export function IntegrationsStep({ onDone }: { onDone: () => void }) {
             : entries.length === 0
               ? [
                   <li key="none" className="px-3 py-6 text-[0.929rem] text-text-tertiary">
-                    Couldn't load the marketplace. You can connect these from the Marketplace tab
+                    Couldn't load the plugin catalog. You can connect these from the Plugins tab
                     once you're online.
                   </li>,
                 ]
