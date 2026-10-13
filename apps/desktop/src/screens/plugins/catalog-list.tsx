@@ -12,10 +12,14 @@ import { PluginRow, ROWS } from "./plugin-row";
  * them reads as a list you scan rather than a shelf you browse, and two
  * columns fit a category on a screen.
  *
+ * The whole row opens the plugin's sheet — a 28px `+` was the only target on
+ * a row 500px wide, and the description it sat beside was truncated, so the
+ * one thing you could press was the one thing you had the least to go on. The
+ * `+` stays as the affordance that says the row does something; it opens the
+ * same sheet.
+ *
  * A row knows whether its server is already configured — matched by
- * `catalogId` — and says so instead of offering Connect twice. Management
- * stays on the Installed tab; from here a plugin is only ever added, or
- * nudged through the one action a broken one needs.
+ * `catalogId` — and says so instead of offering Connect twice.
  */
 
 function PlusIcon({ className }: { className?: string }) {
@@ -38,17 +42,17 @@ function CatalogRow({
   entry,
   installed,
   busy,
-  onConnect,
-  onAuthenticate,
+  onOpen,
 }: {
   entry: McpCatalogEntry;
   installed: McpServerView | null;
   busy: boolean;
-  onConnect: (entry: McpCatalogEntry) => void;
-  onAuthenticate: (server: McpServerView) => void;
+  onOpen: (entry: McpCatalogEntry) => void;
 }) {
   return (
     <PluginRow
+      onClick={() => onOpen(entry)}
+      label={installed ? `About ${entry.name}` : `Connect ${entry.name}`}
       icon={<ServerIcon name={entry.name} iconUrl={entry.iconUrl} />}
       name={entry.name}
       detail={entry.description}
@@ -56,13 +60,7 @@ function CatalogRow({
         busy ? (
           <Spinner className="size-4 text-text-tertiary" />
         ) : installed?.status === "needs-auth" ? (
-          <button
-            type="button"
-            onClick={() => onAuthenticate(installed)}
-            className="shrink-0 text-[0.857rem] text-warning hover:underline"
-          >
-            Authenticate
-          </button>
+          <span className="shrink-0 text-[0.857rem] text-warning">Sign in</span>
         ) : installed ? (
           // Added already: a tick, not a second Connect. It stays legible
           // without a hover, because "is this one on?" is the question the
@@ -71,18 +69,17 @@ function CatalogRow({
             <CheckIcon className="size-4" />
           </span>
         ) : (
-          <button
-            type="button"
-            aria-label={`Add ${entry.name}`}
-            onClick={() => onConnect(entry)}
+          // Not a button: the row is the button, and a target inside a target
+          // is two tab stops and two hover states for one action.
+          <span
+            aria-hidden
             className={cx(
               "flex size-7 shrink-0 items-center justify-center rounded-md text-text-tertiary",
-              "transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary",
-              "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+              "transition-colors duration-150 group-hover:bg-surface-hover group-hover:text-text-primary",
             )}
           >
             <PlusIcon className="size-4" />
-          </button>
+          </span>
         )
       }
     />
@@ -93,15 +90,13 @@ export function CatalogList({
   entries,
   servers,
   busyIds,
-  onConnect,
-  onAuthenticate,
+  onOpen,
 }: {
   entries: McpCatalogEntry[];
   servers: McpServerView[];
   /** Catalog ids with a connect in flight. */
   busyIds: Set<string>;
-  onConnect: (entry: McpCatalogEntry) => void;
-  onAuthenticate: (server: McpServerView) => void;
+  onOpen: (entry: McpCatalogEntry) => void;
 }) {
   const byCatalogId = new Map(servers.filter((s) => s.catalogId).map((s) => [s.catalogId!, s]));
   // Categories in catalog order — the API arranges the list by what a video
@@ -122,8 +117,7 @@ export function CatalogList({
                   entry={entry}
                   installed={byCatalogId.get(entry.id) ?? null}
                   busy={busyIds.has(entry.id)}
-                  onConnect={onConnect}
-                  onAuthenticate={onAuthenticate}
+                  onOpen={onOpen}
                 />
               ))}
           </div>

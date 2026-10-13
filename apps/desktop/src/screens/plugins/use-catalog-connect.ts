@@ -40,6 +40,20 @@ export function useCatalogConnect() {
   };
 
   /**
+   * Open a catalog entry's sheet: what it is, and the way in.
+   *
+   * Every entry goes through it, including the ones that could have connected
+   * on the spot. Pressing a row should not be the moment you agree to let a
+   * third party into your projects on the strength of a truncated line of
+   * description — the sheet is where that line is readable, and where a
+   * plugin that wants a key asks for it.
+   */
+  function openEntry(entry: McpCatalogEntry) {
+    const server = (servers.servers ?? []).find((s) => s.catalogId === entry.id) ?? null;
+    setModal({ kind: "detail", entry, server });
+  }
+
+  /**
    * Connect a catalog entry, or carry on with the one already here.
    *
    * One row per entry: a second ElevenLabs is the same account and the same
@@ -94,6 +108,7 @@ export function useCatalogConnect() {
 
   return {
     servers,
+    openEntry,
     connect,
     busyIds,
     connectedId,

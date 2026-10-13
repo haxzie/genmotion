@@ -35,7 +35,7 @@ function featured(entries: McpCatalogEntry[]): McpCatalogEntry[] {
 export function IntegrationsStep({ onDone }: { onDone: () => void }) {
   const catalog = useMcpCatalog();
   const {
-    servers: { servers },
+    servers: { servers, authenticate },
     connect,
     busyIds,
     modal,
@@ -132,6 +132,8 @@ export function IntegrationsStep({ onDone }: { onDone: () => void }) {
         mode={modal}
         onClose={() => setModal(null)}
         onSubmit={submitModal}
+        onConnect={connect}
+        onAuthenticate={(server) => void authenticate.mutateAsync(server.id)}
         pending={pending}
         error={error}
       />

@@ -81,6 +81,7 @@ function TabPill({
 export function Plugins() {
   const {
     servers: { servers, isLoading: serversLoading, update, remove, refresh, authenticate },
+    openEntry,
     connect: connectFromCatalog,
     busyIds: busyCatalog,
     connectedId: highlightId,
@@ -222,8 +223,7 @@ export function Plugins() {
                 entries={visibleEntries}
                 servers={list}
                 busyIds={busyCatalog}
-                onConnect={connectFromCatalog}
-                onAuthenticate={actions.onAuthenticate}
+                onOpen={openEntry}
               />
             )
           ) : serversLoading && !servers ? (
@@ -265,6 +265,9 @@ export function Plugins() {
         mode={modal}
         onClose={() => setModal(null)}
         onSubmit={submitModal}
+        onConnect={connectFromCatalog}
+        onAuthenticate={actions.onAuthenticate}
+        onManage={() => setTab("installed")}
         pending={modalPending}
         error={modalError}
       />
