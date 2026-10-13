@@ -1,5 +1,29 @@
 # @genmotion/desktop
 
+## 0.4.1
+
+### Patch Changes
+
+- ecc308a: A plugin's row now opens a sheet instead of connecting on the spot. A 28px `+` was the only target on a row 500px wide, sitting beside a description cut off mid-sentence, so the one thing you could press was the one thing you had the least to go on. The sheet says what the plugin does, what signing in actually involves and what the agent ends up holding, and then offers the button. A plugin that wants an API key asks for it there, beside the sentence explaining where the key goes, rather than in a second dialog after it.
+- ecc308a: The Plugins screen is a list, not a shelf. Twenty-two cards in a grid was a wall, and a card spent most of its area on the border around two lines of text. A plugin is now a row: its mark, its name, one line about it, and the one button that matters. Two tabs split the two questions the screen was trying to answer at once, All for finding something to add and Installed for managing what you added, so neither list pushes the other off a short window.
+- 5077614: three-engine: `withFonts` moves into the engine, and a swapped font file is seen
+
+  Every Three.js project carried its own copy of the font loader, and each copy
+  skipped a face whose **family name** was already in `document.fonts`. An export
+  opens a fresh window per capture, so it always drew the newest file; the editor
+  keeps one document alive across every rebuild, so it kept drawing the first one.
+  Changing the file behind a family was a no-op in the preview and correct in the
+  render — the same project looking like two different videos.
+
+  `withFonts(ctx, files, build)` is now exported from `@genmotion/three-engine`,
+  host-provided at runtime, and tracks each face by the URL it loaded from (per
+  family + weight + style slot), so changing the import is all a font swap takes.
+  A file also takes `variation`, which pins variable-font axes: canvas 2D has no
+  `font-optical-sizing`, so an `opsz` face drew its small-text design at any size.
+
+- 53542a0: The Marketplace is now Plugins: same tab, same servers, a name that matches what the composer's `+` already calls them. Mapbox joins the catalog under a new Maps category, so an agent building a map scene can geocode a place, trace a route and pull a static map instead of guessing at the geography. It connects in one click.
+- d45b3e5: A template on the start screen opens in a lightbox before it is remixed: the video plays at a size you can read, with its title, description and running time under it, and Remix is a button there. The pill in the card's corner still remixes straight away.
+
 ## 0.4.0
 
 ### Minor Changes
