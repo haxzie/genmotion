@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { McpServerView } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 import { ServerIcon, statusLine } from "./server-icon";
+import { PluginRow, ROWS } from "./plugin-row";
 
 /**
  * The user's servers, grouped by what they need from them.
@@ -9,6 +10,9 @@ import { ServerIcon, statusLine } from "./server-icon";
  * "Needs attention" comes first because it is the only group with something
  * to do; "Connected" is the reassurance; "Disabled" is the drawer. A group
  * with nothing in it is not drawn — an empty heading is a question.
+ *
+ * Drawn on the same `PluginRow` as the catalog, so a plugin looks like itself
+ * on whichever tab it is found.
  */
 
 function PlusIcon({ className }: { className?: string }) {
@@ -176,61 +180,59 @@ function ServerRow({
   const canExpand = server.status === "connected" && server.tools.length > 0;
 
   return (
-    <li
+    <PluginRow
       id={`mcp-server-${server.id}`}
-      className={cx("transition-colors duration-700", highlighted && "bg-accent/10")}
-    >
-      <div className="flex items-center gap-3 px-4 py-3">
-        <ServerIcon name={server.name} iconUrl={server.iconUrl} status={server.status} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[0.95rem] text-text-primary">{server.name}</span>
-            <SourcePill source={server.source} />
-          </div>
-          <button
-            type="button"
-            disabled={!canExpand}
-            onClick={() => setShowTools((v) => !v)}
-            className={cx(
-              "mt-0.5 flex items-center gap-1 text-left text-[0.857rem] outline-none",
-              line.tone === "danger"
-                ? "text-danger"
-                : line.tone === "warning"
-                  ? "text-warning"
-                  : "text-text-tertiary",
-              canExpand && "hover:text-text-secondary",
-            )}
-            title={server.status === "error" ? server.error : undefined}
-          >
-            <span className="truncate">{line.text}</span>
-            {canExpand && (
-              <ChevronIcon className={cx("size-3 shrink-0 transition-transform", showTools && "rotate-90")} />
-            )}
-          </button>
-        </div>
-
-        {busy && <Spinner className="size-3.5 text-text-tertiary" />}
-        {server.status === "needs-auth" && (
-          <button
-            type="button"
+      highlighted={highlighted}
+      icon={<ServerIcon name={server.name} iconUrl={server.iconUrl} status={server.status} />}
+      name={server.name}
+      badge={<SourcePill source={server.source} />}
+      detail={
+        <button
+          type="button"
+          disabled={!canExpand}
+          onClick={() => setShowTools((v) => !v)}
+          className={cx(
+            "flex max-w-full items-center gap-1 text-left outline-none",
+            line.tone === "danger"
+              ? "text-danger"
+              : line.tone === "warning"
+                ? "text-warning"
+                : "text-text-tertiary",
+            canExpand && "hover:text-text-secondary",
+          )}
+          title={server.status === "error" ? server.error : undefined}
+        >
+          <span className="truncate">{line.text}</span>
+          {canExpand && (
+            <ChevronIcon className={cx("size-3 shrink-0 transition-transform", showTools && "rotate-90")} />
+          )}
+        </button>
+      }
+      action={
+        <div className="flex shrink-0 items-center gap-2">
+          {busy && <Spinner className="size-3.5 text-text-tertiary" />}
+          {server.status === "needs-auth" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => actions.onAuthenticate(server)}
+              className="text-[0.857rem] text-warning hover:underline disabled:opacity-50"
+            >
+              Authenticate
+            </button>
+          )}
+          <Toggle
+            on={server.enabled}
             disabled={busy}
-            onClick={() => actions.onAuthenticate(server)}
-            className="text-[0.929rem] text-accent hover:underline disabled:opacity-50"
-          >
-            Authenticate
-          </button>
-        )}
-        <Toggle
-          on={server.enabled}
-          disabled={busy}
-          label={server.enabled ? `Disable ${server.name}` : `Enable ${server.name}`}
-          onChange={(next) => actions.onToggle(server, next)}
-        />
-        <RowMenu server={server} actions={actions} />
-      </div>
-
+            label={server.enabled ? `Disable ${server.name}` : `Enable ${server.name}`}
+            onChange={(next) => actions.onToggle(server, next)}
+          />
+          <RowMenu server={server} actions={actions} />
+        </div>
+      }
+    >
       {showTools && canExpand && (
-        <ul className="mx-4 mb-3 rounded-md border border-border bg-background">
+        <ul className="mx-2 mb-2 rounded-md border border-border bg-background">
           {server.tools.map((tool) => (
             <li key={tool.name} className="flex items-baseline gap-3 border-b border-border px-3 py-1.5 last:border-b-0">
               <code className="shrink-0 font-mono text-[0.786rem] text-text-secondary">{tool.name}</code>
@@ -239,7 +241,7 @@ function ServerRow({
           ))}
         </ul>
       )}
-    </li>
+    </PluginRow>
   );
 }
 
@@ -257,15 +259,15 @@ function Group({
   if (servers.length === 0) return null;
   return (
     <section>
-      <h3 className="mb-2 flex items-baseline gap-1.5 text-[0.95rem] text-text-primary">
+      <h3 className="mb-1 flex items-baseline gap-1.5 text-[0.95rem] font-medium text-text-primary">
         {title}
         <span className="text-text-tertiary">{servers.length}</span>
       </h3>
-      <ul className="divide-y divide-border rounded-md border border-border bg-surface-raised">
+      <div className={ROWS}>
         {servers.map((server) => (
           <ServerRow key={server.id} server={server} actions={actions} highlighted={server.id === highlightId} />
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
@@ -276,8 +278,8 @@ export function NewServerRow({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       className={cx(
-        "flex w-full items-center gap-3 rounded-md border border-border bg-surface-raised px-4 py-3 text-left",
-        "transition-colors duration-150 hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        "flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left",
+        "transition-colors duration-150 hover:bg-surface-raised outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
       )}
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-dashed border-border-strong text-text-tertiary">
@@ -307,7 +309,7 @@ export function ServerList({
   const disabled = servers.filter((s) => !s.enabled);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <Group title="Needs attention" servers={attention} actions={actions} highlightId={highlightId} />
       <Group title="Connected" servers={connected} actions={actions} highlightId={highlightId} />
       <Group title="Disabled" servers={disabled} actions={actions} highlightId={highlightId} />

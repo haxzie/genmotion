@@ -1,20 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import type { McpServerView } from "@genmotion/shared";
-import { Button, Input, cx } from "@/components/ui";
+import { Button, cx } from "@/components/ui";
 import { useMcpCatalog } from "../../lib/use-mcp-catalog";
-import { CatalogGrid, CatalogSkeleton } from "./catalog-grid";
+import { CatalogList, CatalogSkeleton } from "./catalog-list";
 import { ServerList } from "./server-list";
 import { McpServerModal } from "./server-modal";
 import { useCatalogConnect } from "./use-catalog-connect";
 
 /**
- * MCP servers, in one place: the ones this machine has, then the ones it
- * could have.
+ * MCP servers, in one place: the ones this machine could have, and the ones
+ * it has.
  *
- * Connecting from a card lands a row in the list above and lights it up for
- * a moment, so the eye follows the server from "available" to "yours". The
- * catalog comes from the hosted API and may be unreachable; the list is
- * local and never is, so it stays up while the grid apologises.
+ * Two tabs rather than two stacked sections. Stacked, the user's own servers
+ * pushed the catalog below the fold on a short window, and the catalog pushed
+ * them out of sight once it grew; neither list could be the whole screen. All
+ * is where you go to add something, Installed is where you go to manage what
+ * you added, and the tab says which question you are asking.
+ *
+ * Connecting from All lands a row on Installed and lights it up for a moment,
+ * so the plugin is findable the first time it is looked for. The catalog comes
+ * from the hosted API and may be unreachable; Installed is local and never is,
+ * so it stays up while All apologises.
  */
 
 function SearchIcon({ className }: { className?: string }) {
@@ -34,6 +40,44 @@ function matches(query: string, ...fields: (string | string[] | undefined)[]): b
   );
 }
 
+type Tab = "all" | "installed";
+
+/**
+ * The tab pills.
+ *
+ * Filled when selected, bare when not — the fill is the whole signal, so
+ * there is no underline or track to read as well. Installed carries its count
+ * (and an amber dot when one of them wants attention), because the reason to
+ * look at that tab is usually that something on it is asking for something.
+ */
+function TabPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[0.929rem] transition-colors duration-150",
+        "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        active
+          ? "bg-surface-hover text-text-primary"
+          : "text-text-tertiary hover:bg-surface-raised hover:text-text-primary",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function Plugins() {
   const {
     servers: { servers, isLoading: serversLoading, update, remove, refresh, authenticate },
@@ -49,16 +93,22 @@ export function Plugins() {
   } = useCatalogConnect();
   const catalog = useMcpCatalog();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("all");
   const [busyServers, setBusyServers] = useState<Set<string>>(new Set());
 
-  // Flash the row a server just landed in, and bring it into view.
+  // Flash the row a server just landed in. It is on the other tab, so go
+  // there first — a highlight nobody is looking at is no confirmation at all.
   useEffect(() => {
     if (!highlightId) return;
-    document.getElementById(`mcp-server-${highlightId}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    const timer = setTimeout(() => setHighlightId(null), 1800);
+    setTab("installed");
+    const timer = setTimeout(() => setHighlightId(null), 2400);
     return () => clearTimeout(timer);
   }, [highlightId, setHighlightId]);
+
+  useEffect(() => {
+    if (tab !== "installed" || !highlightId) return;
+    document.getElementById(`mcp-server-${highlightId}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [tab, highlightId]);
 
   const mark = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string, on: boolean) =>
     set((current) => {
@@ -84,17 +134,12 @@ export function Plugins() {
     () => list.filter((s) => matches(query, s.name, s.url, s.command)),
     [list, query],
   );
+  const needsAttention = list.some((s) => s.enabled && (s.status === "needs-auth" || s.status === "error"));
 
   const entries = catalog.data?.entries ?? [];
-  const categories = useMemo(() => [...new Set(entries.map((e) => e.category))], [entries]);
   const visibleEntries = useMemo(
-    () =>
-      entries.filter(
-        (e) =>
-          (!category || e.category === category) &&
-          matches(query, e.name, e.description, e.category, e.tags),
-      ),
-    [entries, category, query],
+    () => entries.filter((e) => matches(query, e.name, e.description, e.category, e.tags)),
+    [entries, query],
   );
 
   const actions = {
@@ -115,11 +160,17 @@ export function Plugins() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-5xl px-6 py-8">
-        <div className="mb-1 flex items-center justify-between gap-4">
-          <h1 className="font-display text-2xl tracking-tight">Plugins</h1>
+      <div className="mx-auto w-full max-w-4xl px-6 py-10">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[2rem] tracking-tight">Plugins</h1>
+            <p className="mt-1 text-text-secondary">
+              Connect the tools you already use. The agent can reach any plugin here from the chat.
+            </p>
+          </div>
           <Button
-            variant="primary"
+            variant="secondary"
+            className="mt-1.5 shrink-0"
             onClick={() => {
               setModal({ kind: "add" });
             }}
@@ -127,29 +178,61 @@ export function Plugins() {
             New MCP Server
           </Button>
         </div>
-        <p className="mb-6 text-text-secondary">
-          Connect the tools you already use. The agent can reach any server here from the chat.
-        </p>
 
-        <div className="relative mb-8">
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-tertiary" />
-          <Input
+        <div className="relative mt-6">
+          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-tertiary" />
+          <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search MCP servers…"
-            className="h-10 pl-9"
+            placeholder="Search plugins…"
+            className={cx(
+              "h-12 w-full rounded-full border border-border bg-surface-raised pl-11 pr-4 text-text-primary",
+              "placeholder:text-text-tertiary transition-colors duration-150 outline-none",
+              "focus:border-accent/60 focus:ring-2 focus:ring-accent/20",
+            )}
           />
         </div>
 
-        <section className="mb-10">
-          <h2 className="mb-3 text-[1.1rem] font-medium text-text-primary">Your servers</h2>
-          {serversLoading && !servers ? (
-            <div className="h-16 animate-pulse rounded-md border border-border bg-surface-raised" />
+        <div role="tablist" aria-label="Plugins" className="mt-5 flex items-center gap-1">
+          <TabPill active={tab === "all"} onClick={() => setTab("all")}>
+            All
+            {catalog.data && <span className="text-text-tertiary">{entries.length}</span>}
+          </TabPill>
+          <TabPill active={tab === "installed"} onClick={() => setTab("installed")}>
+            Installed
+            <span className="text-text-tertiary">{list.length}</span>
+            {needsAttention && <span className="size-1.5 rounded-full bg-warning" aria-label="needs attention" />}
+          </TabPill>
+        </div>
+
+        <div className="mt-7">
+          {tab === "all" ? (
+            catalog.error ? (
+              <p className="py-10 text-center text-text-tertiary">
+                Couldn’t load the plugin catalog. Check your connection and try again.
+              </p>
+            ) : catalog.isLoading || !catalog.data ? (
+              <CatalogSkeleton />
+            ) : visibleEntries.length === 0 ? (
+              <p className="py-10 text-center text-text-tertiary">
+                No plugin matches “{query}”.
+              </p>
+            ) : (
+              <CatalogList
+                entries={visibleEntries}
+                servers={list}
+                busyIds={busyCatalog}
+                onConnect={connectFromCatalog}
+                onAuthenticate={actions.onAuthenticate}
+              />
+            )
+          ) : serversLoading && !servers ? (
+            <CatalogSkeleton />
           ) : list.length === 0 ? (
-            <div className="rounded-md border border-border bg-surface-raised px-4 py-6 text-center">
-              <p className="text-[0.929rem] text-text-secondary">No servers connected yet.</p>
+            <div className="rounded-lg border border-border bg-surface-raised px-4 py-10 text-center">
+              <p className="text-[0.929rem] text-text-secondary">Nothing installed yet.</p>
               <p className="mt-1 text-[0.857rem] text-text-tertiary">
-                Pick one below, or add your own.
+                Pick one from All, or add your own.
               </p>
               <Button
                 size="sm"
@@ -162,8 +245,8 @@ export function Plugins() {
               </Button>
             </div>
           ) : visibleServers.length === 0 ? (
-            <p className="py-4 text-center text-[0.857rem] text-text-tertiary">
-              None of your servers match “{query}”.
+            <p className="py-10 text-center text-text-tertiary">
+              None of your plugins match “{query}”.
             </p>
           ) : (
             <ServerList
@@ -175,57 +258,7 @@ export function Plugins() {
               }}
             />
           )}
-        </section>
-
-        <section>
-          <div className="mb-3 flex items-baseline gap-2">
-            <h2 className="text-[1.1rem] font-medium text-text-primary">Available</h2>
-            {catalog.data && (
-              <span className="text-[0.857rem] text-text-tertiary">{entries.length}</span>
-            )}
-          </div>
-
-          {categories.length > 0 && (
-            <div className="mb-5 flex flex-wrap gap-1.5">
-              {categories.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory((current) => (current === c ? null : c))}
-                  className={cx(
-                    "inline-flex items-center rounded-full border px-2.5 py-1 text-[0.786rem] transition-colors duration-150",
-                    "outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
-                    category === c
-                      ? "border-accent/40 bg-accent-muted text-accent"
-                      : "border-border bg-surface-raised text-text-tertiary hover:border-border-strong hover:text-text-primary",
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {catalog.error ? (
-            <p className="py-8 text-center text-text-tertiary">
-              Couldn’t load the plugin catalog. Check your connection and try again.
-            </p>
-          ) : catalog.isLoading || !catalog.data ? (
-            <CatalogSkeleton />
-          ) : visibleEntries.length === 0 ? (
-            <p className="py-8 text-center text-text-tertiary">
-              Nothing matches{query ? ` “${query}”` : ""}{category ? ` in ${category}` : ""}.
-            </p>
-          ) : (
-            <CatalogGrid
-              entries={visibleEntries}
-              servers={list}
-              busyIds={busyCatalog}
-              onConnect={connectFromCatalog}
-              onAuthenticate={actions.onAuthenticate}
-            />
-          )}
-        </section>
+        </div>
       </div>
 
       <McpServerModal
