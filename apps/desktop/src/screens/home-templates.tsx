@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Spinner, cx } from "@/components/ui";
 import type { TemplateCatalog, TemplateSummary, TemplateTag } from "@genmotion/templates/types";
 import { usePendingTemplateStore } from "./pending-template-store";
+import { templateAssetUrl } from "./template-asset-url";
+import { TemplateLightbox } from "./template-lightbox";
+
+// Re-exported because it was defined here before the lightbox needed it too,
+// and `Home` imports it from this module.
+export { templateAssetUrl };
 
 // Multi-column, not `grid`: a real grid lays items into rows, so a 9:16
 // card and a 16:9 card in the same row both take the taller one's height and
@@ -17,18 +23,6 @@ const cardVariants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: enterEase } },
 };
-
-/**
- * Absolute URL for a path the API handed back.
- *
- * Every path in a template payload is relative on purpose, so it can be joined
- * onto whichever base the client reached the API on. Here that is the loopback
- * server, which makes posters and video same-origin — the only source the
- * renderer's CSP allows for `media-src`.
- */
-export function templateAssetUrl(path: string, revision?: string | null): string {
-  return `${window.__GM_API_URL__}${path}${revision ? `?v=${revision}` : ""}`;
-}
 
 /**
  * The glyph each filter wears.
@@ -216,10 +210,21 @@ const SCROLL_HOLD_MS = 420;
  * described — the title is in the chip once it is picked, which is the only
  * place it is actually needed.
  *
- * The whole card picks the template; the icon in the corner is the affordance
- * saying so. Neither downloads anything — see `pending-template-store`.
+ * The card opens the template; the pill in the corner remixes it straight
+ * away. It used to be one gesture for both, which made every look a decision:
+ * a hover preview at this size is not enough to choose a video from, and the
+ * press that cost the least was the one that committed. Neither downloads
+ * anything — see `pending-template-store`.
  */
-function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick: () => void }) {
+function TemplateCard({
+  template,
+  onOpen,
+  onPick,
+}: {
+  template: TemplateSummary;
+  onOpen: () => void;
+  onPick: () => void;
+}) {
   // Debounced: a mouse crossing the gallery on its way somewhere else
   // shouldn't start a video fetch for every card it passes over.
   const [hovered, setHovered] = useState(false);
@@ -270,9 +275,9 @@ function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick:
     >
       <button
         type="button"
-        onClick={pick}
-        aria-label={`Remix ${template.title}`}
-        className="absolute inset-0 block size-full outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
+        onClick={onOpen}
+        aria-label={`Preview ${template.title}`}
+        className="absolute inset-0 block size-full cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
       >
         <img
           src={templateAssetUrl(template.posterPath, template.revision)}
@@ -293,8 +298,9 @@ function TemplateCard({ template, onPick }: { template: TemplateSummary; onPick:
       </button>
 
       {/* On top of the button rather than inside it: nesting a button in a
-          button is invalid, and this one has its own label anyway. Both do
-          the same thing, so a click that lands on either is the same pick. */}
+          button is invalid, and this one has its own label anyway. The card
+          under it opens the preview; this is the shortcut past it, for a
+          template somebody already knows they want. */}
       <button
         type="button"
         onClick={pick}
@@ -354,7 +360,32 @@ export function HomeTemplates({
   action?: ReactNode;
 }) {
   const [activeTag, setActiveTag] = useState<TemplateTag | null>(null);
+  /** The template the lightbox is showing, or null when it is closed. */
+  const [previewed, setPreviewed] = useState<TemplateSummary | null>(null);
   const pick = usePendingTemplateStore((s) => s.pick);
+
+  /**
+   * Load the template into the composer and take the page up to it.
+   *
+   * The chip lands in the composer, which is a screen's height above the
+   * gallery — a confirmation nobody can see is not one. `smooth` so it reads
+   * as the page moving rather than as a different page.
+   *
+   * Held for a beat first: Chromium starts a smooth scroll on the same frame
+   * as the click, which carried the card's own "Added to chat" off screen
+   * before it had rendered. The pause is what makes the two read as one
+   * gesture — the card confirms, then the page takes you to where it went.
+   */
+  const remix = useCallback(
+    (template: TemplateSummary) => {
+      pick(template);
+      setPreviewed(null);
+      setTimeout(() => {
+        scrollRoot.current?.scrollTo({ top: 0, behavior: "smooth" });
+      }, SCROLL_HOLD_MS);
+    },
+    [pick, scrollRoot],
+  );
 
   const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
@@ -476,22 +507,8 @@ export function HomeTemplates({
               <TemplateCard
                 key={template.id}
                 template={template}
-                onPick={() => {
-                  pick(template);
-                  // The chip lands in the composer, which is a screen's
-                  // height above here — a confirmation nobody can see is not
-                  // one. `smooth` so it reads as the page moving rather than
-                  // as a different page.
-                  //
-                  // Held for a beat first: Chromium starts a smooth scroll on
-                  // the same frame as the click, which carried the card's own
-                  // "Added to chat" off screen before it had rendered. The
-                  // pause is what makes the two reads as one gesture — the
-                  // card confirms, then the page takes you to where it went.
-                  setTimeout(() => {
-                    scrollRoot.current?.scrollTo({ top: 0, behavior: "smooth" });
-                  }, SCROLL_HOLD_MS);
-                }}
+                onOpen={() => setPreviewed(template)}
+                onPick={() => remix(template)}
               />
             ))}
           </motion.div>
@@ -505,6 +522,12 @@ export function HomeTemplates({
           )}
         </>
       )}
+
+      <TemplateLightbox
+        template={previewed}
+        onClose={() => setPreviewed(null)}
+        onRemix={remix}
+      />
     </div>
   );
 }
