@@ -12,6 +12,7 @@ import { Modal } from "@/components/modal";
 import { api } from "@/lib/api";
 import { Button, Input, Spinner, cx } from "@/components/ui";
 import { Choices } from "../settings/section";
+import { ConnectionMarks, PluginDetail } from "./plugin-detail";
 
 /**
  * One form, three jobs.
@@ -33,7 +34,9 @@ export type ServerModalMode =
       /** For a server from the catalog: its entry, so the form stays a key field. */
       entry?: McpCatalogEntry;
     }
-  | { kind: "token"; entry: McpCatalogEntry };
+  | { kind: "token"; entry: McpCatalogEntry }
+  /** A catalog entry opened from its row: what it is, and the way in. */
+  | { kind: "detail"; entry: McpCatalogEntry; server: McpServerView | null };
 
 interface KeyValue {
   key: string;
@@ -116,47 +119,13 @@ function joinArgs(args: string[]): string {
   return args.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ");
 }
 
-/**
- * The two parties to the connection, as a pair of marks.
- *
- * GenMotion's tile and the vendor's, leaning into each other and overlapping —
- * the shape of the thing the dialog is about to do, said before the sentence
- * under it says it. The vendor's sits on top because it is the one the user
- * picked; GenMotion's is the constant and gives way.
- *
- * `rounded-[28%]` is the squircle the login screen's mark already uses, so an
- * app icon lands in the same silhouette everywhere it is framed.
- */
-function ConnectionMarks({ name, iconUrl }: { name: string; iconUrl: string }) {
-  const tile =
-    "flex size-14 items-center justify-center overflow-hidden rounded-[28%] shadow-[0_8px_24px_rgba(0,0,0,0.45)]";
-  return (
-    <div className="mb-5 flex items-center justify-center" aria-hidden>
-      <span className={cx(tile, "-rotate-[7deg] border border-border bg-surface-raised")}>
-        <img src="/logo.svg" alt="" className="size-7" />
-      </span>
-      {/* Over GenMotion's corner and lifted above it, with a cut of the
-          dialog's own background ringing it — without that the two tiles
-          merge into one shape at a glance, and the overlap stops reading as
-          two things meeting. */}
-      <span
-        className={cx(
-          tile,
-          "relative z-10 -ml-3 rotate-[7deg] bg-surface",
-          "shadow-[0_0_0_4px_var(--color-surface),0_8px_24px_rgba(0,0,0,0.45)]",
-        )}
-        title={name}
-      >
-        <img src={iconUrl} alt="" className="size-full object-cover" />
-      </span>
-    </div>
-  );
-}
-
 export function McpServerModal({
   mode,
   onClose,
   onSubmit,
+  onConnect,
+  onAuthenticate,
+  onManage,
   pending,
   error,
 }: {
@@ -164,6 +133,11 @@ export function McpServerModal({
   onClose: () => void;
   /** An add (or a plugin's token) is an `McpServerInput`; an edit is a patch with its id. */
   onSubmit: (input: ServerModalSubmit) => void;
+  /** From a detail sheet: sign in, or add a server that needs no key. */
+  onConnect: (entry: McpCatalogEntry) => void;
+  onAuthenticate: (server: McpServerView) => void;
+  /** From a detail sheet for a plugin already installed: go to its row. */
+  onManage?: () => void;
   pending: boolean;
   error: string | null;
 }) {
@@ -198,7 +172,7 @@ export function McpServerModal({
       setArgs(joinArgs(s.args ?? []));
       setHeaders((s.secretHeaderNames ?? []).map((key) => ({ key, value: "", kept: true })));
       setEnv((s.secretEnvNames ?? []).map((key) => ({ key, value: "", kept: true })));
-    } else {
+    } else if (mode.kind === "token") {
       const e = mode.entry;
       setName(e.name);
       setTransport(e.transport);
@@ -212,6 +186,24 @@ export function McpServerModal({
   }, [mode]);
 
   if (!mode) return null;
+
+  if (mode.kind === "detail") {
+    return (
+      <Modal open onClose={onClose} labelledBy="mcp-server-title" dismissible={!pending} className="max-w-md">
+        <PluginDetail
+          entry={mode.entry}
+          server={mode.server}
+          onConnect={onConnect}
+          onSubmit={onSubmit}
+          onAuthenticate={onAuthenticate}
+          onManage={onManage}
+          onClose={onClose}
+          pending={pending}
+          error={error}
+        />
+      </Modal>
+    );
+  }
 
   const tokenMode = mode.kind === "token";
   // A catalog server is ours to configure: the user never sees headers,

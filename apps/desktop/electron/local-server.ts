@@ -403,8 +403,13 @@ export async function startLocalServer(
       send(res, 200, await mcpServerRoutes(method, rest.slice(1), req));
       return;
     }
-    if (rest[0] === "mcp-catalog" && rest[1] && rest[2] === "token-link" && method === "POST") {
-      send(res, 200, await openCatalogTokenLink(rest[1]));
+    if (
+      rest[0] === "mcp-catalog" &&
+      rest[1] &&
+      (rest[2] === "token-link" || rest[2] === "homepage-link") &&
+      method === "POST"
+    ) {
+      send(res, 200, await openCatalogLink(rest[1], rest[2] === "token-link" ? "token" : "homepage"));
       return;
     }
     if (rest[0] === "mcp-catalog") {
@@ -767,19 +772,25 @@ export async function startLocalServer(
   }
 
   /**
-   * "Create a token" on a plugin card: open the vendor's page for it.
+   * A link on a plugin's sheet: where the vendor mints a token, or its docs.
    *
-   * The renderer names a catalog entry, not a URL — the catalog is served by
-   * us, so the browser only ever opens somewhere we listed. Agent-authored
-   * code runs in this renderer, which is why no "open anything" IPC exists.
+   * The renderer names a catalog entry and which of its two links it wants,
+   * never a URL — the catalog is served by us, so the browser only ever opens
+   * somewhere we listed. Agent-authored code runs in this renderer, which is
+   * why no "open anything" IPC exists.
    */
-  async function openCatalogTokenLink(id: string): Promise<{ ok: boolean }> {
+  async function openCatalogLink(id: string, which: "token" | "homepage"): Promise<{ ok: boolean }> {
     const [{ cloudFetch }, { shell }] = await Promise.all([import("./auth"), import("electron")]);
     const catalog = (await cloudFetch("/api/mcp/catalog", { signal: AbortSignal.timeout(15_000) })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)) as McpCatalog | null;
     const entry = catalog?.entries.find((e) => e.id === id);
-    const url = entry?.auth.kind === "header" ? entry.auth.tokenUrl : undefined;
+    const url =
+      which === "homepage"
+        ? entry?.homepage
+        : entry?.auth.kind === "header"
+          ? entry.auth.tokenUrl
+          : undefined;
     if (!url || !url.startsWith("https://")) return { ok: false };
     await shell.openExternal(url);
     return { ok: true };
