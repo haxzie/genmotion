@@ -379,7 +379,7 @@ function Shell() {
   if (auth.status !== "signed-in") return <LoginScreen state={auth} />;
 
   // First run, after the gate: the walkthrough needs a signed-in account (its
-  // second step browses the hosted marketplace) and it has to be ahead of the
+  // second step browses the hosted plugin catalog) and it has to be ahead of the
   // tab strip, which is the shell of an app you have not set up yet. Nothing
   // is rendered while the flag is in flight, for the same reason the login
   // screen isn't: flashing a walkthrough at someone who finished it months

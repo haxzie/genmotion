@@ -1,7 +1,7 @@
 import type { McpCatalog, McpCatalogEntry } from "@genmotion/shared";
 
 /**
- * Assemble the marketplace from its entries.
+ * Assemble the plugin catalog from its entries.
  *
  * Each entry has already been through `defineMcpCatalogEntry`, so what is
  * left to check is what one file cannot know about another: that no two

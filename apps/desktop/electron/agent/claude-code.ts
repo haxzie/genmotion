@@ -166,7 +166,7 @@ async function turnOptions(
   const model = await activeModel("claude-code").catch(() => null);
   const effort = await activeEffort("claude-code").catch(() => "medium" as const);
   // The user's MCP servers, as of the last probe. Never fatal: a server that
-  // cannot be reached is left out and its row in the marketplace says why.
+  // cannot be reached is left out and its row in Plugins says why.
   const external = await mcpManager.harnessConfigs().catch(() => ({ claude: {} }));
   // Rebuilt every turn, so a skill imported or switched off between messages
   // takes effect on the next one. Null when the user has no skills of their own.
@@ -268,7 +268,7 @@ async function turnOptions(
         };
       }
 
-      // A tool from a server the user connected in the Marketplace. Its
+      // A tool from a server the user connected in Plugins. Its
       // inputs mean whatever that server says they mean — a `path` on a
       // filesystem server is the folder the user pointed it at, not a write
       // this harness is making — so the containment check below does not

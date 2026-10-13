@@ -3,7 +3,7 @@ import type { McpServerStatus } from "@genmotion/shared";
 import { Spinner, cx } from "@/components/ui";
 
 /**
- * A server's mark: its icon from the marketplace, or the first letter of its
+ * A server's mark: its icon from the plugin catalog, or the first letter of its
  * name for a custom one — and, when asked, a status dot in the corner the
  * way Cursor's list draws it, so the row reads at a glance.
  */

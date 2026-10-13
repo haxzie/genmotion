@@ -91,7 +91,7 @@ body {
   background: transparent;
 }
 
-/* Logo marquee (homepage marketplace). The track holds the list twice, so a
+/* Logo marquee (homepage plugins). The track holds the list twice, so a
    slide of exactly half its width lands on an identical frame and loops
    without a seam. Duration and direction come from utilities on the track. */
 @keyframes marquee {

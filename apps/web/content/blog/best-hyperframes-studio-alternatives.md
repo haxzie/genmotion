@@ -13,13 +13,13 @@ faqs:
   - q: "Does the HyperFrames Studio app work on Windows?"
     a: "Not yet. As of October 5, 2026 the download page offers macOS and Linux, and lists Windows and Windows on Arm as coming soon. The Linux build is a single AppImage for 64-bit Intel and AMD machines."
   - q: "Why is GenMotion the best HyperFrames Studio alternative?"
-    a: "Because it treats making a video as one loop. An agent builds the scenes in the app, you scrub a frame-accurate preview that uses the same runtime as the export, you drag and trim on a timeline, narration, sound effects and images are generated in the same chat on Pro, a Marketplace lets you bring your own voice, image and video models, and the export renders on your own machine with no per-render fee. It needs a Mac with Apple silicon and your own Claude Code or Codex subscription, and if that fits, it is the shortest path from an idea to a finished file."
+    a: "Because it treats making a video as one loop. An agent builds the scenes in the app, you scrub a frame-accurate preview that uses the same runtime as the export, you drag and trim on a timeline, narration, sound effects and images are generated in the same chat on Pro, a catalog of plugins lets you bring your own voice, image and video models, and the export renders on your own machine with no per-render fee. It needs a Mac with Apple silicon and your own Claude Code or Codex subscription, and if that fits, it is the shortest path from an idea to a finished file."
   - q: "What is the best alternative if I want an AI agent to build the video for me?"
     a: "GenMotion is our pick. It is a macOS desktop studio that uses your own Claude Code or Codex, builds scenes on a Three.js-based engine by default (with a React-based engine also available), and generates narration, sound effects and images in the same chat on Pro. Midrender is the closest browser-based option: an editor you can also drive from your own agent over MCP or a CLI, aimed at motion graphics. Remotion Studio added a Generate with agent action in September 2026, but it hands the job to your own coding agent rather than running a chat itself."
   - q: "Which alternatives are open source?"
     a: "Motion Canvas is MIT licensed, and so is Revideo, the engine Midrender is built on. HyperFrames itself is Apache 2.0. Remotion is free for individuals and teams of up to three people and has its own paid licence above that. GenMotion Studio and Creatomate are commercial products, and GenMotion also publishes its CLI and libraries on npm."
   - q: "Can I use my own AI models for voice, image and video in GenMotion?"
-    a: "Yes. GenMotion's desktop app has a Marketplace of third-party MCP servers that the agent can call from the chat. For voice there is ElevenLabs, and for image and video generation there are fal.ai, Runway, Replicate and Hugging Face, alongside research, design, data and publishing servers. You connect each with your own API key or sign-in, a key is stored encrypted on your machine and sent only to that provider, and nothing is resold. You can also add a custom MCP server over HTTP or stdio."
+    a: "Yes. GenMotion's desktop app has a plugin catalog of third-party MCP servers that the agent can call from the chat. For voice there is ElevenLabs, and for image and video generation there are fal.ai, Runway, Replicate and Hugging Face, alongside research, design, data and publishing servers. You connect each with your own API key or sign-in, a key is stored encrypted on your machine and sent only to that provider, and nothing is resold. You can also add a custom MCP server over HTTP or stdio."
   - q: "Does GenMotion have a CLI?"
     a: "Yes. GenMotion publishes a CLI on npm, @genmotion/cli, which installs the genmotion command and doubles as an MCP server for your own agent. You can create a project, preview it, check every scene in a headless browser and render MP4, WebM or GIF from a terminal or a CI job, with JSON output on every command. It also publishes @genmotion/three-engine, the runtime scenes are written against, and create-genmotion for scaffolding a project. It is a command-line tool, not a hosted render API."
   - q: "Do I need to know how to code to use these?"
@@ -32,7 +32,7 @@ So this is not a takedown. HyperFrames is a well built, genuinely open project w
 
 ## TL;DR
 
-- **[GenMotion](/)**: our pick, and the best overall alternative if you are on a Mac and want to describe a video, have it built, refine it in a live preview and export on your own machine. Scenes are built on a Three.js-based engine by default, with a React-based engine also available. Narration, sound effects and images are generated in the same chat on Pro, and a Marketplace of third-party MCP servers lets you bring your own models for voice, image and video generation.
+- **[GenMotion](/)**: our pick, and the best overall alternative if you are on a Mac and want to describe a video, have it built, refine it in a live preview and export on your own machine. Scenes are built on a Three.js-based engine by default, with a React-based engine also available. Narration, sound effects and images are generated in the same chat on Pro, and a plugin catalog of third-party MCP servers lets you bring your own models for voice, image and video generation.
 - **Midrender**: a browser editor for AI motion graphics, driven by your own agent over MCP or a CLI. Aimed at product feature videos rather than narrated films.
 - **Remotion Studio**: the pick if your team writes React. Mature, with a Generate with agent action added in September 2026.
 - **Motion Canvas**: the pick for technical explainers. Free and MIT, with a real editor, but its last published release is from December 2024.
@@ -73,7 +73,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 
 ![GenMotion Studio: an agent chat on the left, and on the right a video preview above its timeline](/blog/best-hyperframes-studio-alternatives/genmotion.webp)
 
-**What it is:** a desktop studio for macOS. You describe the video, your own Claude Code or Codex builds each scene, you scrub it frame by frame in the editor and ask for changes, and you export an MP4 rendered on your own machine. Each project is a folder on your disk. Scenes are built on a Three.js-based engine by default, with a React-based engine also available. A built-in Marketplace connects third-party MCP servers to the same chat.
+**What it is:** a desktop studio for macOS. You describe the video, your own Claude Code or Codex builds each scene, you scrub it frame by frame in the editor and ask for changes, and you export an MP4 rendered on your own machine. Each project is a folder on your disk. Scenes are built on a Three.js-based engine by default, with a React-based engine also available. A built-in plugin catalog connects third-party MCP servers to the same chat.
 
 **Choose it if:** you make launch videos, feature announcements, explainers or social clips on a Mac and you want the shortest path from an idea to a finished file. We make GenMotion, and we think that for that job it is the best option on this list.
 
@@ -83,7 +83,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 2. **The audio is part of the loop.** On Pro, the agent generates narration, sound effects and images in the same chat. Narration comes back with per-sentence timings so motion can cue to the words, and rewriting a line means regenerating it, not re-measuring offsets by hand.
 3. **It ends in a finished file, with no meter running.** Exports render on your machine, with no render queue and no per-render fee. The 7-day trial includes exports with no watermark, and Pro is a flat monthly price for unlimited exports.
 4. **A studio, a CLI and an MCP server.** `npx @genmotion/cli init` scaffolds a project, `genmotion check` validates every scene in a headless browser, and `genmotion render` exports MP4, WebM or GIF from a terminal or a CI job. Every command has JSON output, and the MCP server lets your own agent drive the same project.
-5. **Bring your own models and tools.** The Marketplace connects third-party MCP servers to the agent: ElevenLabs for voice, fal.ai, Runway, Replicate and Hugging Face for image and video generation, plus research, design, data and publishing servers. You connect them with your own API key or sign-in, and you can add a custom MCP server of your own. Keys are stored encrypted on your machine and sent only to the provider, and nothing is resold.
+5. **Bring your own models and tools.** Plugins connect third-party MCP servers to the agent: ElevenLabs for voice, fal.ai, Runway, Replicate and Hugging Face for image and video generation, plus research, design, data and publishing servers. You connect them with your own API key or sign-in, and you can add a custom MCP server of your own. Keys are stored encrypted on your machine and sent only to the provider, and nothing is resold.
 6. **Your work stays yours.** Projects are plain folders on your disk, so they stay yours if you cancel.
 
 **Pros**
@@ -92,7 +92,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 - A drag-to-reorder, trim-to-the-frame timeline
 - Voiceover, sound effects and image generation inside the chat on Pro, with timings for syncing motion to speech
 - Exports render on your own machine, with no render queue and no per-render fee
-- A Marketplace of third-party MCP servers, so you can bring your own models for voice, image and video generation, or add a custom server
+- A plugin catalog of third-party MCP servers, so you can bring your own models for voice, image and video generation, or add a custom server
 - A published CLI and libraries on npm, plus an MCP server for your own agent
 - Projects are plain folders on your disk
 
@@ -129,7 +129,7 @@ People look for an alternative for a handful of concrete reasons, all of them ch
 
 **Trade-off:** Midrender is closer to a motion graphics editor than to a full video studio. If your video is narrated, long, or needs generated audio, it is the wrong tool.
 
-**Why GenMotion is the better fit:** Midrender is built for motion graphics that you tune by hand, with usage metered on top of the plan. GenMotion builds the whole video, including generated narration, sound effects and images on Pro, lets you bring your own voice, image and video models through its Marketplace of MCP servers, gives you a timeline you can drag and trim to the frame, and exports unlimited on a flat monthly price on your own machine.
+**Why GenMotion is the better fit:** Midrender is built for motion graphics that you tune by hand, with usage metered on top of the plan. GenMotion builds the whole video, including generated narration, sound effects and images on Pro, lets you bring your own voice, image and video models through its plugin catalog of MCP servers, gives you a timeline you can drag and trim to the frame, and exports unlimited on a flat monthly price on your own machine.
 
 ## 3. Remotion Studio: the pick for React teams
 
@@ -228,7 +228,7 @@ For more on this tool, see [Remotion alternatives](/blog/remotion-alternatives) 
 
 The HyperFrames Studio app changed this comparison. Our earlier HyperFrames comparison framed HyperFrames as an engine with no editing loop of its own, and that framing is now out of date: HyperFrames has a real editor, an agent in a desktop app, and a large community. If a comparison page still tells you otherwise, check its date.
 
-So which should you pick? If you are on a Mac and what you want is a finished video, GenMotion is the best of these. It treats the whole job as one loop: an agent that builds the scenes, a preview you can trust because it is the same runtime as the export, a timeline you can drag and trim, narration, sound effects and images generated in the same chat, a Marketplace that lets you bring your own models for voice, image and video generation, and an export that lands on your disk with no meter running. A CLI and an MCP server mean the same project can be checked and rendered from a terminal or CI as well.
+So which should you pick? If you are on a Mac and what you want is a finished video, GenMotion is the best of these. It treats the whole job as one loop: an agent that builds the scenes, a preview you can trust because it is the same runtime as the export, a timeline you can drag and trim, narration, sound effects and images generated in the same chat, a plugin catalog that lets you bring your own models for voice, image and video generation, and an export that lands on your disk with no meter running. A CLI and an MCP server mean the same project can be checked and rendered from a terminal or CI as well.
 
 The others on this list are good at narrower jobs. Midrender for motion graphics in a browser. Remotion Studio for React teams. Motion Canvas for explainers. Creatomate for templates at volume. If one of those is your job, use it. If your job is making videos, [download GenMotion](/download) for macOS on Apple silicon. It is free to start, and it runs on the Claude Code or Codex subscription you already have.
 

@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import type { McpCatalog } from "@genmotion/shared";
 
 /**
- * The marketplace's catalog, from the hosted API by way of the loopback
+ * The plugin catalog, from the hosted API by way of the loopback
  * proxy. Changes on deploy, not while you look at it.
  */
 export function useMcpCatalog() {

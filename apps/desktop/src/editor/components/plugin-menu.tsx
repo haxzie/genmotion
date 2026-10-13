@@ -7,7 +7,7 @@ import { PluginIcon } from "./plugin-icon";
 import { useUpgrade } from "@/components/upgrade-modal";
 import { connectedServers, useMcpServers } from "../../lib/use-mcp-servers";
 import { HOME_TAB, useTabsStore } from "../../tabs/tabs-store";
-import { ServerIcon } from "../../screens/marketplace/server-icon";
+import { ServerIcon } from "../../screens/plugins/server-icon";
 
 /**
  * What the `+` offers.
@@ -23,7 +23,7 @@ import { ServerIcon } from "../../screens/marketplace/server-icon";
  * Below the plugins: the MCP servers this machine has connected. Picking one
  * is a chip too — a steer toward that server's tools, not a bypass of the
  * agent's own judgement. With none connected, the row points at the
- * Marketplace rather than vanishing, so the feature is discoverable from
+ * Plugins tab rather than vanishing, so the feature is discoverable from
  * the place it is used.
  */
 
@@ -73,9 +73,9 @@ export function PluginMenu({
   const activate = useTabsStore((s) => s.activate);
   const setHomeView = useTabsStore((s) => s.setHomeView);
 
-  function goToMarketplace() {
+  function goToPlugins() {
     setOpen(false);
-    setHomeView("marketplace");
+    setHomeView("plugins");
     activate(HOME_TAB);
   }
 
@@ -186,14 +186,14 @@ export function PluginMenu({
             <button
               type="button"
               role="menuitem"
-              onClick={goToMarketplace}
+              onClick={goToPlugins}
               className="flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover"
             >
               <PluginIcon id="mcp:none" className="mt-0.5 size-4 shrink-0 text-text-tertiary" />
               <span className="min-w-0 flex-1">
                 <span className="truncate text-[0.929rem] text-text-primary">Connect an MCP server</span>
                 <span className="mt-0.5 block text-[0.786rem] leading-snug text-text-tertiary">
-                  Figma, Notion, Linear and more, from the Marketplace.
+                  Figma, Notion, Linear and more, from Plugins.
                 </span>
               </span>
             </button>

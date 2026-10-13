@@ -8,7 +8,7 @@ import { IntegrationsStep } from "./integrations-step";
  * Two things have to be true before GenMotion can make anything: a coding
  * agent to write the scenes, and — optionally but nearly always — somewhere to
  * get a voice and an image from. Both are machine-level settings that already
- * have homes in the app (the composer's picker, the Marketplace tab); this is
+ * have homes in the app (the composer's picker, the Plugins tab); this is
  * the one place they are put in front of someone rather than waited for.
  *
  * Which step is showing is component state, deliberately: the walkthrough is

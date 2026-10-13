@@ -49,7 +49,7 @@ function PlugGlyph({ className }: Props) {
  * Glyph for a chat plugin — shared by the `+` menu, the composer chip, and the
  * pill on a sent message, so one plugin always looks like itself.
  *
- * An MCP server brings its own mark from the marketplace; a custom one, or a
+ * An MCP server brings its own mark from the plugin catalog; a custom one, or a
  * message saved before the icon was known, gets a plug.
  */
 export function PluginIcon({

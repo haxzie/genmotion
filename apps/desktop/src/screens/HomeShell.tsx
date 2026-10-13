@@ -7,7 +7,7 @@ import { Home } from "./Home";
 import { Projects } from "./Projects";
 import { Exports } from "./Exports";
 import { Settings } from "./settings";
-import { Marketplace } from "./marketplace";
+import { Plugins } from "./plugins";
 import type { AuthOrganization, AuthUser, DesktopProject } from "../../electron/shared";
 
 /**
@@ -71,8 +71,8 @@ export function HomeShell({
             />
           ) : tab === "projects" ? (
             <Projects onOpen={onOpen} onAdopt={onAdopt} />
-          ) : tab === "marketplace" ? (
-            <Marketplace />
+          ) : tab === "plugins" ? (
+            <Plugins />
           ) : tab === "exports" ? (
             <Exports onOpenProject={onOpenProject} />
           ) : (

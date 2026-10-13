@@ -96,7 +96,7 @@ const ICONS: Record<SettingsSection, (props: IconProps) => React.ReactElement> =
  * take in at once. Folder grants are deliberately *not* here — a read root is
  * granted per project and cleared when that project is deleted, so a
  * machine-wide page is the wrong home for them and they stay in the composer.
- * MCP servers are not here either: they live in the Marketplace, beside the
+ * MCP servers are not here either: they live in Plugins, beside the
  * list they are picked from.
  */
 export function Settings({

@@ -4,9 +4,9 @@ import { useMcpServers } from "../../lib/use-mcp-servers";
 import type { ServerModalMode, ServerModalSubmit } from "./server-modal";
 
 /**
- * Connecting a marketplace entry, wherever the card is drawn.
+ * Connecting a plugin from the catalog, wherever the card is drawn.
  *
- * Two screens offer the same button — the Marketplace tab and the onboarding
+ * Two screens offer the same button — the Plugins tab and the onboarding
  * walkthrough — and the sequence behind it is fiddly enough that having it
  * twice would mean fixing it twice: a pasted-key server opens the token form
  * first, an OAuth one opens a browser *after* the row exists, and both leave
@@ -40,7 +40,7 @@ export function useCatalogConnect() {
   };
 
   /**
-   * Connect a marketplace entry, or carry on with the one already here.
+   * Connect a catalog entry, or carry on with the one already here.
    *
    * One row per entry: a second ElevenLabs is the same account and the same
    * tools under a second prefix, which helps nobody and the agent has to read

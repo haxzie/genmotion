@@ -95,7 +95,7 @@ export interface GenmotionTool {
  * so that is what we hand over.
  */
 /**
- * The header the user's GitHub marketplace connection sends, if they made
+ * The header the user's GitHub plugin connection sends, if they made
  * one — our tool rides on the same key rather than asking for another.
  */
 async function githubToken(): Promise<string | null> {
@@ -108,9 +108,9 @@ async function githubToken(): Promise<string | null> {
 async function githubError(res: Response, repo: string): Promise<string> {
   if (res.status === 404) return `FAILED: ${repo} was not found (or the connected key can't see it).`;
   if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
-    return "FAILED: GitHub's rate limit is spent. Connect GitHub in the Marketplace, or wait an hour.";
+    return "FAILED: GitHub's rate limit is spent. Connect GitHub in Plugins, or wait an hour.";
   }
-  if (res.status === 401) return "FAILED: GitHub rejected the connected key. Replace it in the Marketplace.";
+  if (res.status === 401) return "FAILED: GitHub rejected the connected key. Replace it in Plugins.";
   return `FAILED: GitHub answered ${res.status}.`;
 }
 
@@ -305,7 +305,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
   {
     name: "github_stargazers",
     description:
-      "Who starred a GitHub repository, newest first, with the total: login, avatar URL and when. For a milestone or community video. Needs GitHub connected in the Marketplace — GitHub only lists stargazers to a signed-in caller.",
+      "Who starred a GitHub repository, newest first, with the total: login, avatar URL and when. For a milestone or community video. Needs GitHub connected in Plugins — GitHub only lists stargazers to a signed-in caller.",
     shape: {
       owner: z.string().describe("Repository owner, e.g. `vercel`"),
       repo: z.string().describe("Repository name, e.g. `ai`"),
@@ -316,7 +316,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       const { owner, repo, limit = 100 } = args as unknown as { owner: string; repo: string; limit?: number };
       const token = await githubToken();
       if (!token) {
-        return failure("FAILED: GitHub isn't connected. Connect it in the Marketplace (it needs an API key) and try again.");
+        return failure("FAILED: GitHub isn't connected. Connect it in Plugins (it needs an API key) and try again.");
       }
       const headers: Record<string, string> = {
         accept: "application/vnd.github.star+json",
@@ -881,7 +881,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       serverId: z
         .string()
         .min(1)
-        .describe('The marketplace catalog id, e.g. "fal" or "elevenlabs". Not a display name.'),
+        .describe('The plugin catalog id, e.g. "fal" or "elevenlabs". Not a display name.'),
       reason: z
         .string()
         .min(1)

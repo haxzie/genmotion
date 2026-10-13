@@ -7,7 +7,7 @@ import { cx } from "@/components/ui";
  * onboarding draws the announced ones too. Claude's and Codex's marks are
  * local — they sit in the composer, where a network round trip for a 16px
  * glyph would be absurd — and the rest come off a CDN, which the renderer's
- * CSP allows for images the same way the marketplace's icons do.
+ * CSP allows for images the same way the plugin catalog's icons do.
  */
 
 /** Claude Code's mark, from simple-icons (CC0). Inlined rather than pulling in

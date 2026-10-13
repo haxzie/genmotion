@@ -31,7 +31,7 @@ export async function recommendIntegration(serverId: string): Promise<{ text: st
   const entry = entries.find((e) => e.id === serverId);
   if (entries.length > 0 && !entry) {
     return {
-      text: `No marketplace server has id "${serverId}". Valid ids: ${entries.map((e) => e.id).join(", ")}.`,
+      text: `No plugin catalog entry has id "${serverId}". Valid ids: ${entries.map((e) => e.id).join(", ")}.`,
       isError: true,
     };
   }

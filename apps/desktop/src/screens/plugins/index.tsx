@@ -34,7 +34,7 @@ function matches(query: string, ...fields: (string | string[] | undefined)[]): b
   );
 }
 
-export function Marketplace() {
+export function Plugins() {
   const {
     servers: { servers, isLoading: serversLoading, update, remove, refresh, authenticate },
     connect: connectFromCatalog,
@@ -117,7 +117,7 @@ export function Marketplace() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-5xl px-6 py-8">
         <div className="mb-1 flex items-center justify-between gap-4">
-          <h1 className="font-display text-2xl tracking-tight">Marketplace</h1>
+          <h1 className="font-display text-2xl tracking-tight">Plugins</h1>
           <Button
             variant="primary"
             onClick={() => {
@@ -208,7 +208,7 @@ export function Marketplace() {
 
           {catalog.error ? (
             <p className="py-8 text-center text-text-tertiary">
-              Couldn’t load the marketplace. Check your connection and try again.
+              Couldn’t load the plugin catalog. Check your connection and try again.
             </p>
           ) : catalog.isLoading || !catalog.data ? (
             <CatalogSkeleton />

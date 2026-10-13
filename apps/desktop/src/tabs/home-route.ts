@@ -2,7 +2,7 @@ import type { HomeTab } from "../components/app-sidebar";
 import { SETTINGS_SECTIONS, type SettingsSection } from "../screens/settings/sections";
 
 /**
- * Home's destinations as URL hashes: `#/marketplace`, `#/settings/agent`.
+ * Home's destinations as URL hashes: `#/plugins`, `#/settings/agent`.
  *
  * The app has no router — screens are store state — but a reload or relaunch
  * used to drop the user on Create whatever they had open, because that state
@@ -11,7 +11,7 @@ import { SETTINGS_SECTIONS, type SettingsSection } from "../screens/settings/sec
  * link can name a screen.
  */
 
-const HOME_TABS: readonly HomeTab[] = ["create", "projects", "marketplace", "exports", "settings"];
+const HOME_TABS: readonly HomeTab[] = ["create", "projects", "plugins", "exports", "settings"];
 
 export interface HomeRoute {
   homeView: HomeTab;

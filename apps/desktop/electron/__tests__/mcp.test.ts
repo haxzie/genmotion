@@ -14,7 +14,7 @@ import { z } from "zod";
  * secrets file is written in the clear — which is also what the test wants
  * to read to prove a header never lands in `settings.json`. The server is
  * the SDK's own over streamable HTTP; a bearer-gated variant of it stands in
- * for a marketplace entry that wants a token.
+ * for a catalog entry that wants a token.
  */
 
 const userData = await fs.mkdtemp(path.join(os.tmpdir(), "gm-mcp-test-"));
@@ -131,7 +131,7 @@ describe("McpManager", () => {
     expect(view.tools).toEqual([]);
   });
 
-  it("keeps one row per marketplace entry, and leaves custom servers alone", async () => {
+  it("keeps one row per catalog entry, and leaves custom servers alone", async () => {
     const entry = { name: "Fixture Echo", transport: "http" as const, url: open.url, catalogId: "fixture-echo" };
     const first = await mcpManager.add(entry);
     const second = await mcpManager.add(entry);

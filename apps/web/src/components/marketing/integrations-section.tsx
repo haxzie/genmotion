@@ -3,11 +3,11 @@ import { Container, Eyebrow } from "@/components/marketing/primitives";
 import { INTEGRATIONS, type Integration } from "@/lib/marketing/integrations";
 
 /**
- * The marketplace, right under the hero: every integration as a logo pill —
+ * The plugins, right under the hero: every integration as a logo pill —
  * "does it work with what I use?" at a glance, names and marks, no reading.
  */
 
-/** A marketplace entry as a bordered pill: the vendor's own mark and its name. */
+/** A plugin as a bordered pill: the vendor's own mark and its name. */
 function IntegrationPill({
   integration,
   ...rest

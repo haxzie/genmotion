@@ -8,7 +8,7 @@ import type { McpServerInput, McpServerPatch, McpServerView } from "@genmotion/s
  * The user's MCP servers, as the main process last saw them.
  *
  * A property of the machine, like the harness, and read from three places:
- * the marketplace's list, its catalog cards (to say "connected" on one), and
+ * the Plugins tab's list, its catalog cards (to say "connected" on one), and
  * the composer's `+` menu.
  *
  * The main process pushes whenever a server's configuration or reachability

@@ -155,6 +155,17 @@ pnpm changeset                        # describe a change to a published package
   repo they publish (which is why a template's README carries the links back to
   genmotion.dev). The catalog test compiles and smoke-renders every scene and
   holds every template to a README, so a template that rots fails CI.
+- **Plugins (the MCP catalog):** the desktop app's Plugins tab — once called
+  the Marketplace, and the word is gone, including the stored `source`, which
+  reads `"marketplace"` forward to `"plugin"` for folders written before the
+  rename. The list is served, not shipped, so a new server lands without a
+  desktop release: a file under `apps/api/src/mcp-catalog/servers/` that
+  default-exports `defineMcpCatalogEntry({...})` plus a line in `index.ts`'s
+  group, and the same entry mirrored by hand into
+  `apps/web/src/lib/marketing/integrations.ts` for the homepage. Probe the
+  vendor's authorization server before claiming `auth: "oauth"` — a
+  `registration_endpoint` that answers 201 to a loopback redirect is what
+  makes Connect one click.
 - **Scene library:** every template also carries `scenes.json` — one curated
   entry per scene (its `beat`: hook, problem, reveal, feature, integrations,
   stat, cta, logo…; what's on screen; how it's built; when to borrow it;

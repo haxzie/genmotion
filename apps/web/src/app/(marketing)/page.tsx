@@ -116,7 +116,7 @@ export default async function HomePage() {
           seen what comes out. */}
       <Showreel />
 
-      {/* The marketplace, straight under the reel: what it plugs into, and
+      {/* The plugins, straight under the reel: what it plugs into, and
           whose models it runs. */}
       <IntegrationsSection />
 

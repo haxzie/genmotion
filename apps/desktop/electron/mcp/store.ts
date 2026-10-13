@@ -28,9 +28,9 @@ export interface McpServerConfig {
   command?: string;
   args?: string[];
   enabled: boolean;
-  source: "marketplace" | "custom";
+  source: "plugin" | "custom";
   catalogId?: string;
-  /** From the marketplace. A custom server has `iconDomain` instead. */
+  /** From the plugin catalog. A custom server has `iconDomain` instead. */
   iconUrl?: string;
   /** The site whose favicon stands in for an icon — see `mainDomain`. */
   iconDomain?: string;
@@ -107,7 +107,13 @@ function writeSecretsAll(
 
 export async function listConfigs(): Promise<McpServerConfig[]> {
   const settings = await readSettings();
-  return [...(settings.mcpServers ?? [])].sort((a, b) => a.createdAt - b.createdAt);
+  return [...(settings.mcpServers ?? [])]
+    // `source` was `"marketplace"` before the tab was called Plugins. Read
+    // it forward rather than rewriting settings.json: nothing downstream
+    // cares which word is on disk, and a migration would be a write on
+    // every launch for a label.
+    .map((s) => (s.source === ("marketplace" as string) ? { ...s, source: "plugin" as const } : s))
+    .sort((a, b) => a.createdAt - b.createdAt);
 }
 
 export async function getConfig(id: string): Promise<McpServerConfig | null> {
@@ -184,7 +190,7 @@ export async function addServer(input: McpServerInput): Promise<McpServerConfig>
   let duplicate: McpServerConfig | null = null;
   await update((settings) => {
     const existing = settings.mcpServers ?? [];
-    // One row per marketplace entry. A second ElevenLabs is never what
+    // One row per catalog entry. A second ElevenLabs is never what
     // anyone meant — it is the same account, the same tools, and the agent
     // would see all of them twice under different prefixes. Checked inside
     // `update`, which serialises writes, so two Connects landing together
@@ -208,7 +214,7 @@ export async function addServer(input: McpServerInput): Promise<McpServerConfig>
         ? { url: input.url!.trim() }
         : { command: input.command!.trim(), args: input.args?.filter(Boolean) ?? [] }),
       enabled: true,
-      source: input.catalogId ? "marketplace" : "custom",
+      source: input.catalogId ? "plugin" : "custom",
       ...(input.catalogId ? { catalogId: input.catalogId } : {}),
       ...(input.iconUrl ? { iconUrl: input.iconUrl } : {}),
       ...(!input.iconUrl && input.transport === "http" ? iconDomainOf(input.url!) : {}),
