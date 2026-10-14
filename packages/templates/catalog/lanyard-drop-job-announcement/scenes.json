@@ -1,0 +1,42 @@
+{
+  "arc": "one continuous 16s shot: badge drops in on its lanyard, bounces and swings, spins once to show its back, settles under a slow push-in, then is yanked back up out of frame",
+  "scenes": [
+    {
+      "file": "scenes/01-lanyard-drop.ts",
+      "title": "Conference badge on a printed lanyard drops in, swings, and spins to show its back",
+      "beat": "announcement",
+      "alsoFits": [
+        "hook",
+        "brand"
+      ],
+      "summary": "A near-black studio frame with a soft mint glow on the back wall. A portrait ID badge falls in from above on a woven strap printed 'GENMOTION \u2022', snaps taut at the clip and bounces, the card rocking on its hook. The card face carries a GenMotion logo lockup, a grayscale portrait in a rounded slate panel, 'Musthaq Ahamad' at 132px, 'AI & PRODUCT ENGINEER' in tracked caps, a hairline rule, '@haxzie', pixel icon tiles down the sides and a full row of them along the bottom edge. Between frames 200 and 262 the whole assembly turns a full 360, so the back passes through shot: the GenMotion mark over the wordmark, with a diagonal staircase of tiles climbing out of the bottom-left corner. It overshoots, settles back to the front, and keeps a slow ambient sway. The camera pushes in through the hold, and at frame 458 the badge is yanked back up out of frame.",
+      "build": "One Three.js scene, no video or image plates beyond a single avatar PNG. The rig is a pendulum group whose pivot sits 12 units above frame, a segmented PlaneGeometry strap, a clip group, and the badge hanging from a hook. The strap's twist is applied per frame to the geometry's own vertices with a cubed falloff towards the clip (`x*cos(a), y, -x*sin(a)`), so the print spirals instead of shearing; a second BackSide mesh with a mirrored texture repeat keeps the print right-reading on the reverse. Both card faces are drawn once into 1720x2508 OffscreenCanvases using components/brand.ts (palette, logo Path2D, dotted grid, '#'/'.' pixel-icon tiles). The strap weave is a seeded mulberry32 canvas texture. The metal clip reflects a PMREM-prefiltered studio box with three softbox planes, built in-scene from core three. The drop, bounce, swing, twist and yank are all damped sine or exponential expressions of the frame index, so nothing is simulated and the render is deterministic. Camera distance is solved from the canvas aspect, so the same scene frames correctly square, portrait or landscape.",
+      "reuse": "Borrow it for any announcement that fits on a card a person wears: a new job, a conference speaker badge, a team hire, an event pass. Swap the avatar PNG, the name, the role line and the handle in the front-canvas block, and the palette and mark in components/brand.ts. The strap print string is one `unit` constant in strapTexture(). Retime by moving the FALL_END / SPIN_IN / SPIN_OUT / PUSH_IN / YANK_IN constants at the top. The reusable pieces are the vertex-twisted strap and the canvas-drawn card faces; don't keep the GenMotion mark, wordmark or tile icons for another brand.",
+      "techniques": [
+        "3d-objects",
+        "continuous-take",
+        "procedural-geometry",
+        "photo-media",
+        "push-in",
+        "grain-texture"
+      ],
+      "mood": [
+        "dark",
+        "premium",
+        "minimal"
+      ],
+      "videoTypes": [
+        "announce-milestone",
+        "brand-sting",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.1,
+        0.48,
+        0.9
+      ]
+    }
+  ]
+}
