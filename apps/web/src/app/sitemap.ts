@@ -16,6 +16,16 @@ import { DOCS_HOME, docUrl, getAllDocs } from "@/lib/docs/content";
 
 const BASE = SITE_URL;
 
+/**
+ * Most of what is listed here is files in this repo, so a deploy is what moves
+ * it. Templates are not: they come from the API, and one added to the catalog
+ * is live on the gallery within the five minutes `getAllTemplateSummaries`
+ * revalidates on. Without this the sitemap would stay whatever it was built
+ * from, which is how a new template ends up listed everywhere a visitor looks
+ * and nowhere a crawler does. Same interval, for the same reason.
+ */
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",

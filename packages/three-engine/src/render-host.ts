@@ -320,6 +320,13 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
     getTotalFrames: () => totalFrames,
     getLastError: () => lastError,
     dispose() {
+      // Idempotent, and it never throws. Teardown runs in a React layout
+      // effect's cleanup, which is the commit phase: anything thrown here
+      // reaches the nearest error boundary and is shown as the scene having
+      // crashed, with a DOM message in place of whatever the real problem
+      // was. A host taken down twice, or one whose canvas something else
+      // already detached, is not a reason to blank the editor.
+      if (disposed) return;
       disposed = true;
       if (prebuildHandle !== null) {
         const cancel = (globalThis as { cancelIdleCallback?: typeof cancelIdleCallback })
@@ -331,7 +338,7 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
       built.clear();
       activeScene = null;
       disposeRenderer(renderer);
-      container.removeChild(canvas);
+      canvas.remove();
     },
   };
 }
