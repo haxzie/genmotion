@@ -1,0 +1,15 @@
+{
+  "name": "Lanyard drop job announcement video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1080,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-lanyard-drop.ts",
+      "durationInFrames": 480,
+      "name": "Lanyard drop"
+    }
+  ],
+  "audio": []
+}
