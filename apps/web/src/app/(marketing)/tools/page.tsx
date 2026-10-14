@@ -50,7 +50,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "How do the video generators work?",
-    a: "You enter a repository, package, or channel, we fetch the live numbers, and the video is rendered and encoded entirely in your browser — nothing is uploaded and there's no queue to wait in. Downloads are MP4 and carry a small GenMotion badge.",
+    a: "Most of them take a repository, package, or channel and fetch the live numbers; the lanyard generator takes two images off your own machine instead. Either way the video is rendered and encoded entirely in your browser, so nothing is uploaded and there is no queue to wait in. Downloads are MP4 and carry a small GenMotion badge.",
   },
   {
     q: "Will you add more tools?",
@@ -61,7 +61,7 @@ const FAQS: Faq[] = [
 export const metadata: Metadata = pageMetadata({
   title: "Free Tools — GenMotion",
   description:
-    "Free, no-signup video generators and calculators for creators: GitHub star, npm download and YouTube subscriber videos, plus aspect ratio and timecode tools.",
+    "Free, no-signup video generators and calculators for creators: GitHub star, npm download and YouTube subscriber videos, a 3D lanyard badge generator, plus aspect ratio and timecode tools.",
   path: "/tools",
 });
 

@@ -14,6 +14,11 @@ import { mountRenderHost } from "@genmotion/player";
 import { drawBadge, getBadge } from "./badge";
 import { createEncoder } from "./encode";
 import { createRasterizer } from "./rasterize";
+import { ExportCancelled, downloadBlob, yieldToBrowser, type ExportResult } from "./common";
+
+// Re-exported so callers keep importing the cancel sentinel and the save helper
+// from the module they already use. `export-canvas-video` shares both.
+export { ExportCancelled, downloadBlob, type ExportResult };
 
 export interface ExportOptions {
   scene: ComponentType;
@@ -27,23 +32,6 @@ export interface ExportOptions {
   onProgress?: (progress: number) => void;
   signal?: AbortSignal;
 }
-
-export interface ExportResult {
-  blob: Blob;
-  filename: string;
-  mimeType: string;
-}
-
-export class ExportCancelled extends Error {
-  constructor() {
-    super("Export cancelled");
-    this.name = "ExportCancelled";
-  }
-}
-
-/** Let the browser paint (progress bar, cancel button) between chunks of work. */
-const yieldToBrowser = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
 export async function exportVideo({
   scene,
@@ -130,15 +118,3 @@ export async function exportVideo({
   }
 }
 
-/** Save an exported blob to disk. */
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoking synchronously can cancel the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}

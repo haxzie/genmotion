@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import { Player, defaultPlaybackStore, usePlaybackStore } from "@genmotion/player";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Player, defaultPlaybackStore } from "@genmotion/player";
 import { FaqSection } from "@/components/marketing/faq";
 import { ToolShell } from "@/components/marketing/tool-shell";
 import { MoreTools, ToolSections } from "@/components/marketing/tool-sections";
-import { Button, Spinner, cx } from "@/components/ui";
+import { Button, Spinner } from "@/components/ui";
+import { Chips, Transport } from "@/components/tools/tool-controls";
 import { UpsellModal, type ExportPhase } from "@/components/tools/upsell-modal";
 import { track } from "@/lib/analytics";
 import { getTool } from "@/lib/marketing/tools";
+import { slugify } from "@/lib/video-tools/filename";
 import { getGenerator } from "@/lib/video-tools/registry";
 import { SAMPLES } from "@/lib/video-tools/samples";
 import { usableTemplates } from "@/lib/video-tools/templates";
@@ -337,77 +339,4 @@ export function VideoTool({ slug }: { slug: string }) {
   );
 }
 
-function Chips({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: { value: string; label: string; Icon?: ComponentType<{ className?: string }> }[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="text-[0.857rem] text-text-secondary">{label}</span>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={value === option.value}
-            className={cx(
-              "flex h-8 items-center gap-1.5 rounded-md border px-3 text-[0.9rem] transition-colors duration-150",
-              value === option.value
-                ? "border-border-strong bg-surface-raised text-text-primary"
-                : "border-border text-text-secondary hover:border-border-strong hover:text-text-primary",
-            )}
-          >
-            {option.Icon && <option.Icon className="size-4 shrink-0" />}
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-function Transport() {
-  const frame = usePlaybackStore((s) => s.frame);
-  const isPlaying = usePlaybackStore((s) => s.isPlaying);
-  const toggle = usePlaybackStore((s) => s.toggle);
-  const seek = usePlaybackStore((s) => s.seek);
-
-  return (
-    <div className="flex items-center gap-3">
-      <Button size="sm" onClick={toggle} aria-label={isPlaying ? "Pause" : "Play"}>
-        {isPlaying ? "Pause" : "Play"}
-      </Button>
-      <input
-        type="range"
-        min={0}
-        max={DURATION_IN_FRAMES - 1}
-        value={frame}
-        aria-label="Timeline"
-        onChange={(e) => seek(Number(e.target.value))}
-        className="flex-1 accent-accent"
-      />
-      <span className="w-14 text-right font-mono text-[0.857rem] text-text-tertiary tabular-nums">
-        {(frame / FPS).toFixed(1)}s
-      </span>
-    </div>
-  );
-}
-
-/** Make a title safe for a filename: "facebook/react" -> "facebook-react". */
-function slugify(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "video"
-  );
-}

@@ -323,6 +323,94 @@ export const TOOLS: Tool[] = [
     ],
   },
   {
+    slug: "lanyard-drop-video",
+    name: "3D Lanyard Drop Video Generator",
+    description:
+      "Put your own badge artwork on a 3D lanyard and film it dropping in, twisting through its back and settling.",
+    icon: "lanyard",
+    metaDescription:
+      "Turn your badge artwork into a 3D lanyard drop video. Upload the front and back, pick a size, download an MP4. Free, no sign-up, nothing uploaded.",
+    shortName: "lanyard drop video",
+    steps: [
+      {
+        icon: "upload",
+        title: "Add both faces",
+        body:
+          "Drop in the front of your badge and, if you have one, the back. Choose the card shape and the field tells you the exact pixel size to use, then flags anything too small or the wrong shape before you render.",
+      },
+      {
+        icon: "palette",
+        title: "Pick the scene and size",
+        body:
+          "Studio, Daylight or Neon, with the strap in any of five colours. Then 9:16 for Reels, Shorts and Stories, 1:1 for the feed, or 16:9 for YouTube and slides.",
+      },
+      {
+        icon: "export",
+        title: "Download the MP4",
+        body:
+          "Sixteen seconds: the badge drops in, bounces on the strap, turns onto its back and settles while the camera pushes in. Rendered and encoded in your browser, so your images are never uploaded.",
+      },
+    ],
+    personas: [
+      {
+        icon: "rocket",
+        title: "Conference and event teams",
+        body:
+          "Announce a speaker, a ticket drop or this year's badge with the badge itself, rather than a flat picture of one.",
+      },
+      {
+        icon: "sparkles",
+        title: "Employer brand and recruiting",
+        body:
+          "Welcome a new hire, or show the office pass off in a post that moves, without booking a motion designer for a five second clip.",
+      },
+      {
+        icon: "stars",
+        title: "Merch and swag drops",
+        body:
+          "A lanyard turning in 3D shows both sides of a printed card, so people can read the back before it ships.",
+      },
+    ],
+    faqs: [
+      {
+        q: "How do I make a 3D lanyard video?",
+        a: "Add an image for the front of your badge, optionally one for the back, pick a scene and a size, then press Download. The 16 second MP4 is rendered and encoded in your browser, which takes a few seconds.",
+      },
+      {
+        q: "What size should my badge images be?",
+        a: "It depends on the card shape. A portrait badge wants 1250 × 2000 px (5:8), a square one 1600 × 1600 px, and a landscape press pass 2000 × 1250 px (8:5). Anything smaller than half those numbers will look soft once the card fills the frame, and the tool says so when you drop a file in.",
+      },
+      {
+        q: "Do I need an image for the back of the card?",
+        a: "No. Leave it empty and the card gets a plain back in the scene's own colours. The card still turns through it on the way down, so a back image is worth adding if you have one: a QR code, a schedule, or your terms.",
+      },
+      {
+        q: "Are my images uploaded anywhere?",
+        a: "No. There is no server in this tool at all. The page reads your files, draws them onto the 3D card, and encodes the video, all in your browser, so there is nothing to upload and nothing to delete afterwards.",
+      },
+      {
+        q: "Is this lanyard video generator free?",
+        a: "Yes. It is free, needs no sign-up, and there is no limit on how many videos you make. Videos carry a small GenMotion badge.",
+      },
+      {
+        q: "Why does my badge look cropped?",
+        a: "The artwork fills the card rather than fitting inside it, because a badge with letterbox bars down its sides stops looking like a badge. Upload at the ratio shown for your card shape and nothing is lost. If your art is 16:9, switch the card shape to Landscape.",
+      },
+      {
+        q: "Can I change the lanyard colour?",
+        a: "Yes, there are five strap colours, and each scene starts on the one that suits it. Pick one and it stays picked while you try the other scenes.",
+      },
+      {
+        q: "Can I use the video on social media?",
+        a: "Yes, that is what it is for. Pick 9:16 for Reels, Shorts and Stories, 1:1 for the feed, or 16:9 for YouTube. The MP4 is H.264, which every platform accepts.",
+      },
+      {
+        q: "How long is the video?",
+        a: "Sixteen seconds at 30fps, which is the length the beats need: the drop, the bounce as the strap goes taut, the turn onto the card's back, the settle under a slow push in, and the badge being pulled back out of frame.",
+      },
+    ],
+  },
+  {
     slug: "aspect-ratio-calculator",
     name: "Aspect Ratio Calculator",
     description:
@@ -606,6 +694,7 @@ export const GENERATOR_SLUGS: ReadonlySet<string> = new Set([
   "npm-downloads",
   "youtube-subscribers",
   "product-hunt-launch",
+  "lanyard-drop-video",
 ]);
 
 export function getTool(slug: string): Tool | undefined {

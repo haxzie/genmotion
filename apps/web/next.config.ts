@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
     "@genmotion/motion",
     "@genmotion/player",
     "@genmotion/compiler",
+    "@genmotion/three-engine",
   ],
   async rewrites() {
     return {

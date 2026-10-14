@@ -108,6 +108,25 @@ function ProductHunt({ className }: IconProps) {
  * as the brand. They still take `currentColor`, so they pick up whatever colour
  * the surrounding tile sets (near-white on the tool cards).
  */
+function Lanyard({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M8 2.5 11 9M16 2.5 13 9" />
+      <path d="M11.2 9h1.6a1 1 0 0 1 0 2h-1.6a1 1 0 0 1 0-2Z" />
+      <rect x="6.5" y="11.5" width="11" height="10" rx="1.6" />
+      <path d="M9.5 15.5h5M9.5 18.5h3" />
+    </svg>
+  );
+}
+function Upload({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M12 16V4M8 8l4-4 4 4" />
+      <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
 const brand = {
   viewBox: "0 0 24 24",
   fill: "currentColor",
@@ -157,6 +176,8 @@ export const ICONS = {
   rocket: Rocket,
   producthunt: ProductHunt,
   stars: Stars,
+  lanyard: Lanyard,
+  upload: Upload,
   npm: Npm,
   github: Github,
   youtube: YouTube,
