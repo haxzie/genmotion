@@ -31,10 +31,16 @@ export function createMediaReadinessController(): MediaReadinessController {
  * `onLoad` fires when every started item has settled (errors included), so
  * one promise per busy stretch is enough — the barrier only needs to know
  * whether anything is still in flight right now.
+ *
+ * `waitForIdle` resolves to whether it actually had to wait. A caller that
+ * re-draws afterwards (because an asset that settled during the wait will have
+ * repainted its own canvas) can skip that second draw when nothing was in
+ * flight, which on a scene with no loaders at all is every frame of the
+ * capture.
  */
 export function createLoadingTracker(): {
   manager: THREE.LoadingManager;
-  waitForIdle(): Promise<void>;
+  waitForIdle(): Promise<boolean>;
 } {
   const manager = new THREE.LoadingManager();
   let pending: Promise<void> | null = null;
@@ -52,5 +58,12 @@ export function createLoadingTracker(): {
     settle = null;
   };
 
-  return { manager, waitForIdle: () => pending ?? Promise.resolve() };
+  return {
+    manager,
+    async waitForIdle() {
+      if (!pending) return false;
+      await pending;
+      return true;
+    },
+  };
 }

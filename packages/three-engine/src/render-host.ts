@@ -37,6 +37,34 @@ export interface ThreeRenderHostOptions {
    * 16ms: see `setFrame`'s `live` option and `setDisplayScale` below.
    */
   mode?: "capture" | "preview";
+  /**
+   * Drawing-buffer scale, overriding the display's own.
+   *
+   * The default supersamples at the device pixel ratio because the desktop
+   * export captures at that size and lets ffmpeg scale back down. A host whose
+   * frames are composited by the caller instead — the web tools draw each one
+   * into a 2D canvas and hand it to a WebCodecs encoder — is paying for four
+   * times the shading with nothing downstream to spend it on, and on a scene
+   * with soft shadows that is the difference between an export measured in
+   * seconds and one measured in minutes. Preview mode manages its own buffer
+   * through `setDisplayScale`, so this is a capture-mode setting.
+   */
+  pixelRatio?: number;
+  /**
+   * How the caller gets the pixels, which decides whether a captured frame
+   * has to wait for the compositor.
+   *
+   * `compositor` (the default) is a capture taken from outside the page —
+   * Playwright's screenshot, Electron's `capturePage` — which only sees what
+   * has been composited, so every frame waits two animation frames for that
+   * to have happened. `drawing-buffer` is a caller that reads the canvas
+   * itself, synchronously, with `drawImage` or `readPixels`; the barrier buys
+   * it nothing and costs it everything, because `requestAnimationFrame` stops
+   * firing the moment the window is occluded or the tab goes to the
+   * background. An in-browser export that waits on it does not run slowly, it
+   * stops dead until the user comes back.
+   */
+  readback?: "compositor" | "drawing-buffer";
 }
 
 export interface SetFrameOptions {
@@ -131,7 +159,7 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
   container.appendChild(canvas);
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  let pixelRatio = capturePixelRatio();
+  let pixelRatio = options.pixelRatio ?? capturePixelRatio();
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height, false);
   renderer.setClearColor(0x000000, 0);
@@ -278,19 +306,22 @@ export function mountThreeRenderHost(options: ThreeRenderHostOptions): ThreeRend
       // playback keep up with the display instead of running at half of it.
       if (live) return;
 
-      await tracker.waitForIdle();
-      // An asset that settled during that wait repaints its layer's canvas
-      // after the draw above, so the framebuffer still holds the frame without
-      // it. Draw once more before the barrier: a single-frame capture (a
-      // poster) would otherwise show every image-backed layer empty.
-      if (activeScene) renderer.render(activeScene, activeCamera);
+      // An asset that settles during this wait repaints its layer's canvas
+      // after the draw above, so the framebuffer would still hold the frame
+      // without it: draw once more before the barrier, or a single-frame
+      // capture (a poster) shows every image-backed layer empty. Only when
+      // something was actually in flight, though — on a scene whose textures
+      // are all canvases there is nothing to have changed, and re-drawing is
+      // half the GPU cost of the whole capture for nothing.
+      const waited = await tracker.waitForIdle();
+      if (waited && activeScene) renderer.render(activeScene, activeCamera);
       // The paint barrier is the capture's, not the picture's: a caller that
       // grabs pixels needs the compositor to have taken this draw, and waiting
       // two animation frames is how that is known. On screen nobody reads the
       // pixels back, and making a scrub wait two frames for a draw the GPU
       // already has is exactly the lag that makes dragging the playhead feel
       // like it is trailing the pointer.
-      if (preview) return;
+      if (preview || options.readback === "drawing-buffer") return;
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
