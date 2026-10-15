@@ -1,0 +1,63 @@
+{
+  "name": "Fomo crypto app launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1280,
+  "height": 720,
+  "scenes": [
+    {
+      "file": "scenes/01-search.ts",
+      "durationInFrames": 116,
+      "name": "Search just got"
+    },
+    {
+      "file": "scenes/02-easier.ts",
+      "durationInFrames": 64,
+      "name": "Easier"
+    },
+    {
+      "file": "scenes/03-coin-flip.ts",
+      "durationInFrames": 29,
+      "name": "Coin flip"
+    },
+    {
+      "file": "scenes/04-coin-train.ts",
+      "durationInFrames": 46,
+      "name": "Coin train"
+    },
+    {
+      "file": "scenes/05-tokens.ts",
+      "durationInFrames": 300,
+      "name": "Tokens + find others"
+    },
+    {
+      "file": "scenes/06-traders.ts",
+      "durationInFrames": 168,
+      "name": "Traders"
+    },
+    {
+      "file": "scenes/07-clans.ts",
+      "durationInFrames": 134,
+      "name": "Clans"
+    },
+    {
+      "file": "scenes/08-outro.ts",
+      "durationInFrames": 142,
+      "name": "Try smarter search"
+    }
+  ],
+  "audio": [
+    {
+      "id": "soundtrack",
+      "file": "assets/fomo-soundtrack.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 999,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
