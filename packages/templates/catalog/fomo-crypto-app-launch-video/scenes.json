@@ -1,0 +1,323 @@
+{
+  "arc": "hook (a coin becomes a search pill and 'search' types in) → turn ('easier' focuses in on white, a feather becomes the coin) → transition (the coin flips flat into a train of token coins) → feature (the phone's token list) → feature (the trader leaderboard scrolls) → feature (clan cards collapse into a list, the clan page pushes in) → cta ('try smarter search on fomo' resolves into the wordmark)",
+  "scenes": [
+    {
+      "file": "scenes/01-search.ts",
+      "title": "Logo coin becomes a magnifier inside a frosted search pill as the word types in",
+      "beat": "hook",
+      "alsoFits": [
+        "reveal",
+        "brand"
+      ],
+      "summary": "On a blue-violet vertical gradient with a faint starfield, the round fomo coin (a blue disc with two big cartoon eyes) spins in at centre from 210° of yaw, settles, and blinks. A frosted translucent pill grows out of it from 120px square to 599x167, the coin slides left and sprouts a short white magnifier handle, and the word \"search\" types in one letter per frame behind a blinking caret. From frame 59 a soft wipe chases the coin and folds the pill and the word away as the coin dives off to the right. Shot B picks the coin up big on the left, sweeping up and right along an S-curve while a blue ribbon trail pays out behind it, uncovering \"just got\" set along the ribbon's centre line as the starfield streaks past.",
+      "build": "Perspective stage at 1 unit = 1 px (components/stage.ts) so every number is a composition pixel. All motion is per-frame keyframe tables fed to curve()/linear()/step() in components/keys.ts, one table per channel (x, y, diameter, yaw, roll, eye-look, blink). The coin is built in geometry by components/logo.ts, with pose() setting centre/diameter/rotation and the eyes driven by separate look and blink scalars. The pill is a shader-fed rounded rect (components/shapes.ts) with its own width/height/alpha curves, the word is a canvas-texture mesh with a reveal count and a wipe-edge x uniform, and the ribbon is components/pathtext.ts: a polyline of px samples swept into a strip, with the second word laid along the same path.",
+      "reuse": "Borrow for any opener that turns a brand mark into a search bar, or the generic beat of a logo flying in, forming a UI element, and leaving a trail that writes the next word. Swap the word, the pill size and the palette in components/brand.ts, and replace components/logo.ts with your own mark. The reusable ideas are the mark-as-magnifier-lens trick, the one-letter-per-frame type with a blinking caret, and the ribbon that doubles as the path for text. The eyes and the exact tracked curves are fomo's, so retime rather than copy verbatim.",
+      "techniques": [
+        "typing-input",
+        "typewriter",
+        "kinetic-type",
+        "logo-reveal",
+        "streak-trail",
+        "gradient-bg",
+        "particles",
+        "mask-reveal",
+        "procedural-geometry",
+        "3d-camera-move"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "app-store-preview",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.25,
+        0.49,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/02-easier.ts",
+      "title": "\"easier\" focuses in on white while a feather swoops past and becomes the logo coin",
+      "beat": "turn",
+      "alsoFits": [
+        "benefit",
+        "transition"
+      ],
+      "summary": "Hard cut to a white frame. The single word \"easier\" arrives out of focus and resolves to sharp while slowly shrinking, dark ink on white. A soft blue illustrated feather swoops up from the lower left on a long arc, hangs for a beat beside the word, then drifts back down and morphs into the fomo coin, which tumbles up and to the left as the camera tilts away toward the next shot.",
+      "build": "Orthographic stage (orthoStage) so the white frame stays flat. The focus pull is a blur amount driven from a keyframe table and applied as a shader uniform on the canvas-texture word, paired with an independent size curve, so 'blurry and big resolving to sharp and small' is two curves rather than a camera move. The feather is a single textured plane whose centroid, axis angle, length and width were tracked per reference frame and are replayed as four curves, which is what makes a flat image read as hand-animated. The handoff to the coin is a crossfade between the feather plane and components/logo.ts at the moment their tracked transforms coincide.",
+      "reuse": "Use as a one-word punctuation beat between two louder scenes, or any 'cut to white, state the benefit' turn. Swap the word, the ink colour and the flying element; the feather is one PNG with alpha and can be any mark. The reusable ideas are the blur-plus-shrink focus pull (cheaper and more controllable than a real DOF pass) and the four-curve centroid/angle/length/width rig for flying a flat image on an arc.",
+      "techniques": [
+        "focus-pull",
+        "kinetic-type",
+        "photo-media",
+        "morph",
+        "hard-cut",
+        "camera-move"
+      ],
+      "mood": [
+        "clean",
+        "bright",
+        "calm"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting",
+        "explainer"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/03-coin-flip.ts",
+      "title": "The logo coin tips past edge-on and falls flat into frame over concentric sonar rings",
+      "beat": "transition",
+      "alsoFits": [
+        "brand",
+        "atmosphere"
+      ],
+      "summary": "A 29-frame bridge. The coin lies face-up at the bottom of the frame, tips back until it is edge-on and nearly invisible, then falls forward onto its face and swells until it fills the frame, turning as it goes. Behind it a set of concentric sonar discs shrinks inward as the camera closes, so the background reads as a push even though nothing translates.",
+      "build": "Orthographic camera driven by per-frame ellipse fits of the coin face in the reference: centre, long-axis angle, diameter, and the minor-over-major ratio converted to a tilt angle, plus a separate fit of the eye line for roll. orient() in components/logo.ts takes those four scalars directly, so the whole shot is four curves and no quaternion maths. The sonar backdrop (components/background.ts) is a full-frame clip-space shader with ring centre, spacing, first radius and count as uniforms, so shrinking the rings is one number.",
+      "reuse": "A short, reusable 'cut on the logo' bridge for getting from one look to another without a dissolve. Swap the mark and the ring colour. The reusable ideas are the ellipse-fit parameterisation (centre, angle, diameter, tilt) for flipping any disc convincingly, and driving a background push by shrinking a ring pattern instead of moving a camera.",
+      "techniques": [
+        "logo-reveal",
+        "match-cut",
+        "push-in",
+        "orbit-ring",
+        "custom-shader",
+        "scale-in"
+      ],
+      "mood": [
+        "playful",
+        "bright"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "brand-sting",
+        "announce-feature"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.55,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/04-coin-train.ts",
+      "title": "A train of token coins sweeps through black on one shared circular path",
+      "beat": "transition",
+      "alsoFits": [
+        "integrations",
+        "atmosphere"
+      ],
+      "summary": "Cut to black. The fomo coin flies off to the right and a line of minted token coins sweeps through frame one after another, each catching the light as it passes: Solana, Bitcoin, Ethereum, Uniswap, Hyperliquid, Robinhood and X marks on coloured discs with pale rims. They share one arc but sit at different depths, so the near ones blur past while the far ones hang, and all of them turn together from wall-on-the-right to wall-on-the-left as they arrive.",
+      "build": "A perspective camera at the measured focal length of 2529 composition px (components/train.ts), with all coins riding a single circle of radius 5.30 centred at (-0.12, -4.39), 15.47 degrees apart, each at its own z. One shared phase S(t) eases in, slows through the middle and accelerates out, so the whole train is one curve plus a constant per-coin offset; a single shared yaw curve turns every face. components/tokens.ts mints each disc from a Path2D SVG mark painted into an offscreen canvas, so a coin is one entry in the TRAIN array of [kind, index, depth] and a new mark is one path string.",
+      "reuse": "Borrow for any 'the ecosystem goes by' or logo-parade beat, or as a black bridge between two bright sections. Swap the marks in the FACE table in components/tokens.ts and the TRAIN array. The reusable idea is the one-circle-one-phase rig: N objects on a shared path with per-object angular offsets and depths costs one curve to retime, which is far easier to keep in sync than N animations. Works equally well for app icons or customer logos.",
+      "techniques": [
+        "coins",
+        "3d-objects",
+        "logo-orbit",
+        "depth-parallax",
+        "motion-blur",
+        "3d-camera-move",
+        "stagger-cascade"
+      ],
+      "mood": [
+        "dark",
+        "techy",
+        "energetic"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/05-tokens.ts",
+      "title": "Tab row scrolls in word by word and a phone rises showing a live token list",
+      "beat": "feature",
+      "alsoFits": [
+        "reveal",
+        "data"
+      ],
+      "summary": "The coin train carries on over the gradient and sweeps down-right out of frame. The tab row \"All Tokens Traders Clans\" scrolls in a word at a time at large type, then the phone rises into frame showing the token list: SOL at $77.66 and $41.9B MC up 2.70%, CASHCAT at $0.118 down 8.10%, ANSEM at $0.250 up 20.80%, UNI at $3.27 up 0.90%, each with an avatar and a chain chip. The phone flies off and the word \"search\" returns, resolving into \"to find others\" among floating trader avatars before the tab row comes back.",
+      "build": "components/phone.ts is the reusable piece: a phone shell plus a Painter API (statusBar, tabPills, txt, rrect, image) that draws the screen into an offscreen canvas in iOS points, which is then used as a texture. Screen content is data, so the token list is a four-row array of [name, chip, market cap, price, up?, change, avatar]. Chain chips and the coin-train faces are Path2D SVG marks from components/tokens.ts drawn inline rather than loaded as images, while the row avatars are ordinary PNGs. The phone pose rides the same trainCamera rig as scene 4, so the handoff from the coin train is continuous, and the floating avatars are components/bubble.ts circular textured billboards.",
+      "reuse": "The anchor scene for any app-launch beat that has to show a feed, a list or a leaderboard on a phone. Replace the TOKENS array and the avatars in assets/ui/ and the screen is yours; the Painter helpers keep the typography and spacing consistent. The reusable ideas are a canvas-painted phone screen (crisper and far cheaper than modelling UI in 3D), a tab row that scrolls in word by word at headline size before shrinking into the UI, and reusing one camera rig across scenes so a cut reads as a continuous move.",
+      "techniques": [
+        "phone-mockup",
+        "ui-mockup",
+        "scroll-list",
+        "device-mockup",
+        "word-by-word",
+        "kinetic-type",
+        "avatar-stream",
+        "coins",
+        "gradient-bg",
+        "3d-camera-move"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "app-store-preview",
+        "demo-walkthrough",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.45,
+        0.8
+      ]
+    },
+    {
+      "file": "scenes/06-traders.ts",
+      "title": "Avatars fly into a trader leaderboard and the camera glides up the scrolling list",
+      "beat": "feature",
+      "alsoFits": [
+        "proof",
+        "data"
+      ],
+      "summary": "A cursor taps \"Traders\" and the tab lights. Five trader avatars fly in from off screen and land in their rows, which fade in under them: Nadia @nadiatrades +$77.5K with 29.3K followers, moo capital +$70K, Jae +$56.7K, 0xSofia +$45.6K, Benji +$38.2K, and further down Priya M, Miko at -$12.4K in red, PoorGoat, Ser Albert, Raizel and more, each with a Follow or Following control. The phone then glides up the list for three seconds with a \"Paste\" toast and a frosted glass tab bar riding along with it, before \"Clans\" rises into the tab row and the row shrinks away.",
+      "build": "Same phone and Painter rig as scene 5, with the list as a thirteen-row array of [name, handle, pnl, follower count, followed?, avatar]. The scroll is a single phone-pose curve rather than a scrolling texture, so the whole screen including the toast and the glass bar moves as one object and stays frame-exact. The avatar fly-in is per-row position and alpha curves staggered by index, landing each face into the slot the painted row already reserves for it. The person-plus glyph and the follower icon are drawn with 2D canvas primitives, not loaded as assets.",
+      "reuse": "Borrow for a leaderboard, a feed, a directory or any 'look how many people are here' proof beat. Swap the TRADERS array and the avatars; keep the structure of a few named rows flying in while the rest fade up, which makes a long list feel populated without animating every row. The reusable ideas are moving the phone rather than the content to scroll, the ride-along pinned overlay (toast plus glass tab bar), and a cursor tap that lights a tab as the scene's entry.",
+      "techniques": [
+        "phone-mockup",
+        "scroll-list",
+        "ui-mockup",
+        "cursor-click",
+        "avatar-stream",
+        "stagger-cascade",
+        "notifications",
+        "camera-move"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "app-store-preview",
+        "demo-walkthrough",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.88
+      ]
+    },
+    {
+      "file": "scenes/07-clans.ts",
+      "title": "Clan rows arrive as big frosted cards, collapse into a list, and the detail page pushes in",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "proof"
+      ],
+      "summary": "A cursor taps \"Clans\". Three clan rows arrive as large frosted cards floating in front of the phone and shrink into their list slots: Conviction Capital +$118.4K with 24 members, Heaven +$93.5K with 11, Fantom Troupe +$87.9K with 10. A purple glow lights the first row and sweeps across it as the tap registers, then the clan page pushes in from the right. The phone then rides up the page past a banner image, the Clan PnL figure, ETH and SOL chips, a Follow all control, and the member list: John Doe @fomo +$91,240.00 badged \"You\", PoorGoat +$21,983.00, Jack, cryptoolin and aboc.",
+      "build": "Both pages live on one wide strip so the iOS push transition is a single x offset on one object, with no cross-page state to keep in sync. The frosted cards and the list rows are the same clanRow painter called at two scales, so a card that shrinks into a row is literally the same drawing, which is what makes the collapse land exactly. The tap glow is a rounded-rect overlay (components/shapes.ts) with a moving highlight x. Screen content is laid out in iOS points measured on unwarped reference frames, and the phone pose was tracked from its screen edges and, once those leave frame, by strip correlation.",
+      "reuse": "Borrow for a 'tap a row, go to the detail page' workflow beat, or a community/group/team page in any app. Swap the CLANS and MEMBERS arrays and the art in assets/ui/. The reusable ideas are the one-strip push transition, drawing a card and its collapsed list row with one painter so the two always match, and a sweeping glow as a tap acknowledgement. Longest scene in the film at 134 frames, so expect to retime if your page is shorter.",
+      "techniques": [
+        "phone-mockup",
+        "ui-mockup",
+        "cards-stack",
+        "scroll-list",
+        "cursor-click",
+        "light-sweep",
+        "glow",
+        "scale-out",
+        "camera-move",
+        "photo-media"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "app-store-preview",
+        "demo-walkthrough",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/08-outro.ts",
+      "title": "\"try smarter search on fomo\" assembles a word at a time and resolves into the wordmark",
+      "beat": "cta",
+      "alsoFits": [
+        "logo",
+        "brand"
+      ],
+      "summary": "\"try smarter\" rises from below and focuses in from blur to sharp. A faint blue magnifier rides beside it, blinks into a white search pill, and the word \"search\" slides in from the pill's right edge. The whole line re-centres as \"on\" and the fomo wordmark rise into place to complete \"try smarter [search] on fomo\", pulls back slowly, then shrinks and blurs away. Cut to the full fomo wordmark alone, focusing in and settling on the gradient.",
+      "build": "The line is one group in \"line space\": origin at the \"try\" baseline, 1 unit = 1 px at the size the line has on frame 866, so re-centring and pulling back are a single transform on the group while each word keeps its own local entrance. That is the trick worth stealing: a growing sentence whose layout keeps changing is much easier as one group transform plus per-word offsets than as absolute positions. The wordmark is built in geometry by components/wordmark.ts (no image), and the focus pull is the same blur uniform plus size curve as scene 2.",
+      "reuse": "Use as an end card for any product whose name finishes a sentence. Swap the words, the pill and components/wordmark.ts for your own logotype, and add a URL line under the mark if you need one. The reusable ideas are line space for an assembling sentence, a UI element (the search pill) used as a word inside the copy, and ending on the mark alone rather than on the sentence.",
+      "techniques": [
+        "kinetic-type",
+        "lockup",
+        "logo-reveal",
+        "focus-pull",
+        "end-card",
+        "word-by-word",
+        "gradient-bg"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "brand-sting",
+        "announce-feature",
+        "app-store-preview"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.25,
+        0.6,
+        0.92
+      ]
+    }
+  ]
+}
