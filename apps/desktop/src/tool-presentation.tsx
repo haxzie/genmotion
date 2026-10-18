@@ -198,6 +198,54 @@ const ListGlyph = ({ className }: { className?: string }) => (
 );
 
 
+const PlugGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
+  </svg>
+);
+/** A skill: the recipe, not the search. */
+const SkillGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 14 9.5 6.5" />
+    <path d="M11.4 1.4l.75 1.85 1.85.75-1.85.75-.75 1.85-.75-1.85-1.85-.75 1.85-.75.75-1.85Z" />
+    <path d="M5 2.4l.42 1.04 1.04.42-1.04.42L5 5.32l-.42-1.04-1.04-.42 1.04-.42L5 2.4Z" />
+  </svg>
+);
+/**
+ * A strip of film: the scene library.
+ *
+ * The sprockets are the whole glyph. Without them a framed rectangle divided
+ * into cells reads as a table at 14px, which is what the first attempt did.
+ */
+const FilmGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
+    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+    <path d="M4.6 2.5v11M11.4 2.5v11" />
+    <path d="M2.9 5.1h.4M2.9 8h.4M2.9 10.9h.4M12.7 5.1h.4M12.7 8h.4M12.7 10.9h.4" strokeLinecap="round" strokeWidth="1.5" />
+  </svg>
+);
+/** Two frames, one laid over the other: borrowing a scene rather than reading it. */
+const ForkGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+    <rect x="5.5" y="5.5" width="9" height="9" rx="1.5" />
+    <path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.5" strokeLinecap="round" />
+  </svg>
+);
+/**
+ * Three swatches: the brand's palette.
+ *
+ * A painter's palette was the obvious drawing and the wrong one — at this size
+ * the thumb-hole and the paint dots collapse into a broken circle. Swatches
+ * survive being small, and one filled chip says which is the primary.
+ */
+const BrandGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.3">
+    <rect x="1.2" y="4.5" width="4.1" height="7" rx="1.1" fill="currentColor" stroke="none" />
+    <rect x="6" y="4.5" width="4.1" height="7" rx="1.1" />
+    <rect x="10.8" y="4.5" width="4" height="7" rx="1.1" />
+  </svg>
+);
+
 registerToolPresentation({
   // The card itself lives above the composer (`AskQuestionPanel`), and
   // `chat-panel` keeps the call out of the transcript entirely. The entry is
@@ -532,6 +580,74 @@ registerToolPresentation({
     subject: () => undefined,
   },
 
+  mcp__genmotion__search_skills: {
+    labels: { active: "Finding the right skill", done: "Found the right skill" },
+    icon: SkillGlyph,
+    subject: (part) => truncate(str(part, "query"), 60),
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
+  mcp__genmotion__search_scenes: {
+    labels: { active: "Searching the scene library", done: "Searched the scene library" },
+    icon: FilmGlyph,
+    // The query if there is one; a bare template means "show me its whole arc".
+    subject: (part) => truncate(str(part, "query"), 60) ?? str(part, "template") ?? str(part, "beat"),
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
+  mcp__genmotion__get_scene: {
+    labels: { active: "Reading a scene", done: "Read a scene" },
+    icon: EyeGlyph,
+    subject: (part) => str(part, "id"),
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
+  mcp__genmotion__fork_scene: {
+    labels: { active: "Borrowing a scene", done: "Borrowed a scene" },
+    icon: ForkGlyph,
+    subject: (part) => str(part, "name") ?? str(part, "id"),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__brand_overview: {
+    labels: { active: "Reading the brand", done: "Read the brand" },
+    icon: BrandGlyph,
+    subject: () => undefined,
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
+  mcp__genmotion__use_brand_asset: {
+    labels: { active: "Taking a brand file", done: "Took a brand file" },
+    icon: BrandGlyph,
+    subject: (part) => shortPath(str(part, "filename", "file")),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__validate_composition: {
+    labels: { active: "Checking the composition", done: "Checked the composition" },
+    icon: CheckGlyph,
+    subject: () => undefined,
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={/^(FAILED|INVALID)/.test(text) ? "warning" : undefined} />;
+    },
+  },
+
+  // The card the user actually acts on is the Connect offer `chat-panel`
+  // renders; this is the transcript's record that it was made.
+  mcp__genmotion__recommend_integration: {
+    labels: { active: "Suggesting an integration", done: "Suggested an integration" },
+    icon: PlugGlyph,
+    subject: (part) => str(part, "serverId"),
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
   mcp__genmotion__generate_image: {
     labels: { active: "Generating image", done: "Generated image" },
     icon: ImageGlyph,
@@ -542,12 +658,6 @@ registerToolPresentation({
     },
   },
 });
-
-const PlugGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
-  </svg>
-);
 
 /**
  * The mark on a call to a user's MCP server: the server's own icon, looked up
@@ -578,5 +688,36 @@ registerToolPresentationFallback((name) => {
     icon: (props) => <McpServerGlyph server={mcp.server} {...props} />,
     subject: () => mcp.server,
     body: (part) => <Text value={outputText(part)} />,
+  };
+});
+
+/** A wrench: one of ours with no card of its own yet. */
+const ToolGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.3 1.9a3.6 3.6 0 0 0-4.2 4.7L2 10.7a1.6 1.6 0 0 0 2.3 2.3l4.1-4.1a3.6 3.6 0 0 0 4.7-4.2l-2 2-1.8-.5-.5-1.8 2-2Z" />
+  </svg>
+);
+
+/**
+ * One of ours that nothing above claims.
+ *
+ * Every GenMotion tool deserves its own card, and the eight that reach the
+ * chat have one. This is for the next one somebody adds: a readable label and
+ * a mark, rather than `mcp__genmotion__whatever` beside a grey dot, which is
+ * what the transcript showed for months because the MCP fallback skipped our
+ * own server on purpose.
+ */
+registerToolPresentationFallback((name) => {
+  const mcp = parseMcpToolName(name);
+  if (!mcp || mcp.server !== "genmotion") return undefined;
+  const tool = mcp.tool.replace(/[_-]+/g, " ");
+  return {
+    labels: { active: `Using ${tool}`, done: `Used ${tool}` },
+    icon: ToolGlyph,
+    subject: () => undefined,
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={/^(FAILED|INVALID)/.test(text) ? "warning" : undefined} />;
+    },
   };
 });

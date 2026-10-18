@@ -210,8 +210,18 @@ export function mcpToolName(serverId: string, tool: string): string {
   return `mcp__${serverId}__${tool}`;
 }
 
+/**
+ * Split `mcp__<server>__<tool>` back apart.
+ *
+ * Non-greedy on the server, so it stops at the first `__`. `mcpServerId` never
+ * puts an underscore in an id, but this also reads names from servers this app
+ * did not configure, and those do: Claude Code's own connectors arrive as
+ * `mcp__claude_ai_Firecrawl__firecrawl_search`. A server pattern of `[^_]+`
+ * returned null for every one of them, which cost each a chat icon, a readable
+ * label and its `mcp_tool_called` event.
+ */
 export function parseMcpToolName(name: string): { server: string; tool: string } | null {
-  const match = /^mcp__([^_]+)__(.+)$/.exec(name);
+  const match = /^mcp__(.+?)__(.+)$/.exec(name);
   if (!match?.[1] || !match[2]) return null;
   return { server: match[1], tool: match[2] };
 }

@@ -23,6 +23,16 @@ describe("tool names", () => {
       tool: "ask_question",
     });
     expect(parseMcpToolName("Write")).toBeNull();
+    // Servers this app did not name: Claude Code's own connectors carry
+    // underscores in the server segment, and the split is on the first `__`.
+    expect(parseMcpToolName("mcp__claude_ai_Firecrawl__firecrawl_search")).toEqual({
+      server: "claude_ai_Firecrawl",
+      tool: "firecrawl_search",
+    });
+    expect(parseMcpToolName("mcp__genmotion__generate_typing_sound")).toEqual({
+      server: "genmotion",
+      tool: "generate_typing_sound",
+    });
   });
   it("slugs a name into something safe as a prefix", () => {
     expect(mcpServerId("DeepWiki custom")).toBe("deepwiki-custom");
