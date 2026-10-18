@@ -154,3 +154,49 @@ body,
     --brand-angle: 300deg;
   }
 }
+
+/*
+ * The colour picker in Brands (react-colorful).
+ *
+ * Every rule here is scoped under `.gm-color-panel` on purpose. The library
+ * appends its own stylesheet to <head> at first render, which puts it AFTER
+ * this file's <link>, so a bare `.react-colorful { width: 100% }` loses the
+ * cascade on a tie and silently does nothing. That is what left the saturation
+ * square at its fixed 200px inside a 216px panel: flush to the left edge with
+ * a strip of dead space down the right. Two classes beat one, whatever the
+ * order.
+ */
+.gm-color-panel .react-colorful {
+  width: 100%;
+  /* 150 square + 10 gap + 12 rail. */
+  height: 172px;
+  gap: 10px;
+}
+
+.gm-color-panel .react-colorful__saturation {
+  /* The library separates the two controls with a 12px black bottom border,
+     which reads as a bar wedged between them. The gap above replaces it. */
+  border-bottom: none;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.gm-color-panel .react-colorful__hue {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.gm-color-panel .react-colorful__pointer {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.45),
+    inset 0 0 0 1px rgb(0 0 0 / 0.15);
+}
+
+/* Small enough to read as riding the 12px rail rather than swallowing it. */
+.gm-color-panel .react-colorful__hue .react-colorful__pointer {
+  width: 14px;
+  height: 14px;
+}

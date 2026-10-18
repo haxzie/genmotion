@@ -1,6 +1,13 @@
 import { cx } from "@/components/ui";
 
-/** One card on a settings page. */
+/**
+ * One card on a configuration page.
+ *
+ * Shared by Settings and Brands, which are the same kind of screen: a column
+ * of short, titled groups that someone scans and changes one value in. Lives
+ * here rather than under `screens/settings` because neither screen owns the
+ * other\u2019s furniture, and the two looking identical is the point.
+ */
 export function Section({
   title,
   description,

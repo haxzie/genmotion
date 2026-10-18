@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import type { NativeImage } from "electron";
+import { isInsideProject, saveAssetBytes } from "./asset-writer";
 import { z } from "zod";
 import { forkScene, readManifest, type ProjectEngine, type SceneFork } from "@genmotion/project";
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
@@ -896,6 +897,44 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       return recommendIntegration(serverId);
     },
   },
+
+  {
+    name: "brand_overview",
+    description:
+      "The brand this video is being made for, as the user recorded it: the exact colours and their roles, the typefaces, the real logo files, their own written notes, and what else is in the brand folder — reference work they consider on-brand, product shots, fonts. Call it before planning a video for a brand: the palette and type are already in the system prompt, but this is where the notes, the references and the full file list are, and reading those first is the difference between on-brand and nearly. Returns a short answer when no brand is attached, which is the normal case.",
+    shape: {},
+    readOnly: true,
+    async run(session) {
+      const { brandOverview } = await import("../brands/overview");
+      return text(await brandOverview(session.dir));
+    },
+  },
+
+  {
+    name: "use_brand_asset",
+    description:
+      "Copy one file out of the attached brand's folder into the project's assets/brand/, and return the path to import. This is how a logo, a licensed font file, a product shot or a reference screenshot gets into a video: the brand folder is the user's own and you cannot write to it, and a scene that imports a path outside the project builds for nobody else and will not export. Take the path from brand_overview. Logos are copied in already, so this is for everything else.",
+    shape: {
+      file: z
+        .string()
+        .min(1)
+        .describe('Path within the brand folder, as brand_overview lists it, e.g. "references/launch-poster.png"'),
+      filename: z
+        .string()
+        .optional()
+        .describe("Preferred name in the project. The brand file's own name if omitted."),
+    },
+    async run(session, args) {
+      const { file, filename } = args as unknown as { file: string; filename?: string };
+      const { useBrandAsset } = await import("../brands/overview");
+      try {
+        const saved = await useBrandAsset(session.dir, file, filename);
+        return text(`Copied to ${saved}\n\n${usageFor(saved, session.engine)}`);
+      } catch (err) {
+        return failure(`FAILED — ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+  },
 ];
 
 /**
@@ -1735,36 +1774,4 @@ async function generateClickSound(
       "than one click in isolation.",
     ].join("\n"),
   );
-}
-
-async function saveAssetBytes(
-  projectDir: string,
-  body: Buffer,
-  preferred: string,
-  fallbackExt: string,
-): Promise<string> {
-  const base = (preferred || "asset").replace(/[^\w.\- ]+/g, "_").slice(0, 80);
-  const ext = path.extname(base) || fallbackExt || "";
-  const stem = ext ? base.slice(0, base.length - path.extname(base).length) || "asset" : base;
-
-  await fs.mkdir(path.join(projectDir, "assets"), { recursive: true });
-  for (let n = 0; n < 200; n++) {
-    const rel = `assets/${stem}${n === 0 ? "" : `-${n + 1}`}${ext}`;
-    const target = path.join(projectDir, rel);
-    if (!isInsideProject(projectDir, rel)) throw new Error("Refusing to write outside the project");
-    const taken = await fs
-      .access(target)
-      .then(() => true)
-      .catch(() => false);
-    if (taken) continue;
-    await fs.writeFile(target, body);
-    return rel;
-  }
-  throw new Error("Could not find a free filename in assets/");
-}
-
-/** Keep writes inside the project folder, whatever the model asks for. */
-export function isInsideProject(projectDir: string, candidate: string): boolean {
-  const rel = path.relative(projectDir, path.resolve(projectDir, candidate));
-  return !rel.startsWith("..") && !path.isAbsolute(rel);
 }

@@ -123,6 +123,12 @@ function Shell() {
    * happen here, on send, so browsing the gallery (or following the web site's
    * remix link) never writes a project nobody asked for. The template's own
    * dimensions win over the aspect picker — it is already that shape.
+   *
+   * `brandId` is the brand picker, and it travels on the create or the remix
+   * rather than being attached afterwards: the main process syncs a brand into
+   * a project as it opens, and the first message is sent the moment the tab
+   * appears. Attaching after the fact would make the opening turn of a new
+   * project the one turn that goes out off-brand.
    */
   const create = useCallback(
     async ({
@@ -131,12 +137,14 @@ function Shell() {
       height,
       files,
       templateId,
+      brandId,
     }: {
       prompt: string;
       width: number;
       height: number;
       files: File[];
       templateId?: string;
+      brandId?: string;
     }) => {
       setBusy(true);
       try {
@@ -145,8 +153,8 @@ function Shell() {
         // template's name, which already describes the video.
         const name = prompt.split(/\s+/).slice(0, 6).join(" ").slice(0, 48);
         const project = templateId
-          ? await api.remixTemplate({ templateId })
-          : await api.createProject({ name, width, height });
+          ? await api.remixTemplate({ templateId, ...(brandId ? { brandId } : {}) })
+          : await api.createProject({ name, width, height, ...(brandId ? { brandId } : {}) });
         // Files attached on the start screen go into the new project's
         // assets now, before the tab opens, so the first message can carry
         // them as context the way a drop into the chat would. One that fails

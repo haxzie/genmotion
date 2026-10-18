@@ -78,6 +78,11 @@
       "why": "Every stage of the reveal is checked as a frame."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The product's real mark and packaging colours."
+    },
+    {
       "kind": "skill",
       "id": "three-look",
       "engines": [
@@ -148,6 +153,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "icon": "📦"
 }

@@ -10,9 +10,10 @@ import {
   DISALLOWED_TOOLS,
   READ_ONLY_TOOLS,
   createGenmotionTools,
-  isInsideProject,
 } from "./tools";
-import { isReadable, listReadRoots } from "./read-roots";
+import { isInsideProject } from "./asset-writer";
+import { isInside, isReadable, listReadRoots } from "./read-roots";
+import { brandForTurn } from "../brands/resolve";
 import { getLaunchDir } from "../cli";
 import { genmotionPluginDir, pluginDir } from "../hyperframes/vendor";
 import { userSkillIds, userSkillPlugin } from "../skills/plugin";
@@ -46,6 +47,10 @@ function describeTool(name: string, input: unknown): string {
       return typeof values.skill === "string" ? `Reading the ${values.skill} skill` : "Reading a skill";
     case "mcp__genmotion__project_overview":
       return "Reading the timeline";
+    case "mcp__genmotion__brand_overview":
+      return "Reading the brand";
+    case "mcp__genmotion__use_brand_asset":
+      return short ? `Taking ${short} from the brand` : "Taking a file from the brand";
     case "WebSearch":
       return "Searching the web";
     case "WebFetch":
@@ -160,7 +165,14 @@ async function turnOptions(
   executable: string | null,
 ) {
   const projectDir = session.dir;
-  const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
+  // Resolved before the read roots, because an attached brand becomes one of
+  // them: a grant is what opens the folder, and the prompt block below is
+  // only what tells the agent it is there and what is in it.
+  const brand = await brandForTurn(projectDir, session.engine);
+  const readRoots = [
+    ...(await listReadRoots(projectDir)).map((root) => root.path),
+    ...(brand ? [brand.dir] : []),
+  ];
   // Null when the user has not chosen one, which leaves the CLI on whatever it
   // considers default — the same thing they would get in a terminal.
   const model = await activeModel("claude-code").catch(() => null);
@@ -189,7 +201,7 @@ async function turnOptions(
     // for the steps that need it, and a user chasing a harder edit can turn
     // it up.
     effort,
-    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine, theirs),
+    systemPrompt: buildSystemPrompt(readRoots, getLaunchDir(), session.engine, theirs, brand),
     // Folders the user has shared. The CLI refuses a path outside its working
     // roots before `canUseTool` is ever consulted, so a grant has to be
     // declared here too — this opens the door, and the callback below is what
@@ -291,14 +303,24 @@ async function turnOptions(
         // has shared the folder it points into. Nothing that writes can, ever:
         // the project folder is the only thing this agent may change, and a
         // shared folder is somebody's own work, not a scratch space.
-        if (READ_ONLY_TOOLS.has(toolName) && (await isReadable(projectDir, target))) {
+        // The attached brand's folder is readable the same way a shared one
+        // is, and granted the same way to the CLI above. It is passed in
+        // rather than looked up so the two lists cannot disagree.
+        const brandRoots = brand ? [brand.dir] : [];
+        if (READ_ONLY_TOOLS.has(toolName) && (await isReadable(projectDir, target, brandRoots))) {
           return { behavior: "allow" as const, updatedInput: input };
         }
+        // A write aimed at the brand folder is the one refusal with an obvious
+        // next move, so it gets named: the agent is almost always trying to
+        // bring a file out of it, which is a tool call rather than a copy.
+        const intoBrand = brand ? isInside(brand.dir, path.resolve(projectDir, target)) : false;
         return {
           behavior: "deny" as const,
           message: READ_ONLY_TOOLS.has(toolName)
             ? `${toolName} was refused: ${target} is outside the project and is not in a folder the user has shared. Ask them to add it with "Folders" in the composer, and carry on without it for now.`
-            : `${toolName} was refused: ${target} is outside the project folder. You can only write inside the project — copy what you need into it instead.`,
+            : intoBrand
+              ? `${toolName} was refused: ${target} is in the brand folder, which is the user's own and read-only to you. To bring a file out of it into the project, use \`use_brand_asset\`.`
+              : `${toolName} was refused: ${target} is outside the project folder. You can only write inside the project — copy what you need into it instead.`,
         };
       }
       return { behavior: "allow" as const, updatedInput: input };

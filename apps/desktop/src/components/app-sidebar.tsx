@@ -5,7 +5,7 @@ import { useFeedback } from "./feedback-modal";
 import { hasUpdate } from "../lib/use-update";
 import type { AuthOrganization, AuthUser, UpdateState } from "../../electron/shared";
 
-export type HomeTab = "create" | "projects" | "plugins" | "exports" | "settings";
+export type HomeTab = "create" | "projects" | "brands" | "plugins" | "exports" | "settings";
 
 type IconProps = { className?: string };
 
@@ -53,6 +53,21 @@ function PlugIcon({ className }: IconProps) {
   );
 }
 
+// Solar "Bookmark" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
+// A bookmark rather than a palette or a tag: a brand here is the kept record of
+// a company, which is nearer to a saved thing than to a colour picker.
+function BookmarkIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path
+        d="M4 17.98V9.709c0-3.634 0-5.45 1.172-6.58C6.343 2 8.229 2 12 2s5.657 0 6.828 1.129C20 4.258 20 6.074 20 9.708v8.272c0 2.306 0 3.459-.773 3.871c-1.497.8-4.308-1.88-5.642-2.684C12.809 18.698 12.42 18.5 12 18.5c-.42 0-.809.199-1.585.667c-1.334.804-4.145 3.484-5.642 2.684C4 21.439 4 20.286 4 17.98"
+        opacity=".5"
+      />
+      <path d="M9.25 6a.75.75 0 0 1 .75-.75h4a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.75-.75" />
+    </svg>
+  );
+}
+
 // Solar "Settings Minimalistic" (bold duotone) — https://creativecommons.org/licenses/by/4.0/
 function SettingsIcon({ className }: IconProps) {
   return (
@@ -84,6 +99,7 @@ function DownloadIcon({ className }: IconProps) {
 const NAV: readonly { id: HomeTab; label: string; Icon: (props: IconProps) => React.ReactElement }[] = [
   { id: "create", label: "Create", Icon: ClapperboardIcon },
   { id: "projects", label: "Projects", Icon: GridIcon },
+  { id: "brands", label: "Brands", Icon: BookmarkIcon },
   { id: "plugins", label: "Plugins", Icon: PlugIcon },
   { id: "exports", label: "Exports", Icon: DownloadIcon },
   { id: "settings", label: "Settings", Icon: SettingsIcon },

@@ -6,7 +6,7 @@ import { limitsQueryKey, useUpgrade } from "@/components/upgrade-modal";
 import { useFeedback } from "../../components/feedback-modal";
 import { api } from "@/lib/api";
 import { useAuth } from "../../lib/use-auth";
-import { Choices, Section } from "./section";
+import { Choices, Section } from "../../components/section";
 
 /**
  * The team, as the web's members page shows it, reached through the

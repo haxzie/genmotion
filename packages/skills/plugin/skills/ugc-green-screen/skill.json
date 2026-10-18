@@ -118,6 +118,11 @@
       "kind": "capability",
       "id": "sfx",
       "why": "A pop on each mark's landing frame and a tonal note on the turn."
+    },
+    {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The product's mark and palette for the lower third and the end card."
     }
   ],
   "route": {
@@ -170,6 +175,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.2",
+  "version": "2.0.3",
   "icon": "🟩"
 }

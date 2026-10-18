@@ -35,6 +35,14 @@ interface TabsState {
   /** Which of Settings' sections is showing; here for the same reason. */
   settingsSection: SettingsSection;
   setSettingsSection(section: SettingsSection): void;
+  /**
+   * Which brand is open on the Brands tab, or null for the list.
+   *
+   * Here rather than in the screen so `#/brands/acme` survives a reload and so
+   * the composer's brand control can send the user to the brand it names.
+   */
+  brandId: string | null;
+  setBrandId(id: string | null): void;
   /** Add a project's tab, or update the one it already has. Does not focus it. */
   upsert(project: DesktopProject): void;
   /** A remembered tab, not yet opened. */
@@ -63,6 +71,10 @@ export const useTabsStore = create<TabsState>((set) => ({
   settingsSection: initialRoute?.settingsSection ?? "general",
   setSettingsSection(settingsSection) {
     set({ settingsSection });
+  },
+  brandId: initialRoute?.brandId ?? null,
+  setBrandId(brandId) {
+    set({ brandId });
   },
   upsert(project) {
     set((state) => {
@@ -140,15 +152,31 @@ export function reportTabBusy(dir: string, busy: boolean): void {
 // click is not a history entry; navigation only makes entries the user made.
 if (typeof window !== "undefined") {
   useTabsStore.subscribe((state, previous) => {
-    if (state.homeView === previous.homeView && state.settingsSection === previous.settingsSection) return;
-    const next = formatHomeRoute({ homeView: state.homeView, settingsSection: state.settingsSection });
+    if (
+      state.homeView === previous.homeView &&
+      state.settingsSection === previous.settingsSection &&
+      state.brandId === previous.brandId
+    ) {
+      return;
+    }
+    const next = formatHomeRoute({
+      homeView: state.homeView,
+      settingsSection: state.settingsSection,
+      ...(state.brandId ? { brandId: state.brandId } : {}),
+    });
     if (window.location.hash !== next) window.history.replaceState(null, "", next);
   });
   window.addEventListener("hashchange", () => {
     const route = parseHomeRoute(window.location.hash);
     if (!route) return;
-    const { homeView, settingsSection, setHomeView, setSettingsSection } = useTabsStore.getState();
+    const { homeView, settingsSection, brandId, setHomeView, setSettingsSection, setBrandId } =
+      useTabsStore.getState();
     if (route.homeView !== homeView) setHomeView(route.homeView);
     if (route.settingsSection && route.settingsSection !== settingsSection) setSettingsSection(route.settingsSection);
+    // Unlike the settings section, this is cleared by a hash without one:
+    // going back from `#/brands/acme` to `#/brands` has to close the brand, or
+    // the browser's own back button does nothing on this screen.
+    const nextBrand = route.homeView === "brands" ? route.brandId ?? null : brandId;
+    if (nextBrand !== brandId) setBrandId(nextBrand);
   });
 }

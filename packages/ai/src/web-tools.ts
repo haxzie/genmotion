@@ -1,56 +1,9 @@
 import { generateText, tool } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
+import { firecrawl } from "./firecrawl";
 
-const FIRECRAWL_API = "https://api.firecrawl.dev/v2";
-const SCRAPE_TIMEOUT_MS = 120_000;
 const MARKDOWN_LIMIT = 6_000;
-
-type FirecrawlResult =
-  | { ok: true; data: Record<string, unknown> }
-  | { ok: false; error: string };
-
-async function firecrawl(
-  path: "/scrape" | "/search",
-  body: Record<string, unknown>,
-): Promise<FirecrawlResult> {
-  const key = process.env.FIRECRAWL_API_KEY;
-  if (!key) {
-    return {
-      ok: false,
-      error:
-        "Web research is not configured (FIRECRAWL_API_KEY is missing). Proceed with your own design judgment and tell the user web research is unavailable.",
-    };
-  }
-  try {
-    const res = await fetch(`${FIRECRAWL_API}${path}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
-    });
-    const json = (await res.json()) as {
-      success?: boolean;
-      data?: Record<string, unknown>;
-      error?: string;
-    };
-    if (!res.ok || json.success === false) {
-      return {
-        ok: false,
-        error: `Firecrawl request failed (${res.status}): ${json.error ?? "unknown error"}`,
-      };
-    }
-    return { ok: true, data: json.data ?? (json as Record<string, unknown>) };
-  } catch (err) {
-    return {
-      ok: false,
-      error: `Firecrawl request failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
-  }
-}
 
 const VISION_MODEL = "claude-sonnet-4-6";
 

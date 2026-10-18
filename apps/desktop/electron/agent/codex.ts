@@ -5,6 +5,7 @@ import { agentEnv, resolveExecutable } from "./detect";
 import { MCP_TOKEN, MCP_TOKEN_ENV } from "./mcp-http";
 import { buildCodexPreamble } from "./prompt";
 import { listReadRoots } from "./read-roots";
+import { brandForTurn } from "../brands/resolve";
 import { activeModel } from "./registry";
 import { codexServerId, mcpManager } from "../mcp/manager";
 import { getLaunchDir } from "../cli";
@@ -193,6 +194,10 @@ function statusFor(item: CodexItem, projectDir: string): string | null {
           return "Checking the scene";
         case "project_overview":
           return "Reading the timeline";
+        case "brand_overview":
+          return "Reading the brand";
+        case "use_brand_asset":
+          return "Taking a file from the brand";
         case "save_asset":
           return "Saving an asset";
         case "download_x_video":
@@ -286,9 +291,18 @@ export function createCodexBackend(session: ProjectSession, mcpUrl: string): Age
       // rather than into the sandbox config: `workspace-write` already lets
       // Codex read outside the workspace — what it lacks is knowing where to
       // look, and that writes stay in the project whatever it can see.
-      const readRoots = (await listReadRoots(projectDir)).map((root) => root.path);
+      // An attached brand's folder joins the shared folders rather than the
+      // sandbox config, for the same reason the others do: `workspace-write`
+      // already lets Codex read outside the workspace, and what it lacks is
+      // knowing the folder is there. It still cannot write into it, which is
+      // why `use_brand_asset` exists rather than a `cp`.
+      const brand = await brandForTurn(projectDir, session.engine);
+      const readRoots = [
+        ...(await listReadRoots(projectDir)).map((root) => root.path),
+        ...(brand ? [brand.dir] : []),
+      ];
       const theirs = await userSkillIds(projectDir).catch(() => []);
-      const preamble = buildCodexPreamble(readRoots, getLaunchDir(), session.engine, theirs);
+      const preamble = buildCodexPreamble(readRoots, getLaunchDir(), session.engine, theirs, brand);
       const opening = resumeSessionId ? text : `${preamble}\n\n${text}`;
 
       // A resume can fail for reasons the user can't act on — the session log

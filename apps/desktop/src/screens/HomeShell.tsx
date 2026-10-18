@@ -8,6 +8,7 @@ import { Projects } from "./Projects";
 import { Exports } from "./Exports";
 import { Settings } from "./settings";
 import { Plugins } from "./plugins";
+import { Brands } from "./brands";
 import type { AuthOrganization, AuthUser, DesktopProject } from "../../electron/shared";
 
 /**
@@ -34,6 +35,8 @@ export function HomeShell({
     height: number;
     files: File[];
     templateId?: string;
+    /** The brand picker's choice, attached before the project opens. */
+    brandId?: string;
   }) => void;
   /** A remixed template or a cloned repository arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
@@ -44,6 +47,8 @@ export function HomeShell({
 }) {
   const tab = useTabsStore((s) => s.homeView);
   const setTab = useTabsStore((s) => s.setHomeView);
+  const brandId = useTabsStore((s) => s.brandId);
+  const setBrandId = useTabsStore((s) => s.setBrandId);
   const update = useUpdate();
   const [updateOpen, setUpdateOpen] = useState(false);
 
@@ -71,6 +76,10 @@ export function HomeShell({
             />
           ) : tab === "projects" ? (
             <Projects onOpen={onOpen} onAdopt={onAdopt} />
+          ) : tab === "brands" ? (
+            <div className="h-full overflow-y-auto">
+              <Brands brandId={brandId} onSelect={setBrandId} />
+            </div>
           ) : tab === "plugins" ? (
             <Plugins />
           ) : tab === "exports" ? (

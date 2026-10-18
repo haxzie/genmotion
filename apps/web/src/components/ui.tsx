@@ -39,6 +39,12 @@ export const Button = forwardRef<
   );
 });
 
+/**
+ * Note on width: this is `w-full` and `cx` is a plain join, not tailwind-merge,
+ * so a `w-28` passed in `className` does NOT win — Tailwind emits `w-full`
+ * later and it takes the cascade. To size one of these, put the width on a
+ * wrapper around it and leave the input filling that.
+ */
 export const Input = forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
@@ -52,6 +58,56 @@ export const Input = forwardRef<
       )}
       {...props}
     />
+  );
+});
+
+/**
+ * A select that matches `Input`.
+ *
+ * Every select in the app used to be hand-styled, and each one came out
+ * slightly different from the field beside it: a smaller type size, no focus
+ * ring, and the platform’s own chevron drawn hard against the right border,
+ * because a native `<select>` paints it inside the border box whatever padding
+ * you give it. So this turns the native appearance off and draws the chevron
+ * itself, with real room around it.
+ *
+ * Unlike `Input` it is **not** `w-full`: a select should size to its longest
+ * option, which is what makes a row of them line up. Wrap it to pin a width.
+ */
+export const Select = forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(function Select({ className, children, ...props }, ref) {
+  return (
+    // `shrink-0`: a content-sized control in a flex row must not be squeezed
+    // below its longest option, which is the whole reason it sizes itself.
+    <div className="relative inline-flex shrink-0">
+      <select
+        ref={ref}
+        className={cx(
+          // Matches Input exactly, except for the right padding that clears
+          // the chevron. No font size: inheriting is what keeps it the same
+          // size as the field next to it.
+          "h-8 cursor-pointer appearance-none rounded-md border border-border bg-surface pl-3 pr-8 text-text-primary transition-colors duration-150 outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </select>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden
+        className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-tertiary"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
   );
 });
 

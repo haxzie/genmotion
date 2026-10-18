@@ -76,6 +76,11 @@
       "why": "Keying the overlay version to alpha and checking the hit does not clip."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The mark, the exact brand hex and the clear-space rules, from the user's own record rather than a redraw."
+    },
+    {
       "kind": "skill",
       "id": "three-look",
       "engines": [
@@ -152,6 +157,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.2.4",
+  "version": "2.2.5",
   "icon": "✨"
 }

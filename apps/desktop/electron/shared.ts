@@ -328,6 +328,15 @@ export interface CreateProjectInput {
   height?: number;
   /** Omitted means the stored default (see `preferences.ts`) — the start screen's picker. */
   engine?: ProjectEngine;
+  /**
+   * The brand this video is for, picked as a chip on the start screen.
+   *
+   * Attached before the project is opened, so the agent's very first turn
+   * already has the palette, the type and the real logo files — which is the
+   * whole point of the feature. Attaching it afterwards would mean the opening
+   * message of a new project is the one message that goes out off-brand.
+   */
+  brandId?: string;
 }
 
 /** Which template to copy, and what to call the copy. */
@@ -335,6 +344,8 @@ export interface RemixTemplateInput {
   templateId: string;
   /** Defaults to the template's own name. */
   name?: string;
+  /** A brand picked alongside the template, attached before the copy opens. */
+  brandId?: string;
 }
 
 /** Where a project folder lives, and what a new one starts as. */

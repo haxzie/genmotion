@@ -21,6 +21,10 @@ Skip it for a small edit to an existing video ("make the logo bigger"). Just do 
 
 If the project has a `VIDEO.md`, read it. Its `skill:` line is the decision and its `## Direction` block is the brief: load that skill and continue where the file says. Do not re-route or re-direct an existing video unless the user asks for a different kind of video.
 
+## Step 0.5: is there a brand?
+
+If the video is for a company, run `brand-assets` before anything else. Where a brand is attached, its palette, type and real logo files are already settled and are **not** to be researched, inferred or sampled: that is the user's own record of their identity. Where one is not, the capability's answer says whether this machine has a brand that was simply never attached to this project, which is a question worth asking before you ask for hex values.
+
 ## Step 1: read `direction`
 
 Read `direction` before choosing anything. Its Part A turns the request into a proposition, an audience and placement, and an idea, and asks only the few questions that change them; that is what makes the owner choice below a real decision. After you pick the owner, its Part B writes the `## Direction` block and the timed beat table into `VIDEO.md`.

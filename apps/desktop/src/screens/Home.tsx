@@ -8,6 +8,8 @@ import { HeroShaderBackground } from "@/components/marketing/hero-shader-backgro
 import { HarnessPicker } from "../harness-picker";
 import { EnginePicker } from "../engine-picker";
 import { FolderAccess, useShareFolder } from "../folder-access";
+import { BrandPicker } from "../brand-picker";
+import { usePendingBrandStore } from "./pending-brand-store";
 import { hasUpdate, useUpdate } from "../lib/use-update";
 import { AdoptLaunchFolder } from "./adopt-launch-folder";
 import { CloneFromGitHub } from "./clone-from-github";
@@ -114,6 +116,8 @@ export function Home({
     files: File[];
     /** Set when the composer carried a template chip: remix it instead of scaffolding. */
     templateId?: string;
+    /** The brand picker's choice, attached before the project opens. */
+    brandId?: string;
   }) => void;
   /** An adopted launch folder arrives as a whole project, ready to open. */
   onAdopt: (project: DesktopProject) => void;
@@ -125,6 +129,9 @@ export function Home({
   const shareFolder = useShareFolder(null);
   const template = usePendingTemplateStore((s) => s.template);
   const clearTemplate = usePendingTemplateStore((s) => s.clear);
+  // Held across messages on purpose: somebody making three videos for one
+  // company should not pick the brand three times. See the store's comment.
+  const brand = usePendingBrandStore((s) => s.brand);
   // The gallery's lazy loading watches this, not the window: the sentinel at
   // its foot is clipped by this container.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -184,7 +191,16 @@ export function Home({
         >
           <HeroComposer
             onSubmit={(prompt, dims, files) => {
-              onCreate({ prompt, ...dims, files, ...(template ? { templateId: template.id } : {}) });
+              onCreate({
+                prompt,
+                ...dims,
+                files,
+                ...(template ? { templateId: template.id } : {}),
+                // Attached before the folder opens, so the first message of a
+                // new project is already on-brand rather than being the one
+                // message that is not.
+                ...(brand ? { brandId: brand.id } : {}),
+              });
               // The chip belongs to the project this just started. Clearing
               // here rather than on the shell's word keeps the box ready for
               // the next video as soon as the tab opens.
@@ -217,6 +233,7 @@ export function Home({
               <>
                 <HarnessPicker placement="down" />
                 <EnginePicker placement="down" />
+                <BrandPicker placement="down" />
                 <FolderAccess placement="down" hideWhenEmpty />
               </>
             }

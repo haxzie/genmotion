@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { BrowserWindow, app, dialog, ipcMain, protocol, session as electronSession, shell } from "electron";
-import { createProject, readManifest, writeManifest } from "@genmotion/project";
+import { createProject, readManifest, writeManifest, type ProjectEngine } from "@genmotion/project";
 import { GSAP_VERSION, HYPERFRAMES_AUTHORING_GUIDE, HYPERFRAMES_VERSION } from "@genmotion/hyperframes";
 import { DESKTOP_PROTOCOL, type DesktopAuthProvider } from "@genmotion/shared";
 import { desktopAuth, WEB_URL } from "./auth";
@@ -172,6 +172,12 @@ async function openSession(dir: string): Promise<DesktopProject> {
   // — `resolveSkills` decides which packs apply, and GenMotion's creative
   // skills apply to a React project too.
   await linkSkillsIntoProject(session.dir, session.engine).catch(() => {});
+  // The attached brand, likewise re-applied on every open: a hex changed in
+  // the Brands tab, or a logo dropped into the folder in Finder while the app
+  // was shut, should be in `components/brand.ts` before the first message
+  // rather than after it. Idempotent and best-effort — a brand is an
+  // enhancement to a project, never a reason one fails to open.
+  await syncAttachedBrand(session.dir, session.engine).catch(() => {});
   // Opening a project is the strongest signal that a turn is coming. Load the
   // agent SDK and resolve the CLI now, so the first message does not pay for
   // them — not awaited, because none of it gates the editor appearing. Only the
@@ -217,7 +223,11 @@ function activateProject(dir: string | null): void {
  * already holds a manifest — so this can only ever delete what we just made.
  * (`rm` rather than the Trash: a failed scaffold is not the user's work.)
  */
-async function remixTemplateAndOpen(templateId: string, name?: string): Promise<DesktopProject> {
+async function remixTemplateAndOpen(
+  templateId: string,
+  name?: string,
+  brandId?: string,
+): Promise<DesktopProject> {
   const bundle = await fetchRemixBundle(templateId);
   const resolvedName = name?.trim() || bundle.manifest.name;
   const dir = await allocateProjectDir(resolvedName);
@@ -228,7 +238,33 @@ async function remixTemplateAndOpen(templateId: string, name?: string): Promise<
     throw err;
   }
   track("template_remixed", { templateId, revision: bundle.revision });
+  // A template remixed against a brand is the fastest path to a finished
+  // video there is: the structure is chosen and the identity is known, so the
+  // agent's job is only to swap the copy. Note that a template brings its own
+  // `components/brand.ts`, which the sync deliberately leaves alone — the
+  // prompt says so, and the agent folds the values in rather than the
+  // template's own geometry being thrown away.
+  if (brandId) await attachBrandOnCreate(dir, brandId);
   return openSession(dir);
+}
+
+/**
+ * Record a brand against a folder that is about to be opened.
+ *
+ * Only the attachment: the files are written by `openSession`, which syncs
+ * every brand on every open, so there is one place that does it rather than
+ * two that can disagree. Best-effort, because a brand the user deleted between
+ * picking the chip and sending the message must not lose them the project.
+ */
+async function attachBrandOnCreate(dir: string, brandId: string): Promise<void> {
+  const { attachBrand } = await import("./brands/store");
+  await attachBrand(dir, brandId).catch(() => {});
+}
+
+/** The attached brand's palette, type and logos, written into the project. */
+async function syncAttachedBrand(dir: string, engine: ProjectEngine): Promise<void> {
+  const { brandForTurn } = await import("./brands/resolve");
+  await brandForTurn(dir, engine);
 }
 
 /**
@@ -377,17 +413,25 @@ function registerIpc(): void {
     const width = input.width ?? defaults.width;
     const height = input.height ?? defaults.height;
     const engine = input.engine ?? defaults.engine;
+    // Recorded before the folder is opened, because `openSession` is what
+    // syncs the brand into it: a chip picked on the start screen has to be in
+    // `components/brand.ts` by the time the first message is sent, and that
+    // message goes the moment the editor appears.
+    const withBrand = async () => {
+      if (input.brandId) await attachBrandOnCreate(dir, input.brandId);
+      return openSession(dir);
+    };
     if (engine === "react") {
       await createProject({ dir, name, width, height, fps: defaults.fps });
       track("project_created", { width, height, engine });
-      return openSession(dir);
+      return withBrand();
     }
     if (engine === "three") {
       // No CDN-pinned runtime to reconcile after creation, unlike HyperFrames
       // below — the folder is previewable and exportable as written.
       await createProject({ dir, name, width, height, fps: defaults.fps, engine: "three" });
       track("project_created", { width, height, engine });
-      return openSession(dir);
+      return withBrand();
     }
     // A HyperFrames composition. The folder is written against the release
     // this app carries and is previewable at once; the upgrade to the newest
@@ -407,7 +451,7 @@ function registerIpc(): void {
       },
     });
     track("project_created", { width, height, engine });
-    const project = await openSession(dir);
+    const project = await withBrand();
     void runScaffoldInstall(project.dir)
       .then(() => getSession(project.dir)?.touch())
       .catch(() => {});
@@ -427,7 +471,7 @@ function registerIpc(): void {
   });
 
   ipcMain.handle(IPC.remixTemplate, async (_event, input: RemixTemplateInput) =>
-    remixTemplateAndOpen(input.templateId, input.name),
+    remixTemplateAndOpen(input.templateId, input.name, input.brandId),
   );
   ipcMain.handle(IPC.cloneProject, async (_event, source: string) => cloneAndOpen(source));
   ipcMain.handle(IPC.adoptProject, async (_event, dir: string) => {

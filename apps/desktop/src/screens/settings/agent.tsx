@@ -1,6 +1,6 @@
 import { Spinner, cx } from "@/components/ui";
 import { useHarness } from "../../lib/use-harness";
-import { Section } from "./section";
+import { Section } from "../../components/section";
 
 /**
  * The agent driving the chat.

@@ -39,6 +39,11 @@
       "why": "An existing video's scenes, timings and audio are read before re-directing anything."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "A brand attached to the project settles the palette, the type and the ground before a family is chosen."
+    },
+    {
       "kind": "skill",
       "id": "motion-language"
     },
@@ -62,6 +67,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "1.4.5",
+  "version": "1.4.6",
   "icon": "🎬"
 }

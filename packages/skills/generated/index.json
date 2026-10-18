@@ -304,6 +304,11 @@
           "why": "Loudness of the export and the loop check on the in-app cut."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The brand the feature belongs to: its colours and mark, so the changelog video matches the product."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -391,7 +396,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.1",
+      "version": "2.2.2",
       "icon": "📣",
       "source": "first-party"
     },
@@ -478,6 +483,11 @@
           "why": "Measuring the export's loudness."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The brand's colours and mark, which is most of what makes a number feel like theirs."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -545,7 +555,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.3",
+      "version": "2.1.4",
       "icon": "📈",
       "source": "first-party"
     },
@@ -775,6 +785,11 @@
           "why": "Keying the overlay version to alpha and checking the hit does not clip."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The mark, the exact brand hex and the clear-space rules, from the user's own record rather than a redraw."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -851,7 +866,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.2.4",
+      "version": "2.2.5",
       "icon": "✨",
       "source": "first-party"
     },
@@ -942,6 +957,11 @@
           "why": "Contact sheets to find dead waits, and the loudness check."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The product's palette and mark, to frame and chrome the capture in the brand."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -1022,7 +1042,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.3.0",
+      "version": "2.3.1",
       "icon": "🎓",
       "source": "first-party"
     },
@@ -1165,6 +1185,11 @@
           "why": "An existing video's scenes, timings and audio are read before re-directing anything."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "A brand attached to the project settles the palette, the type and the ground before a family is chosen."
+        },
+        {
           "kind": "skill",
           "id": "motion-language"
         },
@@ -1188,7 +1213,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "1.4.5",
+      "version": "1.4.6",
       "icon": "🎬",
       "source": "first-party"
     },
@@ -1609,6 +1634,11 @@
           "why": "Measuring the export's loudness and building a contact sheet."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The product's real palette, type and logo, so the film is theirs from the first frame."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -1705,7 +1735,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.5.5",
+      "version": "2.5.6",
       "icon": "🚀",
       "source": "first-party"
     },
@@ -2934,6 +2964,11 @@
           "kind": "capability",
           "id": "sfx",
           "why": "A pop on each mark's landing frame and a tonal note on the turn."
+        },
+        {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The product's mark and palette for the lower third and the end card."
         }
       ],
       "route": {
@@ -2986,7 +3021,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.2",
+      "version": "2.0.3",
       "icon": "🟩",
       "source": "first-party"
     },
@@ -3171,6 +3206,11 @@
           "why": "The failure and relief frames have to read as the same place."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The brand's mark and colours for the solution beat and the end card."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -3237,7 +3277,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.2",
+      "version": "2.0.3",
       "icon": "🔁",
       "source": "first-party"
     },
@@ -3332,6 +3372,11 @@
           "why": "Every readability and click-feedback check is a frame capture."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The app's real mark and colours for the end card and any on-screen chrome."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -3420,7 +3465,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.1.2",
+      "version": "2.1.3",
       "icon": "🖥️",
       "source": "first-party"
     },
@@ -3595,6 +3640,11 @@
           "why": "Every stage of the reveal is checked as a frame."
         },
         {
+          "kind": "capability",
+          "id": "brand-assets",
+          "why": "The product's real mark and packaging colours."
+        },
+        {
           "kind": "skill",
           "id": "three-look",
           "engines": [
@@ -3665,7 +3715,7 @@
       "author": {
         "name": "GenMotion"
       },
-      "version": "2.0.1",
+      "version": "2.0.2",
       "icon": "📦",
       "source": "first-party"
     },
@@ -3828,5 +3878,5 @@
       "source": "first-party"
     }
   ],
-  "revision": "5770a2a7"
+  "revision": "08b8e3f1"
 }

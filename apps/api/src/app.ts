@@ -14,6 +14,7 @@ import { billingRoutes } from "./routes/billing";
 import { desktopRoutes } from "./routes/desktop";
 import { eventRoutes } from "./routes/events";
 import { releaseRoutes } from "./routes/releases";
+import { brandRoutes } from "./routes/brands";
 import { templateRoutes } from "./routes/templates";
 import { shareRoutes } from "./routes/shares";
 import { sampleRoutes } from "./routes/samples";
@@ -76,6 +77,7 @@ app.route("/api/releases", releaseRoutes);
 // Starter templates. Public and anonymous like /api/releases — the files ship
 // in the image, and the desktop app browses the gallery before it has a
 // project (or, on a fresh install, before it has a session).
+app.route("/api/brands", brandRoutes);
 app.route("/api/templates", templateRoutes);
 app.route("/api/shares", shareRoutes);
 // The projects a new account's workspace is seeded with. Session-authed:

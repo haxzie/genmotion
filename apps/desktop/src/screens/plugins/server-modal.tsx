@@ -11,7 +11,7 @@ import {
 import { Modal } from "@/components/modal";
 import { api } from "@/lib/api";
 import { Button, Input, Spinner, cx } from "@/components/ui";
-import { Choices } from "../settings/section";
+import { Choices } from "../../components/section";
 import { ConnectionMarks, PluginDetail } from "./plugin-detail";
 
 /**

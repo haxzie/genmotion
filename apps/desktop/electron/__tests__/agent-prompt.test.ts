@@ -98,3 +98,109 @@ describe("the Codex preamble", () => {
     }
   });
 });
+
+/**
+ * The attached brand.
+ *
+ * Two failures worth pinning. One: a brand that is attached but not mentioned,
+ * which leaves the agent researching an identity the user already stated and
+ * finding a different blue. Two: a brand block that appears when no brand is
+ * attached, which would tell every project it has colours it does not have.
+ */
+describe("the brand block", () => {
+  const brand = {
+    manifest: {
+      id: "acme",
+      name: "Acme",
+      site: "https://acme.com",
+      colors: [
+        { hex: "#1d2bf0", role: "primary" as const, name: "Volt", source: "user" as const },
+        { hex: "#0a0a0b", role: "ink" as const, source: "user" as const },
+      ],
+      fonts: [
+        {
+          role: "display" as const,
+          family: "Söhne",
+          files: [{ file: "fonts/Sohne-variable.woff2", style: "normal" as const, variable: true }],
+          source: "user" as const,
+        },
+      ],
+      logos: [{ file: "logos/mark.svg", variant: "mark" as const, on: "any" as const, source: "user" as const }],
+      voice: "Plain and confident.",
+      thirdParty: false,
+      createdAt: 0,
+      updatedAt: 0,
+    },
+    dir: "/Users/someone/.genmotion/brands/acme",
+    logos: ["assets/brand/mark.svg"],
+  };
+
+  it("is absent with no brand attached", () => {
+    // Matched on the block's own sentence rather than its heading: the
+    // `brand-assets` capability row in the skills table is worded almost
+    // identically on purpose, and it is in every prompt whether a brand is
+    // attached or not.
+    for (const engine of ["react", "three", "hyperframes"] as const) {
+      expect(buildSystemPrompt([], null, engine, [])).not.toContain("do not research it");
+      expect(buildCodexPreamble([], null, engine, [])).not.toContain("do not research it");
+    }
+  });
+
+  it("states the identity, and that it is not to be researched", () => {
+    for (const engine of ["react", "three", "hyperframes"] as const) {
+      const prompt = buildSystemPrompt([], null, engine, [], brand);
+      expect(prompt).toContain("The brand this video is for: Acme");
+      expect(prompt).toContain("#1d2bf0");
+      expect(prompt).toContain("Söhne");
+      // The files matter more than the name: a family name alone is what
+      // produces a video set in Helvetica.
+      expect(prompt).toContain("1 real file in the brand folder");
+      expect(prompt).toContain("do not research it");
+      expect(prompt).toContain("Plain and confident.");
+      // The real file, in the project, and the standing ban on substituting one.
+      expect(prompt).toContain("assets/brand/mark.svg");
+      expect(prompt).toContain("Never redraw, trace or generate a mark");
+      // The folder is readable, and the way out of it is the tool.
+      expect(prompt).toContain(brand.dir);
+      expect(prompt).toContain("use_brand_asset");
+    }
+  });
+
+  it("reaches Codex too, which has no system prompt of its own", () => {
+    for (const engine of ["react", "three", "hyperframes"] as const) {
+      const preamble = buildCodexPreamble([], null, engine, [], brand);
+      expect(preamble).toContain("The brand this video is for: Acme");
+      expect(preamble).toContain("#1d2bf0");
+    }
+  });
+
+  it("says what to do when the brand has no logo, rather than going quiet", () => {
+    const prompt = buildSystemPrompt([], null, "react", [], {
+      ...brand,
+      manifest: { ...brand.manifest, logos: [] },
+      logos: [],
+    });
+    expect(prompt).toContain("no logo file");
+    expect(prompt).toContain("wordmark");
+  });
+
+  /**
+   * A remixed template brings a real `components/brand.ts` — geometry, SVG
+   * paths, helpers — which the sync deliberately refuses to overwrite. The
+   * agent has to be told that, or the file looks simply wrong to it.
+   */
+  it("explains a brand module it was not allowed to write", () => {
+    const prompt = buildSystemPrompt([], null, "react", [], { ...brand, moduleSkipped: true });
+    expect(prompt).toContain("already had a `components/brand.ts` of its own");
+    expect(prompt).not.toContain("already holds these values as tokens");
+  });
+
+  it("holds a third-party brand to reference use", () => {
+    const prompt = buildSystemPrompt([], null, "react", [], {
+      ...brand,
+      manifest: { ...brand.manifest, thirdParty: true },
+    });
+    expect(prompt).toContain("belongs to someone else");
+    expect(prompt).toContain("never write copy that claims to be from them");
+  });
+});

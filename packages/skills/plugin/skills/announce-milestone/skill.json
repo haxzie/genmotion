@@ -81,6 +81,11 @@
       "why": "Measuring the export's loudness."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The brand's colours and mark, which is most of what makes a number feel like theirs."
+    },
+    {
       "kind": "skill",
       "id": "three-look",
       "engines": [
@@ -149,6 +154,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.1.3",
+  "version": "2.1.4",
   "icon": "📈"
 }

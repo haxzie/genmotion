@@ -1,0 +1,45 @@
+{
+  "branding": {
+    "colorScheme": "light",
+    "fonts": [
+      { "family": "Sohne-Var", "role": "body" },
+      { "family": "SF Pro Display", "role": "heading" }
+    ],
+    "colors": {
+      "primary": "#533AFD",
+      "secondary": "#0D1738",
+      "accent": "#E5EDF5",
+      "background": "#FFFFFF",
+      "textPrimary": "#000000",
+      "link": "#E5EDF5"
+    },
+    "typography": {
+      "fontFamilies": { "primary": "Sohne-Var", "heading": "SF Pro Display" },
+      "fontStacks": { "heading": ["Sohne-Var", "SF Pro Display", "sans-serif"] }
+    },
+    "components": {
+      "input": { "background": "#FFFFFF", "textColor": "#000000", "borderColor": null, "borderRadius": "0px" },
+      "buttonPrimary": { "background": "#533AFD", "textColor": "#FFFFFF", "borderRadius": "4px" },
+      "buttonSecondary": { "background": "#FFFFFF", "textColor": "#533AFD", "borderColor": "#B9B9F9" }
+    },
+    "images": {
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E",
+      "favicon": "https://images.stripeassets.com/fzn2n1nzq965/favicon.svg",
+      "ogImage": "https://b.stripecdn.com/mkt-ssr-statics/stripe.jpg",
+      "logoAlt": "Stripe logo"
+    },
+    "confidence": { "buttons": 1, "colors": 0.88, "overall": 0.94 },
+    "brandName": "Stripe",
+    "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E"
+  },
+  "metadata": {
+    "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+    "ogTitle": "Stripe | Financial Infrastructure to Grow Your Revenue",
+    "description": "Stripe is a financial services platform that helps all types of businesses accept payments, build flexible billing models, and manage money movement.",
+    "ogDescription": "Stripe is a financial services platform that helps all types of businesses accept payments, build flexible billing models, and manage money movement.",
+    "favicon": "https://images.stripeassets.com/fzn2n1nzq965/favicon.svg",
+    "sourceURL": "https://stripe.com",
+    "url": "https://stripe.com/",
+    "statusCode": 200
+  }
+}

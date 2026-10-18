@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui";
 import { api as desktop } from "../../api";
 import type { AuthOrganization, AuthUser } from "../../../electron/shared";
-import { Section } from "./section";
+import { Section } from "../../components/section";
 
 export function AccountSection({
   user,

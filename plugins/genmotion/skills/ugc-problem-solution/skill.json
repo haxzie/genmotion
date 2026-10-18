@@ -87,6 +87,11 @@
       "why": "The failure and relief frames have to read as the same place."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The brand's mark and colours for the solution beat and the end card."
+    },
+    {
       "kind": "skill",
       "id": "three-look",
       "engines": [
@@ -153,6 +158,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.0.2",
+  "version": "2.0.3",
   "icon": "🔁"
 }

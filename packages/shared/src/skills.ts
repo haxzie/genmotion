@@ -128,6 +128,12 @@ export const SKILL_CAPABILITIES = [
   "ffmpeg",
   /** Looking things up on the web. */
   "web-research",
+  /**
+   * The user's own brand: the real logo file, the exact hex values, the
+   * typeface. A skill may name it without knowing whether a brand is attached;
+   * the fallback is what to do when none is.
+   */
+  "brand-assets",
   /** Old spelling of `generate-image`, kept so existing user skills still parse. */
   "image-generation",
 ] as const;
@@ -261,8 +267,14 @@ export function defineSkill(meta: SkillMeta): SkillMeta {
   return skillMetaSchema.parse(meta);
 }
 
-/** Where a skill came from, which decides what the user may do to it. */
-export type SkillSource = "first-party" | "user" | "project";
+/**
+ * Where a skill came from, which decides what the user may do to it.
+ *
+ * `brand` is a skill kept in a brand folder rather than in the app or the
+ * project: the way a company's own house rules travel with its brand instead
+ * of being re-imported into every video made for it.
+ */
+export type SkillSource = "first-party" | "user" | "project" | "brand";
 
 export interface SkillCatalogEntry extends SkillMeta {
   source: SkillSource;

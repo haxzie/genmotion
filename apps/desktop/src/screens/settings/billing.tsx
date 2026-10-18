@@ -2,7 +2,7 @@ import { PLANS, SEAT_PRICE_USD, planPrice, type MeterUsage, type PluginMeter } f
 import { Button, Spinner, cx } from "@/components/ui";
 import { useUpgrade } from "@/components/upgrade-modal";
 import { api as desktop } from "../../api";
-import { Section } from "./section";
+import { Section } from "../../components/section";
 
 /**
  * The plan, and what it has been used for this month.

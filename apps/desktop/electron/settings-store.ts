@@ -4,6 +4,7 @@ import { app } from "electron";
 import type { StoredTabs } from "./shared";
 import type { McpServerConfig } from "./mcp/store";
 import type { SkillSettings } from "./skills/store";
+import type { BrandSettings } from "./brands/store";
 
 /**
  * `<userData>/settings.json`, with one writer.
@@ -28,6 +29,8 @@ export interface Settings {
   mcpServers?: McpServerConfig[];
   /** Which skills are switched off, and which the user installed. See `skills/store.ts`. */
   skills?: SkillSettings;
+  /** Which brand each project is being made for. See `brands/store.ts`. */
+  brands?: BrandSettings;
   /** When first-run onboarding was finished. Absent until it has been. */
   onboardedAt?: number;
 }

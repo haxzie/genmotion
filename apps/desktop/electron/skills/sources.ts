@@ -3,19 +3,25 @@ import fs from "node:fs/promises";
 import type { SkillSource } from "@genmotion/shared";
 import { genmotionSkillsDir, skillsDir } from "../hyperframes/vendor";
 import { projectSkillsRoot, readSkillSettings, skillsCacheRoot, userSkillsRoot } from "./store";
+import { brandSkillsRoot } from "../brands/paths";
+import { resolveBrand } from "../brands/resolve";
 
 /**
  * Every skill folder the agent may read, in precedence order.
  *
- * Five origins now: the HyperFrames pack vendored from upstream, a cached
+ * Six origins now: the HyperFrames pack vendored from upstream, a cached
  * refresh of GenMotion's own pack (pulled from the API, see `refresh.ts`),
  * that same pack as bundled inside the app (the offline and first-run
- * fallback), skills the user imported, and skills committed with the
- * project. They are flat by the time Codex sees them (one directory of
- * symlinks), so a name can only belong to one of them, and the order below
- * decides which: the closer to the user, the higher it wins — except the
- * cache, which outranks the bundled copy precisely because it is meant to
- * replace it, not sit beside it.
+ * fallback), skills the user imported, skills kept in the attached brand's
+ * folder, and skills committed with the project. They are flat by the time
+ * Codex sees them (one directory of symlinks), so a name can only belong to
+ * one of them, and the order below decides which: the closer to the user, the
+ * higher it wins — except the cache, which outranks the bundled copy
+ * precisely because it is meant to replace it, not sit beside it.
+ *
+ * A brand's skills sit between the project's and the user's: a company's house
+ * rules should beat the user's general preferences for a video made for that
+ * company, and lose to anything this particular project says.
  */
 
 export interface ResolvedSkill {
@@ -44,7 +50,14 @@ export async function resolveSkills(opts: {
   const off = new Set(disabled);
 
   const candidates: { root: string; source: SkillSource }[] = [];
-  if (opts.projectDir) candidates.push({ root: projectSkillsRoot(opts.projectDir), source: "project" });
+  if (opts.projectDir) {
+    candidates.push({ root: projectSkillsRoot(opts.projectDir), source: "project" });
+    // Never fatal: a brand that has gone missing already drops its own
+    // attachment, and a skills folder it does not have simply contributes
+    // nothing. Resolving the skill set must not be the thing that fails a turn.
+    const attached = await resolveBrand(opts.projectDir).catch(() => null);
+    if (attached) candidates.push({ root: brandSkillsRoot(attached.brand.id), source: "brand" });
+  }
   candidates.push({ root: userSkillsRoot(), source: "user" });
   // The cache is checked before the bundled copy it exists to supersede; an
   // empty or absent cache directory (no refresh has ever landed, or it left
@@ -63,7 +76,7 @@ export async function resolveSkills(opts: {
   return [...seen.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** Just the user's and the project's, which need a generated plugin wrapper. */
+/** Everything that is not first-party, which needs a generated plugin wrapper. */
 export async function resolveLooseSkills(projectDir?: string): Promise<ResolvedSkill[]> {
   return (await resolveSkills({ projectDir })).filter((s) => s.source !== "first-party");
 }

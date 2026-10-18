@@ -6,7 +6,7 @@ import { CommandLineHint, useCommandLine } from "../../components/command-line";
 import { hasUpdate, useUpdate } from "../../lib/use-update";
 import { api as desktop } from "../../api";
 import type { DesktopPaths } from "../../../electron/shared";
-import { Choices, Section } from "./section";
+import { Choices, Section } from "../../components/section";
 
 interface ProjectDefaults {
   width: number;

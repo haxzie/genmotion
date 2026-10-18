@@ -61,6 +61,7 @@ Skills name what to do as backticked capability ids, never tool names. What each
 | `recommend-integration` | Offer the user a connector a skill wants | not available — say in one sentence which service would help and carry on without it |
 | `ffmpeg` | Trims, transcodes, frame extraction | `ffmpeg` in your shell, if you have one |
 | `web-research` | Look things up on the web | your own web tools |
+| `brand-assets` | The brand this video is for: the real logo file, the exact hex values, the typeface, and reference work that is on-brand | not available — ask the user for the real logo file and the exact hex values, and put the values in `components/brand.ts` so the video re-skins from one place. Never sample a colour from a screenshot, and never redraw or generate a mark — the name set as type is the correct substitute for a logo you do not have |
 
 ## Don'ts
 

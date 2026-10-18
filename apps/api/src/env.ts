@@ -80,8 +80,13 @@ const schema = z.object({
 
   // ── AI providers — optional (features degrade without them) ─────────
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+
   OPENAI_API_KEY: z.string().min(1).optional(),
   MOONSHOT_API_KEY: z.string().min(1).optional(),
+  // Web research for the chat agent, and the brand import behind
+  // `/api/brands/inspect`. Server-side because it is billable: bundled into
+  // the desktop build it would be a credential handed to every user, the same
+  // reason `/api/events` exists rather than a PostHog key in the app.
   FIRECRAWL_API_KEY: z.string().min(1).optional(),
   E2B_API_KEY: z.string().min(1).optional(),
   // Custom E2B template (ffmpeg + A/V python) for the chat workbench tool.

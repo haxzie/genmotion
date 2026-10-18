@@ -79,6 +79,11 @@
       "why": "Loudness of the export and the loop check on the in-app cut."
     },
     {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The brand the feature belongs to: its colours and mark, so the changelog video matches the product."
+    },
+    {
       "kind": "skill",
       "id": "three-look",
       "engines": [
@@ -166,6 +171,6 @@
   "author": {
     "name": "GenMotion"
   },
-  "version": "2.2.1",
+  "version": "2.2.2",
   "icon": "📣"
 }

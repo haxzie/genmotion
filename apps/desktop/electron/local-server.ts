@@ -613,6 +613,15 @@ export async function startLocalServer(
       return;
     }
 
+    // Brands are machine-wide, like the plugin catalog: they are browsed,
+    // created and edited with no project open, and the Create screen picks one
+    // before a folder exists. So this sits above the project gate too, and
+    // takes the project only where attaching needs it.
+    if (rest[0] === "brands") {
+      await brandRoutes(method, rest.slice(1), url, req, res);
+      return;
+    }
+
     // The gallery lives on the start screen, and a template is browsed and
     // remixed before any folder is open. Public upstream, so no token is
     // attached and it works signed-out too.
@@ -1002,6 +1011,140 @@ export async function startLocalServer(
       }
       return state();
     }
+
+    return undefined;
+  }
+
+  /**
+   * Brands: the folder of a company's own material, and which project is
+   * being made for which.
+   *
+   * Takes `res` rather than returning a value because one of its routes
+   * serves bytes — an asset thumbnail for the detail panel. The renderer's CSP
+   * allows `connect-src` from its own origin only, which is the same reason
+   * the template and favicon proxies exist.
+   */
+  async function brandRoutes(
+    method: string,
+    rest: string[],
+    url: URL,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): Promise<void> {
+    const brands = await import("./brands/service");
+    const [id, section, ...tail] = rest.map((part) => decodeURIComponent(part));
+
+    // An asset's own bytes, for the cards and the detail panel. Checked for
+    // containment inside the brand folder by the service, not here.
+    if (id && section === "asset" && method === "GET") {
+      const file = await brands.brandAssetPath(id, tail.join("/")).catch(() => null);
+      if (!file) {
+        send(res, 404, { error: "No such file in that brand." });
+        return;
+      }
+      // Range-aware, like every other byte route here: a reference video in a
+      // brand is played in the panel, and `serveAssetFile` is the thing that
+      // honours `Range` where `net.fetch(file://)` silently does not.
+      const served = await serveAssetFile(
+        file,
+        new Request("http://localhost/", {
+          method: req.method ?? "GET",
+          headers: req.headers.range ? { range: req.headers.range } : {},
+        }),
+      );
+      await pipeResponse(served, res);
+      return;
+    }
+
+    const result = await brandRouteValue(brands, method, id, section, url, req);
+    if (result === undefined) {
+      send(res, 404, { error: `No route for ${method} /brands/${rest.join("/")}` });
+      return;
+    }
+    send(res, 200, result);
+  }
+
+  /** The JSON half of `brandRoutes`, split out so the bytes route stays short. */
+  async function brandRouteValue(
+    brands: typeof import("./brands/service"),
+    method: string,
+    id: string | undefined,
+    section: string | undefined,
+    url: URL,
+    req: http.IncomingMessage,
+  ): Promise<unknown | undefined> {
+    if (!id) {
+      if (method === "GET") return { brands: await brands.listBrandsForUi() };
+      if (method === "POST") {
+        // The whole of what the import dialog collected, in one call: the
+        // identity, and the colours, fonts and logos the user ticked.
+        return brands.createBrandForUi(await readJson(req));
+      }
+      return undefined;
+    }
+
+    // Which brand a project is being made for.
+    //
+    // Project-scoped rather than brand-scoped — `?projectId=`, the way assets
+    // and read-roots are — because the project is the subject and the brand is
+    // the value being set on it. That also gives detaching somewhere to live:
+    // a null `brandId` rather than a second verb.
+    // Read a site and report what it looks like the brand is. Writes nothing:
+    // the dialog shows what was found and the user decides what is true.
+    if (id === "inspect" && method === "POST") {
+      const { site } = await readJson<{ site?: string }>(req);
+      if (!site) throw new Error("Missing site");
+      return brands.inspectSite(site);
+    }
+
+    // What the composer's chip reads. Project-scoped for the same reason the
+    // attach below is.
+    if (id === "attached" && method === "GET") {
+      return brands.attachedBrandForProject(sessionFromQuery(url).dir);
+    }
+
+    if (id === "attach" && method === "POST") {
+      const session = sessionFromQuery(url);
+      const { brandId } = await readJson<{ brandId?: string | null }>(req);
+      const attached = await brands.attachBrandToProject(session, brandId ?? null);
+      // The warm process carries the old prompt and the old read grants, so a
+      // brand picked mid-project would not reach the agent until the turn after
+      // next without this — the same reason sharing a folder rewarms.
+      await rewarm(session);
+      return attached;
+    }
+
+    if (!section) {
+      if (method === "GET") return brands.readBrandForUi(id);
+      if (method === "PATCH") return brands.updateBrandForUi(id, await readJson(req));
+      if (method === "DELETE") return brands.deleteBrandForUi(id);
+      return undefined;
+    }
+
+    if (section === "assets") {
+      if (method === "POST") {
+        // Streamed for the same reason a project asset is: a reference video
+        // dropped onto a brand is commonly hundreds of megabytes.
+        const target = await brands.prepareBrandUpload(
+          id,
+          url.searchParams.get("dir") ?? "assets",
+          url.searchParams.get("filename") ?? `upload-${Date.now()}`,
+        );
+        try {
+          await streamToFile(req, target.absolute);
+        } catch (err) {
+          throw err instanceof Error ? err : new Error(String(err));
+        }
+        return brands.finishBrandUpload(id, target.relative);
+      }
+      if (method === "DELETE") {
+        const file = url.searchParams.get("file");
+        if (!file) throw new Error("Missing file");
+        return brands.deleteBrandAsset(id, file);
+      }
+    }
+
+    if (section === "reveal" && method === "POST") return brands.revealBrand(id);
 
     return undefined;
   }

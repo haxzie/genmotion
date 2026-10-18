@@ -156,6 +156,19 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     mcp: "your own web tools",
     shell: "your own web tools",
   },
+  "brand-assets": {
+    label:
+      "The brand this video is for: the real logo file, the exact hex values, the typeface, and reference work that is on-brand",
+    desktop: "`brand_overview`, then `use_brand_asset` to bring a file into the project",
+    mcp: null,
+    shell: null,
+    // Not "ask for the colours" alone: the failure this is here to prevent is
+    // an agent that has a screenshot and no file, eyedroppers a hex out of a
+    // JPEG and traces the mark. Both read as nearly right, which is worse than
+    // absent, and both are already banned in prose the agent may not have read.
+    fallback:
+      "ask the user for the real logo file and the exact hex values, and put the values in `components/brand.ts` so the video re-skins from one place. Never sample a colour from a screenshot, and never redraw or generate a mark — the name set as type is the correct substitute for a logo you do not have",
+  },
 };
 
 /**

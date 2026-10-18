@@ -221,15 +221,30 @@ export function isInside(root: string, candidate: string): boolean {
  *
  * Only ever consulted for paths already known to be outside the project, and
  * only for read-only tools — this function widens reading, and nothing else.
+ *
+ * `extra` carries roots the turn opened that are not in this store: today just
+ * the attached brand's folder, which is granted by the attachment rather than
+ * by a folder picker. It is a parameter rather than a lookup here because the
+ * caller has already built the list it handed the CLI as `additionalDirectories`,
+ * and passing that same list is what keeps the two from disagreeing — a path
+ * the CLI allows and this check denies is a read that fails for no stated
+ * reason, which is the worst of the three possible outcomes.
  */
-export async function isReadable(projectDir: string, candidate: string): Promise<boolean> {
+export async function isReadable(
+  projectDir: string,
+  candidate: string,
+  extra: readonly string[] = [],
+): Promise<boolean> {
   // Resolved through symlinks, because the grant was. Two reasons: a path the
   // model spells `/tmp/shots` has to match a root stored as `/private/tmp/shots`
   // on macOS, and a symlink planted inside a granted folder has to be judged by
   // where it actually points rather than where it sits.
   const target = await realpathish(path.resolve(projectDir, candidate));
-  const roots = await listReadRoots(projectDir);
-  if (!roots.some((root) => isInside(root.path, target))) return false;
+  const roots = [...(await listReadRoots(projectDir)).map((root) => root.path), ...extra];
+  if (!roots.some((root) => isInside(root, target))) return false;
+  // The sensitive-name rule applies to every root, including the brand folder.
+  // Nothing in a brand needs a dot directory, and a brand is a folder the user
+  // may well have assembled by copying things around.
   return !hasSensitiveSegment(target);
 }
 
