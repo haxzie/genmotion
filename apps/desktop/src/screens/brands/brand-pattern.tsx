@@ -5,8 +5,8 @@ import { cx } from "@/components/ui";
 /**
  * A brand's palette, alive.
  *
- * The same banded simplex noise Paper publishes, fed the colours just read off
- * the company's website. It earns its place: the moment somebody pastes a URL,
+ * Paper's simplex noise on its Bubblegum settings, fed the colours just read
+ * off the company's website. It earns its place: the moment somebody pastes a URL,
  * the thing they get back is not a list of hex values but their brand moving,
  * which is both the fastest way to see whether the palette is right and a fair
  * promise of what the product does with it.
@@ -46,21 +46,56 @@ function luma(hex: string): number {
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 }
 
+/** How close two colours may be before the second one is not worth drawing. */
+const TOO_CLOSE = 0.12;
+
+/** Normalised RGB distance. Crude, and the job here only needs "these read as the same". */
+function apart(a: string, b: string): number {
+  const ch = (hex: string) => {
+    const v = hex.replace("#", "");
+    const full = v.length === 3 ? v.split("").map((c) => c + c).join("") : v;
+    const n = Number.parseInt(full.slice(0, 6), 16);
+    return Number.isFinite(n) ? [(n >> 16) & 255, (n >> 8) & 255, n & 255] : [0, 0, 0];
+  };
+  const [ar, ag, ab] = ch(a);
+  const [br, bg, bb] = ch(b);
+  return Math.hypot((ar ?? 0) - (br ?? 0), (ag ?? 0) - (bg ?? 0), (ab ?? 0) - (bb ?? 0)) / 441;
+}
+
+/**
+ * Drop the colours that are already on screen.
+ *
+ * A site's palette is full of near-duplicates: Stripe reports `#ffffff`,
+ * `#e8e9ff` and `#e5edf5`, which are one pale lavender as far as a shader is
+ * concerned. Feeding all three spends three of the pattern's few regions on
+ * the same wash and squeezes the actual blurple into a corner, which is how
+ * Bubblegum's soft blend turned Stripe's panel almost white.
+ *
+ * First seen wins, and the caller passes them in role order, so the colour
+ * that survives is the one the brand gave a job to rather than whichever
+ * happened to sort first. The list the user ticks is untouched: this is only
+ * about what the pattern can usefully show.
+ */
+function distinct(colors: string[]): string[] {
+  const kept: string[] = [];
+  for (const c of colors) {
+    if (kept.every((k) => apart(k, c) > TOO_CLOSE)) kept.push(c);
+  }
+  return kept;
+}
+
 /**
  * Order the palette light to dark.
  *
- * The shader puts `stepsPerColor` blended bands between each neighbouring
- * pair, so the ordering decides what those blends are made of. Alternating
- * dark and light for contrast was the first instinct and it was wrong: on
- * Stripe's palette it put black next to white and filled half the panel with
- * the greys in between. Sorted by brightness, every blend stays inside the
- * brand — Stripe runs black through navy, blurple and periwinkle to white,
- * and each step belongs.
+ * Neighbouring colours blend into each other, so the ordering decides what the
+ * blends are made of. Alternating dark and light for contrast was the first
+ * instinct and it was wrong: on Stripe's palette it put black next to white
+ * and filled half the panel with the greys in between. Sorted by brightness,
+ * every blend stays inside the brand — Stripe runs black through navy,
+ * blurple and periwinkle to white, and each step belongs.
  *
- * Paper's own default looks like it alternates, but its colours are a warm
- * hue progression where the blends happen to land on salmon and orange. A
- * brand palette is usually tonal rather than hue-varied, so brightness is the
- * ordering that generalises.
+ * It matters less now the look is Bubblegum's soft one than it did with hard
+ * bands, but a smooth ramp through grey is still grey.
  */
 function byBrightness(colors: string[]): string[] {
   return [...colors].sort((a, b) => luma(a) - luma(b));
@@ -79,7 +114,10 @@ export function BrandPattern({
     // One colour is a flat fill, not a pattern, and the shader needs two to
     // have anything to band between.
     if (unique.length < 2) return GENMOTION;
-    return byBrightness(unique).slice(0, MAX_COLORS);
+    // A brand whose colours are all within a shade of each other keeps them
+    // all: a flat panel is still honest, and GenMotion's green would not be.
+    const spread = distinct(unique);
+    return byBrightness(spread.length >= 2 ? spread : unique).slice(0, MAX_COLORS);
   }, [colors]);
 
   const resting = palette === GENMOTION;
@@ -92,17 +130,16 @@ export function BrandPattern({
       <SimplexNoise
         className="absolute inset-0 h-full w-full"
         colors={palette}
-        // Two bands per colour, so each pair of neighbours gets a blend
-        // between them: the salmons and oranges in Paper's own default are
-        // these, not palette entries.
-        stepsPerColor={2}
-        // Hard edges. The whole look is the banding; softening it turns the
-        // pattern back into the gradient every other product already has.
-        softness={0}
-        // Slow enough to read as ambient rather than as something demanding to
-        // be watched, and slower still while there is nothing to show.
-        speed={resting ? 0.12 : 0.35}
-        scale={0.75}
+        // Paper's Bubblegum preset, on the brand's colours rather than its
+        // own: one step per colour and full softness, so the palette melts
+        // through itself instead of banding. Big and loose at 1.6.
+        stepsPerColor={1}
+        softness={1}
+        scale={1.6}
+        // The preset runs at 2, which is right for a page you came to look at.
+        // Behind a form it is a lot, so the resting state idles well under it
+        // while there is nothing to show yet.
+        speed={resting ? 0.6 : 2}
         // `none`, as every one of the library's own presets uses. `cover`
         // sizes against `worldWidth`/`worldHeight`, which default to 0, and
         // the result is a canvas that has a GL context and draws nothing.

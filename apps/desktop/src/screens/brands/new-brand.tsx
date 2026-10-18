@@ -34,7 +34,7 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
-/** Ticked by default except the ones that are usually noise. See `defaults`. */
+/** Everything found is ticked by default; unticking is the cheap direction. */
 function useSelection(inspection: BrandInspection | null) {
   const [picked, setPicked] = useState<{ colors: Set<number>; fonts: Set<number>; logos: Set<number> }>(
     () => ({ colors: new Set(), fonts: new Set(), logos: new Set() }),
@@ -45,14 +45,12 @@ function useSelection(inspection: BrandInspection | null) {
     setPicked({
       colors: new Set(inspection.colors.map((_, i) => i)),
       fonts: new Set(inspection.fonts.map((_, i) => i)),
-      // A favicon is an icon rather than the brand's mark, and a social card
-      // is a social card far more often than it is a logo. Both are offered,
-      // neither is assumed.
-      logos: new Set(
-        inspection.logos.flatMap((logo, i) =>
-          logo.variant === "mark" || logo.variant === "wordmark" ? [i] : [],
-        ),
-      ),
+      // All of them, including the favicon and the social card. They are
+      // genuinely different assets — an icon is what a 32px corner needs and
+      // the mark is not — and a brand folder is cheap to over-fill and
+      // annoying to go back and complete. Unticking one is a click; finding
+      // out later that the icon was never fetched is a trip back to the site.
+      logos: new Set(inspection.logos.map((_, i) => i)),
     });
   }, [inspection]);
 
@@ -108,6 +106,7 @@ export function NewBrandModal({
   const [step, setStep] = useState<Step>("url");
   const [site, setSite] = useState("");
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [thirdParty, setThirdParty] = useState(true);
   const [inspection, setInspection] = useState<BrandInspection | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +138,7 @@ export function NewBrandModal({
     setStep("url");
     setSite("");
     setName("");
+    setDescription("");
     setThirdParty(true);
     setInspection(null);
     setError(null);
@@ -150,6 +150,7 @@ export function NewBrandModal({
       const found = await inspect.mutateAsync(site.trim());
       setInspection(found);
       setName(found.name ?? "");
+      setDescription(found.description ?? "");
       setStep("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read that site.");
@@ -167,8 +168,6 @@ export function NewBrandModal({
     try {
       const accepted = inspection
         ? {
-            site: inspection.url,
-            ...(inspection.description ? { description: inspection.description } : {}),
             colors: inspection.colors.filter((_, i) => picked.colors.has(i)) as InspectedColor[],
             fonts: inspection.fonts.filter((_, i) => picked.fonts.has(i)) as InspectedFont[],
             logos: inspection.logos.filter((_, i) => picked.logos.has(i)) as InspectedLogo[],
@@ -177,7 +176,7 @@ export function NewBrandModal({
       const brand = await create.mutateAsync({
         name: name.trim(),
         ...(inspection?.url ? { site: inspection.url } : site.trim() ? { site: site.trim() } : {}),
-        ...(inspection?.description ? { description: inspection.description } : {}),
+        ...(description.trim() ? { description: description.trim() } : {}),
         thirdParty,
         ...(accepted ? { accepted } : {}),
       });
@@ -198,9 +197,24 @@ export function NewBrandModal({
       {/* The pattern is the right half at every step, including the URL one
           where it idles: a panel that appears only after the fetch would make
           the modal jump at the moment the user is reading it. */}
+      {/* Over the pattern at the dialog's own corner, not tucked into the
+          form's header: the close is for the whole thing, and the right half
+          is the only place it can sit without competing with the heading.
+          Frosted because it has a moving picture behind it — a flat chip would
+          either disappear into a light band or sit on it like a sticker. */}
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={busy}
+        aria-label="Close"
+        className="absolute right-3 top-3 z-20 rounded-full border border-white/15 bg-black/35 p-2 text-white/75 backdrop-blur-md transition-colors hover:bg-black/55 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-40 outline-none"
+      >
+        <CloseIcon className="size-4" />
+      </button>
+
       <div className="grid h-[min(84vh,38rem)] md:grid-cols-[minmax(0,26rem)_1fr]">
         <div className="flex min-h-0 flex-col">
-      <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <div className="border-b border-border px-5 py-4">
         <div>
           <h2 id="new-brand-title" className="text-[1.05rem] font-medium text-text-primary">
             New brand
@@ -213,15 +227,6 @@ export function NewBrandModal({
                 : "Name it now, and fill in the rest from the brand's page."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={busy}
-          aria-label="Close"
-          className="shrink-0 rounded p-1 text-text-tertiary hover:text-text-primary disabled:opacity-50"
-        >
-          <CloseIcon className="size-4" />
-        </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
@@ -277,11 +282,20 @@ export function NewBrandModal({
               />
             </label>
 
-            {inspection?.description && (
-              <p className="mt-3 rounded-md border border-border bg-surface px-3 py-2 text-[0.786rem] leading-snug text-text-secondary">
-                {inspection.description}
-              </p>
-            )}
+            <label className="mt-3 block">
+              <span className="text-[0.857rem] text-text-secondary">What they do</span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="Purpose-built for planning and building products."
+                className="mt-1.5 w-full resize-none rounded-md border border-border bg-surface p-3 text-[0.857rem] leading-relaxed text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
+              />
+              <span className="mt-1 block text-[0.786rem] leading-snug text-text-tertiary">
+                The one thing here that says what a video is about rather than what it should look
+                like. The agent reads it.
+              </span>
+            </label>
 
             {inspection && (
               <>

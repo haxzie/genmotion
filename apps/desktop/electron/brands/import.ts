@@ -60,10 +60,14 @@ export async function inspectSite(site: string): Promise<BrandInspection> {
 
 /* ----------------------------------------------------------------- writing */
 
+/**
+ * What the user ticked.
+ *
+ * Only the lists. The name, the site and the description are identity, set
+ * once when the brand is created — carrying them here as well meant two places
+ * could decide what a brand is called, and the second one silently won.
+ */
 export interface AcceptedInspection {
-  name?: string;
-  description?: string;
-  site?: string;
   colors?: InspectedColor[];
   fonts?: InspectedFont[];
   /** The candidates the user ticked; each is fetched into `logos/`. */
@@ -234,9 +238,6 @@ export async function applyInspection(id: string, accepted: AcceptedInspection):
   await writeBrand(
     brandManifestSchema.parse({
       ...current,
-      ...(accepted.name ? { name: accepted.name } : {}),
-      ...(accepted.site ? { site: accepted.site } : {}),
-      ...(accepted.description ? { description: accepted.description } : {}),
       colors: [
         ...current.colors,
         ...(accepted.colors ?? []).map((c) => ({
