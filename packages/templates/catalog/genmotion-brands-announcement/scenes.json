@@ -1,0 +1,47 @@
+{
+  "arc": "One scene carrying the whole announcement as a single continuous camera move across one drawing: hook (the title BRANDS under a hatched arc) \u2192 feature (the kit of parts: colours, mark, typeface, references) \u2192 reveal (the peak, three scene frames taking the brand in turn under \"EVERY SCENE on brand\") \u2192 workflow (a cursor clicks the brand chip in a composer) \u2192 cta (the mark and \"DOWNLOAD GENMOTION\").",
+  "scenes": [
+    {
+      "file": "scenes/01-brands.ts",
+      "title": "A feature announcement drawn as one engineering blueprint, the camera panning across five stations of a single sheet",
+      "beat": "announcement",
+      "alsoFits": [
+        "feature",
+        "workflow",
+        "cta",
+        "hook"
+      ],
+      "summary": "16s, and the whole video. Paper white sheet, dark ink linework, a tick ruler along the bottom and a running header (\"05 WHAT'S NEW\" left, \"GENMOTION \u00b7 BRANDS\" right) that tracks the camera so it stays pinned. Five stations are laid out left to right along about 6,600px of world. A: a hatched arc sweeping up to a boxed title \"BRANDS\" with \"now built into genmotion\" beneath it, part numbers BR-1180 and BR-0421 called out on the arc, and a slashed circle tagged \"NEW\". B: \"YOUR BRAND, ONCE\" over a kit of parts, two filled swatches ringed in ink labelled \"#C6F91E  #16F5BD\", the pinwheel mark in its own ring, a type specimen \"Aa\" in a box under \"TYPEFACE\", and three stacked reference cards under \"ASSETS\". C: the peak, a large circle with a chord and engraving hatch below it, titled \"EVERY SCENE / on brand\", holding three small scene frames that fill one after another with the lime hex, the mark and the typeface, labelled HEX, MARK, TYPE; a slashed circle tagged \"ATTACH\" arrows into it. D: \"PICK IT IN THE COMPOSER\", a composer box with the placeholder \"describe your video\u2026\", and a brand chip that a cursor travels to, presses, and which then fills with ink and reads \"GENMOTION\" beside the mark, with a click ring expanding out of it. E: the mark inside a ticked ring, \"DOWNLOAD GENMOTION\" and \"genmotion.dev\". An ink line wipes the sheet clean over the last 14 frames.",
+      "build": "Two components carry it. `components/drawing.ts` is a blueprint toolkit: a PALETTE, a `Strokes` class that batches many line segments into one geometry and reveals them by a 0 to 1 progress (so a whole arc, a circle or a field of hatching draws itself from one `.set()` call), a `Label` that renders text into a canvas texture with optional box and fill, and generators for `line`, `poly`, `arcPts`, `circle`, `rect`, `dashed` and `arrow`. `components/mark.ts` builds the GenMotion pinwheel as real geometry rather than an image. The scene itself is an orthographic camera over a single static world group: nothing in the drawing moves, the camera does. `camX` is the sum of three eased `interpolate` pans plus `f * 0.35`, a slow constant drift, so the frame never fully parks between stations, and the header group is set to the same x every frame so it reads as fixed furniture. Everything else is a `prog(frame, start, duration)` helper feeding `.set()` on strokes and labels, which makes the whole 495 frame timeline a readable column of start times. The peak is three `scale.x` reveals 12 frames apart; the cursor is a `THREE.Shape` whose tip is the group origin, lerped along an arc to the chip, scaled down on the press and eased away afterwards.",
+      "reuse": "Take this when an announcement or explainer should feel considered and technical rather than glossy: a changelog film, an API or infrastructure feature, a hardware spec, a methodology explainer, anything where a diagram is the honest way to say it. The reusable ideas are the long-sheet camera pan (one static world, a moving orthographic camera, pans summed with a constant drift), the progress-driven `Strokes` batch that lets any amount of linework draw itself from one number, and the call-out grammar of slashed circles, leader lines and dashed construction between stations. Swap the station contents, the x constants and the pan keyframes. Do not copy the GenMotion pinwheel in `mark.ts` or the lime and teal swatches: those are GenMotion's own identity, and a brand video should carry the brand it is for.",
+      "techniques": [
+        "camera-move",
+        "diagram",
+        "kinetic-type",
+        "cursor-click",
+        "ui-mockup",
+        "mask-reveal",
+        "sound-sync"
+      ],
+      "mood": [
+        "light",
+        "minimal",
+        "editorial",
+        "techy"
+      ],
+      "videoTypes": [
+        "announce-feature",
+        "announce-milestone",
+        "explainer",
+        "launch-playbook"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.1,
+        0.657,
+        0.86
+      ]
+    }
+  ]
+}

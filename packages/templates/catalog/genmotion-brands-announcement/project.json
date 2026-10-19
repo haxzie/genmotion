@@ -1,0 +1,29 @@
+{
+  "name": "GenMotion Brands announcement video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-brands.ts",
+      "durationInFrames": 495,
+      "name": "Brands",
+      "sourceDurationInFrames": 600
+    }
+  ],
+  "audio": [
+    {
+      "id": "vo-brands-v2",
+      "file": "assets/brands-vo-v2.mp3",
+      "track": 0,
+      "startFrame": 10,
+      "durationInFrames": 434,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
