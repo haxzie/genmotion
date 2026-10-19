@@ -1,0 +1,16 @@
+{
+  "id": "agentic-cli-launch-video",
+  "title": "Agentic CLI launch video",
+  "description": "One continuous shot over a halftone field: a terminal blooms out of a dot, types an install command, detects every coding agent on the machine, ticks them off, then genies into a dock that becomes the logo.",
+  "metaTitle": "Agentic CLI Launch Video Template, Terminal Demo — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "publishedAt": "2026-10-19",
+  "featured": false,
+  "order": 41,
+  "sampleAt": 0.2,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/agentic-cli-launch-video/video.mp4"
+}

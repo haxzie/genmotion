@@ -1,0 +1,48 @@
+{
+  "arc": "One unbroken shot, so one scene: hook (a terminal blooms out of a dot in the dock) \u2192 feature (the install command is typed, the machine's coding agents are detected and listed) \u2192 workflow (select all, the checks ripple down, then a run of per-agent installs clicked straight from the dock) \u2192 logo (the window genies back into the dock and the product tile becomes the lockup) \u2192 cta (tagline, wordmark and the command on a pill).",
+  "scenes": [
+    {
+      "file": "scenes/01-sequel-install.ts",
+      "title": "A terminal blooms out of a dock tile, installs a CLI into every coding agent found, then genies back into the logo",
+      "beat": "feature",
+      "alsoFits": [
+        "hook",
+        "workflow",
+        "logo",
+        "cta"
+      ],
+      "summary": "18.6s, the whole film in one continuous camera move. A pink to orange halftone field with a macOS-style dock along the bottom holding eight app tiles. The product tile launches a terminal that blooms out of it, and `npx @sequelsh/cli install` types itself at the prompt, keystroke by keystroke. A pixel SEQUEL banner glitches in, then the camera pulls back to the whole window: \"Install the Sequel MCP server and skill\", \"Detected agents\", and a list of seven real coding agents with their marks, each `[ready]` (Claude Code, Cursor, VS Code, Codex, OpenClaw, Hermes, Windsurf). The prompt asks \"Which agents should Sequel install into?\", select-all is confirmed, and amber checks ripple down the list while the matching dock tiles bump. A summary, then the view scrolls and dims for a second command, and a cursor clicks each agent in the dock in turn, each click typing `install <slug>` and ticking, accelerating as it goes. The window genies back into the dock, the agents leave it one by one, and the product tile hands off into the end card: the tagline \"give your agents live marketing data\", the wordmark, and the command on a cream pill.",
+      "build": "The interesting part is the clock. The choreography is written against a 13.8s \"story\" clock in a single `T` table of named beats, and a `WARP` table of (film, story) breakpoints stretches film time to 18.6s by slowing story time inside each typing window, so the keys run at a human pace and land on the music while the camera keeps drifting. The audio build script uses the same breakpoints, which is what keeps picture and sound locked. Typing is driven by `assets/typing.timing.json`, the plan the typing track was synthesised from, so the characters appear exactly when they are heard. The camera is a list of `[time, x, y, zoom]` keys eased between, which is how a 19 second one-shot stays readable: it is one rig, not a cut list. `components/halftone.ts` is a fullscreen shader that screen-prints a moving field in three crossfading looks (blooms, a ridge, flat guides with layout rules) and costs nothing to load. `components/kit.ts` is the 2D layer the rest is built from: a stage-pixel unit scale, supersampled canvas-texture text with coloured runs, rounded rects with gradients, borders and soft shadows, and the usual eases. `components/brand.ts` holds the palette, the fonts, the agent list with real slugs, the command and the tagline.",
+      "reuse": "Take this for any developer tool whose install is the story: a CLI, an SDK, an extension, a package. The reusable machinery is the story-clock warp (write beats at a natural pace, then stretch film time around the typing so sound and picture cannot drift), the keyed camera rig that makes a long single take feel edited, the halftone shader backdrop, and the dock-plus-terminal staging. The agent list, the command and the tagline are all in `components/brand.ts`, so a different product is mostly one file. Do not reuse the Sequel mark, the wordmark, the pink to orange palette or the seven agent icons: those belong to the companies they name.",
+      "techniques": [
+        "typing-input",
+        "ui-mockup",
+        "camera-move",
+        "custom-shader",
+        "cursor-click",
+        "sound-sync",
+        "continuous-take",
+        "icon-grid"
+      ],
+      "mood": [
+        "bold",
+        "energetic",
+        "techy",
+        "premium"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.45,
+        0.93
+      ]
+    }
+  ]
+}

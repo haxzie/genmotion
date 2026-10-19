@@ -1,0 +1,64 @@
+{
+  "name": "Agentic CLI launch video",
+  "engine": "three",
+  "fps": 60,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-sequel-install.ts",
+      "durationInFrames": 1116,
+      "name": "Sequel install"
+    }
+  ],
+  "audio": [
+    {
+      "id": "bgm",
+      "file": "assets/bgm.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 1116,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "typing",
+      "file": "assets/typing.mp3",
+      "track": 1,
+      "startFrame": 0,
+      "durationInFrames": 1116,
+      "startFrom": 0,
+      "volume": 1.15,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "clicks",
+      "file": "assets/clicks-dock.mp3",
+      "track": 2,
+      "startFrame": 0,
+      "durationInFrames": 680,
+      "startFrom": 0,
+      "volume": 0.7,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    },
+    {
+      "id": "ui-sfx",
+      "file": "assets/sfx-ui.mp3",
+      "track": 3,
+      "startFrame": 0,
+      "durationInFrames": 1116,
+      "startFrom": 0,
+      "volume": 0.65,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}
