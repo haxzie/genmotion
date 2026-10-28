@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getObjectBuffer, putObject } from "@genmotion/storage";
+import { getCachedObject, putObject } from "@genmotion/storage";
 import { MCP_CATALOG } from "../mcp-catalog/index";
 import { env } from "../env";
 
@@ -54,7 +54,7 @@ function faviconKey(domain: string): string {
 
 async function favicon(domain: string): Promise<Buffer | null> {
   const key = faviconKey(domain);
-  const cached = await getObjectBuffer(key).catch(() => null);
+  const cached = await getCachedObject(key);
   if (cached) return cached;
 
   const running = inflight.get(key);

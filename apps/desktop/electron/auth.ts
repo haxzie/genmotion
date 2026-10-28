@@ -221,10 +221,16 @@ export class DesktopAuth {
    * A failure still parses as JSON, because that is what the API answers with
    * when it refuses — a paywall or a provider error — and the caller needs to
    * read the message out of it.
+   *
+   * `timeoutMs` is not optional in practice: this is the far end of a chain
+   * that starts at an `<audio>` element in the renderer, and nothing in
+   * between imposes a deadline of its own. Without one, an API that stops
+   * answering leaves a play button spinning for as long as the window is
+   * open, with nothing to report because nothing ever failed.
    */
   async requestBinary(
     path: string,
-    init: { method?: string; json?: unknown } = {},
+    init: { method?: string; json?: unknown; timeoutMs?: number } = {},
   ): Promise<
     | { ok: true; status: number; bytes: Buffer; mime: string }
     | { ok: false; status: number; body: unknown }
@@ -232,14 +238,27 @@ export class DesktopAuth {
     const token = await readStored();
     if (!token) return { ok: false, status: 401, body: { error: "Not signed in." } };
 
-    const res = await fetch(`${API_URL}${path}`, {
-      method: init.method ?? (init.json !== undefined ? "POST" : "GET"),
-      headers: {
-        ...(init.json !== undefined ? { "content-type": "application/json" } : {}),
-        authorization: `Bearer ${token}`,
-      },
-      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}${path}`, {
+        method: init.method ?? (init.json !== undefined ? "POST" : "GET"),
+        headers: {
+          ...(init.json !== undefined ? { "content-type": "application/json" } : {}),
+          authorization: `Bearer ${token}`,
+        },
+        ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
+        signal: AbortSignal.timeout(init.timeoutMs ?? 30_000),
+      });
+    } catch (error) {
+      const timedOut = (error as { name?: string })?.name === "TimeoutError";
+      return {
+        ok: false,
+        status: timedOut ? 504 : 502,
+        body: {
+          error: timedOut ? "GenMotion took too long to answer." : "Can't reach GenMotion.",
+        },
+      };
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import type { TemplateSummary } from "@genmotion/templates/types";
 import { Button, cx } from "@/components/ui";
-import { templateAssetUrl } from "./template-asset-url";
+import { templateAssetUrl, templateVideoSrc } from "./template-asset-url";
 
 const enterEase = [0.25, 1, 0.5, 1] as const;
 
@@ -105,7 +105,7 @@ function Player({ template }: { template: TemplateSummary }) {
     <div className="group/player absolute inset-0 overflow-hidden bg-black">
       <video
         ref={videoRef}
-        src={templateAssetUrl(template.videoPath, template.revision)}
+        src={templateVideoSrc(template, "full")}
         poster={templateAssetUrl(template.posterPath, template.revision)}
         className="block size-full object-contain"
         // Muted at first by every autoplay policy there is; the sound button

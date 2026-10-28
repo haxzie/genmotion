@@ -4,6 +4,7 @@ import { and, eq, db, schema } from "@genmotion/db";
 import {
   deleteObject,
   getObject,
+  isMissingObject,
   listObjects,
   projectFilesPrefix,
   publicUrl,
@@ -103,10 +104,10 @@ async function streamFile(c: Context<AuthEnv>) {
   const decoded = key.slice(`projects/${projectId}/`.length);
   const range = c.req.header("range");
   try {
-    const { body, contentType, contentLength, contentRange } = await getObject(
-      key,
+    const { body, contentType, contentLength, contentRange } = await getObject(key, {
       range,
-    );
+      signal: c.req.raw.signal,
+    });
     const webStream = Readable.toWeb(body) as ReadableStream;
     const headers: Record<string, string> = {
       "Content-Type":
@@ -133,6 +134,10 @@ async function streamFile(c: Context<AuthEnv>) {
     // rely on the distinction when probing an object of unknown length.
     if ((error as { name?: string })?.name === "InvalidRange") {
       return c.json({ error: "Range not satisfiable" }, 416);
+    }
+    if (!isMissingObject(error)) {
+      console.error(`[files] ${key}: read failed`, error);
+      return c.json({ error: "Storage unavailable" }, 502);
     }
     return c.json({ error: "Not found" }, 404);
   }

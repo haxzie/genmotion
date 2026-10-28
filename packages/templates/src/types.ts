@@ -16,10 +16,17 @@ import type { TemplateMeta, TemplateTag } from "./schema";
  * this for a while — it only breaks the moment something forces a re-crawl —
  * so the barrel import is a landmine, not a working shortcut.
  *
- * No payload here carries an absolute URL. Every asset reference is a path the
- * client joins onto whatever API base it used, which is what lets the desktop
- * renderer reach all of it through the loopback server on its own origin — the
- * only source its CSP allows for `connect-src` and `media-src` alike.
+ * Every asset reference is a path the client joins onto whatever API base it
+ * used, which is what lets the desktop renderer reach all of it through the
+ * loopback server on its own origin — the only source its CSP allows for
+ * `connect-src` and `media-src` alike.
+ *
+ * `videoUrl`/`previewUrl` are the one deliberate exception, and they are
+ * additive rather than a replacement: a browser that can fetch the CDN
+ * directly should, because the entire point is to take this API out of the
+ * path for hundreds of megabytes of video. The desktop ignores them and keeps
+ * to the paths, so the rule above still holds everywhere it was holding
+ * anything up.
  */
 
 export type TemplateCategory = TemplateMeta["category"];
@@ -46,6 +53,22 @@ export interface TemplateSummary {
   sceneCount: number;
   /** Join onto the API base — "/api/templates/<id>/poster". */
   posterPath: string;
+  /**
+   * The video, served straight off the CDN, cache-busted and ready to use as
+   * a `src` — or null when no CDN is configured (dev, or before the custom
+   * domain exists), in which case `videoPath` is the only way to it.
+   */
+  videoUrl: string | null;
+  /**
+   * The small, muted, 640px-box rendition the galleries play on hover, and
+   * null until this template has been re-rendered by a `render-video.mjs`
+   * that emits one. A card is ~350px wide: the full 1080p file is two orders
+   * of magnitude more video than it can show, and downloading it is what
+   * made the gallery feel broken.
+   */
+  previewPath: string | null;
+  /** `previewPath` off the CDN, on the same terms as `videoUrl`. */
+  previewUrl: string | null;
   /**
    * Join onto the API base — "/api/templates/<id>/video". A pre-rendered MP4
    * in R2, proxied through this route rather than linked directly: R2 isn't

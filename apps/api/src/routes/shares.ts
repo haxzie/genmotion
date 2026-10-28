@@ -8,6 +8,7 @@ import {
   deleteObject,
   getObject,
   headObject,
+  isMissingObject,
   presignDownload,
   presignUpload,
 } from "@genmotion/storage";
@@ -134,10 +135,10 @@ shareRoutes.get("/s/:slug/video", async (c) => {
   if (!row) return c.json({ error: "Not found" }, 404);
 
   try {
-    const { body, contentLength, contentRange } = await getObject(
-      row.videoKey,
-      c.req.header("range"),
-    );
+    const { body, contentLength, contentRange } = await getObject(row.videoKey, {
+      range: c.req.header("range"),
+      signal: c.req.raw.signal,
+    });
     const headers: Record<string, string> = {
       "Content-Type": "video/mp4",
       // The key contains the share id and a share's bytes never change, so
@@ -155,6 +156,10 @@ shareRoutes.get("/s/:slug/video", async (c) => {
     if ((error as { name?: string })?.name === "InvalidRange") {
       return c.json({ error: "Range not satisfiable" }, 416);
     }
+    if (!isMissingObject(error)) {
+      console.error(`[shares] ${row.videoKey}: video read failed`, error);
+      return c.json({ error: "Storage unavailable" }, 502);
+    }
     return c.json({ error: "Not found" }, 404);
   }
 });
@@ -165,7 +170,9 @@ shareRoutes.get("/s/:slug/poster", async (c) => {
   if (!row?.posterKey) return c.json({ error: "Not found" }, 404);
 
   try {
-    const { body, contentLength } = await getObject(row.posterKey);
+    const { body, contentLength } = await getObject(row.posterKey, {
+      signal: c.req.raw.signal,
+    });
     const headers: Record<string, string> = {
       "Content-Type": "image/jpeg",
       "Cache-Control": BYTES_CACHE,

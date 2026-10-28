@@ -155,6 +155,19 @@ pnpm changeset                        # describe a change to a published package
   repo they publish (which is why a template's README carries the links back to
   genmotion.dev). The catalog test compiles and smoke-renders every scene and
   holds every template to a README, so a template that rots fails CI.
+- **Template video:** `render-video.mjs` writes two renditions per template —
+  the full MP4 and a muted 640px-box `preview.mp4` the galleries play on
+  hover — and records both URLs in `template.json`. The recorded `preview` is
+  also the flag: no key, no preview fields on the summary, and every client
+  falls back to the full video, which is how this ships ahead of a
+  re-render. Both are `+faststart` (a `moov` atom at the end of the file is
+  a video that will not start) and bitrate-capped; `muxAudio` has to re-state
+  `-movflags` because `-c:v copy` writes a fresh container. Serving: set
+  `TEMPLATES_CDN_URL` and `/api/templates/:id/video` answers 302 to the edge
+  and each summary carries an absolute `videoUrl`; unset, the API streams the
+  bytes itself with Range forwarded. The desktop ignores `videoUrl` on
+  purpose — its renderer may only load media from its own origin, so it goes
+  through the loopback proxy, which follows the redirect for it.
 - **Plugins (the MCP catalog):** the desktop app's Plugins tab — once called
   the Marketplace, and the word is gone, including the stored `source`, which
   reads `"marketplace"` forward to `"plugin"` for folders written before the

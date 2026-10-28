@@ -27,6 +27,29 @@ body,
 }
 
 /*
+ * The template gallery's entrance. A plain keyframe rather than Motion: the
+ * masonry grid reflows when an inline style changes inside it, and a
+ * JS-driven animation writes one every frame. Each card sets its own
+ * `animation-delay` for the stagger.
+ */
+@keyframes gallery-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.gallery-card-in {
+  animation: gallery-card-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-card-in {
+    animation: none;
+  }
+}
+
+/*
  * Launch gate: the mark turns slowly while the stored token is checked over
  * the network. Slow and linear on purpose — this is a "hold on" signal, not a
  * "working hard" one, and it is the first thing the app ever shows.

@@ -1,106 +1,107 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Frame, RegularMasonryGrid } from "@masonry-grid/react";
 import type { TemplateSummary } from "@genmotion/templates/types";
-import { TemplateCard } from "@/components/marketing/template-card";
+import { TemplateCard, templateDetailsHeight } from "@/components/marketing/template-card";
 
-/** Matches the `sm`/`lg` breakpoints the old `sm:columns-2 lg:columns-3` used. */
-function useColumnCount(): number {
-  const [count, setCount] = useState(1);
-  useEffect(() => {
-    const sm = window.matchMedia("(min-width: 640px)");
-    const lg = window.matchMedia("(min-width: 1024px)");
-    const update = () => setCount(lg.matches ? 3 : sm.matches ? 2 : 1);
-    update();
-    sm.addEventListener("change", update);
-    lg.addEventListener("change", update);
-    return () => {
-      sm.removeEventListener("change", update);
-      lg.removeEventListener("change", update);
-    };
-  }, []);
-  return count;
-}
-
-/** `gap-5`. */
+/** `gap-5`, as a number the grid can also do arithmetic with. */
 const GAP_PX = 20;
-/** A card's own text block below the poster — padding, title, the 2-line
- *  clamped description, the meta line, and a tag row — is close enough in
- *  height across every card (they all follow the same shape) that this
- *  constant, added to the poster's own real aspect ratio, is enough to
- *  compare columns by by without measuring anything in the real DOM. */
-const TEXT_BLOCK_PX = 168;
+/**
+ * Narrowest a column may get before the grid drops one. `auto-fill` +
+ * `minmax()` does the rest, so there are no breakpoints here: 1104px of
+ * content (`max-w-6xl` less its gutter) gives three columns, a tablet two,
+ * a phone one, and the wider homepage strip four.
+ */
+const MIN_COLUMN_PX = 280;
 
-function estimateHeight(
-  template: TemplateSummary,
-  columnWidth: number,
-  showDetails: boolean,
-): number {
-  const posterHeight = columnWidth * (template.height / template.width);
-  return posterHeight + (showDetails ? TEXT_BLOCK_PX : 0);
+/** What CSS's own `repeat(auto-fill, minmax(min, 1fr))` resolves to. */
+function columnWidth(containerWidth: number, min: number): number {
+  if (containerWidth <= 0) return 0;
+  const count = Math.max(1, Math.floor((containerWidth + GAP_PX) / (min + GAP_PX)));
+  return (containerWidth - GAP_PX * (count - 1)) / count;
 }
 
 /**
- * True masonry: each card goes into whichever column is currently shortest,
- * not into columns balanced by total height the way CSS's own `columns-*`
- * does. That balancing is what left visible empty space under a short card
- * sitting next to a tall one — this places by an actual running height
- * instead, so a column only ever gets ahead of the others by one card's
- * worth of "no shorter option existed yet".
+ * Column width assumed until the container has been measured, so the first
+ * paint — including the server's — lands somewhere sane rather than stacking
+ * everything into one column and then jumping. Only the detail cards care:
+ * a video-only card's height is pure aspect ratio, which needs no pixels.
+ */
+const ASSUMED_COLUMN_PX = 354;
+
+/**
+ * The template gallery, laid out by `@masonry-grid/react`.
+ *
+ * `RegularMasonryGrid` rather than its balanced sibling because reading order
+ * is the point: cards fill left to right, newest first, each one pulled up
+ * under the card above it to close the gap a plain grid would leave. The
+ * balanced variant reshuffles items within a row to minimise total height,
+ * which buys a flatter bottom edge at the cost of the recency order.
+ *
+ * Every card declares its own aspect ratio, so the layout is arithmetic over
+ * the catalog rather than a measure-then-reflow pass over the DOM — nothing
+ * waits on a poster decoding, and the column count comes from CSS
+ * (`auto-fill`) instead of a `matchMedia` list that only resolves after
+ * hydration. That last part is what used to make this jump: the server, and
+ * the first client paint, laid every card out in a single column.
  */
 export function TemplateMasonry({
   templates,
   showDetails = true,
+  minColumnWidth = MIN_COLUMN_PX,
 }: {
   templates: TemplateSummary[];
-  /** Passed straight to each `TemplateCard`; also drops the text block's
-   *  height out of the masonry layout estimate so columns balance by poster
-   *  height alone. */
+  /** Passed straight to each `TemplateCard`. */
   showDetails?: boolean;
+  minColumnWidth?: number;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const columnCount = useColumnCount();
+  // Measured on a wrapper of our own rather than on the grid: the grid
+  // component assigns a forwarded ref during render, so it is still null in
+  // the effect that would observe it.
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState(0);
 
+  // Only the detail cards need this: their height is a poster at its real
+  // ratio plus a text block of a fixed pixel height, and the grid works in
+  // ratios, so the text block has to be converted into ratio units — which
+  // takes the column's width in pixels. A video-only card skips it entirely.
   useEffect(() => {
-    const el = containerRef.current;
+    if (!showDetails) return;
+    const el = outerRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) setContainerWidth(entry.contentRect.width);
+      if (entry) setMeasured(entry.contentRect.width);
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [showDetails]);
 
-  const columnWidth =
-    columnCount > 0 ? (containerWidth - GAP_PX * (columnCount - 1)) / columnCount : 0;
-
-  const columns: TemplateSummary[][] = Array.from({ length: columnCount }, () => []);
-  if (columnWidth > 0) {
-    const heights = new Array(columnCount).fill(0);
-    for (const template of templates) {
-      let shortest = 0;
-      for (let i = 1; i < columnCount; i++) {
-        if (heights[i]! < heights[shortest]!) shortest = i;
-      }
-      columns[shortest]!.push(template);
-      heights[shortest] += estimateHeight(template, columnWidth, showDetails) + GAP_PX;
-    }
-  } else {
-    // Before the container has been measured once, round-robin rather than
-    // render nothing — close enough for an instant that resolves itself.
-    templates.forEach((template, i) => columns[i % columnCount]!.push(template));
-  }
+  const column = showDetails
+    ? columnWidth(measured, minColumnWidth) || ASSUMED_COLUMN_PX
+    : 0;
 
   return (
-    <div ref={containerRef} className="flex gap-5">
-      {columns.map((column, i) => (
-        <div key={i} className="flex min-w-0 flex-1 flex-col gap-5">
-          {column.map((template) => (
-            <TemplateCard key={template.id} template={template} showDetails={showDetails} />
-          ))}
-        </div>
-      ))}
+    <div ref={outerRef}>
+      <RegularMasonryGrid
+        frameWidth={minColumnWidth}
+        gap={GAP_PX}
+        style={{ alignItems: "start" }}
+      >
+        {templates.map((template) => {
+          // A detail card is taller than its poster by the text block beneath
+          // it. Expressed in the poster's own width units so the whole card
+          // still reduces to one ratio.
+          const extra = showDetails
+            ? (templateDetailsHeight(template) * template.width) / column
+            : 0;
+          return (
+            <Frame key={template.id} width={template.width} height={template.height + extra}>
+              <TemplateCard template={template} showDetails={showDetails} />
+            </Frame>
+          );
+        })}
+      </RegularMasonryGrid>
     </div>
   );
 }

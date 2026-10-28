@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TemplateSummary } from "@genmotion/templates/types";
 import { cx } from "@/lib/cx";
-import { templateApiUrl } from "@/lib/marketing/templates";
+import { templateApiUrl, templateVideoSrc } from "@/lib/marketing/templates";
 
 /**
  * The template's own pre-rendered MP4 — `render-video.mjs` produced it once,
@@ -131,7 +131,7 @@ export function TemplatePlayer({
         <div style={{ aspectRatio: `${summary.width} / ${summary.height}` }}>
           <video
             ref={videoRef}
-            src={templateApiUrl(`${summary.videoPath}?v=${summary.revision}`)}
+            src={templateVideoSrc(summary)}
             poster={templateApiUrl(`${summary.posterPath}?v=${summary.revision}`)}
             className="size-full object-cover"
             loop

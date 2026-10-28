@@ -71,6 +71,7 @@
     "zustand": "^5.0.14"
   },
   "dependencies": {
+    "@masonry-grid/react": "^1.1.1",
     "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }

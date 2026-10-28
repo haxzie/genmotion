@@ -1,8 +1,8 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { Readable } from "node:stream";
-import { Hono } from "hono";
-import { getObject } from "@genmotion/storage";
+import { Hono, type Context } from "hono";
+import { getObject, isMissingObject, PUBLIC_BUCKET } from "@genmotion/storage";
 import {
   TEMPLATE_PAGE_SIZE,
   TemplateError,
@@ -11,6 +11,8 @@ import {
   listTemplatesPage,
   templateAssetPath,
   templatePosterPath,
+  templatePreviewKey,
+  templateVideoKey,
   toSummary,
 } from "@genmotion/templates";
 import { SCENE_BEATS, findScenes, parseAspect, getScene, getSceneFork, getSceneStill, type SceneBeat } from "@genmotion/templates/scenes";
@@ -280,33 +282,56 @@ templateRoutes.get("/:id/poster", async (c) => {
 });
 
 /**
- * The pre-rendered MP4 a gallery/detail page actually plays.
- *
- * Rendered offline by `pnpm --filter @genmotion/templates render-video` (see
- * the `templates` skill), not by this process — this route only ever fetches
- * whatever landed at `templates/<id>/video.mp4` in R2. A template that hasn't
- * been rendered yet 404s here rather than falling back to anything live; the
- * client's job is to hide the player, not paper over a missing render.
- *
- * Range requests are forwarded to the store, same as the project-files proxy
- * (`routes/files.ts`) — what lets a `<video>` seek instead of buffering the
- * whole file from the start.
+ * Where a browser may read the bucket directly. Unset keeps every byte of
+ * video flowing through the proxy below, which is the dev behaviour and the
+ * behaviour of any deploy that has not been given a CDN yet.
  */
-templateRoutes.get("/:id/video", async (c) => {
-  const id = c.req.param("id");
-  const record = await getTemplate(id).catch(() => null);
-  if (!record) return c.json({ error: "Not found" }, 404);
+const CDN_BASE = (process.env.TEMPLATES_CDN_URL ?? "").replace(/\/+$/, "");
+
+/**
+ * Stream a stored MP4, or hand the caller somewhere better to get it.
+ *
+ * With a CDN configured this answers 302 and never touches the store: the
+ * bytes come off the edge, and the only thing this process spends on a video
+ * is one redirect. That is the whole point of the arrangement — proxying
+ * hundreds of megabytes through an API that also has to answer everything
+ * else is what made a single unreachable bucket look like a catalog with no
+ * videos in it.
+ *
+ * `videoUrl`/`previewUrl` on the summary let a browser skip even the
+ * redirect. This route stays because the desktop app cannot use them: its
+ * renderer may only talk to its own origin, so it asks the loopback server,
+ * which asks here, follows the 302, and pipes the result back. One hop more
+ * than the web, and still none of them through this process's socket pool.
+ *
+ * Without a CDN it streams from the store as before, forwarding Range — what
+ * lets a `<video>` seek instead of buffering the whole file from the start.
+ */
+async function serveStoredVideo(
+  c: Context,
+  key: string,
+  revision: string,
+  label: string,
+): Promise<Response> {
+  const cacheControl = c.req.query("v") ? IMMUTABLE : BYTES_CACHE;
+  if (CDN_BASE) {
+    c.header("Cache-Control", cacheControl);
+    return c.redirect(`${CDN_BASE}/${key}?v=${revision}`, 302);
+  }
 
   try {
-    const { body, contentLength, contentRange } = await getObject(
-      `templates/${id}/video.mp4`,
-      c.req.header("range"),
-    );
+    const { body, contentLength, contentRange } = await getObject(key, {
+      range: c.req.header("range"),
+      signal: c.req.raw.signal,
+      // Templates live in the world-readable bucket, which is the same
+      // bucket in dev and a different one wherever a CDN fronts it.
+      bucket: PUBLIC_BUCKET,
+    });
     const headers: Record<string, string> = {
       "Content-Type": "video/mp4",
-      "Cache-Control": c.req.query("v") ? IMMUTABLE : BYTES_CACHE,
+      "Cache-Control": cacheControl,
       "Accept-Ranges": "bytes",
-      ETag: `"${record.revision}"`,
+      ETag: `"${revision}"`,
     };
     if (contentLength !== undefined) headers["Content-Length"] = String(contentLength);
     if (contentRange) headers["Content-Range"] = contentRange;
@@ -318,8 +343,44 @@ templateRoutes.get("/:id/video", async (c) => {
     if ((error as { name?: string })?.name === "InvalidRange") {
       return c.json({ error: "Range not satisfiable" }, 416);
     }
+    // A store that timed out is not a template that was never rendered. This
+    // route reported both as 404 for long enough that a total loss of object
+    // storage looked, from the outside, like a catalog with no videos in it.
+    if (!isMissingObject(error)) {
+      console.error(`[templates] ${label} read failed`, error);
+      return c.json({ error: "Storage unavailable" }, 502);
+    }
     return c.json({ error: "Not found" }, 404);
   }
+}
+
+/**
+ * The pre-rendered MP4 a detail page plays.
+ *
+ * Rendered offline by `pnpm --filter @genmotion/templates render-video` (see
+ * the `templates` skill), not by this process. A template that hasn't been
+ * rendered yet 404s here rather than falling back to anything live; the
+ * client's job is to hide the player, not paper over a missing render.
+ */
+templateRoutes.get("/:id/video", async (c) => {
+  const id = c.req.param("id");
+  const record = await getTemplate(id).catch(() => null);
+  if (!record) return c.json({ error: "Not found" }, 404);
+  return serveStoredVideo(c, templateVideoKey(id), record.revision, `${id}: video`);
+});
+
+/**
+ * The small, muted rendition a gallery card plays on hover.
+ *
+ * 404s unless the sidecar records one — a template rendered before previews
+ * existed has no such object, and answering with the full file instead would
+ * quietly reintroduce the thing previews are for.
+ */
+templateRoutes.get("/:id/preview", async (c) => {
+  const id = c.req.param("id");
+  const record = await getTemplate(id).catch(() => null);
+  if (!record?.meta.preview) return c.json({ error: "Not found" }, 404);
+  return serveStoredVideo(c, templatePreviewKey(id), record.revision, `${id}: preview`);
 });
 
 /**

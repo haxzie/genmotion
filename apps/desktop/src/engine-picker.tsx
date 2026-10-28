@@ -18,20 +18,21 @@ interface Preferences {
  * it. The mapping lives here alone; everything below the picker speaks the
  * manifest's names.
  */
-type EngineRow = "genmotion" | "hyperframes" | "three";
+type EngineRow = "genmotion" | "three";
 
+/**
+ * HyperFrames is deliberately not here. A project whose manifest already names
+ * it still opens, compiles and exports exactly as before — this is only about
+ * what a *new* project may be written for, and `projectDefaults` refuses a
+ * stored `hyperframes` preference for the same reason, so nothing can pick it
+ * behind the picker's back.
+ */
 const ENGINES: { id: EngineRow; engine: ProjectEngine; label: string; detail: string }[] = [
   {
     id: "genmotion",
     engine: "react",
     label: "GenMotion",
     detail: "React scenes on the frame-driven @genmotion/motion runtime",
-  },
-  {
-    id: "hyperframes",
-    engine: "hyperframes",
-    label: "HyperFrames",
-    detail: "HTML compositions with GSAP, authored with the HyperFrames skills",
   },
   {
     id: "three",
@@ -44,9 +45,6 @@ const ENGINES: { id: EngineRow; engine: ProjectEngine; label: string; detail: st
 function EngineIcon({ id, className }: { id: EngineRow; className?: string }) {
   if (id === "genmotion") {
     return <img src="/logo.svg" alt="" aria-hidden className={className} />;
-  }
-  if (id === "hyperframes") {
-    return <img src="/hyperframes-mark.png" alt="" aria-hidden className={className} />;
   }
   return <img src="/threejs-mark.svg" alt="" aria-hidden className={className} />;
 }

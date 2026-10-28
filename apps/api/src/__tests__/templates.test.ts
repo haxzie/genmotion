@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Analytics is inert without a key; capture the calls instead of sending them.
 const tracked = vi.hoisted(() => [] as { event: string; distinctId: string; properties?: Record<string, unknown> }[]);
@@ -12,6 +12,18 @@ vi.mock("../analytics", async (importOriginal) => ({
 const intents = vi.hoisted(() => [] as { templateId: string; option: string; user?: unknown }[]);
 vi.mock("../slack", () => ({
   notifyRemixIntent: (opts: { templateId: string; option: string; user?: unknown }) => intents.push(opts),
+}));
+
+// This suite has no MinIO of its own, so every read fails — which is useful,
+// because "the store is down" and "this template was never rendered" are the
+// two cases the video route has to tell apart. Only `getObject` is replaced;
+// `isMissingObject` is the real one, since it is what does the telling.
+const storageError = vi.hoisted(() => ({ next: null as unknown }));
+vi.mock("@genmotion/storage", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@genmotion/storage")>()),
+  getObject: async () => {
+    throw storageError.next ?? Object.assign(new Error("connect ECONNREFUSED"), { name: "Error" });
+  },
 }));
 
 import { remixClient, resetRemixIntentThrottle, templateRoutes } from "../routes/templates";
@@ -56,6 +68,9 @@ describe("GET /api/templates", () => {
       // reached us on, which is what keeps the desktop app same-origin.
       expect(template.posterPath).toBe(`/api/templates/${template.id}/poster`);
       expect(template.videoPath).toBe(`/api/templates/${template.id}/video`);
+      // No CDN configured in this suite, so the absolute forms are absent and
+      // every client is expected to fall back to the paths above.
+      expect(template.videoUrl).toBeNull();
     }
   });
 
@@ -236,16 +251,41 @@ describe("GET /api/templates/:id/poster", () => {
 });
 
 describe("GET /api/templates/:id/video", () => {
-  it("404s a template that hasn't been rendered (or when storage isn't reachable)", async () => {
-    // Rendering is a separate, manual step (`render-video.mjs`) — this suite
-    // has no MinIO/R2 of its own, and the route's own catch-all treats "can't
-    // reach the store" the same as "nothing there", same as `files.ts` does.
+  afterEach(() => {
+    storageError.next = null;
+  });
+
+  it("404s a template that hasn't been rendered", async () => {
+    // Rendering is a separate, manual step (`render-video.mjs`), so a catalog
+    // entry with no object behind it yet is an ordinary state, not a fault.
+    storageError.next = Object.assign(new Error("NoSuchKey"), { name: "NoSuchKey" });
     const res = await get(`/api/templates/${await firstId()}/video`);
     expect(res.status).toBe(404);
   });
 
+  it("502s when the store cannot be reached", async () => {
+    // Not 404. This route reported an unreachable store as a missing file for
+    // long enough that a total loss of object storage looked like a catalog
+    // with no videos in it — every template unplayable, nothing in the logs.
+    const res = await get(`/api/templates/${await firstId()}/video`);
+    expect(res.status).toBe(502);
+  });
+
   it("404s an unknown template before ever touching storage", async () => {
     expect((await get("/api/templates/no-such-template/video")).status).toBe(404);
+  });
+});
+
+describe("GET /api/templates/:id/preview", () => {
+  it("404s, and advertises no preview, until one has been rendered", async () => {
+    // The whole graceful-degradation story in one assertion: no template in
+    // the catalog has been through a render that emits previews yet, so the
+    // summary offers none and the route refuses to substitute the full file.
+    const id = await firstId();
+    const summary = (await (await get(`/api/templates/${id}`)).json()) as Record<string, unknown>;
+    expect(summary.previewPath).toBeNull();
+    expect(summary.previewUrl).toBeNull();
+    expect((await get(`/api/templates/${id}/preview`)).status).toBe(404);
   });
 });
 

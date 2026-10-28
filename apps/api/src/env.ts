@@ -74,6 +74,25 @@ const schema = z.object({
   S3_ACCESS_KEY_ID: z.string().min(1).optional(),
   S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   S3_PUBLIC_URL: z.url().optional(),
+  /**
+   * Bucket holding the world-readable objects (template video and previews).
+   *
+   * Unset falls back to `S3_BUCKET`, which is what dev and production both
+   * use. Only set it if the public objects are split into a bucket of their
+   * own — and then it has to be the bucket `TEMPLATES_CDN_URL`'s hostname
+   * serves, or re-rendered videos never reach the edge. See `PUBLIC_BUCKET`
+   * in `@genmotion/storage`.
+   */
+  TEMPLATES_BUCKET: z.string().min(1).optional(),
+  /**
+   * Public base for the templates bucket, e.g. https://cdn.genmotion.dev.
+   *
+   * Set it and `/api/templates/:id/video` answers 302 instead of streaming,
+   * and every summary carries a `videoUrl` a browser can use directly. Unset
+   * (dev, or a deploy with no custom domain yet) keeps the proxy behaviour,
+   * so this is safe to leave empty.
+   */
+  TEMPLATES_CDN_URL: z.url().optional(),
   AWS_REGION: z.string().min(1).optional(),
   AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
   AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
@@ -107,7 +126,13 @@ const schema = z.object({
   // rather than that its own request was bad. Image generation reuses
   // GEMINI_API_KEY above.
   ELEVENLABS_API_KEY: z.string().min(1).optional(),
-  ELEVENLABS_MODEL: z.string().min(1).default("eleven_multilingual_v2"),
+  /**
+   * `eleven_v4` is served by the text-to-dialogue endpoint, not text-to-speech
+   * — `elevenlabs-voice.ts` picks the endpoint from this value, so the two
+   * stay in step. Set it to `eleven_multilingual_v2` or `eleven_v3` to go back
+   * to the plain endpoint.
+   */
+  ELEVENLABS_MODEL: z.string().min(1).default("eleven_v4"),
   // Rachel, from the default voice library — a neutral narrator, and the one
   // the agent gets when it does not name a voice.
   ELEVENLABS_VOICE_ID: z.string().min(1).default("21m00Tcm4TlvDq8ikWAM"),
