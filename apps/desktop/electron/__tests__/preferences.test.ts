@@ -44,6 +44,19 @@ describe("project defaults", () => {
     expect((await projectDefaults()).engine).toBe("react");
   });
 
+  it("stops creating HyperFrames projects on a machine that had chosen it", async () => {
+    // The picker no longer offers it, and the picker is a view of this value —
+    // so a machine that chose it before it was withdrawn has to come back to
+    // the default rather than go on creating HyperFrames projects with no
+    // control left to change it. Opening an existing one is unaffected.
+    await fs.writeFile(
+      settingsFile,
+      JSON.stringify({ defaults: { engine: "hyperframes" } }),
+      "utf8",
+    );
+    expect((await projectDefaults()).engine).toBe("three");
+  });
+
   it("falls back to the default when the stored engine is from a build that had another name for it", async () => {
     await fs.writeFile(
       settingsFile,

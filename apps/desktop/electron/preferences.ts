@@ -20,9 +20,10 @@ export interface ProjectDefaults {
  * 1080p at 30, on the Three.js engine — what a machine that has never touched
  * the picker creates.
  *
- * Only the default: `react` and `hyperframes` are a click away in the picker,
- * every existing project keeps the engine its manifest names, and a machine
- * that has already chosen keeps that choice (the stored value wins here).
+ * Only the default: `react` is a click away in the picker, every existing
+ * project keeps the engine its manifest names, and a machine that has already
+ * chosen keeps that choice (the stored value wins here) — unless it chose
+ * `hyperframes`, which is no longer offered. See `OFFERED_ENGINES`.
  */
 export const DEFAULT_PROJECT: ProjectDefaults = {
   width: 1920,
@@ -34,6 +35,19 @@ export const DEFAULT_PROJECT: ProjectDefaults = {
 /** What is on disk: unvalidated, and possibly from a build that knew fewer fields. */
 type StoredDefaults = { width?: number; height?: number; fps?: number; engine?: string };
 
+/**
+ * Engines a *new* project may be written for.
+ *
+ * Narrower than `projectEngineSchema`, which still has to accept every engine
+ * the app can open — a HyperFrames project on disk is read, compiled,
+ * previewed and exported exactly as before, and nothing here touches that.
+ * This is only the creation side, and it is enforced here rather than in the
+ * picker alone because the picker is a view of this value: a machine that
+ * chose HyperFrames before it was withdrawn would otherwise go on creating
+ * HyperFrames projects with no control left to change it.
+ */
+const OFFERED_ENGINES: readonly ProjectEngine[] = ["three", "react"];
+
 /** Ceilings mirror `projectManifestSchema`, so a stored value is always writable. */
 function sane(defaults: StoredDefaults | undefined): ProjectDefaults {
   const clamp = (value: unknown, min: number, max: number, fallback: number) =>
@@ -41,11 +55,12 @@ function sane(defaults: StoredDefaults | undefined): ProjectDefaults {
       ? value
       : fallback;
   const engine = projectEngineSchema.safeParse(defaults?.engine);
+  const offered = engine.success && OFFERED_ENGINES.includes(engine.data);
   return {
     width: clamp(defaults?.width, 1, 7680, DEFAULT_PROJECT.width),
     height: clamp(defaults?.height, 1, 4320, DEFAULT_PROJECT.height),
     fps: clamp(defaults?.fps, 1, 120, DEFAULT_PROJECT.fps),
-    engine: engine.success ? engine.data : DEFAULT_PROJECT.engine,
+    engine: offered ? engine.data : DEFAULT_PROJECT.engine,
   };
 }
 

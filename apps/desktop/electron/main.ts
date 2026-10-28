@@ -305,8 +305,10 @@ async function cloneAndOpen(source: string): Promise<DesktopProject> {
  * already in it.
  *
  * Used for a cloned repo that is not a GenMotion project, and for "set this
- * folder up" on the start screen. HyperFrames because it is what every new
- * project is; the `adopt` flag is what keeps it from overwriting anything.
+ * folder up" on the start screen. Same engine the composer would have given
+ * it — this used to pin HyperFrames, which stopped being what a new project
+ * is some time ago. The `adopt` flag is what keeps it from overwriting
+ * anything.
  */
 async function adoptFolderAsProject(dir: string): Promise<void> {
   const defaults = await projectDefaults();
@@ -316,7 +318,7 @@ async function adoptFolderAsProject(dir: string): Promise<void> {
     width: defaults.width,
     height: defaults.height,
     fps: defaults.fps,
-    engine: "hyperframes",
+    engine: defaults.engine,
     adopt: true,
     hyperframes: {
       version: HYPERFRAMES_VERSION,
