@@ -3,12 +3,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { TemplateSummary } from "@genmotion/templates/types";
-import { formatPublished, templateApiUrl } from "@/lib/marketing/templates";
+import {
+  formatPublished,
+  templateApiUrl,
+  templatePreviewSrc,
+  templateVideoSrc,
+} from "@/lib/marketing/templates";
 
 function formatDuration(seconds: number): string {
   const total = Math.round(seconds);
   if (total < 60) return `${total}s`;
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/**
+ * How tall a card's text block is, in pixels.
+ *
+ * The masonry grid works in aspect ratios, and a detail card is a poster at
+ * its real ratio plus this — the one number in the layout that is pixels. So
+ * it is also the height the block is actually *given* below, rather than a
+ * guess at what it will come out as: one number, used twice, which is the
+ * only way the grid's arithmetic and the DOM cannot drift apart. Everything
+ * inside is clamped to fit (one-line title, two-line description, one meta
+ * row, one row of tags) and the block clips, so a larger root font size
+ * loses a descender rather than the layout.
+ */
+export function templateDetailsHeight(template: TemplateSummary): number {
+  return template.tags.length > 0 ? 154 : 121;
 }
 
 function ArrowIcon() {
@@ -30,12 +51,12 @@ function ArrowIcon() {
 /**
  * A single template tile: poster at its real aspect ratio, title, tags.
  *
- * Sits inside `TemplateMasonry`'s own columns rather than a uniform grid — a
+ * Sits inside a `TemplateMasonry` frame rather than a uniform grid — a
  * template's own aspect ratio (16:9, 9:16, 1:1) is part of what it's
- * showing, and letterboxing every card to one shape would hide that. Not
- * `break-inside-avoid`/margin-based spacing: that was for CSS's own
- * `columns-*`, which `TemplateMasonry` replaced — its flex columns own
- * spacing via `gap` instead.
+ * showing, and letterboxing every card to one shape would hide that. The
+ * frame owns the card's height, so the card fills it: poster at its real
+ * ratio, text block (when shown) beneath at the fixed height
+ * `templateDetailsHeight` promises the layout.
  *
  * Hovering plays the template's own rendered video, muted and looping, the
  * same as the desktop app's gallery — debounced so a pointer just passing
@@ -71,10 +92,10 @@ export function TemplateCard({
         setHovered(false);
         setPreviewing(false);
       }}
-      className="group block w-full overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
+      className="group flex size-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover"
     >
       <div
-        className="relative overflow-hidden bg-surface-raised"
+        className="relative shrink-0 overflow-hidden bg-surface-raised"
         style={{ aspectRatio: `${template.width} / ${template.height}` }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +107,10 @@ export function TemplateCard({
         />
         {previewing && (
           <video
-            src={templateApiUrl(`${template.videoPath}?v=${template.revision}`)}
+            // The small rendition when the template has one — a card is a few
+            // hundred pixels wide, and the full file is the same video at two
+            // orders of magnitude the weight.
+            src={templatePreviewSrc(template) ?? templateVideoSrc(template)}
             className="absolute inset-0 size-full object-cover"
             autoPlay
             loop
@@ -106,14 +130,17 @@ export function TemplateCard({
         )}
       </div>
       {showDetails && (
-        <div className="p-5">
-          <h3 className="text-[1.05rem] font-medium tracking-tight group-hover:text-text-primary">
+        <div
+          className="shrink-0 overflow-hidden p-5"
+          style={{ height: templateDetailsHeight(template) }}
+        >
+          <h3 className="line-clamp-1 text-[1.05rem] font-medium leading-6 tracking-tight group-hover:text-text-primary">
             {template.title}
           </h3>
-          <p className="mt-1.5 line-clamp-2 text-[0.9rem] text-text-secondary">
+          <p className="mt-1.5 line-clamp-2 h-10 text-[0.9rem] leading-5 text-text-secondary">
             {template.description}
           </p>
-          <div className="mt-3 flex items-center gap-1.5 text-[0.8rem] text-text-tertiary">
+          <div className="mt-3 flex h-4 items-center gap-1.5 text-[0.8rem] leading-4 text-text-tertiary">
             <span>
               {template.width}×{template.height}
             </span>
@@ -123,11 +150,11 @@ export function TemplateCard({
             <time dateTime={template.publishedAt}>{formatPublished(template.publishedAt)}</time>
           </div>
           {template.tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex h-[22px] gap-1.5 overflow-hidden">
               {template.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-[0.75rem] text-text-tertiary"
+                  className="inline-flex shrink-0 items-center rounded-full border border-border px-2.5 text-[0.75rem] leading-5 text-text-tertiary"
                 >
                   {tag}
                 </span>

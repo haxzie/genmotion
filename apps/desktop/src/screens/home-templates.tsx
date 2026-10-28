@@ -1,28 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { Frame, RegularMasonryGrid } from "@masonry-grid/react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Spinner, cx } from "@/components/ui";
 import type { TemplateCatalog, TemplateSummary, TemplateTag } from "@genmotion/templates/types";
 import { usePendingTemplateStore } from "./pending-template-store";
-import { templateAssetUrl } from "./template-asset-url";
+import { templateAssetUrl, templateVideoSrc } from "./template-asset-url";
 import { TemplateLightbox } from "./template-lightbox";
 
 // Re-exported because it was defined here before the lightbox needed it too,
 // and `Home` imports it from this module.
 export { templateAssetUrl };
 
-// Multi-column, not `grid`: a real grid lays items into rows, so a 9:16
-// card and a 16:9 card in the same row both take the taller one's height and
-// letterbox to fill it. Columns instead let each card stand at its own
-// designed aspect ratio and pack the gaps a uniform grid would leave.
-const GRID = "columns-2 gap-4 lg:columns-3";
-const enterEase = [0.25, 1, 0.5, 1] as const;
-const listVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
-const cardVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: enterEase } },
-};
+// Laid out by `@masonry-grid/react`, not CSS `columns-*` and not a uniform
+// `grid`: a real grid lays items into rows, so a 9:16 card and a 16:9 card in
+// the same row both take the taller one's height and letterbox to fill it,
+// while CSS columns fill the first column top to bottom before starting the
+// second — which puts the newest template beside the oldest and reads as
+// nothing in particular. `RegularMasonryGrid` keeps document order, filling
+// left to right, and pulls each card up under the one above it. Every card
+// declares its aspect ratio, so there is no measure-then-reflow pass waiting
+// on a poster to decode.
+const GAP_PX = 16;
+/** Narrowest a column gets before the grid drops one. No breakpoints needed. */
+const MIN_COLUMN_PX = 260;
+/**
+ * The staggered entrance, as a CSS animation rather than Motion.
+ *
+ * The grid watches its own subtree for inline-style changes so it can reflow
+ * when a card's ratio changes — and a Motion animation writes an inline style
+ * on every frame, which would have it recomputing the layout sixty times a
+ * second for the length of the stagger. A keyframe plus a per-card
+ * `animationDelay` is one style write at mount and nothing after it.
+ */
+const CARD_STAGGER_MS = 40;
 
 /**
  * The glyph each filter wears.
@@ -218,10 +229,13 @@ const SCROLL_HOLD_MS = 420;
  */
 function TemplateCard({
   template,
+  index,
   onOpen,
   onPick,
 }: {
   template: TemplateSummary;
+  /** Position in the gallery — only the entrance stagger cares. */
+  index: number;
   onOpen: () => void;
   onPick: () => void;
 }) {
@@ -254,24 +268,21 @@ function TemplateCard({
   }
 
   return (
-    <motion.div
-      variants={cardVariants}
+    <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);
         setPreviewing(false);
       }}
       className={cx(
-        // `break-inside-avoid` is load-bearing in a column layout — without
-        // it a card can be sliced across the column boundary. `mb-4` rather
-        // than the grid's `gap-4`: columns only have a `column-gap` between
-        // columns, nothing for the vertical space between stacked items.
-        "group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-lg border border-border bg-background",
+        // Fills the `Frame` around it, which carries the template's real
+        // aspect ratio — so the height is reserved before the poster decodes
+        // and the grid never has to re-measure.
+        "group relative block size-full overflow-hidden rounded-lg border border-border bg-background",
         "transition-colors duration-150 hover:border-border-strong",
+        "gallery-card-in",
       )}
-      // The card's actual height: reserved up front from the template's real
-      // ratio so the column doesn't jump once the poster decodes.
-      style={{ aspectRatio: `${template.width} / ${template.height}` }}
+      style={{ animationDelay: `${Math.min(index * CARD_STAGGER_MS, 320)}ms` }}
     >
       <button
         type="button"
@@ -287,7 +298,7 @@ function TemplateCard({
         />
         {previewing && (
           <video
-            src={templateAssetUrl(template.videoPath, template.revision)}
+            src={templateVideoSrc(template, "preview")}
             className="absolute inset-0 size-full object-cover"
             autoPlay
             loop
@@ -329,7 +340,7 @@ function TemplateCard({
           </>
         )}
       </button>
-    </motion.div>
+    </div>
   );
 }
 
@@ -484,34 +495,49 @@ export function HomeTemplates({
           Couldn’t load these. Check your connection and try again.
         </p>
       ) : isLoading || !data ? (
-        <div className={GRID}>
+        <RegularMasonryGrid
+          frameWidth={MIN_COLUMN_PX}
+          gap={GAP_PX}
+          style={{ alignItems: "start" }}
+        >
           {/* Real cards land at their own aspect ratio; the skeleton can't
-              know that yet, so it varies its own height per placeholder
-              instead of drawing identical boxes down one column. */}
-          {[9 / 16, 16 / 9, 1, 16 / 9, 9 / 16, 4 / 5].map((ratio, i) => (
-            <div
-              key={i}
-              className="mb-4 block w-full break-inside-avoid animate-pulse rounded-lg border border-border bg-surface-hover"
-              style={{ aspectRatio: ratio }}
-            />
+              know that yet, so it varies its own shape per placeholder
+              instead of drawing identical boxes. */}
+          {[
+            [9, 16],
+            [16, 9],
+            [1, 1],
+            [16, 9],
+            [9, 16],
+            [4, 5],
+          ].map(([w, h], i) => (
+            <Frame key={i} width={w!} height={h!}>
+              <div className="size-full animate-pulse rounded-lg border border-border bg-surface-hover" />
+            </Frame>
           ))}
-        </div>
+        </RegularMasonryGrid>
       ) : loaded.length === 0 ? (
         <p className="py-8 text-center text-text-tertiary">Nothing here yet.</p>
       ) : templates.length === 0 ? (
         <p className="py-8 text-center text-text-tertiary">Nothing tagged “{activeTag}”.</p>
       ) : (
         <>
-          <motion.div className={GRID} variants={listVariants} initial="hidden" animate="show">
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onOpen={() => setPreviewed(template)}
-                onPick={() => remix(template)}
-              />
+          <RegularMasonryGrid
+            frameWidth={MIN_COLUMN_PX}
+            gap={GAP_PX}
+            style={{ alignItems: "start" }}
+          >
+            {templates.map((template, i) => (
+              <Frame key={template.id} width={template.width} height={template.height}>
+                <TemplateCard
+                  template={template}
+                  index={i}
+                  onOpen={() => setPreviewed(template)}
+                  onPick={() => remix(template)}
+                />
+              </Frame>
             ))}
-          </motion.div>
+          </RegularMasonryGrid>
           {/* Invisible; the IntersectionObserver above fires fetchNextPage
               when this scrolls into view. A visible spinner only shows up
               while that fetch is actually in flight. */}
