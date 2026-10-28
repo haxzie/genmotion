@@ -12,5 +12,6 @@
   "featured": false,
   "sampleAt": 0.9,
   "order": 32,
-  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-chat-announcement/video.mp4"
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-chat-announcement/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-chat-announcement/preview.mp4"
 }

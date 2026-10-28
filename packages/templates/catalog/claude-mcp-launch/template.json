@@ -12,5 +12,6 @@
   "featured": true,
   "sampleAt": 0.8,
   "order": 6,
-  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/claude-mcp-launch/video.mp4"
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/claude-mcp-launch/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/claude-mcp-launch/preview.mp4"
 }

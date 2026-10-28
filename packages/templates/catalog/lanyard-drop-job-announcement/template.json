@@ -2,7 +2,7 @@
   "id": "lanyard-drop-job-announcement",
   "title": "Lanyard drop job announcement video",
   "description": "A 16 second single-shot announcement: a conference badge on a printed lanyard drops into frame, bounces on the strap, twists once to show its back, and settles while the camera pushes in. The badge face, the woven strap and the metal clip are all drawn in real-time Three.js.",
-  "metaTitle": "Lanyard Drop Job Announcement Video Template \u2014 GenMotion",
+  "metaTitle": "Lanyard Drop Job Announcement Video Template — GenMotion",
   "category": "social",
   "tags": [
     "Social Media",
@@ -11,5 +11,6 @@
   "publishedAt": "2026-10-14",
   "featured": true,
   "order": 38,
-  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/lanyard-drop-job-announcement/video.mp4"
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/lanyard-drop-job-announcement/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/lanyard-drop-job-announcement/preview.mp4"
 }

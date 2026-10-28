@@ -12,5 +12,6 @@
   "featured": false,
   "order": 41,
   "sampleAt": 0.2,
-  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/agentic-cli-launch-video/video.mp4"
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/agentic-cli-launch-video/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/agentic-cli-launch-video/preview.mp4"
 }

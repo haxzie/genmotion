@@ -13,5 +13,6 @@
   "featured": true,
   "sampleAt": 0.33,
   "order": 23,
-  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/moonlight-app-launch-video/video.mp4"
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/moonlight-app-launch-video/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/moonlight-app-launch-video/preview.mp4"
 }
