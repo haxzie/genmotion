@@ -29,7 +29,7 @@ import os from "node:os";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
-import { putObject } from "@genmotion/storage";
+import { putObject, PUBLIC_BUCKET } from "@genmotion/storage";
 import {
   compileTemplate,
   getTemplate,
@@ -106,7 +106,67 @@ async function muxAudio(videoPath, tracks, durationSeconds, outputPath) {
     "-c:v", "copy",
     "-c:a", "aac",
     "-b:a", "192k",
+    // Re-stated, not inherited: `-c:v copy` carries the video bitstream over
+    // but the mux writes a fresh container, so the silent pass's own
+    // `+faststart` does not survive this step. Without it the `moov` atom
+    // lands at the end of the file and a player cannot begin until it has
+    // fetched the tail — which, for every template that has audio, is every
+    // template that would not start.
+    "-movflags", "+faststart",
     "-t", durationSeconds.toFixed(3),
+    outputPath,
+  ]);
+}
+
+/**
+ * Encoder settings for the full-size rendition.
+ *
+ * CRF alone was the whole quality setting here, and on grainy or
+ * heavily-dithered material it has no ceiling: the catalog had 35-second
+ * clips at 18 Mbps and 79 MB, which is more video than any surface that
+ * plays them can use. The cap is what bounds the worst case; CRF still
+ * decides everything below it, so clean material stays small.
+ *
+ * `-g` pins a keyframe every two seconds. Without it x264's default GOP can
+ * run long enough that seeking lands seconds away from where it was asked
+ * to, which is what makes a scrub feel broken rather than slow.
+ */
+function qualityArgs(fps) {
+  return [
+    "-crf", "23",
+    "-maxrate", "8M",
+    "-bufsize", "16M",
+    "-profile:v", "high",
+    "-level", "4.2",
+    "-g", String(Math.round(fps * 2)),
+  ];
+}
+
+/**
+ * The rendition a gallery card plays on hover.
+ *
+ * Fits inside a 640px box whatever the template's aspect ratio — a card is
+ * around 350 CSS px, so this is still comfortably over-sampled on a retina
+ * display — and carries no audio, because a muted autoplaying tile has no
+ * use for it and it is pure download. Capped at 30fps for the same reason.
+ *
+ * Re-encoded from the finished file rather than from the frame pipe: it
+ * costs one cheap pass over an already-small input, and it cannot drift from
+ * what the full rendition shows.
+ */
+async function renderPreview(sourcePath, outputPath) {
+  await runFfmpeg([
+    "-y",
+    "-i", sourcePath,
+    "-an",
+    "-vf", "scale=w=640:h=640:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=fps=30:round=down",
+    "-c:v", "libx264",
+    "-preset", "slow",
+    "-crf", "30",
+    "-maxrate", "900k",
+    "-bufsize", "1800k",
+    "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
     outputPath,
   ]);
 }
@@ -158,10 +218,14 @@ function resolveAssetPlaceholders(code) {
  * a record for a human checking the sidecar, not something any client reads
  * (see the field's own doc comment in `schema.ts`).
  */
-function recordVideoUrl(dir, url) {
+function recordVideoUrl(dir, url, previewUrl) {
   const file = path.join(dir, TEMPLATE_FILE);
   const meta = JSON.parse(fs.readFileSync(file, "utf8"));
   meta.video = url;
+  // Also the flag that says a preview exists — `toSummary` leaves the preview
+  // fields off a summary without it, so a template is never advertised as
+  // having one before the object is actually in the bucket.
+  meta.preview = previewUrl;
   fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`, "utf8");
 }
 
@@ -235,8 +299,8 @@ async function renderOne(browser, id) {
       "-framerate", String(fps),
       "-i", "-",
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "20",
+      "-preset", "slow",
+      ...qualityArgs(fps),
       "-pix_fmt", "yuv420p",
       "-movflags", "+faststart",
       silentPath,
@@ -281,12 +345,33 @@ async function renderOne(browser, id) {
       finalPath = mixedPath;
     }
 
+    process.stdout.write(" preview…");
+    const previewPath = path.join(workDir, "preview.mp4");
+    await renderPreview(finalPath, previewPath);
+
     const bytes = fs.readFileSync(finalPath);
+    const previewBytes = fs.readFileSync(previewPath);
     process.stdout.write(" uploading…");
-    const key = `templates/${id}/video.mp4`;
-    const url = await putObject(key, bytes, "video/mp4");
-    recordVideoUrl(record.dir, url);
-    console.log(` done — ${Math.round(bytes.length / 1024 / 1024)}MB → ${url}`);
+    // The world-readable bucket, not the main one: these are the only objects
+    // anybody may fetch without an account, and keeping them somewhere that
+    // holds nothing else is what lets a CDN hostname point at it safely.
+    const url = await putObject(
+      `templates/${id}/video.mp4`,
+      bytes,
+      "video/mp4",
+      PUBLIC_BUCKET,
+    );
+    const previewUrl = await putObject(
+      `templates/${id}/preview.mp4`,
+      previewBytes,
+      "video/mp4",
+      PUBLIC_BUCKET,
+    );
+    recordVideoUrl(record.dir, url, previewUrl);
+    console.log(
+      ` done — ${(bytes.length / 1048576).toFixed(1)}MB` +
+        ` + ${Math.round(previewBytes.length / 1024)}KB preview → ${url}`,
+    );
   } finally {
     await context.close();
     fs.rmSync(workDir, { recursive: true, force: true });

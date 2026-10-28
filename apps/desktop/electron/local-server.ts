@@ -736,6 +736,13 @@ export async function startLocalServer(
    * its own origin only, so every poster, bundle and remix has to arrive
    * through here. That is also what keeps template audio playable — `media-src`
    * has no `https:` in it, and a same-origin URL needs none.
+   *
+   * `range` goes up with the request and is not optional politeness: the API
+   * answers 206 and `pipeUpstream` sends `accept-ranges` back down, so a
+   * `<video>` here believes it can seek. Without the header forwarded it asks
+   * for a slice and is handed the whole file from byte zero with a 200 —
+   * which is why a template whose `moov` atom sits at the end of the file
+   * never starts playing in this app.
    */
   async function templateProxy(
     rest: string[],
@@ -745,10 +752,27 @@ export async function startLocalServer(
   ): Promise<void> {
     const { cloudFetch } = await import("./auth");
     const tail = rest.length ? `/${rest.map(encodeURIComponent).join("/")}` : "";
+    const headers: Record<string, string> = { accept: req.headers.accept ?? "*/*" };
+    if (req.headers.range) headers.range = req.headers.range;
+    if (req.headers["if-range"]) headers["if-range"] = String(req.headers["if-range"]);
+
+    // The deadline is on the *headers*, not the transfer: a whole-video read
+    // can legitimately outlive any fixed timeout, and the previous
+    // `AbortSignal.timeout(30_000)` covered the body too — so a large
+    // template was cut off mid-stream rather than merely being slow. The same
+    // controller then follows the client: if the renderer gives up (the
+    // pointer left the card), stop pulling bytes from the cloud for it.
+    const controller = new AbortController();
+    const headerDeadline = setTimeout(() => controller.abort(), 30_000);
+    res.on("close", () => {
+      if (!res.writableFinished) controller.abort();
+    });
+
     const upstream = await cloudFetch(`/api/templates${tail}${url.search}`, {
-      headers: { accept: req.headers.accept ?? "*/*" },
-      signal: AbortSignal.timeout(30_000),
+      headers,
+      signal: controller.signal,
     }).catch(() => null);
+    clearTimeout(headerDeadline);
 
     if (!upstream) {
       send(res, 503, { error: "Can't reach GenMotion." });
@@ -2268,6 +2292,17 @@ async function pipeUpstream(source: Response, res: http.ServerResponse): Promise
   for (const name of FORWARDED_HEADERS) {
     const value = source.headers.get(name);
     if (value !== null) headers[name] = value;
+  }
+  // `content-length` only when the bytes arriving here are the bytes upstream
+  // counted. `fetch` decodes a compressed body transparently but leaves the
+  // header describing the *encoded* length, so forwarding it unconditionally
+  // would promise a JSON response a size it does not have. A video is never
+  // content-encoded, which is the case that needs it: without a length the
+  // renderer cannot tell how long the file is, and a `<video>` that cannot
+  // tell will not seek.
+  if (!source.headers.get("content-encoding")) {
+    const length = source.headers.get("content-length");
+    if (length !== null) headers["content-length"] = length;
   }
   res.writeHead(source.status, headers);
   if (!source.body) {

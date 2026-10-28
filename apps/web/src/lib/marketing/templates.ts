@@ -121,6 +121,27 @@ export function templateApiUrl(path: string): string {
 }
 
 /**
+ * Where this browser should read a template's full video from.
+ *
+ * The CDN when there is one — the API's own route only redirects there, so
+ * going straight saves a round trip on every play — and the API route when
+ * there isn't, which is dev and any deploy without a custom domain yet.
+ */
+export function templateVideoSrc(t: TemplateSummary): string {
+  return t.videoUrl ?? templateApiUrl(`${t.videoPath}?v=${t.revision}`);
+}
+
+/**
+ * The hover rendition, or null for a template that has not been re-rendered
+ * since previews existed. Null means "play the full video", which is what
+ * every card did before this and is still correct, just heavier.
+ */
+export function templatePreviewSrc(t: TemplateSummary): string | null {
+  if (t.previewUrl) return t.previewUrl;
+  return t.previewPath ? templateApiUrl(`${t.previewPath}?v=${t.revision}`) : null;
+}
+
+/**
  * A template as schema.org's `VideoObject`, for the pages' JSON-LD.
  *
  * One builder rather than three hand-written copies: the gallery, category
@@ -135,7 +156,7 @@ export function templateVideoObject(t: TemplateSummary, siteUrl: string) {
     name: t.title,
     description: t.description,
     thumbnailUrl: templateApiUrl(t.posterPath),
-    contentUrl: templateApiUrl(`${t.videoPath}?v=${t.revision}`),
+    contentUrl: templateVideoSrc(t),
     uploadDate: t.publishedAt,
     duration: `PT${Math.round(t.durationInFrames / t.fps)}S`,
     width: t.width,

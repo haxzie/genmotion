@@ -15,7 +15,8 @@
     "poster": "tsx scripts/poster.mjs",
     "render-video": "tsx --env-file=../../.env scripts/render-video.mjs",
     "scaffold": "tsx scripts/scaffold.mjs",
-    "scene-stills": "tsx scripts/scene-stills.mjs"
+    "scene-stills": "tsx scripts/scene-stills.mjs",
+    "sync-public-bucket": "tsx --env-file=../../.env scripts/sync-public-bucket.mjs"
   },
   "dependencies": {
     "@genmotion/project": "workspace:*",

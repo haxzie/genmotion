@@ -90,11 +90,22 @@ export const templateMetaSchema = z.object({
    * Where `render-video.mjs` last uploaded this template's rendered MP4 in
    * R2 — a record for a human (or another script) to check without listing
    * the bucket, not something a client ever reads. Nothing here serves it
-   * directly: R2 isn't public, so every player reaches the video through
-   * `GET /api/templates/:id/video` (see `videoPath` in `types.ts`) regardless
-   * of what this URL happens to be. Written automatically; never hand-edit it.
+   * directly: every player reaches the video through
+   * `GET /api/templates/:id/video` (see `videoPath` in `types.ts`) or the
+   * CDN URL that route redirects to, regardless of what this URL happens to
+   * be. Written automatically; never hand-edit it.
    */
   video: z.string().url().optional(),
+  /**
+   * The same, for the small no-audio rendition the galleries play on hover.
+   *
+   * Doubles as the flag for whether one exists: a template that has not been
+   * through a `render-video.mjs` new enough to emit previews has no key here,
+   * `toSummary` leaves the preview fields off its summary, and every client
+   * falls back to the full video exactly as it did before previews existed.
+   * That is what lets this ship ahead of the re-render rather than after it.
+   */
+  preview: z.string().url().optional(),
 });
 
 export type TemplateMeta = z.infer<typeof templateMetaSchema>;

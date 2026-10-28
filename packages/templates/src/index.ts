@@ -252,8 +252,37 @@ function defaultMetaTitle(title: string): string {
   return `${title} Template — GenMotion`;
 }
 
+/**
+ * Where a browser can read the bucket directly, with no trailing slash.
+ *
+ * Unset is the normal state in dev and the safe state everywhere: every URL
+ * below falls back to null, every client falls back to the API path, and the
+ * proxy routes keep streaming the way they always did. Setting it is what
+ * moves the bytes to the edge.
+ */
+const CDN_BASE = (process.env.TEMPLATES_CDN_URL ?? "").replace(/\/+$/, "");
+
+/**
+ * A bucket key as a public CDN URL, cache-busted by the folder's revision.
+ *
+ * The key is stable across renders, so without `?v=` a re-rendered template
+ * would keep serving the old bytes from the edge for as long as the cache
+ * holds them. With it, every client that reads a fresh summary asks for a
+ * URL nothing has cached yet.
+ */
+function cdnUrl(key: string, revision: string): string | null {
+  return CDN_BASE ? `${CDN_BASE}/${key}?v=${revision}` : null;
+}
+
+/** Bucket keys, in one place, because three callers have to agree on them. */
+export const templateVideoKey = (id: string) => `templates/${id}/video.mp4`;
+export const templatePreviewKey = (id: string) => `templates/${id}/preview.mp4`;
+
 export function toSummary(record: TemplateRecord): TemplateSummary {
   const { meta, manifest } = record;
+  // Presence of the recorded URL is the only thing that says a preview was
+  // ever rendered — see `preview` in the sidecar schema.
+  const hasPreview = Boolean(meta.preview);
   return {
     id: meta.id,
     title: meta.title,
@@ -270,6 +299,11 @@ export function toSummary(record: TemplateRecord): TemplateSummary {
     sceneCount: manifest.scenes.length,
     posterPath: `/api/templates/${meta.id}/poster`,
     videoPath: `/api/templates/${meta.id}/video`,
+    videoUrl: cdnUrl(templateVideoKey(meta.id), record.revision),
+    previewPath: hasPreview ? `/api/templates/${meta.id}/preview` : null,
+    previewUrl: hasPreview
+      ? cdnUrl(templatePreviewKey(meta.id), record.revision)
+      : null,
     revision: record.revision,
   };
 }
