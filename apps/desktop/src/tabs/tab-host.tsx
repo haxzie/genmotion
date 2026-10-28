@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PlaybackStoreProvider, createPlaybackStore } from "@genmotion/player";
-import { Spinner } from "@/components/ui";
+import { Spinner, cx } from "@/components/ui";
 import { EditorStoreProvider } from "@/stores/editor-store";
 import { EditorScreen } from "../screens/EditorScreen";
 import type { DesktopProject } from "../api";
@@ -18,17 +18,32 @@ import { HOME_TAB, useTabsStore, type ProjectTab } from "./tabs-store";
  */
 function TabPane({
   active,
+  framed = false,
   children,
   paneRef,
 }: {
   active: boolean;
+  /**
+   * A hairline round the pane with a few pixels of window showing past it.
+   *
+   * The editor gets it: it is a surface placed on the app, and the frame is
+   * what says where that surface ends. Home does not — it is the app itself,
+   * its own screens already draw their panels, and a second border around the
+   * whole thing just boxes in the window.
+   */
+  framed?: boolean;
   children: ReactNode;
   paneRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div
       ref={paneRef}
-      className="absolute inset-0 flex flex-col"
+      className={cx(
+        "absolute inset-0 flex flex-col",
+        // `inset-0` then a margin: the box is pinned to all four edges and the
+        // margin insets it, so the frame sits inside the pane's own bounds.
+        framed && "m-1 overflow-hidden rounded-lg border border-border",
+      )}
       style={{ display: active ? "flex" : "none" }}
       inert={!active}
     >
@@ -67,7 +82,7 @@ function ProjectPane({
   }, [active]);
 
   return (
-    <TabPane active={active} paneRef={paneRef}>
+    <TabPane active={active} framed paneRef={paneRef}>
       <TabActiveProvider active={active}>
         <EditorStoreProvider>
           <PlaybackStoreProvider store={playback}>

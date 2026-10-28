@@ -301,8 +301,13 @@ function EditorBody({
         {/* Right column: tabs/export header (over the preview) + preview.
             One surface top to bottom — the header sits on the same panel as
             the view under it, so the tabs are pills on it rather than folder
-            tabs cut out of it. */}
-        <div className="flex min-w-0 flex-1 flex-col rounded-tl-xl border-l border-t border-border bg-surface">
+            tabs cut out of it.
+
+            One border, on the left: that is the only edge with a job, the
+            seam against the chat. The frame around the pane already draws the
+            top, and a second line a few pixels inside it reads as a seam
+            rather than as a panel. */}
+        <div className="flex min-w-0 flex-1 flex-col border-l border-border bg-surface">
           <div className="flex h-12 shrink-0 items-center justify-between px-3">
             <div className="flex items-center gap-1 text-[0.857rem]">
               {VIEW_TABS.map(({ id, label, Icon }) => (
