@@ -77,11 +77,11 @@ const schema = z.object({
   /**
    * Bucket holding the world-readable objects (template video and previews).
    *
-   * Separate from `S3_BUCKET` because that one also holds `projects/` and
-   * `shares/`, which are private and stay private only because every read of
-   * them goes through an authenticated route. A public hostname cannot be
-   * put on a bucket like that. Unset falls back to `S3_BUCKET`, which is
-   * right for dev and never less safe than today.
+   * Unset falls back to `S3_BUCKET`, which is what dev and production both
+   * use. Only set it if the public objects are split into a bucket of their
+   * own — and then it has to be the bucket `TEMPLATES_CDN_URL`'s hostname
+   * serves, or re-rendered videos never reach the edge. See `PUBLIC_BUCKET`
+   * in `@genmotion/storage`.
    */
   TEMPLATES_BUCKET: z.string().min(1).optional(),
   /**

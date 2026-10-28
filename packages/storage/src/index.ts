@@ -111,6 +111,13 @@ const BUCKET = process.env.S3_BUCKET ?? "genmotion";
  * Defaults to the main bucket, which keeps dev (one MinIO, one bucket)
  * working and means an unset value is never a leak — only a missed
  * optimisation.
+ *
+ * If you do set it, it MUST be the bucket `TEMPLATES_CDN_URL`'s hostname
+ * serves. `render-video.mjs` writes here, and with a CDN configured the API
+ * only ever redirects — it never reads the bucket back — so pointing the two
+ * at different buckets means re-rendered videos land somewhere the edge is
+ * not serving from, and the old ones play forever with nothing in any log to
+ * say why.
  */
 export const PUBLIC_BUCKET = process.env.TEMPLATES_BUCKET ?? BUCKET;
 
