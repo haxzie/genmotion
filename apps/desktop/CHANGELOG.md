@@ -1,5 +1,65 @@
 # @genmotion/desktop
 
+## 0.5.1
+
+### Patch Changes
+
+- 9d92d55: The template galleries are laid out by a real masonry grid. Cards fill left to
+  right, newest first, each pulled up under the one above it — rather than CSS
+  columns, which filled one column top to bottom before starting the next and so
+  put the newest template beside the oldest. Every card declares its own aspect
+  ratio, so the layout no longer waits on a poster decoding or on a `matchMedia`
+  list that only resolves after hydration, and the grid stops jumping on load.
+- ba34413: The editor sits in a framed pane: a hairline and a few pixels of window round
+  the whole surface, which is what says where the editor ends and the app
+  begins. The home screen keeps none — it is the app itself, and a border round
+  the whole window only boxes it in. The preview column drops its own top
+  border and rounded corner now that the frame draws them; the seam against the
+  chat is the only edge left with a job.
+- 9d92d55: Gallery cards play a small preview rendition on hover instead of the full
+  video. A card is a few hundred pixels wide and the full file is the same
+  footage at up to eighty times the weight — fetching it was most of why
+  hovering the gallery felt broken. Falls back to the full video for any
+  template that has not been re-rendered yet, so nothing waits on the catalog.
+- 9d92d55: The voice picker plays its previews again. Nothing in the chain from the play
+  button to object storage had a deadline, so a store that stopped answering
+  left the button spinning rather than falling back to the source — the
+  `.catch(() => null)` that was supposed to handle exactly that can only run if
+  the read fails, and an unreachable store does not fail, it waits. Cache reads
+  now give up after three seconds and the desktop's binary requests time out
+  with an error the picker can show.
+- 9d92d55: HyperFrames is no longer offered for new projects. The engine picker drops the
+  row, a machine that had already chosen it comes back to the default rather than
+  going on creating HyperFrames projects with no control left to change it, and
+  "set this folder up" uses the same engine the composer would have — it had been
+  pinned to HyperFrames since before that stopped being what a new project is.
+  Existing HyperFrames projects open, compile, preview and export exactly as
+  before; this is only the creation side.
+- 9d92d55: Template videos play again. The app's loopback proxy now forwards `Range`
+  upstream and passes `Content-Length` back down, so a `<video>` can do the
+  seek it was already being told (by `Accept-Ranges`) that it could — until
+  now it asked for a slice and was handed the whole file from byte zero, which
+  no template whose `moov` atom sits at the end of the file can start from. The
+  30-second deadline on the request now covers the headers rather than the
+  whole transfer, so a large template is no longer cut off mid-stream, and an
+  abandoned preview stops pulling bytes instead of running to completion.
+- 83463e6: Every tool call in the chat has an icon and a readable label.
+
+  Two separate causes behind the grey dots and the raw `mcp__…` names in the
+  transcript. `parseMcpToolName` matched `[^_]+` for the server segment, so any
+  server this app did not name itself failed to parse at all: Claude Code's own
+  connectors arrive as `mcp__claude_ai_Firecrawl__firecrawl_search`, and every
+  one of them lost its icon, its label and its `mcp_tool_called` event. The
+  split is now on the first `__`.
+
+  Separately, eight GenMotion tools had no card registered — `search_skills`,
+  `search_scenes`, `get_scene`, `fork_scene`, `brand_overview`,
+  `use_brand_asset`, `validate_composition` and `recommend_integration` — and
+  the MCP fallback skips our own server on purpose, so they fell through to a
+  dot and their raw name. All eight have labels, subjects and icons now, there
+  is a GenMotion fallback behind them for the next tool somebody adds, and a
+  test holds the two lists together.
+
 ## 0.5.0
 
 ### Minor Changes
