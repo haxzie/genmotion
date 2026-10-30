@@ -36,6 +36,25 @@ all three, plus the checklist for adding a template in the first place.
    `scenes/*`, `components/*`, and only the referenced assets into
    `packages/templates/catalog/<id>/assets/`.
 
+   **Look at what the orphans are before dropping them, because they say where
+   the referenced assets came from.** A lot of source projects start life as
+   "recreate this video", and the download that was recreated is usually still
+   sitting in `assets/` unimported next to a soundtrack extracted from it.
+   A private project can hold anything; a template is published to a public
+   gallery and `GET /api/templates/:id/files` ships every asset into every
+   remix a user makes, so the bar is different. If an audio or video asset
+   looks lifted, check rather than assume — decode both and compare:
+   ```sh
+   ffmpeg -i reference.mp4 -vn -f s16le -ar 16000 -ac 1 a.pcm
+   ffmpeg -i soundtrack.m4a   -f s16le -ar 16000 -ac 1 b.pcm
+   # identical byte length + a near-1.0 envelope correlation = the same recording
+   ```
+   Matching duration to the centisecond and identical decoded length is already
+   close to conclusive; a re-encode changes the hash but not the content. Put
+   the finding to the user with the options (publish silent, swap the track,
+   publish anyway) and let them decide. It is their call, not yours to make
+   quietly in either direction.
+
 3. **Curate assets under budget.** One hard limit, enforced by a test:
    **12MB total** (`MAX_REMIX_BYTES`) — the whole remix bundle. There's also a
    soft one worth respecting even though nothing enforces it: **512KB per
@@ -112,6 +131,17 @@ all three, plus the checklist for adding a template in the first place.
    ```sh
    pnpm --filter @genmotion/templates scaffold <id>
    ```
+   **It ignores the `<id>` and rewrites every template in the catalog.** Most
+   of what it then shows as modified is real drift — a `@genmotion/three-engine`
+   range that moved, a newer AGENTS.md prompt block — but it is drift that has
+   nothing to do with the template being added, and nothing enforces its
+   freshness, so it does not belong in this commit. Revert the rest and keep
+   only your own folder:
+   ```sh
+   git checkout -- $(git status --short packages/templates/catalog/ \
+     | grep -v <id> | awk '{print $2}')
+   ```
+   If the catalog-wide refresh looks worth having, it is its own commit.
 
 6. **Write `README.md`** (the scaffold does not write this one, and a catalog
    test fails without it). It travels with a remix and overrides the
@@ -142,12 +172,24 @@ all three, plus the checklist for adding a template in the first place.
    `mood`, `videoTypes` (owner skill ids), `quality` (`hero` / `solid` /
    `filler`; filler is hidden from search) and `standalone`. Read every scene
    and its components in full first; an existing `scenes.json` shows the
-   register. Then capture the three-frame filmstrips and look at a few:
+   register.
+
+   The file is `{ "arc": "...", "scenes": [...] }` — **`arc` is required** and
+   is the whole template as one beat sequence
+   (`"hook (title + pointer) → reveal (dock click) → feature: record → ..."`).
+   Leaving it out fails every script that reads the sidecar, `scene-stills`
+   included, with a zod error naming `arc`.
+
+   Then capture the three-frame filmstrips and **look at all of them**:
    ```sh
    pnpm --filter @genmotion/templates scene-stills <id>
    ```
    Adjust an entry's `sampleAt` (three fractions) when a frame lands on a blank
-   fade. Neither file nor `stills/` travels with a remix.
+   fade. Read them against what you just wrote, too: a scene's copy can be
+   split across two surfaces (a phone thread and a desktop app in the same
+   scene, say) and reading the source alone will put the wrong words in the
+   wrong mouth. The stills are the only check on that, and the same error will
+   be sitting in the README. Neither file nor `stills/` travels with a remix.
 
 9. **Render the video and upload to R2** — see the next section.
 
