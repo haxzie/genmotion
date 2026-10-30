@@ -108,12 +108,16 @@ all three, plus the checklist for adding a template in the first place.
      doesn't honestly fit; an empty category is fine.
    - `publishedAt`: today, `YYYY-MM-DD`. The gallery sorts newest-first on
      this, so it is what puts a new template on the first page.
-   - `featured`: whether the marketing home page's strip may show it. Defaults
-     to false, and that is the honest default for a new template — the home
-     page is a curated selection, not the catalog. The full `/templates`
-     gallery, the desktop app and the sitemap list every template either way,
-     so leaving it off costs a template nothing but the front page. Ask before
-     flipping it on; it is an editorial call, not a mechanical step.
+   - `featured`: whether the marketing home page's strip may show it. **Ask
+     the user, every time, before you finish — do not just take the default.**
+     It is the one field in the sidecar that is an editorial call rather than
+     a fact about the video, and the person publishing has a view on it that
+     you cannot infer from the scenes. Put it to them as a question with the
+     consequence attached: featured means the front page may show it, and
+     unfeatured costs the template nothing else, because the full `/templates`
+     gallery, the desktop app and the sitemap list every template either way.
+     `false` is the right value to write while you wait for the answer, not
+     the right value to ship without asking for one.
    - `order`: one past the current highest (`grep -rh '"order"' packages/templates/catalog/*/template.json`).
      Only breaks ties between templates published the same day.
    - `sampleAt` (optional, 0–1): fraction into the first scene where the poster
@@ -193,7 +197,11 @@ all three, plus the checklist for adding a template in the first place.
 
 9. **Render the video and upload to R2** — see the next section.
 
-10. **Run the tests:**
+10. **Ask about `featured`** if you have not already, and set it before you
+   commit. See step 4 — it is the one editorial field, and the easiest to
+   finish a template without ever having raised.
+
+11. **Run the tests:**
    ```sh
    pnpm --filter @genmotion/templates test
    pnpm --filter @genmotion/templates typecheck
