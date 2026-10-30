@@ -33,6 +33,7 @@ export const INTEGRATIONS: Integration[] = [
   { id: "freepik", name: "Freepik", iconUrl: brand("freepik", "1273EB"), category: "Stock & assets" },
   { id: "cloudinary", name: "Cloudinary", iconUrl: brand("cloudinary", "3448C5"), category: "Stock & assets" },
   { id: "mapbox", name: "Mapbox", iconUrl: brand("mapbox", "FFFFFF"), category: "Maps" },
+  { id: "figma", name: "Figma", iconUrl: brand("figma", "F24E1E"), category: "Design & brand" },
   { id: "canva", name: "Canva", iconUrl: favicon("canva.com"), category: "Design & brand" },
   { id: "mobbin", name: "Mobbin", iconUrl: favicon("mobbin.com"), category: "Design & brand" },
   { id: "notion", name: "Notion", iconUrl: brand("notion", "FFFFFF"), category: "Content sources" },

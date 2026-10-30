@@ -24,7 +24,18 @@ export type McpTransport = "http" | "stdio";
  */
 export type McpCatalogAuth =
   | { kind: "none" }
-  | { kind: "oauth" }
+  | {
+      kind: "oauth";
+      /**
+       * The client name to identify as — the harness that will actually use
+       * the server, not the app around it. Only for a vendor that allowlists
+       * clients by name: Figma's registration endpoint answers 403 to every
+       * name but a partner IDE's, and the agent on the other end of a
+       * connected server is Claude Code. Omitted everywhere else, where the
+       * app registers as itself.
+       */
+      clientName?: string;
+    }
   | {
       kind: "header";
       /** The header the key goes in, e.g. `Authorization`. */
@@ -90,7 +101,7 @@ export const mcpCatalogEntrySchema = z
     args: z.array(z.string()).optional(),
     auth: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("none") }),
-      z.object({ kind: z.literal("oauth") }),
+      z.object({ kind: z.literal("oauth"), clientName: z.string().min(1).max(40).optional() }),
       z.object({
         kind: z.literal("header"),
         headerName: z.string().min(1),
@@ -162,6 +173,8 @@ export interface McpServerInput {
   catalogId?: string;
   iconUrl?: string;
   auth?: McpAuthKind;
+  /** From the catalog entry's `auth.clientName` — see `McpCatalogAuth`. */
+  clientName?: string;
 }
 
 /**
@@ -186,6 +199,7 @@ export function catalogEntryToInput(entry: McpCatalogEntry): McpServerInput {
     catalogId: entry.id,
     iconUrl: entry.iconUrl,
     auth: entry.auth.kind,
+    ...(entry.auth.kind === "oauth" && entry.auth.clientName ? { clientName: entry.auth.clientName } : {}),
   };
 }
 

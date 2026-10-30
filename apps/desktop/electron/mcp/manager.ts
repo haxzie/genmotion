@@ -209,7 +209,9 @@ class McpManager {
     const headers = secrets.headers ?? {};
     // A server the user gave a token to is not also sent through OAuth: if the
     // token is wrong the answer is "fix the token", not a browser window.
-    const authProvider = usesOAuth(config, secrets) ? createProvider(config.id, { interactive }) : undefined;
+    const authProvider = usesOAuth(config, secrets)
+      ? createProvider(config.id, { interactive, clientName: config.clientName })
+      : undefined;
 
     const attempt = async (protocol: HttpProtocol) => {
       const transport =
@@ -217,7 +219,7 @@ class McpManager {
           ? new SSEClientTransport(url, { authProvider, requestInit: { headers } })
           : new StreamableHTTPClientTransport(url, { authProvider, requestInit: { headers } });
       if (authProvider) this.authTransports.set(config.id, transport);
-      const tools = await this.listTools(transport);
+      const tools = await this.listTools(transport, config.clientName);
       return { tools, protocol };
     };
 
@@ -250,10 +252,17 @@ class McpManager {
     return { tools: await this.listTools(transport) };
   }
 
+  /**
+   * Connect and read the tool list. `clientName` is the catalog's override
+   * for a server that allowlists its clients — the probe then introduces
+   * itself the same way the OAuth registration did, so the vendor sees one
+   * client rather than two.
+   */
   private async listTools(
     transport: StreamableHTTPClientTransport | SSEClientTransport | StdioClientTransport,
+    clientName?: string,
   ): Promise<McpToolSummary[]> {
-    const client = new Client({ name: "genmotion", version: app.getVersion() });
+    const client = new Client({ name: clientName ?? "genmotion", version: app.getVersion() });
     try {
       await client.connect(transport, { timeout: PROBE_TIMEOUT_MS });
       const { tools } = await client.listTools(undefined, { timeout: PROBE_TIMEOUT_MS });
@@ -322,7 +331,10 @@ class McpManager {
     this.emit();
     try {
       const urlClientId = await useUrlClientId(config.url!);
-      const result = await auth(createProvider(id, { interactive: true, urlClientId }), { serverUrl: config.url! });
+      const result = await auth(
+        createProvider(id, { interactive: true, urlClientId, clientName: config.clientName }),
+        { serverUrl: config.url! },
+      );
       if (result === "AUTHORIZED") {
         await this.probe(id);
       } else {
@@ -348,7 +360,7 @@ class McpManager {
       if (transport) {
         await transport.finishAuth(code);
       } else {
-        await auth(createProvider(id, { interactive: false }), {
+        await auth(createProvider(id, { interactive: false, clientName: config.clientName }), {
           serverUrl: config.url,
           authorizationCode: code,
         });
@@ -446,7 +458,7 @@ class McpManager {
     try {
       // `auth` refreshes when it can and would otherwise redirect — which the
       // non-interactive provider turns into a throw.
-      const result = await auth(createProvider(config.id, { interactive: false }), {
+      const result = await auth(createProvider(config.id, { interactive: false, clientName: config.clientName }), {
         serverUrl: config.url!,
       });
       if (result !== "AUTHORIZED") throw new AuthRequiredError();

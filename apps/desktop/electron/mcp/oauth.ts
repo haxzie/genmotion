@@ -116,7 +116,7 @@ export async function useUrlClientId(serverUrl: string): Promise<boolean> {
 
 export function createProvider(
   serverId: string,
-  options: { interactive: boolean; urlClientId?: boolean },
+  options: { interactive: boolean; urlClientId?: boolean; clientName?: string },
 ): OAuthClientProvider {
   const redirectUrl = getCallbackUrl();
   return {
@@ -126,7 +126,12 @@ export function createProvider(
     ...(options.urlClientId ? { clientMetadataUrl: CLIENT_METADATA_URL } : {}),
     get clientMetadata(): OAuthClientMetadata {
       return {
-        client_name: "GenMotion",
+        // Normally this app. A catalog entry may name the client instead
+        // (`McpCatalogAuth.clientName`) for a vendor that allowlists
+        // registration by name — Figma's endpoint answers 403 to every other
+        // one — in which case it names the harness the server is handed to.
+        // `client_uri` stays ours either way: only the name is checked.
+        client_name: options.clientName ?? "GenMotion",
         client_uri: "https://genmotion.dev",
         redirect_uris: [redirectUrl],
         grant_types: ["authorization_code", "refresh_token"],

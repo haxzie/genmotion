@@ -33,8 +33,14 @@ const { mcpManager, codexServerId, codexServerName } = await import("../mcp/mana
 const { setCallbackUrl } = await import("../mcp/oauth");
 const { readSettings } = await import("../settings-store");
 
-/** One MCP server with two tools, optionally behind a bearer token. */
-function serve(token: string | null): Promise<{ url: string; close: () => Promise<void> }> {
+/**
+ * One MCP server with two tools, optionally behind a bearer token.
+ *
+ * `clients` collects the name every connecting client introduced itself
+ * with, which is how the catalog's `clientName` override is checked.
+ */
+function serve(token: string | null): Promise<{ url: string; clients: string[]; close: () => Promise<void> }> {
+  const clients: string[] = [];
   const fixture = () => {
     const mcp = new McpServer({ name: "fixture", version: "1.0.0" });
     mcp.registerTool("echo", { description: "Echo the input\nSecond line", inputSchema: { text: z.string() } }, async ({ text }) => ({
@@ -51,18 +57,30 @@ function serve(token: string | null): Promise<{ url: string; close: () => Promis
       res.writeHead(401, { "www-authenticate": 'Bearer realm="fixture"' }).end();
       return;
     }
+    // Read the body here rather than letting the transport consume the
+    // stream: `initialize` carries the client's name, which is what the
+    // `clientName` test reads.
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length ? (JSON.parse(Buffer.concat(chunks).toString()) as unknown) : undefined;
+    for (const message of Array.isArray(body) ? body : [body]) {
+      const name = (message as { method?: string; params?: { clientInfo?: { name?: string } } } | undefined);
+      if (name?.method === "initialize" && name.params?.clientInfo?.name) clients.push(name.params.clientInfo.name);
+    }
+
     // Stateless: every request gets its own server and transport, the way a
     // hosted server behind a load balancer answers a probe.
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on("close", () => void transport.close());
     await fixture().connect(transport);
-    await transport.handleRequest(req, res);
+    await transport.handleRequest(req, res, body);
   });
   return new Promise((resolve) => {
     server.listen(0, "127.0.0.1", () => {
       const { port } = server.address() as { port: number };
       resolve({
         url: `http://127.0.0.1:${port}/mcp`,
+        clients,
         close: () => new Promise((done) => { server.closeAllConnections(); server.close(() => done()); }),
       });
     });
@@ -104,6 +122,27 @@ describe("McpManager", () => {
     expect(view.tools.map((t) => t.name).sort()).toEqual(["echo", "now"]);
     // First line only — the card has one line for it.
     expect(view.tools.find((t) => t.name === "echo")?.description).toBe("Echo the input");
+  });
+
+  it("introduces itself as the client a catalog entry names", async () => {
+    open.clients.length = 0;
+    const plain = await mcpManager.add({ name: "Plain", transport: "http", url: open.url });
+    await mcpManager.refresh(plain.id);
+    expect(open.clients.at(-1)).toBe("genmotion");
+
+    // What Figma's allowlist needs: the harness the server is handed to,
+    // carried from the catalog entry through the stored config.
+    const named = await mcpManager.add({
+      name: "Named",
+      transport: "http",
+      url: open.url,
+      catalogId: "fixture",
+      auth: "oauth",
+      clientName: "Claude Code",
+    });
+    expect((await readSettings()).mcpServers?.find((s) => s.id === "named")?.clientName).toBe("Claude Code");
+    await mcpManager.refresh(named.id);
+    expect(open.clients.at(-1)).toBe("Claude Code");
   });
 
   it("keeps a header out of settings.json and sends it on the wire", async () => {

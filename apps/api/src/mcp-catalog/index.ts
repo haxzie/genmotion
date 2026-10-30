@@ -7,6 +7,7 @@ import huggingface from "./servers/huggingface";
 import freepik from "./servers/freepik";
 import cloudinary from "./servers/cloudinary";
 import mapbox from "./servers/mapbox";
+import figma from "./servers/figma";
 import canva from "./servers/canva";
 import mobbin from "./servers/mobbin";
 import mux from "./servers/mux";
@@ -54,9 +55,11 @@ export const MCP_CATALOG = createMcpCatalog([
   cloudinary,
   // Maps
   mapbox,
-  // Design & brand — no Figma: the hosted server registers only partner
-  // IDEs (403 for anyone else), and the desktop one ties a card to an app
-  // that has to be open. Back once Figma lists GenMotion.
+  // Design & brand. Figma's hosted server allowlists registration by client
+  // name, so the entry names the harness that actually connects — see
+  // `servers/figma.ts`. Still not here: the local Figma desktop server, which
+  // ties a card to an app that has to be open.
+  figma,
   canva,
   mobbin,
   // Publishing

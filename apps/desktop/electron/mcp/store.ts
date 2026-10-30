@@ -35,6 +35,13 @@ export interface McpServerConfig {
   /** The site whose favicon stands in for an icon — see `mainDomain`. */
   iconDomain?: string;
   auth: McpAuthKind;
+  /**
+   * The client name to register as, when the catalog entry asks for one that
+   * is not this app — Figma allowlists its MCP clients by name. Stored with
+   * the server because the main process never reads the catalog; the renderer
+   * sends it along with the rest of the entry on Connect.
+   */
+  clientName?: string;
   /** When it was added — the list is shown in this order. */
   createdAt: number;
 }
@@ -219,6 +226,7 @@ export async function addServer(input: McpServerInput): Promise<McpServerConfig>
       ...(input.iconUrl ? { iconUrl: input.iconUrl } : {}),
       ...(!input.iconUrl && input.transport === "http" ? iconDomainOf(input.url!) : {}),
       auth: input.auth ?? "none",
+      ...(input.clientName ? { clientName: input.clientName } : {}),
       createdAt: Date.now(),
     };
     return { ...settings, mcpServers: [...existing, created] };
