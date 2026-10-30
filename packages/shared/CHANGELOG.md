@@ -1,5 +1,12 @@
 # @genmotion/shared
 
+## 0.5.2
+
+### Patch Changes
+
+- 5ec0bed: Figma in the plugin catalog. A catalog entry can now name the OAuth client it
+  registers as, which is what Figma's allowlist requires.
+
 ## 0.5.1
 
 ### Patch Changes
