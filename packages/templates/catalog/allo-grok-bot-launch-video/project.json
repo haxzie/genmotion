@@ -1,0 +1,38 @@
+{
+  "name": "Allo Grok Bot Launch Video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "durationInFrames": 292,
+      "name": "Give your bot a phone"
+    },
+    {
+      "file": "scenes/02-texting.ts",
+      "durationInFrames": 184,
+      "name": "Text your customers"
+    },
+    {
+      "file": "scenes/03-outro.ts",
+      "durationInFrames": 131,
+      "name": "Connect Allo to Grok Bot"
+    }
+  ],
+  "audio": [
+    {
+      "id": "reference-soundtrack",
+      "file": "assets/reference-soundtrack.m4a",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 607,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

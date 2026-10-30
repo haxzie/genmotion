@@ -1,0 +1,112 @@
+{
+  "arc": "feature: the bot takes a phone number and answers a call → workflow: it texts a quote and hands back a callback list → logo + cta (wordmark builds, resolves into \"Connect Allo to Grok Bot\")",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "title": "Mascot bot takes a phone number, then answers a call from the Dynamic Island",
+      "beat": "feature",
+      "alsoFits": [
+        "hook",
+        "concept"
+      ],
+      "summary": "On a pale blue field a black smiley bot drops in and catches a green headset, blinking as it settles. The headline builds word by word to \"Give your bot a phone\", then swaps into \"Its own number\" where the gap between the words grows into a green pill that counts out ten white dots beside a handset glyph. A tall phone rises from the bottom, a call lands, the bot hops up into the Dynamic Island which stretches from 272 to 802 units wide to hold it, and the line resolves to \"Answers your calls\".",
+      "build": "Everything is Three.js meshes in a 1280x720 reference space (components/stage maps reference pixels to world units). The bot is a rig from components/bot with a setLook(pitch, yaw, roll) joint, driven by a spring() through an 18 key look table so every glance eases and settles instead of snapping. Blinks are keys() ramps on separate frame windows, and a bump() stack adds impact squash at six timed moments. The phone, pill and Dynamic Island are all RRect, one rounded-rectangle mesh primitive, so the island animates by lerping its pill(w, h) dimensions. Headlines come from wordLine/animWord, which lay out a line as individually animatable word meshes.",
+      "reuse": "Take this for any 'give your agent a capability' feature beat where a mascot and a phone share the frame. Swap the three headline strings in the wordLine calls, the greens in components/brand.ts, and the digit count on the pill. The look table and the bump timings are tuned to this soundtrack's hits, so retime them if your audio differs. The bot face itself is this product's mark, so redraw components/bot for your own character rather than shipping theirs.",
+      "techniques": [
+        "character-rig",
+        "spring-physics",
+        "kinetic-type",
+        "device-mockup",
+        "rounded-rect-primitive"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "friendly"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "product-promo"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/02-texting.ts",
+      "title": "Chat thread typing a quote, then a push-in to a desktop callback list",
+      "beat": "workflow",
+      "alsoFits": [
+        "conversation",
+        "feature"
+      ],
+      "summary": "\"Text your customers\" sits over a phone thread while the bot types \"Hi Gonzalo! Here's your quote:\" word by word, a $1,000.00 project quote card slides in under it, and the customer answers \"Thanks, that was fast!\". The camera then pushes in 1.68x on the thread before the scene irises to a dark field holding a desktop app under \"Prepares your call-back list\", where \"14 missed calls today. Your callback list is ready.\" is answered with \"Let's go, I'll call them now.\"",
+      "build": "Messages reveal with revealWords/revealFrac from components/text, which walk a word count rather than animating opacity on a whole block, so the typing reads as composition not fade. The quote card, sidebar and header pill are canvasPlane textures drawn by drawQuoteCard/drawSidebar/drawHeaderPill in components/ui, which keeps the 2D interface work in canvas while the layout stays in Three.js. The push-in is a single scale lerp to ZOOM on the thread group. The transition out is makeDarkBg, a shader plane whose uCenter uniform places an iris at the point the next scene opens on.",
+      "reuse": "Good for any beat that shows an agent handling a customer conversation and then the operator's view of the queue it produced. Swap the message strings, the quote card copy in components/ui, and the two headlines. The iris centre is hand-placed to match scene 3's opening, so move uCenter if you reorder scenes. Keep revealWords rather than a character typewriter: at this size per-word reads better than per-letter.",
+      "techniques": [
+        "chat-thread",
+        "camera-push-in",
+        "canvas-texture-ui",
+        "word-reveal",
+        "iris-transition"
+      ],
+      "mood": [
+        "playful",
+        "clean",
+        "friendly"
+      ],
+      "videoTypes": [
+        "announce-feature",
+        "product-promo",
+        "workflow-demo"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "file": "scenes/03-outro.ts",
+      "title": "Icon pop and letter-by-letter wordmark that dissolves into the closing line",
+      "beat": "logo",
+      "alsoFits": [
+        "cta",
+        "brand"
+      ],
+      "summary": "On the dark field the previous scene irised into, the app icon pops in and the lowercase wordmark assembles one letter at a time beside it. The lockup then shrinks toward the centre and the bold \"allo\" dissolves in place into the lighter \"Allo\" sitting inside the closing line \"Connect Allo to Grok Bot\", with the bot glyph standing in for the product mark mid-sentence.",
+      "build": "The icon is a TextureLoader plane loaded through ctx.manager so the export's frame barrier waits for it. Letters are animWord meshes revealed on a keys() ramp. The swap is the interesting part: both the large lockup and the inline word exist at once, and a single swap progress drives the lockup's scale and visibility against the inline word's opacity, so the two share a position and read as one object changing weight rather than a crossfade.",
+      "reuse": "A clean end card for any product whose name can carry a letter-by-letter build. Replace assets/allo-icon.png, the wordmark string and the closing line. The in-place dissolve wants a wordmark and an inline mention of the same word, so if your closing line does not repeat the brand name, cut the swap and just shrink the lockup. Do not reuse the bot glyph inside the sentence unless your product has its own mark to put there.",
+      "techniques": [
+        "logo-lockup",
+        "kinetic-type",
+        "cross-dissolve",
+        "texture-plane"
+      ],
+      "mood": [
+        "dark",
+        "premium",
+        "clean"
+      ],
+      "videoTypes": [
+        "brand-sting",
+        "launch-playbook",
+        "announce-feature"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.6,
+        0.9
+      ]
+    }
+  ]
+}
