@@ -1,0 +1,17 @@
+{
+  "id": "stripe-link-mcp-launch-video",
+  "title": "Link MCP agent payments launch video",
+  "description": "A 28 second square launch film for agentic payments: a skill installed from a terminal prompt, a wallet consent screen, an agent proposing a $180 itinerary change in chat, a spend request on a phone lock screen, Face ID approval and a receipt, closing on the Link mark.",
+  "metaTitle": "Agent Payments MCP Launch Video Template — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "publishedAt": "2026-11-02",
+  "featured": true,
+  "sampleAt": 0.72,
+  "order": 43,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/stripe-link-mcp-launch-video/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/stripe-link-mcp-launch-video/preview.mp4"
+}

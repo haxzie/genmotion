@@ -1,0 +1,53 @@
+{
+  "name": "Stripe Link MCP Launch Video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1080,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-terminal.ts",
+      "durationInFrames": 170,
+      "name": "Terminal"
+    },
+    {
+      "file": "scenes/02-connect-agent.ts",
+      "durationInFrames": 87,
+      "name": "Connect an agent"
+    },
+    {
+      "file": "scenes/03-agent-chat.ts",
+      "durationInFrames": 190,
+      "name": "Agent chat"
+    },
+    {
+      "file": "scenes/04-spend-notification.ts",
+      "durationInFrames": 85,
+      "name": "Spend notification"
+    },
+    {
+      "file": "scenes/05-approve-and-receipt.ts",
+      "durationInFrames": 244,
+      "name": "Approve & receipt"
+    },
+    {
+      "file": "scenes/06-link-logo.ts",
+      "durationInFrames": 67,
+      "name": "Link logo"
+    }
+  ],
+  "audio": [
+    {
+      "id": "original-audio",
+      "file": "assets/original-audio.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 843,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 15,
+      "muted": false
+    }
+  ]
+}
