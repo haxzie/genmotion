@@ -222,6 +222,13 @@ function ThreeCanvas({
   // Read after the frame is drawn, since the boxes describe that frame, and
   // only while paused: during playback they would be stale the moment they
   // were measured, and the inspector drops its selection on play anyway.
+  //
+  // `scenes` is in the deps because this is also the only thing that draws
+  // while paused, and a rebuild remounts the host above (a layout effect, so
+  // it has already run by the time this one does). Without it the new host is
+  // never asked for a frame and its canvas stays empty until the playhead
+  // moves — which on a scene whose build waits for a font or a texture reads
+  // as that asset having failed to load, while every render shows it fine.
   const [objects, setObjects] = useState<ThreeObjectBox[]>(NO_OBJECTS);
   useEffect(() => {
     const host = handleRef.current;
@@ -240,7 +247,7 @@ function ThreeCanvas({
     return () => {
       live = false;
     };
-  }, [frame, isPlaying]);
+  }, [frame, isPlaying, scenes]);
 
   // Which scene owns the current frame, for its own voiceover — the same
   // mapping the render host uses internally to pick a scene to draw.

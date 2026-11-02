@@ -9,12 +9,21 @@
       would be blocked with nothing in the UI to say why. frame-src is the
       same story for the HyperFrames preview, which is a page the loopback
       server compiles and the editor shows in an iframe.
+
+      font-src carries gm-asset: for the same reason img-src and media-src do:
+      a project's fonts are files in its own folder, and a scene loads them
+      with `new FontFace(family, url(gm-asset://…))`. Without it every project
+      font is blocked in the preview and nowhere else — the offscreen capture
+      page has no CSP — so the editor silently drew every text texture in a
+      fallback face while the render and the timeline filmstrips showed the
+      real one. The scenes catch the load failure (a missing font must not
+      hang an export), so there was nothing on screen to say why.
     -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' http://127.0.0.1:* gm-asset: data: blob:; img-src 'self' http://127.0.0.1:* https: data: blob: gm-asset:; media-src 'self' http://127.0.0.1:* data: blob: gm-asset:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-eval'; frame-src 'self' http://127.0.0.1:*"
+      content="default-src 'self'; connect-src 'self' http://127.0.0.1:* gm-asset: data: blob:; img-src 'self' http://127.0.0.1:* https: data: blob: gm-asset:; media-src 'self' http://127.0.0.1:* data: blob: gm-asset:; style-src 'self' 'unsafe-inline'; font-src 'self' data: gm-asset:; script-src 'self' 'unsafe-eval'; frame-src 'self' http://127.0.0.1:*"
     />
     <title>GenMotion</title>
   </head>
