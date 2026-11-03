@@ -14,7 +14,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
 import { createSceneBundler } from "@genmotion/project";
-import { TEMPLATE_INLINE_LIMIT, getTemplate, listTemplateIds } from "../src/index.ts";
+import { TEMPLATE_INLINE_LIMIT, TRIPWIRE_PREFIX, getTemplate, listTemplateIds } from "../src/index.ts";
 import { DEFAULT_SAMPLE_AT, readSceneSidecar, sceneStillPath } from "../src/scenes.ts";
 import { hostBundle } from "./lib/render-host-bundle.mjs";
 
@@ -22,20 +22,30 @@ import { hostBundle } from "./lib/render-host-bundle.mjs";
 const FRAME_LONG_EDGE = 560;
 const GAP = 6;
 
+/**
+ * The fake origin an unlined asset's placeholder is rewritten to, answered
+ * off disk by the route below. Same mechanism as `render-video.mjs`: a scene
+ * holding an on-screen `<Video>` or an image over the inline limit draws a
+ * blank box without it, which is a useless filmstrip for exactly the scenes
+ * an agent is most likely to want to borrow.
+ */
+const ASSET_ORIGIN = "https://gm-template-asset.internal";
+
+const resolveAssetPlaceholders = (code) =>
+  code.replaceAll(`${TRIPWIRE_PREFIX}assets/`, `${ASSET_ORIGIN}/`);
+
 const PAGE_SHELL = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { background: #000; overflow: hidden; }
 </style></head><body><div id="root"></div></body></html>`;
 
-async function frameShots(browser, record, entry, code, fractions) {
+async function frameShots(context, record, entry, code, fractions) {
   const { fps, width, height } = record.manifest;
   const host = await hostBundle(record.manifest.engine);
   const scale = FRAME_LONG_EDGE / Math.max(width, height);
-  const page = await browser.newPage({
-    viewport: { width: Math.round(width * scale), height: Math.round(height * scale) },
-    deviceScaleFactor: 1,
-  });
+  const page = await context.newPage();
+  await page.setViewportSize({ width: Math.round(width * scale), height: Math.round(height * scale) });
   try {
     await page.setContent(PAGE_SHELL);
     await page.addScriptTag({ content: host });
@@ -89,7 +99,16 @@ async function capture(browser, id) {
   const bundler = createSceneBundler({
     projectDir: record.dir,
     inlineAssetLimit: TEMPLATE_INLINE_LIMIT,
-    assetUrlPrefix: "gm-template-asset://",
+    assetUrlPrefix: TRIPWIRE_PREFIX,
+  });
+  const context = await browser.newContext({ deviceScaleFactor: 1, reducedMotion: "reduce" });
+  // Every `ASSET_ORIGIN` request answered straight off the template's own
+  // `assets/` dir; `path` rather than `body` so Playwright sets the
+  // Content-Type a `<video>` needs before it will decode anything.
+  await context.route(`${ASSET_ORIGIN}/**`, async (route) => {
+    const relative = decodeURIComponent(new URL(route.request().url()).pathname.slice(1));
+    const absolute = path.join(record.dir, "assets", relative);
+    await route.fulfill({ path: absolute }).catch(() => route.fulfill({ status: 404 }));
   });
   try {
     await fs.mkdir(path.join(record.dir, "stills"), { recursive: true });
@@ -102,7 +121,7 @@ async function capture(browser, id) {
         continue;
       }
       try {
-        const shots = await frameShots(browser, record, entry, built.code, curated.sampleAt ?? DEFAULT_SAMPLE_AT);
+        const shots = await frameShots(context, record, entry, resolveAssetPlaceholders(built.code), curated.sampleAt ?? DEFAULT_SAMPLE_AT);
         const jpeg = await strip(browser, shots);
         const target = sceneStillPath(record, entry.file);
         await fs.writeFile(target, jpeg);
@@ -112,6 +131,7 @@ async function capture(browser, id) {
       }
     }
   } finally {
+    await context.close();
     await bundler.dispose();
   }
 }
