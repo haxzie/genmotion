@@ -1,0 +1,143 @@
+{
+  "text": "here it is. sorry it took a while",
+  "fps": 30,
+  "durationInFrames": 85,
+  "durationMs": 2815,
+  "keyboard": "thock",
+  "effectiveWpm": 159,
+  "mistakes": 0,
+  "steps": [
+    {
+      "frame": 3,
+      "text": "h"
+    },
+    {
+      "frame": 5,
+      "text": "he"
+    },
+    {
+      "frame": 6,
+      "text": "her"
+    },
+    {
+      "frame": 8,
+      "text": "here"
+    },
+    {
+      "frame": 9,
+      "text": "here "
+    },
+    {
+      "frame": 13,
+      "text": "here i"
+    },
+    {
+      "frame": 14,
+      "text": "here it"
+    },
+    {
+      "frame": 15,
+      "text": "here it "
+    },
+    {
+      "frame": 17,
+      "text": "here it i"
+    },
+    {
+      "frame": 20,
+      "text": "here it is"
+    },
+    {
+      "frame": 22,
+      "text": "here it is."
+    },
+    {
+      "frame": 30,
+      "text": "here it is. "
+    },
+    {
+      "frame": 31,
+      "text": "here it is. s"
+    },
+    {
+      "frame": 33,
+      "text": "here it is. so"
+    },
+    {
+      "frame": 35,
+      "text": "here it is. sor"
+    },
+    {
+      "frame": 38,
+      "text": "here it is. sorr"
+    },
+    {
+      "frame": 40,
+      "text": "here it is. sorry"
+    },
+    {
+      "frame": 44,
+      "text": "here it is. sorry "
+    },
+    {
+      "frame": 46,
+      "text": "here it is. sorry i"
+    },
+    {
+      "frame": 47,
+      "text": "here it is. sorry it"
+    },
+    {
+      "frame": 48,
+      "text": "here it is. sorry it "
+    },
+    {
+      "frame": 50,
+      "text": "here it is. sorry it t"
+    },
+    {
+      "frame": 52,
+      "text": "here it is. sorry it to"
+    },
+    {
+      "frame": 53,
+      "text": "here it is. sorry it too"
+    },
+    {
+      "frame": 56,
+      "text": "here it is. sorry it took"
+    },
+    {
+      "frame": 59,
+      "text": "here it is. sorry it took "
+    },
+    {
+      "frame": 63,
+      "text": "here it is. sorry it took a"
+    },
+    {
+      "frame": 64,
+      "text": "here it is. sorry it took a "
+    },
+    {
+      "frame": 66,
+      "text": "here it is. sorry it took a w"
+    },
+    {
+      "frame": 67,
+      "text": "here it is. sorry it took a wh"
+    },
+    {
+      "frame": 70,
+      "text": "here it is. sorry it took a whi"
+    },
+    {
+      "frame": 73,
+      "text": "here it is. sorry it took a whil"
+    },
+    {
+      "frame": 75,
+      "text": "here it is. sorry it took a while"
+    }
+  ]
+}
