@@ -21,6 +21,7 @@ import {
   signupMethod,
 } from "./slack";
 import { sendEmail, emailEnabled } from "./mailer";
+import { addContact } from "./mails";
 import { magicLinkEmail, inviteEmail } from "./emails";
 
 const WEB_URL = env.WEB_URL;
@@ -136,6 +137,9 @@ export const auth = betterAuth({
             },
           });
           notifySignup(createdUser, signupMethod(ctx));
+          // Same reasoning as the event above: this hook is the only place that
+          // sees a signup once, so it is the only place a contact is added.
+          addContact(createdUser);
         },
       },
       update: {

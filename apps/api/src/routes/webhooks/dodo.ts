@@ -5,6 +5,7 @@ import {
   type WebhookEnvelope,
 } from "../../billing/webhook-handler";
 import { notifySubscriptionEvent } from "../../slack";
+import { syncSubscription } from "../../mails";
 
 /**
  * Payment provider webhooks. Mounted OUTSIDE requireAuth — the caller is the
@@ -58,6 +59,12 @@ dodoWebhookRoutes.post("/", async (c) => {
       // or stale changed nothing, and must not be announced as if it had.
       await notifySubscriptionEvent(event, outcome.organizationId).catch((err) => {
         console.error("[billing] slack notification failed:", err);
+      });
+      // The mailing list reads the committed row, so it is right for every
+      // transition the handler applied — an upgrade, a plan change, and the
+      // cancellation or expiry that takes the contact back to free.
+      await syncSubscription(outcome.organizationId).catch((err) => {
+        console.error("[billing] mailing list sync failed:", err);
       });
     } else {
       console.log(

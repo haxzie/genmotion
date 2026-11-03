@@ -57,6 +57,15 @@ const schema = z.object({
   /** Help & feedback from the apps, and "contact us" for more seats. */
   SLACK_REQUESTS_WEBHOOK_URL: z.url().optional(),
 
+  // ── Mailing list (Mails) — optional ─────────────────────────────────
+  // Where a new account is added, and where a plan change is merged onto the
+  // contact. Unset means nothing is written — the API still boots and signups
+  // still work, they just don't reach a list.
+  MAILS_API_KEY: z.string().min(1).optional(),
+  MAILS_API_URL: z.url().default("https://mails-api.haxzie.com"),
+  /** Optional list a new contact is subscribed to on creation. */
+  MAILS_LIST_ID: z.string().min(1).optional(),
+
   // ── Email (Amazon SES) — optional ───────────────────────────────────
   EMAIL_FROM: z.email().optional(),
   AWS_SES_REGION: z.string().min(1).optional(),
