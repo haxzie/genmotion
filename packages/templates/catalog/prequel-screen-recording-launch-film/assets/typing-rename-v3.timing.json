@@ -1,0 +1,79 @@
+{
+  "text": "demo_v3_FINAL.mov",
+  "fps": 30,
+  "durationInFrames": 72,
+  "durationMs": 2390,
+  "keyboard": "thock",
+  "effectiveWpm": 99,
+  "mistakes": 0,
+  "steps": [
+    {
+      "frame": 15,
+      "text": "d"
+    },
+    {
+      "frame": 19,
+      "text": "de"
+    },
+    {
+      "frame": 20,
+      "text": "dem"
+    },
+    {
+      "frame": 23,
+      "text": "demo"
+    },
+    {
+      "frame": 26,
+      "text": "demo_"
+    },
+    {
+      "frame": 28,
+      "text": "demo_v"
+    },
+    {
+      "frame": 30,
+      "text": "demo_v3"
+    },
+    {
+      "frame": 33,
+      "text": "demo_v3_"
+    },
+    {
+      "frame": 35,
+      "text": "demo_v3_F"
+    },
+    {
+      "frame": 37,
+      "text": "demo_v3_FI"
+    },
+    {
+      "frame": 40,
+      "text": "demo_v3_FIN"
+    },
+    {
+      "frame": 44,
+      "text": "demo_v3_FINA"
+    },
+    {
+      "frame": 46,
+      "text": "demo_v3_FINAL"
+    },
+    {
+      "frame": 51,
+      "text": "demo_v3_FINAL."
+    },
+    {
+      "frame": 58,
+      "text": "demo_v3_FINAL.m"
+    },
+    {
+      "frame": 61,
+      "text": "demo_v3_FINAL.mo"
+    },
+    {
+      "frame": 62,
+      "text": "demo_v3_FINAL.mov"
+    }
+  ]
+}

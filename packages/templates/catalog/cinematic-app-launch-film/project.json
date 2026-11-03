@@ -1,0 +1,78 @@
+{
+  "name": "Cinematic app launch film",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-dock.ts",
+      "durationInFrames": 23,
+      "name": "Dock"
+    },
+    {
+      "file": "scenes/02-prompt.ts",
+      "durationInFrames": 39,
+      "name": "Prompt"
+    },
+    {
+      "file": "scenes/03-scenes-grid.ts",
+      "durationInFrames": 29,
+      "name": "Scenes grid"
+    },
+    {
+      "file": "scenes/04-canvas.ts",
+      "durationInFrames": 19,
+      "name": "Canvas"
+    },
+    {
+      "file": "scenes/05-comment.ts",
+      "durationInFrames": 38,
+      "name": "Comment"
+    },
+    {
+      "file": "scenes/06-keyboard.ts",
+      "durationInFrames": 17,
+      "name": "Keyboard"
+    },
+    {
+      "file": "scenes/07-draw.ts",
+      "durationInFrames": 26,
+      "name": "Draw"
+    },
+    {
+      "file": "scenes/09-timeline.ts",
+      "durationInFrames": 21,
+      "name": "Timeline"
+    },
+    {
+      "file": "scenes/10-frames-montage.ts",
+      "durationInFrames": 85,
+      "name": "Frames montage"
+    },
+    {
+      "file": "scenes/11-export.ts",
+      "durationInFrames": 26,
+      "name": "Export"
+    },
+    {
+      "file": "scenes/12-exporting.ts",
+      "durationInFrames": 55,
+      "name": "Exporting"
+    }
+  ],
+  "audio": [
+    {
+      "id": "reference-music",
+      "file": "assets/reference-audio.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 378,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 8,
+      "muted": false
+    }
+  ]
+}

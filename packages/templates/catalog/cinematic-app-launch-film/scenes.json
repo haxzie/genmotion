@@ -1,0 +1,426 @@
+{
+  "arc": "reveal (the app icon in the dock, named and clicked) → workflow (the prompt typed into the composer, the generated scenes grid, the editor canvas, a comment pinned on the preview, the keyboard, a mark drawn on a frame, the timeline) → recap (a montage of finished films playing on glass) → workflow (the export panel and Save) → cta (Exporting video… to Export complete, then black)",
+  "scenes": [
+    {
+      "file": "scenes/01-dock.ts",
+      "title": "A macro angle on the dock as the pointer finds one app icon and its name pops up",
+      "beat": "reveal",
+      "alsoFits": [
+        "hook",
+        "brand"
+      ],
+      "summary": "0.8s, and the whole film's grammar in one shot. A low, rolled angle looking along a laptop screen's bottom edge at a bright dock, the keyboard falling away out of focus in the foreground. The pointer drifts onto the app's icon, the tooltip pops up above it with the name in it, and the pointer clicks. Black and white, shallow focus, a hair of handheld drift.",
+      "build": "A real 3D MacBook (`components/macbook.ts`) with a canvas-textured screen plane (`createScreen`), lit by a small studio rig and photographed with a genuinely shallow camera rather than a blur overlay: `createFilm` in `components/film.ts` owns depth of field from the depth buffer, the grade, grain and letterbox, and `aim()` points the camera at a point on the screen in screen pixels so framing is authored in UI coordinates. `handheld()` adds the drift. Every UI element is an immediate-mode call into the screen canvas (`box`, `rr`, `text`, `logo` in `components/ui.ts`), so a dock is a loop, not a layout. `GRADE.saturation` in `components/brand.ts` is 0, which is the single switch that makes the film black and white.",
+      "reuse": "This is the opening shot for any \"you open the app\" film, and it is worth borrowing for the rig more than the content: a macro angle with a real plane of focus makes ordinary UI look photographed instead of screen-captured. Swap the icon set and the app name. Set `GRADE.saturation` to 1 to bring the colour back, and `GRADE.bar` above 0 for a wider letterbox.",
+      "techniques": [
+        "device-mockup",
+        "app-dock",
+        "3d-objects",
+        "focus-pull",
+        "cursor-click",
+        "canvas-texture-ui",
+        "grain-texture",
+        "3d-camera-move"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "minimal"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "product-promo",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.6,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/02-prompt.ts",
+      "title": "A steep close-up on a composer as a prompt is typed and focus rides the caret",
+      "beat": "workflow",
+      "alsoFits": [
+        "feature",
+        "concept"
+      ],
+      "summary": "1.3s. A steep, rolled close-up on the app's composer field. \"Make a launch film\" is typed in character by character, in a real typing rhythm rather than an even reveal, and the plane of focus follows the caret across the field as the line grows. The rest of the panel, the folder icon and the plus button, sit out of focus at the edges of the frame.",
+      "build": "The text comes from `assets/typing-prompt.timing.json`, the sidecar a keysound typing take writes next to its WAV: each step is a frame and the full string as of that frame, so the picture is drawn from the same plan the sound was. `TYPE_OFFSET` says which frame of the take the shot opens on, which is how you start mid-word. Focus riding the caret is one line: `measure()` the typed string, add it to the field's x, and feed that point to the camera's focus distance, so the sharp band tracks the last letter with no keyframes at all.",
+      "reuse": "Use it for any prompt, search, command or message being typed, which is the most common beat in an AI product video. Two things to take: driving the characters from a timing file rather than `substring(0, frame)` (it reads as a person, and it stays in sync with the audio forever), and focus that follows the caret instead of a static close-up. Swap the prompt string, regenerate the timing file for your own text, and change the field labels.",
+      "techniques": [
+        "ui-mockup",
+        "typing-input",
+        "focus-pull",
+        "canvas-texture-ui",
+        "sound-sync",
+        "3d-camera-move",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "minimal"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "explainer",
+        "product-promo"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/03-scenes-grid.ts",
+      "title": "A grid of generated scene thumbnails seen at a steep diagonal as the camera slides across it",
+      "beat": "workflow",
+      "alsoFits": [
+        "feature",
+        "recap"
+      ],
+      "summary": "1s. The generated scenes as a panel of nine thumbnails, three across, each with a filename label and a duration chip reading 0:02 to 0:05. The whole grid is seen at a steep diagonal on the laptop screen and the camera slides along it, so cards come into focus and leave again. Several of the thumbnails are portrait frames cropped to 16:9 windows.",
+      "build": "`FRAMES` in `components/frames.ts` is the shared image set every shot in this film draws from, and `portraitCrop(top)` is a small helper that takes a 9:16 frame and returns the UV window for a 16:9 slice of it, so portrait artwork fills a landscape card without squashing. The grid itself is a double loop into the screen canvas. The slide is the camera moving across a stationary plane with the real depth of field doing the work, which is why cards soften as they leave the centre; nothing is animated per card.",
+      "reuse": "Borrow it for any \"here is everything it made\" beat: a gallery, a results grid, a library, a set of variants. The two useful pieces are the portrait-into-landscape UV crop and the fact that a camera slide across a static grid with real DOF reads as more considered than nine staggered card animations, and costs a fraction of the code. Swap the images in `assets/frames/` and the filename labels.",
+      "techniques": [
+        "ui-mockup",
+        "icon-grid",
+        "collage",
+        "camera-pan",
+        "focus-pull",
+        "photo-media",
+        "canvas-texture-ui",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "product-promo",
+        "demo-walkthrough"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/04-canvas.ts",
+      "title": "A raking angle along the editor canvas as a layer is selected by name",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow"
+      ],
+      "summary": "0.6s, one of the shortest in the film. A raking angle that travels along the edge of the preview frame: the scene list down the left with 01-dock through 05-chat, a \"Scene 2 · Active\" chip, the rendered frame itself reading \"Astra.\", and a selection box snapping around that headline with its name, #headline, on a tag above it.",
+      "build": "The shot exists to make one idea legible in half a second: that the thing on the canvas has a name you can point at. It is the same screen-canvas plus `aim()` rig as the rest of the film, but the camera travels almost parallel to the screen plane rather than facing it, so the frame edge becomes a leading line and only a narrow band is ever sharp. At 19 frames there is no time for an entrance, so nothing animates in; the camera move is the only motion.",
+      "reuse": "Use it when a shot has one fact to deliver and under a second to do it: a label, a state, a selection. The transferable idea is the raking angle, which gives a flat UI depth and a natural focus gradient without any extra geometry. Swap the sidebar entries and the selected layer's name.",
+      "techniques": [
+        "ui-mockup",
+        "camera-pan",
+        "focus-pull",
+        "cursor-click",
+        "canvas-texture-ui",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "minimal"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "product-promo"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/05-comment.ts",
+      "title": "A crosshair finds an object in the playing preview, pins a comment on it and types a change",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "concept"
+      ],
+      "summary": "1.3s. The preview is playing another film, a bot on a phone call with the line \"Give your [bot] a phone\" on screen. A crosshair moves over it, a hover outline lights up around the bot, and a click drops a numbered pin. A comment bubble opens next to it with the placeholder \"Ask for a change…\", and \"Make it bigger\" is typed in. The object's own name, #grok-bot, sits on the highlight.",
+      "build": "Rebuilt from the real app's preview inspector at 3x its CSS pixel sizes, with the app's own tokens from `APP` in `components/brand.ts`, which is why it reads as the product rather than an impression of it. The film frame underneath is a still (`assets/preview/grok-bot-frame.jpg`) with `bleedEdges` hiding the seam, and the bot's box is hard-coded in that frame's own pixel space through `fu`/`fv` mappers, so the highlight lands exactly on the subject with no tracking. `components/preview-ui.ts` holds the crosshair, pin, highlight and bubble painters, shared with the draw shot.",
+      "reuse": "Take it for any point-and-ask interaction: a comment, an annotation, an inspector, a selection tool, a click-to-edit. The reusable pattern is a fixed box in the artwork's own coordinate space plus small mapper functions, which beats trying to animate a highlight onto moving footage. Swap the frame image, the box coordinates, the object name and the typed request.",
+      "techniques": [
+        "ui-mockup",
+        "cursor-click",
+        "highlight",
+        "typing-input",
+        "photo-media",
+        "focus-pull",
+        "canvas-texture-ui",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "explainer",
+        "product-promo"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.55,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/06-keyboard.ts",
+      "title": "A laptop deck at a grazing angle with a razor-thin plane of focus as keys go down",
+      "beat": "transition",
+      "alsoFits": [
+        "atmosphere",
+        "workflow"
+      ],
+      "summary": "0.6s of pure texture. The keyboard deck seen almost edge on, three rows of caps receding into fog, with a plane of focus only a few keys deep. Six keys go down in a typing rhythm, spelling a word you never quite read, and the screen glows out of focus behind them. A word sits on the screen above, soft.",
+      "build": "Real extruded key caps in a 3D scene, not a texture: a pitch and cap size constant lay out the rows, and `PRESSES` is a short list of key and frame pairs so the depressions land on a human rhythm rather than a wave. `THREE.Fog` does the far falloff and the film's own depth of field does the near, which together give a macro lens look that a blur pass cannot. The shot carries no information on purpose, which is what makes it work as a breath between two UI shots.",
+      "reuse": "Use it as a cutaway in any film that is otherwise wall-to-wall interface: it resets the eye and buys a beat without saying anything. It is also the most standalone scene here, since it needs no artwork at all. Change `PRESSES` to spell your own word and the fog colour to match your grade.",
+      "techniques": [
+        "3d-objects",
+        "extrude-geometry",
+        "focus-pull",
+        "sound-sync",
+        "grain-texture",
+        "3d-camera-move"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "premium"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "brand-sting",
+        "product-promo",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/07-draw.ts",
+      "title": "A freehand mark is drawn around something in the preview and a draw card opens",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "concept"
+      ],
+      "summary": "0.9s. On a frame from the film's own montage, a bot taking a call with a \"Forwarding Call\" banner on it, a freehand mark is drawn on around the banner rather than faded in. A numbered badge pops at the start of the stroke, and a card opens beside it: \"1 mark · 00:08.06 · keep drawing, or send\" over the field \"What should change here?\".",
+      "build": "The stroke is a path drawn progressively into the canvas with a round join and cap, the length of the path tied to the frame, so it reads as a hand moving rather than a shape appearing. It shares `components/preview-ui.ts` with the comment shot, which is why the badge, the card and the timecode are visually the same system. The stroke is authored in the app's pink, and the film's grade (`GRADE.saturation` 0 in `components/brand.ts`) takes it to grey along with everything else, so turning the grade back up is all it takes to get the colour back.",
+      "reuse": "Borrow it for annotation, markup, review and feedback beats. The progressive path draw is a few lines and is worth keeping in any template that ever needs a handwritten underline, circle or arrow on top of artwork. Swap the frame image, the stroke path and the card copy. If you want the mark to stay coloured in a monochrome film, grade the frame rather than the whole scene and draw the stroke over it.",
+      "techniques": [
+        "ui-mockup",
+        "draw-on-check",
+        "photo-media",
+        "canvas-texture-ui",
+        "focus-pull",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "playful"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "explainer"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.6,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/09-timeline.ts",
+      "title": "The app's own timeline, showing this film, with the playhead at the film's real time",
+      "beat": "workflow",
+      "alsoFits": [
+        "feature",
+        "recap"
+      ],
+      "summary": "0.7s. The editor's timeline: scene cards laid out left to right, an audio lane with a waveform under them, a transport bar with a timecode. It is showing this film, so the cards are this project's own scenes at their own durations, and the playhead sits at the frame the viewer is actually watching. The pointer clicks the Frames montage card as the shot ends.",
+      "build": "The piece worth copying is where the data comes from: the scene file imports `../project.json` and lays the cards out from `project.scenes` and `project.fps`, so the timeline cannot go stale when the film is retimed, and the waveform in `components/audio-envelope.ts` is sampled from the real track. The playhead position is computed from this scene's global start, so it reads the film's own time rather than the shot's. Everything is rebuilt from the desktop app's timeline components at 3x their CSS sizes in the app's own tokens.",
+      "reuse": "Use it any time a video needs to show its own editor, which is the standard reveal in a tool launch. The idea to take is self-reference: read the manifest instead of hard-coding the cards, and the shot stays true after every edit. For a different product, keep the lane and card geometry and swap the tokens in `components/brand.ts`.",
+      "techniques": [
+        "ui-mockup",
+        "timeline",
+        "voice-waveform",
+        "cursor-click",
+        "canvas-texture-ui",
+        "focus-pull",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "techy"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "product-promo"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/10-frames-montage.ts",
+      "title": "Hard cuts through five finished films playing on glass, each at its own angle",
+      "beat": "recap",
+      "alsoFits": [
+        "proof",
+        "atmosphere"
+      ],
+      "summary": "2.8s, the longest run in the film and its payoff. Five finished videos, actually playing rather than held as stills: a counter ticking up, a bot taking a call, a fintech sale notification reading \"A new sale? Payment received +$49. You'll know.\", a lanyard spinning, a logo resolving. Each sits on a pane of glass at a different angle with its own small lens move, and the cuts land on the music.",
+      "build": "The clips are VP9 WebM segments in `assets/clips/`, cut out of each source project's own export, and they are seeked frame by frame through `components/footage.ts` rather than played, which is what makes a montage of moving footage deterministic: the same frame of the film always shows the same frame of the clip, so a re-export matches to the pixel. Each shot carries its own camera pose and move, and the cut list is a plain array, so retiming the montage to a different track is editing numbers.",
+      "reuse": "This is the scene to borrow for a showreel, a customer montage, a before-and-after or any \"look what people made\" beat. The important technique is frame-seeked video instead of playback, which is the only way embedded footage survives a frame-accurate render. Keep the glass-at-an-angle presentation and swap `assets/clips/` for your own segments; cut them with ffmpeg to the length each shot needs rather than trimming in the scene.",
+      "techniques": [
+        "video-media",
+        "hard-cut",
+        "multi-screen-sequence",
+        "3d-camera-move",
+        "focus-pull",
+        "sound-sync",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "energetic"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "product-promo",
+        "brand-sting",
+        "announce-milestone"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/11-export.ts",
+      "title": "The export panel from the left, then a hard cut to Save",
+      "beat": "workflow",
+      "alsoFits": [
+        "feature",
+        "cta"
+      ],
+      "summary": "0.9s. The export panel seen from the left at a rake: 4K Ultra HD · 3840 × 2160, 30 fps, Duration 00:12, File size ~148 MB, with the preview beside it. A hard cut mid-shot to the save dialog, and the pointer clicks Save.",
+      "build": "Two framings in one scene with a hard cut at a named frame (`CUT`), which is cheaper than two scene files and keeps the pair timed together. The panel is immediate-mode canvas drawing with the numbers as plain strings, so matching them to the real film is editing text. The cut is deliberately placed so the pointer is already travelling when the second framing opens, which is what stops a hard cut inside a scene from reading as a mistake.",
+      "reuse": "Use it for settings, checkout, confirmation, publish, any panel-then-confirm pair. The useful habit is putting both framings in one scene and cutting on a constant, so the beat stays together when the film is retimed. Swap the specs and the button labels.",
+      "techniques": [
+        "ui-mockup",
+        "hard-cut",
+        "cursor-click",
+        "button-press",
+        "focus-pull",
+        "canvas-texture-ui",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "product-promo"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/12-exporting.ts",
+      "title": "Exporting video… climbing to Export complete, then black",
+      "beat": "cta",
+      "alsoFits": [
+        "workflow",
+        "logo"
+      ],
+      "summary": "1.8s to close the film. Nearly frontal on the screen with a slow push in: \"Exporting video…\" above a progress bar, a remaining-time estimate counting down beside the percentage, and Cancel export under it. Focus racks from the title down to the bar as it fills, the label turns over to \"Export complete\" with the app mark beside it and the spec line \"12.6s · 3840 × 2160 · MP4\" taking the estimate's place, and the frame goes to black as the music fades.",
+      "build": "A rack focus doing the work a cut would otherwise do: the camera barely moves, and the only real motion is the focus distance travelling from the title to the bar, which is why a progress bar holds for nearly two seconds without getting dull. The ending is reached perceptually, with the exposure falling rather than a black plane fading in over the top, so the grain and the letterbox go with it.",
+      "reuse": "Take it as an ending for any film whose last beat is a completion: an upload, a deploy, a publish, a payment. The transferable pieces are rack focus as the only motion in a held shot, and fading the exposure instead of overlaying black. Swap the labels and the spec line.",
+      "techniques": [
+        "ui-mockup",
+        "focus-pull",
+        "progress-ring",
+        "push-in",
+        "end-card",
+        "canvas-texture-ui",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "premium",
+        "calm"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "product-promo",
+        "demo-walkthrough"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.6,
+        0.9
+      ]
+    }
+  ]
+}

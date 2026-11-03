@@ -1,0 +1,369 @@
+{
+  "arc": "hook (a Slack banner asks for a \"quick\" demo video, and the cursor selects that one word in red) → problem (take one is ruined by another ping and dragged to the Trash, ATTEMPTS 1) → problem (the attempts accelerate through audio, erase, rename, to ATTEMPTS 37 and a file called demo_final_v9 (use this one).mov) → problem (a Premiere-style timeline, razor cuts, the evening passing in the letterbox clock, an export stuck at 99% whose time remaining only grows) → turn (11:52 PM in Slack: the video is sent, and the reply is \"You should try Prequel!\" with a link preview) → reveal (the first daylight in the film: prequel.sh, Download for Mac, the dmg) → feature (record a window with a face-cam in two clicks) → feature (the Prequel editor: move the camera, resize it, pick a background, export) → logo (black, the Prequel wordmark, Made for Mac)",
+  "scenes": [
+    {
+      "file": "scenes/01-slack-ping.ts",
+      "title": "A Slack banner lands on a dark desktop and the cursor drag-selects one word in red",
+      "beat": "hook",
+      "alsoFits": [
+        "problem",
+        "conversation"
+      ],
+      "summary": "5s. A macOS desktop surfaces out of black, dim and defocused: a Finder window of old recordings, a .mov icon on the desktop. A chime, and a Slack banner slides in from the right edge of the menu bar: Maya Chen, now, \"hey! can you send a quick demo video?\". The camera leans in off a wide, tilted look at the desktop until the banner fills the frame, the lens racking onto it as it lands. The pointer becomes an I-beam, travels to the start of one word, presses, and drags a red selection across \"quick\", the letters flipping to white as the highlight passes.",
+      "build": "The desktop is one canvas-painted plane (`makeDesktop` in `components/mac.ts`) whose shader is a focus lens rather than a mask: `desk.lens(rect, …)` takes a rectangle in desktop pixels and everything outside it blurs, desaturates and dims. `placeOn()` positions the rotated plane so a chosen desktop pixel lands on the world origin, which turns \"frame this banner\" into one call per frame. The banner is a second plane drawn at 4x so it stays sharp with the camera right on it, with the Slack mark composited in by an `ImageLoader` wired to `ctx.manager`. The selection is the trick worth stealing: a small texture holding a red block with the white word already drawn on it, its geometry translated so the left edge is pinned, then revealed by scaling x and setting `texture.repeat.x` to the same value, so the word is cropped rather than squashed. Every frame comes from `PING_T` in `components/timeline.ts`, which is also where the chime and the mouse-down cue in `project.json` are cut to.",
+      "reuse": "Take it whenever one word in a sentence is the whole premise: a clause in a brief, a number in a quote, a promise in a subject line. The three reusable mechanics are the focus lens (one sharp thing in a dark frame reads as cinema rather than a screen grab), the pinned-left crop reveal for a text selection, and a notification that both arrives and gets read in one unbroken camera move. Swap the sender, the message and the selected word at the top of the file, and the highlight colour in `HILITE`. Do not reuse the Slack mark if your video names a different app.",
+      "techniques": [
+        "ui-mockup",
+        "notification-banner",
+        "cursor-click",
+        "focus-pull",
+        "word-by-word",
+        "push-in",
+        "grain-texture",
+        "sound-sync",
+        "canvas-texture-ui"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "editorial"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "launch-playbook",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.12,
+        0.5,
+        0.86
+      ]
+    },
+    {
+      "file": "scenes/02-take-one.ts",
+      "title": "Take one: Record is clicked, Slack pings into the recording, and the file is dragged to the Trash",
+      "beat": "problem",
+      "alsoFits": [
+        "workflow",
+        "conversation"
+      ],
+      "summary": "7s in three shots. The cursor crosses a capture toolbar and clicks Record. Cut up to the menu bar, where a red pill counts the seconds away, and a second Slack banner slides in mid-take: \"any update on the demo?\". The lens leaves the timer and racks onto the banner, then the cursor comes back and stops the recording. Cut to the floating thumbnail of the ruined take, which is grabbed, shrunk under the pointer, and dropped into the Trash with a bump. A counter rises in the bottom letterbox bar: ATTEMPTS 1.",
+      "build": "One desktop plane, three framings. `frameOn(fx, fy, zoom, …)` clamps a target desktop pixel against the frame's half-width so a push-in never runs off the edge of the screen, which is what lets all three shots live in one scene with no cut geometry. Props are plain sprites (`captureBar`, `recPill`, `recordingThumb`, `trashFull`, `slackBanner` in `components/mac.ts`) shown with `put()` and hidden at the top of every frame, so there is nothing to clean up between shots. The timer is twelve pre-rendered pills indexed by `floor((f - start) / secondsEvery)` rather than text redrawn per frame. The drag is `mousePath()`, which gives the travel a wrist-like arc, with the thumbnail riding under the cursor at a scale that falls to 0.42 and then to nothing as it goes in. `mixRect` interpolates the focus rectangle from the timer to the banner, so the rack is one eased value.",
+      "reuse": "Use it for an interruption that ruins work in progress: a notification mid-take, an alert mid-demo, a call mid-presentation. The parts worth lifting are the clamped `frameOn` helper (several shots in one plane), the hide-everything-then-place-what-this-frame-needs sprite pattern, and the drag-to-trash with the scale falloff. Swap the toolbar and the message copy. The counter in the letterbox is `makeCounter` in `components/film.ts` and takes any label.",
+      "techniques": [
+        "ui-mockup",
+        "desktop-window",
+        "notification-banner",
+        "cursor-click",
+        "button-press",
+        "focus-pull",
+        "counter",
+        "hard-cut",
+        "sound-sync",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "humorous"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "ugc-screen-demo",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.14,
+        0.42,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/03-again.ts",
+      "title": "The attempts accelerate through stop, erase and rename until the counter reads 37",
+      "beat": "problem",
+      "alsoFits": [
+        "recap",
+        "workflow"
+      ],
+      "summary": "12s, and the longest scene in the film. Three unhurried shots first, each the only sharp thing in a dark defocused desktop: an audio window stopped because the take clipped, an Erase dialog emptying the Trash, a file renamed to demo_v3_FINAL.mov with the name typed out key by key. Then the cuts start accelerating, 17 of them down to two frames each, rolling through record, trash, audio, erase, rename at random angles while ATTEMPTS ticks past 4, 9, 18, 36. It settles on one last rename, typed tired and slips included, landing on \"demo_final_v9 (use this one).mov\".",
+      "build": "The whole scene is a table. `AGAIN_T` in `components/timeline.ts` holds three slow shots and a generated list of rapid ones from a length table `[8, 7, 6, 6, 5, …, 2]`, and the scene turns each into a `Shot` with a camera pose: the slow ones get hand-authored rotations, the rapid ones get angles, offsets and zooms from a seeded `rng(37)`, so every export is frame-identical. A `Map` keyed on the text caches one rendered rename field per distinct string the name ever says, which is what makes typing affordable: the frame picks a cached sprite rather than painting type. The typed text itself comes from the `.timing.json` that `generate_typing_sound` wrote beside the keystroke audio, so the letters on screen and the keys you hear are the same plan and cannot drift. Handheld shake is multiplied by 2.5 and grain lifted from 0.07 to 0.09 on the rapid cuts.",
+      "reuse": "This is the scene to borrow for \"and then it happened again, and again\": retries, failed builds, repeated charges, rounds of edits. Three separately useful pieces. First, the shot table with a length list that shortens, which is how an accelerating montage is authored rather than animated. Second, the seeded random pose, which gives chaos that is the same every render. Third, driving typed text off a keysound timing file instead of a per-character interpolation. Swap the prop list, the filenames and the counter label.",
+      "techniques": [
+        "ui-mockup",
+        "hard-cut",
+        "match-cut",
+        "seeded-random",
+        "counter",
+        "typing-input",
+        "sound-sync",
+        "focus-pull",
+        "3d-camera-move",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "energetic"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "freeform-video",
+        "explainer"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.1,
+        0.55,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/04-the-edit.ts",
+      "title": "A video timeline is razored three times, the evening passes in the letterbox clock, and the export sticks at 99%",
+      "beat": "problem",
+      "alsoFits": [
+        "workflow",
+        "recap"
+      ],
+      "summary": "10s inside a Premiere-style editor. The playhead is dragged back and forth over a clip with the timecode running under it, then three razor cuts drop into V1 and the slice between two of them is lifted up onto V2, leaving a gap patch behind. The counter in the letterbox stops counting attempts and becomes a clock: 6:24 PM, 7:10, 7:58, 8:45, 9:30, 10:22, 11:09, each in a shorter cut than the last. An export dialog arrives at 97%, then 98%, then 99%, and 99% again, while the time remaining climbs from 00:04:12 to 02:14:55. 11:47 PM.",
+      "build": "The editor is one canvas-painted plane from `components/editor.ts`, with everything that moves placed over it as a sprite: a playhead, 30 cut lines (3 authored and 27 from a seeded `rng(2347)` so the rapid pass has somewhere to land), a lifted clip piece, a gap patch, and four pre-rendered export dialogs. `secAt` and `makeTimecode` map timeline pixels to seconds so the readout and the playhead cannot disagree. The joke is in the data, not the animation: `EXPORT_STATES` is four pairs of percentage and remaining time, and the only thing the scene does is step through them while the percentage barely moves. The clock montage reuses the letterbox counter from the previous scenes with strings instead of numbers, which is why the handoff reads as the same film rather than a new graphic.",
+      "reuse": "Borrow it for any \"this took all evening\" beat, or any time a progress bar is the punchline. The reusable ideas are the sprite-over-a-painted-UI approach (repaint nothing, move small planes), a letterbox HUD that changes what it counts partway through a film, and expressing a joke as a short table of states. If you only want the editor, `components/editor.ts` is self-contained: tracks, clips, playhead, razor lines and the export dialog. Swap the clock strings and the export states.",
+      "techniques": [
+        "ui-mockup",
+        "timeline",
+        "cursor-click",
+        "clock",
+        "counter",
+        "hard-cut",
+        "progress-ring",
+        "sound-sync",
+        "grain-texture",
+        "seeded-random"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "humorous"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "demo-walkthrough",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.2,
+        0.6,
+        0.95
+      ]
+    },
+    {
+      "file": "scenes/05-sent.ts",
+      "title": "11:52 PM in Slack: the video is sent, and the reply is a link preview",
+      "beat": "turn",
+      "alsoFits": [
+        "conversation",
+        "reveal"
+      ],
+      "summary": "7s. A Slack thread at 11:52 PM with the export already attached as a chip in the composer. \"here it is. sorry it took a while\" is typed in, key by key, and sent; the message slides up into the feed with the video under it and the camera rises to follow. \"Maya Chen is typing…\" appears. Her reply lands: \"You should try Prequel!\", and a prequel.sh link preview unfurls under it, the first bright thing anywhere in the film. The cursor finds the link and clicks.",
+      "build": "The Slack window is a painted plane (`components/slack.ts`) with the feed, composer and every message as separate sprites, so a message \"arriving\" is a sprite sliding up and the feed below it never repaints. The composer text is the same cached-sprite-per-string trick as the rename scene, driven off `typing-slack-reply.timing.json` so the words appear exactly on the keystrokes in the audio. The camera is a keyframed lift from the composer to the message to the link card rather than a cut, which is what sells the two halves as one conversation. The link preview is deliberately the only saturated thing on screen to this point: the whole film up to here is run at `exposure` 0.8 to 0.86, so one bright card is enough of a turn without a transition.",
+      "reuse": "Use it for the moment someone is told about the product, which is the cheapest honest way into a launch video: no narrator, just a reply. The reusable pieces are the message-arrives-as-a-sprite pattern, keysound-driven composer typing, and saving colour for the turn. Swap the names, the avatars in `assets/`, the two message lines and the link card's title and domain. Do not ship the Slack mark with a different product's video.",
+      "techniques": [
+        "ui-mockup",
+        "chat-thread",
+        "chat-bubbles",
+        "typing-input",
+        "cursor-click",
+        "camera-move",
+        "sound-sync",
+        "grain-texture",
+        "canvas-texture-ui"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "warm"
+      ],
+      "videoTypes": [
+        "ugc-problem-solution",
+        "launch-playbook",
+        "product-promo"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.6,
+        0.95
+      ]
+    },
+    {
+      "file": "scenes/06-prequel-site.ts",
+      "title": "A hard cut into daylight: the product site, Download for Mac, and the dmg",
+      "beat": "reveal",
+      "alsoFits": [
+        "cta",
+        "workflow"
+      ],
+      "summary": "6s. A hard cut out of the dark Slack window into a bright page in Chrome, the film's first daylight. The camera drifts down the page from the headline, \"The cinematic screen recorder for Mac\", to the Download for Mac button, which darkens under the press as the cursor clicks it. Chrome's download bubble drops in from the toolbar, Prequel.dmg fills in eight steps, lands on done, and the camera follows it up as the cursor opens it.",
+      "build": "The page is one tall painted plane in `components/chrome.ts` with the browser chrome drawn in, and the \"scroll\" is the camera moving over it on keyframed zoom and position tracks rather than the texture offsetting, which is what keeps the perspective honest at a rake. The download progress is eight pre-rendered bubble sprites plus a ninth for the done state, indexed by progress, so nothing repaints. `pressShade` lays a darkened rounded rect over the button only while the mouse is down, which is a two-line way to make a click feel physical. The site capture itself lives in `assets/prequel-site.jpg`, so pointing this scene at a different product is one image and one headline string.",
+      "reuse": "Take it whenever a video has to get someone from \"I heard about it\" to \"it is installed\": a download page, a pricing page, an app store listing. The reusable mechanics are camera-as-scroll over a single tall page texture, a progress indicator built from pre-rendered states, and `pressShade`. The jump from a dim scene to a bright one on a hard cut is the other thing to copy, and it costs nothing. Replace the page capture and the button label with your own.",
+      "techniques": [
+        "browser-window",
+        "ui-mockup",
+        "cursor-click",
+        "button-press",
+        "camera-move",
+        "hard-cut",
+        "progress-ring",
+        "sound-sync",
+        "photo-media"
+      ],
+      "mood": [
+        "cinematic",
+        "bright",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "product-promo",
+        "demo-walkthrough"
+      ],
+      "quality": "solid",
+      "standalone": false,
+      "sampleAt": [
+        0.1,
+        0.45,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/07-record.ts",
+      "title": "Recording a window in two clicks, with a real face-cam bubble popping into the corner",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "benefit"
+      ],
+      "summary": "9s on the same dark desktop, now past midnight at 12:03 AM. The app's capture toolbar rises above the dock; the cursor picks window mode and crosses to a Finder window, which the picker lights up and labels Finder · Recordings · 1400 × 860 · Start recording. Click, and a camera squircle pops into the bottom-right corner of the screen. The camera pans over to it: real webcam footage of a man at a desk talking to camera. A short look, then a move across to the recording panel, where the cursor clicks stop.",
+      "build": "The face-cam is the thing to look at here: an actual `.webm` on a plane, seeked frame by frame through `components/media.ts` rather than played, so the export is deterministic and a re-render is identical. `camFrom` in the timeline says which second of the take the bubble opens on, so the performance is cut to the picture rather than the other way round. The bubble is a squircle alpha mask over that plane (`squircleMask` in `components/prequel.ts`), which is cheaper and sharper than a rounded geometry. Everything else is the same painted-desktop-plus-sprites rig as the earlier scenes, so the solution half of the film shares a vocabulary with the problem half, which is what makes the contrast read as speed rather than a different video.",
+      "reuse": "Borrow it for any \"here is how little it takes\" beat, and for the face-cam specifically: a frame-seeked video plane with a squircle mask is reusable in any product demo that wants a presenter in the corner. The two-clicks structure (pick a mode, pick a target, go) is the shape of most capture, upload and connect flows. Swap the webcam clip in `assets/`, the window labels, and the toolbar buttons. Note the clip in this template is a stock face, so replace it before publishing a video that implies it is your user.",
+      "techniques": [
+        "ui-mockup",
+        "desktop-window",
+        "video-media",
+        "alpha-mask",
+        "cursor-click",
+        "camera-pan",
+        "button-press",
+        "sound-sync",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "clean"
+      ],
+      "videoTypes": [
+        "ugc-screen-demo",
+        "demo-walkthrough",
+        "product-promo",
+        "launch-playbook"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.3,
+        0.65,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/08-editor.ts",
+      "title": "The editor: the face-cam is moved and resized, a background is picked, and the export finishes",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "benefit"
+      ],
+      "summary": "12s. The editor opens on the take, the recorded window sitting on a lime background with the camera in the bottom-right. The cursor selects the camera, drags it to the top-left corner, and pulls the bottom-right handle to make it bigger. It opens the Background tool, picks an aurora wallpaper from the tile grid, and the preview changes underneath, the camera pulling back wide so the new background reads. Then Export, a modal, Export again, and the button itself fills up as the progress bar and lands on Exported.",
+      "build": "The counterweight to scene 4. Where the Premiere timeline took ten seconds to not finish, this takes twelve to go from raw take to exported file, and both are built the same way, which is the argument the film is making. The editor is a painted plane with sprites over it (`components/prequelEditor.ts`); the preview background swaps between two pre-rendered sprites with the wallpaper tiles loaded from `assets/bg/`. The export button becoming its own progress bar is the one piece of real interaction design worth stealing: no separate bar appears, the button fills left to right and relabels. The face-cam is the same frame-seeked `.webm` plane as the previous scene, so the thing being edited is visibly the thing that was just recorded.",
+      "reuse": "Use it for the payoff half of any before-and-after: the same work, done in a tool that fits. The reusable ideas are select-drag-resize told with a selection box and one handle (enough to read as direct manipulation without building a real editor), a tile picker whose choice visibly changes the artwork behind it, and the button-as-progress-bar. Swap the panel labels, the wallpaper tiles in `assets/bg/`, and the recorded window's content.",
+      "techniques": [
+        "ui-mockup",
+        "desktop-window",
+        "video-media",
+        "cursor-click",
+        "button-press",
+        "mask-reveal",
+        "icon-grid",
+        "camera-move",
+        "progress-ring",
+        "sound-sync"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "clean"
+      ],
+      "videoTypes": [
+        "ugc-screen-demo",
+        "demo-walkthrough",
+        "product-promo",
+        "workflow-demo"
+      ],
+      "quality": "hero",
+      "standalone": false,
+      "sampleAt": [
+        0.15,
+        0.55,
+        0.92
+      ]
+    },
+    {
+      "file": "scenes/09-end-card.ts",
+      "title": "Black, a handwritten wordmark fading up, and a Made for Mac line under it",
+      "beat": "logo",
+      "alsoFits": [
+        "cta",
+        "brand"
+      ],
+      "summary": "4s. Full black. \"Prequel\" fades up dead centre in the site's own wordmark face, a handwritten Playwrite VN at 400 with the hairline stroke the site adds to it. Before it has settled, a small white line rises in underneath, overlapping: \"Made for Mac\" with the Apple mark after it. Nothing else moves. The music's fade-out runs under it.",
+      "build": "Two things make this better than a text layer. First, the real face: `withFont` in `components/fonts.ts` loads `assets/fonts/PlaywriteVN-400.woff2` and holds the scene until it is ready, so the wordmark is the brand's own letterforms rather than a fallback, and the render barrier never catches it mid-load. Second, the mark: the Apple glyph is an inline SVG path copied verbatim from the site's own icon component and drawn into the canvas, so there is no image to go stale. Type is measured with `actualBoundingBoxAscent` and `Left` and the canvas sized to the ink, which is why it centres optically rather than on the em box. Sizes are expressed against a 1080px-tall frame and scaled, so the card survives a change of resolution.",
+      "reuse": "Drop it on the end of almost anything. It is the most portable scene in the template: one font file, one string, one path. The two overlapping fades (the wordmark still arriving as the line rises under it) are what keep a four second card from feeling like a slide. Swap the wordmark text, the woff2 in `assets/fonts/`, and the tagline. For a logo rather than type, draw your own SVG path the same way.",
+      "techniques": [
+        "end-card",
+        "logo-lockup",
+        "kinetic-type",
+        "canvas-texture-text",
+        "glow",
+        "grain-texture"
+      ],
+      "mood": [
+        "cinematic",
+        "dark",
+        "elegant"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "brand-sting",
+        "product-promo",
+        "freeform-video"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.6,
+        0.9
+      ]
+    }
+  ]
+}
