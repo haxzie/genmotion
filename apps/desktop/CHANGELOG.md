@@ -1,5 +1,59 @@
 # @genmotion/desktop
 
+## 0.6.0
+
+### Minor Changes
+
+- 48e6618: The agent can use a browser. It opens a real page, looks at it, clicks through
+  it, and photographs it: `browse_page` returns a site's visible text with a
+  screenshot of how it actually renders, `browse_act` clicks, types and scrolls
+  (past a cookie banner, onto the pricing page), `browse_capture` saves a
+  screenshot — of the whole page or of one element — into `assets/` as usable
+  footage, and `browse_inspect` reads the page's exact colours, typefaces and
+  logo files from its own stylesheets, so a video branded off a site gets the
+  real hex rather than one eyedropped out of a picture.
+
+  The editor has a Browser tab: watch the page the agent is on, live, with a dot
+  on the tab when it is looking at something while you are on another view. It
+  paints the moment you open it, keeps the last page on screen after the agent's
+  browser idles out, and stays open as long as you are watching.
+
+  The Browser tab is a browser: a tab strip, back/forward/reload and an address
+  bar, and **Take control** hands it your mouse and keyboard. That is how you
+  sign in to a service on the agent's behalf — GenMotion never sees the
+  password, and the session is kept in one profile shared by every project, with
+  a panel listing what is saved and a button to forget it.
+
+  The page in the Browser tab is laid out at the size of the panel, so it fills
+  it instead of sitting letterboxed inside it, and it re-lays out as you resize.
+
+  The agent can ask for the browser back. `request_takeover` puts a card in the
+  chat with a picture of the page and a Take over button: pressing it opens the
+  Browser tab with your mouse and keyboard wired to the page, and the agent waits
+  until you say you are done. Scrolling the page no longer needs you to take
+  control first.
+
+  Typing in the Browser tab works properly: punctuation types itself (a full
+  stop was being sent as Delete), accented characters are inserted, and the
+  editor's own shortcuts no longer swallow Space, the arrow keys or Delete while
+  you are driving a page.
+
+### Patch Changes
+
+- 81e07d4: Preview: let a project's own fonts load.
+
+  The renderer's CSP listed `gm-asset:` in img-src and media-src but not in
+  font-src, so every `new FontFace(family, url(gm-asset://…))` a scene makes was
+  blocked — in the preview only, since the offscreen capture page has no CSP.
+  The editor drew every text texture in a fallback face while the render and the
+  timeline filmstrips showed the real one, and because a scene catches the load
+  failure (a missing font must not hang an export) nothing said why.
+
+  Also: the Three.js stage draws again after a rebuild remounts the render host.
+  Every project change hands it a fresh compiled scene list, but the only thing
+  that draws while paused was keyed on the playhead, so the new host was never
+  asked for a frame and its canvas stayed empty until the playhead moved.
+
 ## 0.5.2
 
 ### Patch Changes
