@@ -233,6 +233,74 @@ pnpm changeset                        # describe a change to a published package
   call there is ungoverned by anything this app adds. Accepted deliberately
   (see the comment above `DISALLOWED_TOOLS` in `agent/tools.ts`), not a gap to
   quietly close.
+- **The desktop chat agent can use a browser.** `browse_page`, `browse_act`,
+  `browse_capture` and `browse_inspect` drive one offscreen `BrowserWindow`
+  per open project (`electron/browse/`): the page is loaded, scripted, clicked
+  through CDP (`webContents.debugger` — real input events), photographed with
+  `capturePage`, and read for its *computed* colours, typefaces and logo file
+  URLs. That last one is the point — a brand's hex comes off the CSSOM, never
+  off a screenshot. Captures land in `assets/` through `saveAssetBytes`, so a
+  site's own hero becomes footage with no screen recorder. The windows run in
+  one **persisted** partition (`persist:genmotion-browse`) with `sandbox: true`,
+  every permission denied, downloads cancelled and `http`/`https` only
+  (`browse/url.ts` is that rule, and the one part of this with a unit test —
+  `file://` would otherwise turn a page-reader into a file-reader). One
+  profile for the whole app, not one per project: the user can **Take control**
+  in the Browser tab and sign in to a service themselves, and that session is
+  then every project's (`savedSignIns`/`clearBrowsingProfile` back the profile
+  panel). GenMotion never handles the password — what persists is the site's
+  own cookie, in Chromium's store under the app's userData. A `window.open` is
+  denied and its URL navigated in place instead, which is what makes
+  "Continue with Google" complete in a window nobody can see. The prompt tells
+  the agent that a page may come up as the user and what it may not do there;
+  that is guidance, not a sandbox. A project's browser holds up to `MAX_TABS`
+  pages (the tab strip), all sharing the profile, and the tools always address
+  the active one. It closes with the project's tab or after five idle minutes
+  — unless a Browser tab is watching, which re-arms the timer. It matters most on Codex, which is sandboxed with
+  `network_access=false` and so has no other way to read a page at all. The
+  editor's **Browser** tab watches that window: `GET /api/browse/stream` is
+  the offscreen window's own `paint` frames as `multipart/x-mixed-replace`
+  (`browse/mjpeg.ts`), which an `<img>` renders with no decode loop in the
+  renderer, and nothing is encoded unless a tab is watching. `paint` only
+  fires on damage, so the feed also photographs the page with `capturePage`
+  when a viewer arrives and after every action — without that a static page
+  (or one opened before the tab was looked at) never paints and the tab stays
+  empty forever, which is exactly how it shipped the first time. The page is laid
+  out at the **panel's own size** — the tab reports it (debounced, snapped to
+  8px) and `panelResized` resizes the window — so the frame fills the panel
+  with no letterboxing, and frames are encoded at the viewport's width, one
+  streamed pixel per CSS pixel. Two traps there: `capturePage` answers 0x0 for
+  ~30ms after `setContentSize`, and a resize fires exactly one `paint`, which
+  the frame-rate throttle can swallow — so the post-resize frame is taken on a
+  timer, not inline. The keyboard is taken on `window` in the
+  **capture** phase while you are driving, because the editor's own shortcuts
+  also live on `window` and only stand aside for an `INPUT`: without that,
+  Space toggled playback, the arrows seeked the timeline and Delete deleted
+  the selected scenes, and none of those keys reached the page. Virtual key
+  codes come from `KeyboardEvent.code`, never from the character — ASCII is
+  not a virtual-key table, and deriving them from the character made `.` into
+  VK_DELETE (`browse/input.ts`, pinned by a test). Scrolling the picture
+  needs no handover — it only moves the viewport, and gating it behind Take
+  control is what made the panel read as broken — while clicks and keys do.
+  `request_takeover` is the agent's way back out: it parks the tool call
+  (`waitForAnswer`, Claude Code only — Codex has no `canUseTool`, and the tool
+  says so instead) and the chat shows a card with a picture of the page and a
+  Take over button, which switches the view and starts forwarding input. It
+  carries `expandWhileRunning` because a button folded inside the accordion is
+  a button nobody presses, with a turn parked behind it. A tool that passes
+  `width`/`height` pins the viewport
+  (the mobile layout is a thing it asked for); the next `browse_page` without
+  them releases it. The window stays
+  offscreen rather than being embedded because the tools must keep working
+  while you are on Preview, and a `WebContentsView` cannot do that: it only
+  lays out and composites while attached *and* on screen, a detached one
+  ignores `setBounds`, `Emulation.setDeviceMetricsOverride` on a detached view
+  segfaults Electron 40, and parked off-window a CDP screenshot hangs (all
+  measured, Nov 2026). So native input is out of reach and the user's clicks
+  and keys are forwarded; the user's own clicks and keys go the other way as
+  CDP events (`browse/input.ts` — normalised coordinates, because only the
+  renderer knows how big the panel is), outside `serial()` so a keystroke never
+  queues behind a thirty-second tool call.
 - **Three engines, one manifest.** `project.json`'s `engine` is `three`
   (every new project — `DEFAULT_PROJECT.engine` in the desktop app and
   `genmotion init`'s default), `hyperframes`, or `react` (absent = react, for

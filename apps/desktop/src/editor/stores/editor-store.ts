@@ -101,6 +101,34 @@ interface EditorState {
   addElement(element: ElementContext): void;
   removeElement(id: string): void;
   clearElements(): void;
+  /**
+   * Which project this editor is.
+   *
+   * Here because a tool card rendered in the transcript is reached through a
+   * global registry, not through props, and still has to name its project on
+   * every loopback call — there is no "current project" to fall back on.
+   */
+  projectDir: string | null;
+  setProjectDir(dir: string): void;
+  /**
+   * The chat asking the editor to show something.
+   *
+   * Same shape as `fixRequest` and `promptRequest` and for the same reason:
+   * a card in the transcript needs to act on the view beside it, and the two
+   * are different components. `request_takeover`'s card sets this to
+   * `"browser"` so pressing Take over puts the Browser tab in front.
+   */
+  /**
+   * Whether the Browser tab is forwarding the user's mouse and keyboard.
+   *
+   * In the store rather than the panel because the handover can be started
+   * from the chat: the agent asks, and the card's button is what turns it on.
+   */
+  browserControl: boolean;
+  setBrowserControl(on: boolean): void;
+  requestedView: "browser" | null;
+  requestView(view: "browser"): void;
+  consumeRequestedView(): "browser" | null;
   /** Marked-up frames from the preview's Draw tool, attached as chat context. */
   selectedMarkups: MarkupContext[];
   addMarkup(markup: MarkupContext): void;
@@ -258,6 +286,23 @@ export function createEditorStore(): StoreApi<EditorState> {
   },
   clearElements() {
     set({ selectedElements: [] });
+  },
+  projectDir: null,
+  setProjectDir(projectDir) {
+    if (get().projectDir !== projectDir) set({ projectDir });
+  },
+  browserControl: false,
+  setBrowserControl(browserControl) {
+    set({ browserControl });
+  },
+  requestedView: null,
+  requestView(requestedView) {
+    set({ requestedView });
+  },
+  consumeRequestedView() {
+    const { requestedView } = get();
+    if (requestedView) set({ requestedView: null });
+    return requestedView;
   },
   selectedMarkups: [],
   addMarkup(markup) {

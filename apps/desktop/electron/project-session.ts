@@ -13,6 +13,7 @@ import {
 // Its own subpath: validation renders scenes with react-dom/server, which the
 // package's other consumers (the API) have no reason to install.
 import { validateSceneFile, validateThreeSceneFile } from "@genmotion/project/validate";
+import { closeBrowsing } from "./browse/session";
 import { HyperframesEngine } from "./hyperframes/engine";
 import { TimelineHistory } from "./timeline-history";
 import type { DesktopProject, SceneBundle } from "./shared";
@@ -628,6 +629,9 @@ export class ProjectSession {
     this.isDisposed = true;
     if (this.timer) clearTimeout(this.timer);
     this.listeners.clear();
+    // The agent's browser window, if it opened one. Nothing else closes it:
+    // it is keyed by folder, not held here, so a tab closing is the signal.
+    closeBrowsing(this.dir);
     await this.watcher?.close();
     await this.bundler.dispose();
   }

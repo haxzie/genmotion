@@ -1,0 +1,159 @@
+{
+  "id": "polished-screen-demo",
+  "title": "Polished screen demo",
+  "description": "A product demo that looks screen-recorded in a tool like Screen Studio, but is built rather than captured: the real interface photographed through the browser, a synthetic cursor that moves and clicks, push-in zooms on whatever is being done, keystroke and click sounds on the exact frames, and one continuous voiceover. Optionally a talking head in the corner, lip-synced to it. Load it whenever someone wants a demo, walkthrough or tutorial of software that should look recorded (like Screen Studio, or record the flow), and there is no recording to work from.",
+  "summary": "A built screen recording: real browser frames, a synthetic cursor, push-in zooms, click and typing sounds, one continuous VO, optional lip-synced head.",
+  "kind": "workflow",
+  "category": "Launch",
+  "tags": [
+    "screen-recording",
+    "product-demo",
+    "browser",
+    "cursor",
+    "zoom",
+    "talking-head",
+    "voiceover"
+  ],
+  "aspects": [
+    "16:9",
+    "9:16",
+    "1:1"
+  ],
+  "duration": {
+    "minSeconds": 15,
+    "maxSeconds": 180
+  },
+  "engines": [
+    "three",
+    "react",
+    "hyperframes"
+  ],
+  "route": {
+    "deliverable": "A 15-180s product demo that reads as a polished screen recording: the real UI, a moving cursor, zooms, keystroke and click sounds, one continuous narration",
+    "inputs": [
+      "url",
+      "brief",
+      "script"
+    ],
+    "priority": 30,
+    "askFirst": [
+      "Which flow, from where to where: the first click to the finished result?",
+      "Is there an account the agent can reach, or should it sign in with you?",
+      "Narrated, and should a presenter appear on screen?"
+    ]
+  },
+  "requires": [
+    {
+      "kind": "capability",
+      "id": "browse-site",
+      "why": "Walk the real flow in a browser so the shots are the product, not a drawing of it."
+    },
+    {
+      "kind": "capability",
+      "id": "browse-capture",
+      "why": "Each step's screen, straight into assets/, as the footage this video is cut from."
+    },
+    {
+      "kind": "capability",
+      "id": "request-takeover",
+      "why": "Flows live behind a login; the user signs in, the agent never handles a password."
+    },
+    {
+      "kind": "capability",
+      "id": "keystroke-sound",
+      "why": "Typing and click sounds, and the frame timings the on-screen text is drawn from."
+    },
+    {
+      "kind": "capability",
+      "id": "voiceover",
+      "why": "One continuous narration over the cut, recorded before the picture is timed."
+    },
+    {
+      "kind": "capability",
+      "id": "place-audio",
+      "why": "A generated sound that is not on the timeline is silent in the export."
+    },
+    {
+      "kind": "capability",
+      "id": "capture-frames",
+      "why": "Interface text is judged on rendered frames, not in the code."
+    },
+    {
+      "kind": "capability",
+      "id": "validate",
+      "why": "Never end a turn with a scene that does not build."
+    },
+    {
+      "kind": "capability",
+      "id": "save-asset",
+      "why": "Logos, avatars and the lip-synced clip come into assets/ rather than being hot-linked."
+    },
+    {
+      "kind": "capability",
+      "id": "brand-assets",
+      "why": "The product's real colours and typefaces, so the chrome around the capture matches it."
+    },
+    {
+      "kind": "mcp",
+      "id": "fal",
+      "why": "MiniMax lip-sync for the optional talking head, and an image model for the presenter."
+    },
+    {
+      "kind": "skill",
+      "id": "screen-capture"
+    },
+    {
+      "kind": "skill",
+      "id": "sound-design"
+    },
+    {
+      "kind": "skill",
+      "id": "three-camera",
+      "engines": [
+        "three"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "three-type",
+      "engines": [
+        "three"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "purpose": "video",
+      "model": "MiniMax lip-sync",
+      "via": "mcp:fal",
+      "note": "Talking head only: a presenter still plus the voiceover in, a lip-synced clip out."
+    },
+    {
+      "purpose": "image",
+      "model": "Flux",
+      "via": "mcp:fal",
+      "note": "The presenter still, when there is no real person to use."
+    },
+    {
+      "purpose": "image",
+      "model": "Gemini 2.5 Flash Image",
+      "via": "generate-image",
+      "note": "Placeholder content inside a rebuilt interface: avatars, thumbnails, logos you may not use."
+    }
+  ],
+  "triggers": [
+    "make a demo of our product that looks like it was recorded in Screen Studio",
+    "record the signup flow on our site and turn it into a video",
+    "a screen recording style walkthrough with zooms and click sounds",
+    "show how to create a product in our dashboard, narrated",
+    "demo video of this web app, use the browser to walk the flow",
+    "add a presenter in the corner lip-synced to the voiceover",
+    "I have no screen recorder, build the demo from our live site"
+  ],
+  "templates": [],
+  "author": {
+    "name": "GenMotion"
+  },
+  "version": "1.0.0",
+  "icon": "🖥️"
+}

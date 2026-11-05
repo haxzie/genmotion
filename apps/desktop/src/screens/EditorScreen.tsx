@@ -1,4 +1,4 @@
-import { useCallback, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useProject, useProjectMutations } from "@/hooks/use-project";
 import { useCompiledScenes } from "@/hooks/use-compiled-scenes";
@@ -12,6 +12,7 @@ import { PreviewStage, PreviewTransport } from "@/components/editor/preview";
 import { Timeline } from "@/components/editor/timeline";
 import { AssetsView } from "@/components/editor/assets-view";
 import { CodeView } from "@/components/editor/code-view";
+import { BrowserView, useBrowseState } from "@/components/editor/browser-view";
 import { Button, Spinner, cx } from "@/components/ui";
 import { useEditorStore, useEditorStoreApi } from "@/stores/editor-store";
 import { formatCompileError } from "@genmotion/compiler";
@@ -62,10 +63,25 @@ function CodeTabIcon({ className }: { className?: string }) {
   );
 }
 
+function BrowserTabIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <path d="M3 9h18" />
+      <circle cx="6.6" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="9.4" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const VIEW_TABS = [
   { id: "preview", label: "Preview", Icon: PreviewTabIcon },
   { id: "assets", label: "Assets", Icon: AssetsTabIcon },
   { id: "code", label: "Code", Icon: CodeTabIcon },
+  // The agent's browser. Last because it is the only tab that is not the
+  // project: Preview, Assets and Code are the video, this is where its
+  // research happens.
+  { id: "browser", label: "Browser", Icon: BrowserTabIcon },
 ] as const;
 
 type ViewTab = (typeof VIEW_TABS)[number]["id"];
@@ -246,6 +262,22 @@ function EditorBody({
   } = useCompiledThreeScenes(project.scenes);
   const isThree = project.engine === "three";
   const reduceMotion = useReducedMotion();
+  // Whether the agent has a page open, for the dot on the Browser pill.
+  const browsing = useBrowseState(project.dir).data?.open ?? false;
+  // The chat can ask for a view — `request_takeover`'s card does, so pressing
+  // Take over brings the browser to the front rather than telling the user
+  // where to find it.
+  const setProjectDir = useEditorStore((state) => state.setProjectDir);
+  useEffect(() => {
+    setProjectDir(project.dir);
+  }, [project.dir, setProjectDir]);
+  const requestedView = useEditorStore((state) => state.requestedView);
+  const consumeRequestedView = useEditorStore((state) => state.consumeRequestedView);
+  useEffect(() => {
+    if (!requestedView) return;
+    const view = consumeRequestedView();
+    if (view) setTab(view);
+  }, [requestedView, consumeRequestedView, setTab]);
   const firstError = project.scenes.find((s) => s.id in (isThree ? threeErrors : errors));
 
   // The HyperFrames half. Null for a React project, and every branch below
@@ -345,6 +377,12 @@ function EditorBody({
                   <span className="relative inline-flex items-center gap-1.5">
                     <Icon className="size-3.5" />
                     {label}
+                    {/* A page is open in the agent's browser and you are not
+                        looking at it. Nothing is wrong — this is the tab
+                        saying research is happening over here. */}
+                    {id === "browser" && browsing && tab !== "browser" && (
+                      <span aria-label="A page is open" className="size-1.5 rounded-full bg-success" />
+                    )}
                   </span>
                 </button>
               ))}
@@ -380,6 +418,8 @@ function EditorBody({
               )}
               {tab === "assets" ? (
                 <AssetsView projectId={project.dir} />
+              ) : tab === "browser" ? (
+                <BrowserView projectId={project.dir} />
               ) : tab === "code" ? (
                 // The folder itself, whichever engine wrote it: a HyperFrames
                 // composition's `index.html` and a React project's scenes are

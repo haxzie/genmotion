@@ -20,6 +20,7 @@ import {
 import { captureCompositionFrame, captureFrameAndObjects } from "../export/capture";
 import { resolveFrameTarget, SAMPLE_AT } from "../export/frame-target";
 import { openCompositionWindow } from "../export/hyperframes-window";
+import { browseAct, browseCapture, browseInspect, browsePage } from "../browse/report";
 import type { ProjectSession } from "../project-session";
 import { getSecrets, listConfigs } from "../mcp/store";
 import type { AgentSdkModule } from "./load-sdk";
@@ -84,7 +85,16 @@ export interface GenmotionTool {
   /** Zod shape: the SDK's `tool()` takes it as-is, and the JSON Schema derives from it. */
   shape: z.ZodRawShape;
   readOnly?: boolean;
-  run(session: ProjectSession, args: Record<string, never>): Promise<ToolResult>;
+  /**
+   * `harness` is there for the one tool whose behaviour genuinely differs by
+   * transport: `request_takeover` parks the call until the user answers, and
+   * only Claude Code has a hook (`canUseTool`) that can hold a call open.
+   */
+  run(
+    session: ProjectSession,
+    args: Record<string, never>,
+    context?: { harness: "claude" | "codex" },
+  ): Promise<ToolResult>;
 }
 
 /**
@@ -467,6 +477,174 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
         filename?: string;
       };
       return downloadXVideo(session, { url, quality, index, filename });
+    },
+  },
+
+  // Browsing. Four tools over one real browser per project — see
+  // `browse/session.ts` for what it is and what contains it. The point is
+  // that a marketing site is pixels and computed CSS, not HTML: fetching one
+  // gives the agent words it could have guessed, while looking at one gives
+  // it the layout, the exact brand colours, the real logo file and a
+  // screenshot it can cut straight into the video.
+  {
+    name: "browse_page",
+    description:
+      "Open a web page in a real browser and look at it: the page's visible text comes back along with a screenshot of how it actually renders. Use it whenever a video is about a real product, company or site — before writing anything. This runs the page's JavaScript, so it sees what a visitor sees, which fetching the HTML does not. A page stays open afterwards for `browse_act`, `browse_capture` and `browse_inspect`.",
+    shape: {
+      url: z.string().describe('Page to open, e.g. "stripe.com/pricing". http and https only.'),
+      width: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Viewport width in CSS pixels. Omit to use the size of the editor's Browser panel, which is what the user is watching. Pass one only when the size matters — 390 for the mobile layout — and it stays until a later browse_page omits it.",
+        ),
+      height: z
+        .number()
+        .int()
+        .optional()
+        .describe("Viewport height in CSS pixels. Omit to follow the Browser panel, as with `width`."),
+      full_page: z
+        .boolean()
+        .optional()
+        .describe(
+          "Photograph the whole scrollable page instead of the viewport. Good for seeing a landing page's structure in one look; the shot is scaled down to stay readable.",
+        ),
+      wait_for: z
+        .string()
+        .optional()
+        .describe(
+          'Wait up to 10s for a CSS selector or a piece of visible text before looking. For a page that renders after its data arrives.',
+        ),
+    },
+    readOnly: true,
+    async run(session, args) {
+      const { url, width, height, full_page, wait_for } = args as unknown as {
+        url: string;
+        width?: number;
+        height?: number;
+        full_page?: boolean;
+        wait_for?: string;
+      };
+      return browsePage(session.dir, { url, width, height, full_page, wait_for });
+    },
+  },
+
+  {
+    name: "browse_act",
+    description:
+      "Act on the page `browse_page` opened — click, type, press a key, scroll — then look again. This is how you get past a cookie banner, open the pricing page, expand a feature, or scroll to the section the video needs. Clicks are real mouse events at the element's own position, so they work on anything a person could click. Fields are applied in order: click, type, press, scroll, wait_for.",
+    shape: {
+      click: z
+        .string()
+        .optional()
+        .describe('What to click: the visible text ("Pricing", "Accept all") or a CSS selector ("#get-started").'),
+      type: z.string().optional().describe("Text to type into the focused field, or into `into`."),
+      into: z.string().optional().describe('Which field to type into — its placeholder, label text or a selector.'),
+      press: z
+        .string()
+        .optional()
+        .describe('A key to press: Enter, Tab, Escape, Backspace, ArrowDown, PageDown, Space…'),
+      scroll: z
+        .string()
+        .optional()
+        .describe('"top", "bottom", or a number of viewports ("1", "-0.5").'),
+      wait_for: z
+        .string()
+        .optional()
+        .describe("Wait up to 10s for a selector or visible text after the rest — for a page that reacts slowly."),
+    },
+    async run(session, args) {
+      const { click, type, into, press, scroll, wait_for } = args as unknown as {
+        click?: string;
+        type?: string;
+        into?: string;
+        press?: string;
+        scroll?: string;
+        wait_for?: string;
+      };
+      return browseAct(session.dir, { click, type, into, press, scroll, wait_for });
+    },
+  },
+
+  {
+    name: "browse_capture",
+    description:
+      "Save a screenshot of the open page into the project's assets/ as a PNG, and return the path. This is real product footage with no screen recorder involved: the site's own hero, a dashboard, one pricing card. Shoot the element rather than the whole viewport where you can — a tight crop of the thing being talked about reads at phone size, a full page does not.",
+    shape: {
+      selector: z
+        .string()
+        .optional()
+        .describe('Photograph one element: visible text or a CSS selector ("header", ".pricing-card"). Omit for the viewport.'),
+      full_page: z.boolean().optional().describe("The whole scrollable page, for a long pan or a scroll animation."),
+      filename: z.string().optional().describe('Preferred filename, e.g. "stripe-dashboard.png".'),
+    },
+    async run(session, args) {
+      const { selector, full_page, filename } = args as unknown as {
+        selector?: string;
+        full_page?: boolean;
+        filename?: string;
+      };
+      return browseCapture(session.dir, { selector, full_page, filename });
+    },
+  },
+
+  {
+    name: "request_takeover",
+    description:
+      "Hand the browser to the user and wait. Shows a card in the chat with a picture of the page and a Take over button; pressing it puts the Browser tab in front with their mouse and keyboard wired to the page. Use it the moment the work needs something only they can do — signing in to a service, a two-factor code, a captcha, agreeing to terms, picking from their own account. Never type someone's credentials yourself and never ask for a password in the chat: ask for the page instead. The call waits for them to finish, so say in `reason` exactly what you need done.",
+    shape: {
+      reason: z
+        .string()
+        .max(200)
+        .describe(
+          'What you need them to do, in one line — "Sign in to GitHub so I can read the notifications for the video"',
+        ),
+      url: z
+        .string()
+        .optional()
+        .describe(
+          "Page to open when they accept, e.g. github.com/login. Omit to hand over the page that is already open.",
+        ),
+      // Filled in by the app once the user has answered — the harness parks
+      // the call until then (see `canUseTool`). The model never sets this.
+      outcome: z.string().optional().describe("Set by the app. Leave empty."),
+    },
+    readOnly: true,
+    async run(_session, args, context) {
+      const { outcome } = args as unknown as { outcome?: string };
+      // Codex reaches these tools over loopback HTTP, where there is no hook
+      // to hold the call open while somebody signs in — so rather than
+      // return a card nobody can answer, say what to do instead.
+      if (context?.harness === "codex" && !outcome) {
+        return text(
+          "This app can only park a takeover request on the Claude Code harness, and this turn is Codex. Ask the user in your reply instead: tell them to open the Browser tab, press Take control, and do the thing — then end the turn and wait for them to say they are done.",
+        );
+      }
+      if (outcome === "done") {
+        return text(
+          "The user took over and says they are finished. The page may now be signed in — look at it with `browse_page` or `browse_capture` before assuming anything about what is on it, and remember the rules about what you may do on a signed-in site.",
+        );
+      }
+      if (outcome === "cancelled") {
+        return text(
+          "The user declined to take over. Carry on without whatever was behind that page: say in one sentence what you cannot do as a result, and do not ask again this turn.",
+        );
+      }
+      return text(
+        "Nobody answered the takeover request (the turn may have been stopped, or it timed out). Carry on without it and do not ask again this turn.",
+      );
+    },
+  },
+
+  {
+    name: "browse_inspect",
+    description:
+      "The design facts of the open page, read from the live CSSOM: exact background, text, heading and accent colours, the body and heading typefaces, the real logo and og:image file URLs, the headings and the nav. Use it to brand a video off a site. These are the values the site itself ships — never eyedrop a colour out of a screenshot, and never redraw a logo you can download.",
+    shape: {},
+    readOnly: true,
+    async run(session) {
+      return browseInspect(session.dir);
     },
   },
 
@@ -1367,9 +1545,10 @@ export async function runTool(
   spec: GenmotionTool,
   session: ProjectSession,
   args: Record<string, never>,
+  context?: { harness: "claude" | "codex" },
 ): Promise<ToolResult> {
   if (session.disposed) return failure("This project was closed.");
-  return spec.run(session, args);
+  return spec.run(session, args, context);
 }
 
 /** The Claude-side transport: the same tools as an in-process MCP server. */
@@ -1384,7 +1563,8 @@ export function createGenmotionTools(sdk: AgentSdkModule, session: ProjectSessio
         spec.name,
         spec.description,
         spec.shape,
-        async (args: Record<string, never>) => toMcpContent(await runTool(spec, session, args)),
+        async (args: Record<string, never>) =>
+          toMcpContent(await runTool(spec, session, args, { harness: "claude" })),
         spec.readOnly ? { annotations: { readOnlyHint: true } } : undefined,
       ),
     ),

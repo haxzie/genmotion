@@ -125,6 +125,31 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
     mcp: "`add_audio` (then `update_audio` / `remove_audio`)",
     shell: "`npx @genmotion/cli audio add assets/<file> --at <time> --fade-out 1s --json` (then `audio set` / `audio remove`)",
   },
+  "browse-site": {
+    label: "Open a page in a real browser, click through it, and look at it",
+    desktop: "`browse_page` to open and look, `browse_act` to click, type and scroll",
+    mcp: null,
+    shell: null,
+    fallback:
+      "ask the user for a screen recording or a screenshot of every step you need — name the steps — and build from those; a flow you have not seen is a flow you will get wrong",
+  },
+  "browse-capture": {
+    label: "Save a screenshot of the open page, or one element of it, into `assets/`",
+    desktop: "`browse_capture` (pass `selector` to shoot one element)",
+    mcp: null,
+    shell: null,
+    fallback: "ask the user for the screenshots, or rebuild the interface in the scene from the product's own design",
+  },
+  "request-takeover": {
+    label: "Hand the browser to the user for a sign-in, a captcha, or a choice in their own account",
+    desktop: "`request_takeover`",
+    mcp: null,
+    shell: null,
+    // Not "ask for the password": nothing in this product should ever carry
+    // one. The fallback is the same handover, performed in prose.
+    fallback:
+      "ask them in your reply to open the page and do it themselves, say exactly what you need done, and end the turn there. Never ask for a password, a code or a card number, and never type one",
+  },
   "search-skills": {
     label: "Rank the skill pack against a request",
     desktop: "`search_skills`",
@@ -159,7 +184,8 @@ export const CAPABILITIES: Record<SkillCapability, CapabilitySpec> = {
   "brand-assets": {
     label:
       "The brand this video is for: the real logo file, the exact hex values, the typeface, and reference work that is on-brand",
-    desktop: "`brand_overview`, then `use_brand_asset` to bring a file into the project",
+    desktop:
+      "`brand_overview`, then `use_brand_asset` to bring a file into the project. For a brand with no folder here, `browse_inspect` on their own site reads the exact colours and typefaces off the live stylesheet, and names the real logo file",
     mcp: null,
     shell: null,
     // Not "ask for the colours" alone: the failure this is here to prevent is

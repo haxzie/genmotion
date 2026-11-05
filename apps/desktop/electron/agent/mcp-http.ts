@@ -106,7 +106,8 @@ export async function handleMcpMessage(
       const args = (request.params?.arguments ?? {}) as Record<string, never>;
       try {
         const parsed = z.object(spec.shape).parse(args) as Record<string, never>;
-        return ok(id, toMcpContent(await runTool(spec, session, parsed)));
+        // This transport is Codex's; the tools that care are told so.
+        return ok(id, toMcpContent(await runTool(spec, session, parsed, { harness: "codex" })));
       } catch (err) {
         // A thrown tool is still a *result* in MCP — reporting it as a protocol
         // error would abort the turn instead of letting the model correct itself.

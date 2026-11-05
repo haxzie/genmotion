@@ -269,6 +269,18 @@ async function turnOptions(
             : input,
         };
       }
+      // Handing the browser over: the card in the transcript answers with
+      // "done" or "cancelled", and the tool reports which to the model. Same
+      // rails as the pickers — the difference is only how long it may park,
+      // since signing in to something takes as long as it takes.
+      if (toolName === "mcp__genmotion__request_takeover") {
+        const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
+        const answers = await waitForAnswer(toolUseID, signal);
+        return {
+          behavior: "allow" as const,
+          updatedInput: answers?.outcome ? { ...input, outcome: answers.outcome } : input,
+        };
+      }
       if (toolName === "mcp__genmotion__pick_keyboard_sound") {
         const signal = activeTurns.get(projectDir)?.signal ?? AbortSignal.timeout(0);
         const answers = await waitForAnswer(toolUseID, signal);

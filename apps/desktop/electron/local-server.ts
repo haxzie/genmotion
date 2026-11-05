@@ -668,6 +668,7 @@ export async function startLocalServer(
     if (head === "assets") return assetRoutes(method, tail, url, req);
     if (head === "exports") return exportRoutes(method, tail, url, req, res);
     if (head === "git") return gitRoutes(method, tail, url, req, res);
+    if (head === "browse") return browseRoutes(method, tail, url, req, res);
     if (head === "mcp") {
       const match = matchProjectPath(listSessions(), tail);
       return mcpRoute(match?.session ?? null, method, req);
@@ -1584,6 +1585,131 @@ export async function startLocalServer(
       if (!target.startsWith("assets/")) throw new Error("Not an asset");
       await trashFile(session.dir, target);
       return { ok: true };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * The page the agent is looking at, for the editor's Browser tab.
+   *
+   * The picture is an MJPEG stream rather than a socket carrying base64: an
+   * `<img>` renders `multipart/x-mixed-replace` natively, so the renderer
+   * holds no decode loop, no frame buffer and no backpressure problem — if
+   * the tab is slow, Chromium drops frames on its own. Project-scoped by
+   * `?projectId=` like assets, since several projects can be browsing at once.
+   */
+  async function browseRoutes(
+    method: string,
+    segments: string[],
+    url: URL,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): Promise<unknown | undefined> {
+    const browse = await import("./browse/session");
+    const [target] = segments;
+
+    // The profile is one for the whole app, so these two name no project.
+    if (target === "profile" && method === "GET") {
+      return { signedIn: await browse.savedSignIns() };
+    }
+    if (target === "profile" && method === "DELETE") {
+      await browse.clearBrowsingProfile();
+      return { ok: true };
+    }
+
+    const session = sessionFromQuery(url);
+    const browser = browse.browsingFor(session.dir);
+
+    if (!target && method === "GET") return browser.state;
+
+    // The user driving the page themselves, from the Browser tab.
+    if (target === "input" && method === "POST") {
+      const { parseBrowseInput } = await import("./browse/input");
+      const event = parseBrowseInput(await readJson<unknown>(req));
+      if (!event) return new Response(JSON.stringify({ error: "Bad input event" }), { status: 400 });
+      try {
+        await browser.input(event);
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+      return { ok: true };
+    }
+
+    // The Browser tab's panel size, so the page is laid out at the shape it
+    // is drawn at. Debounced by the renderer; a no-op here when unchanged.
+    if (target === "viewport" && method === "POST") {
+      const body = await readJson<{ width?: number; height?: number }>(req);
+      browser.panelResized(Number(body.width) || 0, Number(body.height) || 0);
+      return { ok: true };
+    }
+
+    // The tab strip. The create branch insists on no id, or it also swallows
+    // `POST tabs/<id>/activate` — which it did, opening a tab on every switch.
+    if (target === "tabs" && !segments[1] && method === "POST") {
+      const body = await readJson<{ url?: string }>(req);
+      try {
+        await browser.serial(() => browser.newTab(body.url));
+        return { ok: true, state: browser.state };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+    if (target === "tabs" && segments[1] && method === "DELETE") {
+      browser.closeTab(segments[1]);
+      return { ok: true, state: browser.state };
+    }
+    if (target === "tabs" && segments[1] && segments[2] === "activate" && method === "POST") {
+      browser.activate(segments[1]);
+      return { ok: true, state: browser.state };
+    }
+
+    // Back, forward, reload.
+    if (target === "history" && method === "POST") {
+      const body = await readJson<{ action?: string }>(req);
+      const action = body.action;
+      if (action !== "back" && action !== "forward" && action !== "reload") {
+        return new Response(JSON.stringify({ error: "Unknown history action" }), { status: 400 });
+      }
+      try {
+        await browser.history(action);
+        return { ok: true, state: browser.state };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+
+    // The address bar. Through `serial`, unlike input: this is the same
+    // page-changing work a tool does, and the two must not interleave.
+    if (target === "navigate" && method === "POST") {
+      const body = await readJson<{ url?: string }>(req);
+      try {
+        await browser.serial(() => browser.goto(String(body.url ?? "")));
+        return { ok: true, state: browser.state };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+
+    // The latest frame on its own: the tab's poster while the stream
+    // connects, and the fallback if a client cannot do multipart.
+    if (target === "frame" && method === "GET") {
+      const frame = browser.frame;
+      if (!frame) return new Response(null, { status: 204 });
+      return new Response(new Uint8Array(frame), {
+        status: 200,
+        headers: { "content-type": "image/jpeg", "cache-control": "no-store" },
+      });
+    }
+
+    if (target === "stream" && method === "GET") {
+      const { mjpegChunk, mjpegHeaders } = await import("./browse/mjpeg");
+      res.writeHead(200, mjpegHeaders());
+      const off = browser.watch((jpeg) => {
+        if (!res.writableEnded) res.write(mjpegChunk(jpeg));
+      });
+      res.on("close", off);
+      return HANDLED;
     }
 
     return undefined;

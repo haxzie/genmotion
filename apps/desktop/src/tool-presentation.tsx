@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import {
   registerToolPresentation,
   registerToolPresentationFallback,
@@ -7,6 +7,10 @@ import {
 import { parseMcpToolName } from "@genmotion/shared";
 import { useMcpServers } from "./lib/use-mcp-servers";
 import { questionsOf } from "./editor/components/ask-question-panel";
+import { describeSendFailure, sendAnswers } from "./editor/components/composer-panel";
+import { useEditorStore } from "@/stores/editor-store";
+import { API_URL } from "@/lib/api";
+import { Button } from "@/components/ui";
 
 const CodeBlock = lazy(() => import("@/components/editor/code-block"));
 
@@ -37,6 +41,116 @@ function truncate(value: string | undefined, max: number): string | undefined {
   if (!value) return undefined;
   const flat = value.replace(/\s+/g, " ").trim();
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
+/**
+ * The agent asking for the browser back.
+ *
+ * A card in the transcript rather than a panel over the composer, because it
+ * is about a specific moment in the conversation and reads as one: here is
+ * the page, here is what I need you to do on it. Pressing Take over is three
+ * things at once — the Browser tab comes to the front, it starts forwarding
+ * the mouse and keyboard, and the page it names is opened — so that signing
+ * in is the next thing the user does rather than a thing they have to go and
+ * set up.
+ *
+ * The tool call is parked in the main process until one of these buttons
+ * answers it (`waitForAnswer`), which is why it can afford to wait for a real
+ * sign-in: the agent is genuinely stopped until then.
+ */
+function TakeoverCard({ part }: { part: ToolPartLike }) {
+  const projectDir = useEditorStore((state) => state.projectDir);
+  const requestView = useEditorStore((state) => state.requestView);
+  const setBrowserControl = useEditorStore((state) => state.setBrowserControl);
+  const [stage, setStage] = useState<"asking" | "handed" | "closed">("asking");
+  const [error, setError] = useState<string | null>(null);
+
+  const toolCallId = part.toolCallId;
+  const reason = str(part, "reason");
+  const url = str(part, "url");
+  // The live page, not a cached thumbnail: this is the thing being handed
+  // over, and it may have moved since the call was made.
+  const preview = projectDir
+    ? `${API_URL}/api/browse/frame?projectId=${encodeURIComponent(projectDir)}&for=${toolCallId ?? ""}`
+    : null;
+
+  // Once the turn has moved on, the card is history: show what it said and
+  // nothing to press.
+  if (part.state !== "input-available" || stage === "closed") {
+    const text = outputText(part);
+    return text ? <Text value={text} /> : null;
+  }
+
+  const answer = async (outcome: "done" | "cancelled") => {
+    const res = await sendAnswers(toolCallId, { outcome });
+    if (!res.ok) {
+      setError(describeSendFailure(res));
+      return;
+    }
+    setStage("closed");
+  };
+
+  const takeOver = () => {
+    // Switch first and navigate behind it. Awaiting the load would leave the
+    // button looking dead for the several seconds a sign-in page takes to
+    // arrive — and the Browser tab shows the page loading anyway, which is
+    // the honest place to watch it.
+    if (url && projectDir) {
+      void fetch(`${API_URL}/api/browse/navigate?projectId=${encodeURIComponent(projectDir)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      }).catch(() => {});
+    }
+    setBrowserControl(true);
+    requestView("browser");
+    setStage("handed");
+  };
+
+  return (
+    <Body>
+      <div className="flex flex-col gap-2.5 px-3 py-2.5">
+        {reason && <p className="text-[0.857rem] text-text-primary">{reason}</p>}
+        {url && (
+          <p className="truncate font-mono text-[0.786rem] text-text-tertiary">{url}</p>
+        )}
+        {preview && (
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <img
+              src={preview}
+              alt="The page waiting for you"
+              className="block max-h-[180px] w-full object-cover object-top"
+              onError={(e) => {
+                // No page open yet — there is nothing to show, and the
+                // buttons are the point of the card anyway.
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
+        )}
+        {stage === "asking" ? (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="primary" onClick={takeOver}>
+              Take over
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => answer("cancelled")}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-[0.786rem] text-text-tertiary">
+              The browser is yours — press Done here when you have finished.
+            </span>
+            <Button size="sm" variant="primary" onClick={() => answer("done")}>
+              Done
+            </Button>
+          </div>
+        )}
+        {error && <p className="text-[0.786rem] text-warning">{error}</p>}
+      </div>
+    </Body>
+  );
 }
 
 /** Project-relative where possible, basename otherwise — full paths are noise. */
@@ -133,6 +247,19 @@ const GlobeGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4">
     <circle cx="8" cy="8" r="6.2" />
     <path d="M1.9 8h12.2M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8Z" />
+  </svg>
+);
+// The browser the agent drives, and the one mark on all four browsing tools:
+// a run of them in the transcript reads as one trip through a website. A
+// browser window rather than Chrome's own wheel because what opens is an
+// Electron window, not Chrome — borrowing Google's mark for it would be both
+// a trademark to answer for and a thing that is not true.
+const BrowserGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={`size-3.5 shrink-0 ${className ?? ""}`} fill="none" stroke="currentColor" strokeWidth="1.4">
+    <rect x="1.8" y="2.8" width="12.4" height="10.4" rx="1.6" />
+    <path d="M1.8 6.2h12.4" />
+    <circle cx="4.1" cy="4.5" r="0.55" fill="currentColor" stroke="none" />
+    <circle cx="6.1" cy="4.5" r="0.55" fill="currentColor" stroke="none" />
   </svg>
 );
 const DownloadGlyph = ({ className }: { className?: string }) => (
@@ -646,6 +773,70 @@ registerToolPresentation({
     icon: PlugGlyph,
     subject: (part) => str(part, "serverId"),
     body: (part) => <Text value={outputText(part)} />,
+  },
+
+  // Browsing. The screenshot goes to the model and is stripped before the
+  // transcript, so the card carries the page it looked at and what the tool
+  // read there — enough for the user to see where a colour or a line of copy
+  // in their video came from.
+  mcp__genmotion__browse_page: {
+    labels: { active: "Opening page", done: "Looked at page" },
+    icon: BrowserGlyph,
+    subject: (part) => str(part, "url"),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__browse_act: {
+    labels: { active: "Using the page", done: "Used the page" },
+    icon: BrowserGlyph,
+    subject: (part) => {
+      const values = input(part);
+      const scroll = typeof values.scroll === "string" ? `scroll ${values.scroll}` : undefined;
+      return (
+        str(part, "click") ??
+        (str(part, "type") ? `type "${truncate(str(part, "type"), 30)}"` : undefined) ??
+        str(part, "press") ??
+        scroll ??
+        str(part, "wait_for")
+      );
+    },
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__browse_capture: {
+    labels: { active: "Screenshotting page", done: "Screenshotted page" },
+    icon: BrowserGlyph,
+    subject: (part) => str(part, "selector") ?? str(part, "filename"),
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
+  },
+
+  mcp__genmotion__request_takeover: {
+    labels: { active: "Asking you to take over", done: "Asked you to take over" },
+    icon: BrowserGlyph,
+    // The card *is* the request: a Take over button folded inside an
+    // accordion is a button nobody presses, and the turn is parked behind it.
+    expandWhileRunning: true,
+    subject: (part) => truncate(str(part, "reason"), 70),
+    body: (part) => <TakeoverCard part={part} />,
+  },
+
+  mcp__genmotion__browse_inspect: {
+    labels: { active: "Reading the design", done: "Read the design" },
+    icon: BrowserGlyph,
+    subject: () => undefined,
+    body: (part) => {
+      const text = outputText(part);
+      return <Text value={text} tone={text.startsWith("FAILED") ? "warning" : undefined} />;
+    },
   },
 
   mcp__genmotion__generate_image: {

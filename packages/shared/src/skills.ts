@@ -118,6 +118,12 @@ export const SKILL_CAPABILITIES = [
   "transcribe",
   /** Put a sound on the timeline: music, narration, effects. */
   "place-audio",
+  /** Open a web page in a real browser, click through it, and look at it. */
+  "browse-site",
+  /** Save a screenshot of the open page — or one element of it — into `assets/`. */
+  "browse-capture",
+  /** Hand the browser to the user: a sign-in, a captcha, their own account. */
+  "request-takeover",
   /** Rank the skill pack against a request. */
   "search-skills",
   /** Find how a beat was done in the template library, with frames and code. */
