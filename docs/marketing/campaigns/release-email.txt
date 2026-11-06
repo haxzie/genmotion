@@ -1,0 +1,41 @@
+GenMotion, Desktop 0.6.0
+
+DEMO YOUR PRODUCT WITHOUT A SCREEN RECORDER
+
+GenMotion's agent has a browser now. Open your product in it, say what you
+want shown, and it clicks through the flow, keeps the screens it needs, and
+cuts them into a demo. Nobody has to record anything, and nobody has to start
+over because of a fumbled click at the 40 second mark.
+
+Get the update:
+https://genmotion.dev/download?utm_source=email&utm_medium=campaign&utm_campaign=desktop-0-6-0
+
+WHAT'S NEW
+
+* Real product demos. Hand it a URL and the steps you want covered. What ends
+  up on screen is your actual product, not a mockup of it, and when a step
+  needs a login you can take the keyboard and do that part yourself.
+
+* Your brand, down to the hex. It pulls colours and typefaces straight out of
+  your site's stylesheet, so you stop getting videos that are almost your blue.
+
+* You can watch, and butt in. There's a Browser tab in the editor showing the
+  page it's on. Grab the mouse any time you'd rather click something yourself.
+
+* Someone to present it, if you want one. Connect fal and ElevenLabs in the
+  Plugins tab and the agent can put a presenter in the video: an AI avatar
+  talking over your product, in a voice you picked. A talking-head demo with
+  nobody on camera and nothing to book.
+
+* Start from the Figma file. Connect Figma in the Plugins tab and hand the
+  agent a file, a frame, or the storyboard you already drew. It animates what
+  is actually in there, your components and your styles, so you are not
+  describing a design you have already made.
+
+Full release notes:
+https://github.com/haxzie/genmotion/releases/tag/desktop-v0.6.0
+
+---
+You are getting this because you have a GenMotion account.
+Unsubscribe: {{unsubscribe_url}}
+genmotion.dev

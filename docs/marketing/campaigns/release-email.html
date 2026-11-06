@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>GenMotion 0.6.0</title>
+  </head>
+  <!--
+    Minimal release-campaign template. One column, tables only, inline styles
+    only: no media queries and no web fonts, so it renders the same in Gmail,
+    Outlook and Apple Mail.
+
+    Light palette: #f6f6f7 page, #ffffff card, #e5e5e8 hairlines, #0a0a0c ink,
+    #5f5f68 body, #8f8f99 footer. The button is the ink colour, inverted. A
+    client in dark mode may invert the whole thing, which is why nothing here
+    relies on an image having a white background.
+
+    To reuse it for the next release, swap: the preheader, the version pill,
+    the headline, the lede, the three WHAT'S NEW rows, and the version in the
+    release-notes link. Nothing else should need touching.
+
+    {{unsubscribe_url}} is the only required merge tag. Rename it to whatever
+    the sending list uses.
+  -->
+  <body style="margin:0;padding:0;background:#f6f6f7;">
+    <!-- Preheader: the line shown after the subject in the inbox. The run of
+         &zwnj;&nbsp; after it is padding: without it the client fills the rest
+         of the preview with whatever body copy comes next, which here is the
+         lede repeating the subject. -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f6f6f7;font-size:1px;line-height:1px;">
+      Your agent clicks through it for you.
+      &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f6f7;padding:40px 16px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e5e8;border-radius:16px;padding:32px;">
+
+            <!-- Wordmark + version pill -->
+            <tr>
+              <td style="padding-bottom:28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <!-- The mark is a PNG, not the site's SVG: Gmail drops SVG. It is
+                         served from the assets bucket rather than the web app, so the
+                         campaign does not wait on a deploy. alt is empty on purpose,
+                         because the wordmark beside it already says the name when
+                         images are blocked. -->
+                    <td width="28" style="width:28px;padding-right:10px;line-height:0;" valign="middle">
+                      <img src="https://assets.genmotion.dev/brand/email-logo.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border:0;" />
+                    </td>
+                    <td style="font-size:17px;font-weight:600;color:#0a0a0c;letter-spacing:-0.01em;" valign="middle">GenMotion</td>
+                    <td align="right" valign="middle" style="font-size:12px;font-weight:600;color:#6f6f78;">
+                      <span style="display:inline-block;border:1px solid #e5e5e8;border-radius:999px;padding:4px 10px;">Desktop 0.6.0</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Headline + lede -->
+            <tr>
+              <td style="font-size:26px;line-height:1.25;font-weight:600;color:#0a0a0c;letter-spacing:-0.02em;padding-bottom:12px;">
+                Demo your product without a screen recorder
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:15px;line-height:1.65;color:#5f5f68;padding-bottom:28px;">
+                GenMotion's agent has a browser now. Open your product in it,
+                say what you want shown, and it clicks through the flow, keeps
+                the screens it needs, and cuts them into a demo. Nobody has to
+                record anything, and nobody has to start over because of a
+                fumbled click at the 40 second mark.
+              </td>
+            </tr>
+
+            <!-- CTA -->
+            <tr>
+              <td style="padding-bottom:32px;">
+                <a href="https://genmotion.dev/download?utm_source=email&utm_medium=campaign&utm_campaign=desktop-0-6-0" style="display:inline-block;background:#0a0a0c;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 26px;border-radius:10px;">
+                  Get the update
+                </a>
+              </td>
+            </tr>
+
+            <!-- What's new -->
+            <tr>
+              <td style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8f8f99;padding-bottom:16px;border-top:1px solid #e5e5e8;padding-top:28px;">
+                What's new
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:18px;">
+                <div style="font-size:15px;font-weight:600;color:#0a0a0c;padding-bottom:5px;">Real product demos</div>
+                <div style="font-size:14px;line-height:1.6;color:#5f5f68;">
+                  Hand it a URL and the steps you want covered. What ends up on
+                  screen is your actual product, not a mockup of it, and when a
+                  step needs a login you can take the keyboard and do that part
+                  yourself.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:18px;">
+                <div style="font-size:15px;font-weight:600;color:#0a0a0c;padding-bottom:5px;">Your brand, down to the hex</div>
+                <div style="font-size:14px;line-height:1.6;color:#5f5f68;">
+                  It pulls colours and typefaces straight out of your site's
+                  stylesheet, so you stop getting videos that are almost your
+                  blue.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:18px;">
+                <div style="font-size:15px;font-weight:600;color:#0a0a0c;padding-bottom:5px;">You can watch, and butt in</div>
+                <div style="font-size:14px;line-height:1.6;color:#5f5f68;">
+                  There's a Browser tab in the editor showing the page it's on.
+                  Grab the mouse any time you'd rather click something
+                  yourself.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding-bottom:18px;">
+                <div style="font-size:15px;font-weight:600;color:#0a0a0c;padding-bottom:5px;">Someone to present it, if you want one</div>
+                <div style="font-size:14px;line-height:1.6;color:#5f5f68;">
+                  Connect fal and ElevenLabs in the Plugins tab and the agent
+                  can put a presenter in the video: an AI avatar talking over
+                  your product, in a voice you picked. A talking-head demo with
+                  nobody on camera and nothing to book.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding-bottom:28px;">
+                <div style="font-size:15px;font-weight:600;color:#0a0a0c;padding-bottom:5px;">Start from the Figma file</div>
+                <div style="font-size:14px;line-height:1.6;color:#5f5f68;">
+                  Connect Figma in the Plugins tab and hand the agent a file, a
+                  frame, or the storyboard you already drew. It animates what is
+                  actually in there, your components and your styles, so you are
+                  not describing a design you have already made.
+                </div>
+              </td>
+            </tr>
+
+            <!-- Secondary link -->
+            <tr>
+              <td style="font-size:14px;line-height:1.6;color:#5f5f68;padding-bottom:28px;">
+                <a href="https://github.com/haxzie/genmotion/releases/tag/desktop-v0.6.0" style="color:#0a0a0c;text-decoration:underline;">Read the full release notes</a>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="font-size:12px;line-height:1.7;color:#8f8f99;border-top:1px solid #e5e5e8;padding-top:24px;">
+                You are getting this because you have a GenMotion account.<br />
+                <a href="{{unsubscribe_url}}" style="color:#8f8f99;text-decoration:underline;">Unsubscribe</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://genmotion.dev" style="color:#8f8f99;text-decoration:underline;">genmotion.dev</a>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
