@@ -425,14 +425,14 @@ function registerIpc(): void {
     };
     if (engine === "react") {
       await createProject({ dir, name, width, height, fps: defaults.fps });
-      track("project_created", { width, height, engine });
+      track("project_created", { name, width, height, engine });
       return withBrand();
     }
     if (engine === "three") {
       // No CDN-pinned runtime to reconcile after creation, unlike HyperFrames
       // below — the folder is previewable and exportable as written.
       await createProject({ dir, name, width, height, fps: defaults.fps, engine: "three" });
-      track("project_created", { width, height, engine });
+      track("project_created", { name, width, height, engine });
       return withBrand();
     }
     // A HyperFrames composition. The folder is written against the release
@@ -452,7 +452,7 @@ function registerIpc(): void {
         guide: HYPERFRAMES_AUTHORING_GUIDE,
       },
     });
-    track("project_created", { width, height, engine });
+    track("project_created", { name, width, height, engine });
     const project = await withBrand();
     void runScaffoldInstall(project.dir)
       .then(() => getSession(project.dir)?.touch())

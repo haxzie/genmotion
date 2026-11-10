@@ -12,6 +12,7 @@ import {
 import { readManifest, type ProjectManifest } from "@genmotion/project";
 import type { ProjectSession } from "../project-session";
 import type { DesktopExportJob } from "../shared";
+import { track } from "../analytics";
 import { bundledBinary } from "../bundled-bin";
 import { claimExport } from "./entitlement";
 import {
@@ -188,7 +189,19 @@ export function exportOutputPath(id: string): Promise<string | null> {
 function update(id: string, patch: Partial<Job>): void {
   const job = jobs.get(id);
   if (!job) return;
+  // Counted on the transition, not on the patch: `status: "done"` is written
+  // once per job, but `update` is also called for every progress tick.
+  const finished = patch.status === "done" && job.status !== "done";
   Object.assign(job, patch);
+  if (finished) {
+    track("video_exported", {
+      name: job.projectName,
+      format: job.format,
+      durationSeconds: job.durationSeconds,
+      sizeBytes: job.sizeBytes,
+      totalFrames: job.totalFrames,
+    });
+  }
   const snapshot = publicJob(job);
   for (const listener of listeners) listener(snapshot);
 }
