@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { getTemplate } from "@genmotion/templates";
 import { trackClientEvent } from "../analytics";
-import { notifyTemplateRemixed } from "../slack";
+import { notifyProjectCreated, notifyTemplateRemixed, notifyVideoExported } from "../slack";
 import { requireAuth, type AuthEnv } from "../middleware/require-auth";
 
 /**
@@ -52,7 +52,7 @@ eventRoutes.post("/", zValidator("json", bodySchema), (c) => {
   const { events } = c.req.valid("json");
 
   for (const event of events) {
-    if (event.name === SLACK_RELAYED_EVENT) void relayRemix(user, event);
+    void relayToSlack(user, event);
     trackClientEvent({
       name: event.name,
       distinctId: user.id,
@@ -73,36 +73,86 @@ eventRoutes.post("/", zValidator("json", bodySchema), (c) => {
   return c.json({ accepted: events.length }, 202);
 });
 
-/**
- * The one client event that also goes to Slack.
- *
- * Kept to a single name on purpose: this endpoint takes whatever the app
- * reports, and a feed that relayed everything would be an open tap into a
- * team channel. Anything else worth hearing about gets added here explicitly.
- */
-const SLACK_RELAYED_EVENT = "template_remixed";
+type Reporter = { name?: string | null; email: string };
+type ClientEvent = { properties?: Record<string, unknown>; timestamp?: string };
 
 /**
- * Post a remix to the ops feed. Never awaited by the handler and never allowed
- * to throw — the same rule the rest of `slack.ts` follows, extended over the
- * catalog read the message's name comes from.
+ * The client events that also go to Slack: the three product moments worth
+ * hearing about live — a project started, a video finished, and a template
+ * made into one of someone's own.
+ *
+ * An allowlist on purpose: this endpoint takes whatever the app reports, and a
+ * feed that relayed everything would be an open tap into a team channel.
+ * Anything else worth hearing about gets added here explicitly.
  */
-async function relayRemix(
-  user: { name?: string | null; email: string },
-  event: { properties?: Record<string, unknown>; timestamp?: string },
-): Promise<void> {
+const SLACK_RELAYS: Record<string, (user: Reporter, event: ClientEvent) => Promise<void>> = {
+  template_remixed: relayRemix,
+  project_created: relayProjectCreated,
+  video_exported: relayVideoExported,
+};
+
+/**
+ * Post an event to the ops feed, if it is one of the few that go there. Never
+ * awaited by the handler and never allowed to throw — the same rule the rest
+ * of `slack.ts` follows, extended over the catalog read a message may need.
+ */
+async function relayToSlack(user: Reporter, event: ClientEvent & { name: string }): Promise<void> {
+  const relay = SLACK_RELAYS[event.name];
+  if (!relay) return;
   try {
-    const templateId = event.properties?.templateId;
-    if (typeof templateId !== "string" || !templateId) return;
-    const record = await getTemplate(templateId).catch(() => null);
-    const at = event.timestamp ? new Date(event.timestamp) : undefined;
-    notifyTemplateRemixed({
-      user,
-      templateId,
-      templateName: record?.meta.title,
-      ...(at && !Number.isNaN(at.getTime()) ? { at } : {}),
-    });
+    await relay(user, event);
   } catch (err) {
     console.error("[events] slack relay failed:", err instanceof Error ? err.message : err);
   }
+}
+
+/** When it happened, which is not when it arrived — the app buffers offline. */
+function happenedAt(event: ClientEvent): { at?: Date } {
+  if (!event.timestamp) return {};
+  const at = new Date(event.timestamp);
+  return Number.isNaN(at.getTime()) ? {} : { at };
+}
+
+async function relayRemix(user: Reporter, event: ClientEvent): Promise<void> {
+  const templateId = event.properties?.templateId;
+  if (typeof templateId !== "string" || !templateId) return;
+  const record = await getTemplate(templateId).catch(() => null);
+  notifyTemplateRemixed({
+    user,
+    templateId,
+    templateName: record?.meta.title,
+    ...happenedAt(event),
+  });
+}
+
+async function relayProjectCreated(user: Reporter, event: ClientEvent): Promise<void> {
+  const engine = event.properties?.engine;
+  notifyProjectCreated({
+    user,
+    project: projectName(event),
+    engine: typeof engine === "string" ? engine : null,
+    ...happenedAt(event),
+  });
+}
+
+async function relayVideoExported(user: Reporter, event: ClientEvent): Promise<void> {
+  const format = event.properties?.format;
+  const duration = event.properties?.durationSeconds;
+  notifyVideoExported({
+    user,
+    project: projectName(event),
+    format: typeof format === "string" ? format : null,
+    durationSeconds: typeof duration === "number" ? duration : null,
+    ...happenedAt(event),
+  });
+}
+
+/**
+ * What the project is called, as the app reported it. Absent from builds older
+ * than the one that started sending it, which is why every message that uses
+ * it reads without it too.
+ */
+function projectName(event: ClientEvent): string | null {
+  const name = event.properties?.name;
+  return typeof name === "string" ? name : null;
 }

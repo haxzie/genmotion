@@ -9,8 +9,13 @@ import type { WebhookEnvelope } from "./billing/webhook-handler";
  *
  * Two channels, two webhooks: `signups` gets every new account, `events` gets
  * the money and team moves (checkout, subscription lifecycle, invites) plus
- * the one product moment worth watching live, a template remix. Each is inert
- * until its URL is set, so local and test runs post nothing.
+ * the product moments worth watching live — a template remix, a new project,
+ * a finished export. Each is inert until its URL is set, so local and test
+ * runs post nothing.
+ *
+ * Every message is one line. These feeds are read by scrolling a channel, so
+ * a second line (or a second message for the same person) costs more attention
+ * than it adds — which is why a signup says it once and says it short.
  *
  * Fire-and-forget by design: a post never blocks a request and never fails
  * one. A Slack outage must not be able to stop a signup or a webhook ack, and
@@ -132,24 +137,31 @@ export function signupMethod(ctx: { path?: string; params?: Record<string, strin
   return ctx.path;
 }
 
+/**
+ * A new account. The only message the signups feed posts: onboarding used to
+ * get a second one, which said the same name again a minute later for no
+ * decision anybody makes.
+ */
 export function notifySignup(
   user: { name?: string | null; email: string },
   method: string,
 ): void {
-  postToSlack("signups", `🎉 New signup: ${person(user)} via ${escapeSlack(method)}`);
+  postToSlack("signups", `🎉 New signup · ${person(user)} · ${escapeSlack(method)}`);
 }
 
-/** The onboarding form is where a name and role first appear. */
-export function notifyOnboarded(user: {
-  name?: string | null;
-  email: string;
-  jobRole?: string | null;
-}): void {
-  const role = user.jobRole?.trim();
-  postToSlack(
-    "signups",
-    `📝 ${person(user)} finished onboarding${role ? ` · role: ${escapeSlack(role)}` : ""}`,
-  );
+/** Old enough that the message should say when, not just that. */
+const LATE_EVENT_MS = 5 * 60_000;
+
+/**
+ * ` · 2026-11-09 14:03 UTC`, or nothing at all.
+ *
+ * The desktop app buffers its events while offline or signed out and flushes
+ * later, so one of its moments can reach Slack minutes after the fact. Saying
+ * when keeps a backfilled batch from reading as a sudden rush.
+ */
+function whenLate(at?: Date): string {
+  if (!at || Date.now() - at.getTime() <= LATE_EVENT_MS) return "";
+  return ` · ${at.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
 // ── Billing & team ──────────────────────────────────────────────────
@@ -225,10 +237,7 @@ export async function notifySubscriptionEvent(
  * `template_remixed` once the folder is written, which is the moment worth
  * hearing about.
  *
- * `at` is when it happened, not when it arrived: the app buffers events while
- * offline or signed out and flushes later, so a remix can reach Slack minutes
- * after the fact. Saying when keeps a backfilled batch from reading as a
- * sudden rush.
+ * `at` is when it happened, not when it arrived — see `whenLate`.
  */
 export function notifyTemplateRemixed(opts: {
   user: { name?: string | null; email: string };
@@ -238,12 +247,74 @@ export function notifyTemplateRemixed(opts: {
 }): void {
   const title = escapeSlack(opts.templateName?.trim() || opts.templateId);
   const link = `<${env.WEB_URL}/templates/${encodeURIComponent(opts.templateId)}|${title}>`;
-  const late = opts.at && Date.now() - opts.at.getTime() > LATE_EVENT_MS;
-  postToSlack(
-    "events",
-    `🎬 ${person(opts.user)} remixed ${link}` +
-      (late ? ` · ${opts.at!.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""),
+  postToSlack("events", `🎬 ${person(opts.user)} remixed ${link}${whenLate(opts.at)}`);
+}
+
+/** What a project's engine is called in the feed. */
+const ENGINE_LABELS: Record<string, string> = {
+  three: "Three.js",
+  hyperframes: "HyperFrames",
+  react: "React",
+};
+
+/**
+ * Someone started a video.
+ *
+ * Reported by the desktop app, like a remix — a project is a folder on the
+ * user's own disk, so the server never sees one otherwise.
+ */
+export function notifyProjectCreated(opts: {
+  user: { name?: string | null; email: string };
+  project?: string | null;
+  engine?: string | null;
+  at?: Date;
+}): void {
+  const engine = opts.engine ? ENGINE_LABELS[opts.engine] ?? opts.engine : null;
+  const parts = [`✨ ${person(opts.user)} created ${projectLabel(opts.project)}`];
+  if (engine) parts.push(escapeSlack(engine));
+  postToSlack("events", parts.join(" · ") + whenLate(opts.at));
+}
+
+/**
+ * A video came out the other end — the moment the whole app exists for, and
+ * the one the desktop reports only when the render actually finished.
+ */
+export function notifyVideoExported(opts: {
+  user: { name?: string | null; email: string };
+  project?: string | null;
+  format?: string | null;
+  durationSeconds?: number | null;
+  at?: Date;
+}): void {
+  const parts = [`🎥 ${person(opts.user)} exported ${projectLabel(opts.project, "a video")}`];
+  if (opts.format) parts.push(escapeSlack(opts.format.toUpperCase()));
+  if (opts.durationSeconds && opts.durationSeconds > 0) parts.push(length(opts.durationSeconds));
+  postToSlack("events", parts.join(" · ") + whenLate(opts.at));
+}
+
+/**
+ * How long a project's own name may be before the line stops being skimmable.
+ * A name is whatever the user typed, so the cap is the message's, not theirs.
+ */
+const MAX_PROJECT_NAME = 60;
+
+/**
+ * `"Launch film"`, or a plain noun when the app did not say — an older build,
+ * or a folder opened with no name at all.
+ */
+function projectLabel(name?: string | null, noun = "a new project"): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return noun;
+  return quoted(
+    trimmed.length > MAX_PROJECT_NAME ? `${trimmed.slice(0, MAX_PROJECT_NAME - 1)}…` : trimmed,
   );
+}
+
+/** `8s` / `1:04` — short enough to sit in a line that is already busy. */
+function length(seconds: number): string {
+  const total = Math.round(seconds);
+  if (total < 60) return `${total}s`;
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 /** What each website Remix option is called in the feed. */
@@ -271,9 +342,6 @@ export function notifyRemixIntent(opts: {
   const who = opts.user ? person(opts.user) : "A visitor" + (opts.country ? ` (${escapeSlack(opts.country)})` : "");
   postToSlack("events", `🧩 ${who} ${REMIX_OPTION_LABELS[opts.option] ?? "picked a remix option on"} ${link}`);
 }
-
-/** Old enough that the message should say when, not just that. */
-const LATE_EVENT_MS = 5 * 60_000;
 
 export function notifyInviteSent(opts: {
   inviter: { name?: string | null; email: string };

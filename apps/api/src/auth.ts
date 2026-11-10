@@ -16,7 +16,6 @@ import {
   notifyInviteAccepted,
   notifyInviteSent,
   notifyMemberRemoved,
-  notifyOnboarded,
   notifySignup,
   signupMethod,
 } from "./slack";
@@ -140,19 +139,6 @@ export const auth = betterAuth({
           // Same reasoning as the event above: this hook is the only place that
           // sees a signup once, so it is the only place a contact is added.
           addContact(createdUser);
-        },
-      },
-      update: {
-        // Onboarding is the one update that carries a name and a role, and the
-        // web app sends it exactly once — it redirects anyone already onboarded.
-        after: async (updatedUser, ctx) => {
-          const body = ctx?.body as { onboardingCompleted?: unknown } | undefined;
-          if (body?.onboardingCompleted !== true) return;
-          notifyOnboarded({
-            name: updatedUser.name,
-            email: updatedUser.email,
-            jobRole: typeof updatedUser.jobRole === "string" ? updatedUser.jobRole : null,
-          });
         },
       },
     },

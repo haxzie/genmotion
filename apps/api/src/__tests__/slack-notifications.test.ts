@@ -88,7 +88,7 @@ describe.skipIf(!dbReady)("events feed", () => {
     expect(await feed("signups")).toEqual([]);
   });
 
-  it("announces a remix, naming the template, and relays nothing else", async () => {
+  it("announces a remix, naming the template, and relays nothing unlisted", async () => {
     const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
     const { orgId } = await createOrg({ ownerId: user.id });
     const session = await createSession(user.id, orgId);
@@ -98,8 +98,8 @@ describe.skipIf(!dbReady)("events feed", () => {
 
     const { status } = await send([
       { name: "template_remixed", properties: { templateId: "x-numbers-launch-video", revision: "abc" } },
-      // Every other event the app reports stays in PostHog.
-      { name: "project_created", properties: { engine: "three" } },
+      // Not on the allowlist — this one stays in PostHog.
+      { name: "chat_message_sent", properties: { harness: "claude-code" } },
     ]);
     expect(status).toBe(202);
 
@@ -115,6 +115,110 @@ describe.skipIf(!dbReady)("events feed", () => {
     expect((await send([{ name: "template_remixed", properties: { templateId: "gone" } }])).status).toBe(202);
     await vi.waitFor(async () => expect(await feed("events")).toHaveLength(1));
     expect((await feed("events"))[0]).toContain("|gone>");
+  });
+
+  it("announces a new project and a finished export, naming both", async () => {
+    const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const { status } = await requestJson("/api/events", {
+      as: session,
+      json: {
+        events: [
+          {
+            name: "project_created",
+            properties: { name: "Launch film", engine: "three", width: 1920, height: 1080 },
+          },
+          {
+            name: "video_exported",
+            properties: { name: "Launch film", format: "mp4", durationSeconds: 94.4 },
+          },
+        ],
+      },
+    });
+    expect(status).toBe(202);
+
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(2));
+    expect(await feed("events")).toEqual([
+      '✨ *Ada Lovelace* (ada@example.test) created "Launch film" · Three.js',
+      '🎥 *Ada Lovelace* (ada@example.test) exported "Launch film" · MP4 · 1:34',
+    ]);
+  });
+
+  it("reads without a name, for a build that does not send one", async () => {
+    const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const { status } = await requestJson("/api/events", {
+      as: session,
+      json: {
+        events: [
+          { name: "project_created", properties: { engine: "hyperframes" } },
+          { name: "video_exported", properties: { format: "webm" } },
+        ],
+      },
+    });
+    expect(status).toBe(202);
+
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(2));
+    expect(await feed("events")).toEqual([
+      "✨ *Ada Lovelace* (ada@example.test) created a new project · HyperFrames",
+      "🎥 *Ada Lovelace* (ada@example.test) exported a video · WEBM",
+    ]);
+  });
+
+  it("escapes a project's own name and cuts an overlong one", async () => {
+    const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const { status } = await requestJson("/api/events", {
+      as: session,
+      json: {
+        events: [
+          { name: "project_created", properties: { name: "<b>Q4</b> & friends" } },
+          { name: "video_exported", properties: { name: "A".repeat(80) } },
+        ],
+      },
+    });
+    expect(status).toBe(202);
+
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(2));
+    const [created, exported] = await feed("events");
+    expect(created).toBe(
+      '✨ *Ada Lovelace* (ada@example.test) created "&lt;b&gt;Q4&lt;/b&gt; &amp; friends"',
+    );
+    expect(exported).toBe(
+      `🎥 *Ada Lovelace* (ada@example.test) exported "${"A".repeat(59)}…"`,
+    );
+  });
+
+  it("says when a buffered event actually happened", async () => {
+    const user = await createUser({ name: "Ada Lovelace", email: "ada@example.test" });
+    const { orgId } = await createOrg({ ownerId: user.id });
+    const session = await createSession(user.id, orgId);
+
+    const at = new Date(Date.now() - 60 * 60_000);
+    const { status } = await requestJson("/api/events", {
+      as: session,
+      json: {
+        events: [
+          {
+            name: "video_exported",
+            properties: { name: "Launch film", format: "gif" },
+            timestamp: at.toISOString(),
+          },
+        ],
+      },
+    });
+    expect(status).toBe(202);
+
+    await vi.waitFor(async () => expect(await feed("events")).toHaveLength(1));
+    expect((await feed("events"))[0]).toBe(
+      `🎥 *Ada Lovelace* (ada@example.test) exported "Launch film" · GIF · ${at.toISOString().slice(0, 16).replace("T", " ")} UTC`,
+    );
   });
 
   it("announces subscription lifecycle events once the webhook has applied them", async () => {
@@ -242,14 +346,14 @@ describe.skipIf(!dbReady)("signups feed", () => {
 
   it("announces a new account, and nothing for a returning one", async () => {
     await signUp("grace@example.test");
-    expect(await feed("signups")).toEqual(["🎉 New signup: *grace@example.test* via magic link"]);
+    expect(await feed("signups")).toEqual(["🎉 New signup · *grace@example.test* · magic link"]);
     expect(await feed("events")).toEqual([]);
 
     await signUp("grace@example.test");
     expect(await feed("signups")).toHaveLength(1);
   });
 
-  it("announces onboarding with the role, once", async () => {
+  it("says nothing a second time when onboarding finishes", async () => {
     const user = await createUser({
       name: "Grace Hopper",
       email: "grace@example.test",
@@ -258,20 +362,13 @@ describe.skipIf(!dbReady)("signups feed", () => {
     const { orgId } = await createOrg({ ownerId: user.id });
     const session = await createSession(user.id, orgId);
 
-    const onboard = (body: Record<string, unknown>) =>
-      app.request("/api/auth/update-user", {
-        method: "POST",
-        headers: { cookie: session.cookie, origin: ORIGIN, "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-    expect((await onboard({ jobRole: "Designer", onboardingCompleted: true })).status).toBe(200);
-    expect(await feed("signups")).toEqual([
-      "📝 *Grace Hopper* (grace@example.test) finished onboarding · role: Designer",
-    ]);
-
-    // A later profile edit is not onboarding.
-    expect((await onboard({ name: "Rear Admiral Hopper" })).status).toBe(200);
-    expect(await feed("signups")).toHaveLength(1);
+    const onboarded = await app.request("/api/auth/update-user", {
+      method: "POST",
+      headers: { cookie: session.cookie, origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ jobRole: "Designer", onboardingCompleted: true }),
+    });
+    expect(onboarded.status).toBe(200);
+    // The signup line already named them; a second message adds nothing.
+    expect(await feed("signups")).toEqual([]);
   });
 });
