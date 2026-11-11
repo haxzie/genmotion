@@ -323,7 +323,7 @@
         "proof",
         "recap"
       ],
-      "summary": "Launch Bot posts \"The new headphones campaign is live\" and the camera flies past the campaign's finished ads and renders. The red ad lands, the reaction counts climb as a hand keeps clicking the heart, and the who-reacted tooltip grows until it reads \"You, Launch Bot, Research Bot, Copy Bot, Deck Bot and 49 others\". The beat pushes into the tooltip's heart, which turns away into the next scene.",
+      "summary": "Launch Bot posts \"The new headphones campaign is live\" and the camera flies past the campaign's finished ads and renders. The red ad lands, the reaction counts climb as a hand keeps clicking the heart, and the who-reacted tooltip grows with them, from \"Launch Bot and 43 others\" up to \"You, Launch Bot, Research Bot, Copy Bot, Deck Bot and 50 others\". The beat pushes into the tooltip's heart, which turns away into the next scene.",
       "build": "The fly-past is one camera track across a wall of ad planes laid out in reference pixels, with the ads sized to their real aspect ratios so the wall reads as a contact sheet rather than a grid of crops. The climbing counter is a number walked from the frame with a bump on each click, and the tooltip grows by remeasuring its own text each frame, the same resizable panel scene 3 used. The push into the heart hands over to scene 11 on a matched shape, so the cut is invisible.",
       "reuse": "Take this as the payoff beat for any launch film: the work exists, people respond to it. The counter and the growing tooltip are generic. The ads themselves are the fictional Pendel campaign and come from the reference film, so they are the first thing to replace.",
       "techniques": [
