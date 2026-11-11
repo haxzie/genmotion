@@ -1,0 +1,75 @@
+{
+  "text": "Make 10 sale ads",
+  "fps": 30,
+  "durationInFrames": 44,
+  "durationMs": 1450,
+  "keyboard": "thock",
+  "effectiveWpm": 170,
+  "mistakes": 0,
+  "steps": [
+    {
+      "frame": 4,
+      "text": "M"
+    },
+    {
+      "frame": 5,
+      "text": "Ma"
+    },
+    {
+      "frame": 7,
+      "text": "Mak"
+    },
+    {
+      "frame": 8,
+      "text": "Make"
+    },
+    {
+      "frame": 10,
+      "text": "Make "
+    },
+    {
+      "frame": 13,
+      "text": "Make 1"
+    },
+    {
+      "frame": 14,
+      "text": "Make 10"
+    },
+    {
+      "frame": 18,
+      "text": "Make 10 "
+    },
+    {
+      "frame": 21,
+      "text": "Make 10 s"
+    },
+    {
+      "frame": 24,
+      "text": "Make 10 sa"
+    },
+    {
+      "frame": 26,
+      "text": "Make 10 sal"
+    },
+    {
+      "frame": 27,
+      "text": "Make 10 sale"
+    },
+    {
+      "frame": 29,
+      "text": "Make 10 sale "
+    },
+    {
+      "frame": 31,
+      "text": "Make 10 sale a"
+    },
+    {
+      "frame": 32,
+      "text": "Make 10 sale ad"
+    },
+    {
+      "frame": 34,
+      "text": "Make 10 sale ads"
+    }
+  ]
+}

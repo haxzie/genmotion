@@ -1,0 +1,17 @@
+{
+  "id": "genmotion-grok-bot-launch-video",
+  "title": "GenMotion x Grok Bot launch video",
+  "description": "A 26 second launch film for a chat agent integration: a mascot drops in and catches its beret, a prompt is typed into a Grok thread that returns ten rendered ads, brand assets are dragged into the chat box, and the wordmark builds itself over a dark green close.",
+  "metaTitle": "AI Chat Bot Integration Launch Video Template — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "publishedAt": "2026-11-11",
+  "featured": true,
+  "order": 46,
+  "sampleAt": 0.94,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/genmotion-grok-bot-launch-video/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/genmotion-grok-bot-launch-video/preview.mp4"
+}

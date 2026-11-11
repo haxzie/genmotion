@@ -1,0 +1,111 @@
+{
+  "text": "Here are our brand assets",
+  "fps": 30,
+  "durationInFrames": 67,
+  "durationMs": 2231,
+  "keyboard": "thock",
+  "effectiveWpm": 157,
+  "mistakes": 0,
+  "steps": [
+    {
+      "frame": 2,
+      "text": "H"
+    },
+    {
+      "frame": 4,
+      "text": "He"
+    },
+    {
+      "frame": 5,
+      "text": "Her"
+    },
+    {
+      "frame": 7,
+      "text": "Here"
+    },
+    {
+      "frame": 9,
+      "text": "Here "
+    },
+    {
+      "frame": 11,
+      "text": "Here a"
+    },
+    {
+      "frame": 13,
+      "text": "Here ar"
+    },
+    {
+      "frame": 15,
+      "text": "Here are"
+    },
+    {
+      "frame": 16,
+      "text": "Here are "
+    },
+    {
+      "frame": 18,
+      "text": "Here are o"
+    },
+    {
+      "frame": 20,
+      "text": "Here are ou"
+    },
+    {
+      "frame": 21,
+      "text": "Here are our"
+    },
+    {
+      "frame": 23,
+      "text": "Here are our "
+    },
+    {
+      "frame": 25,
+      "text": "Here are our b"
+    },
+    {
+      "frame": 29,
+      "text": "Here are our br"
+    },
+    {
+      "frame": 33,
+      "text": "Here are our bra"
+    },
+    {
+      "frame": 35,
+      "text": "Here are our bran"
+    },
+    {
+      "frame": 37,
+      "text": "Here are our brand"
+    },
+    {
+      "frame": 39,
+      "text": "Here are our brand "
+    },
+    {
+      "frame": 43,
+      "text": "Here are our brand a"
+    },
+    {
+      "frame": 46,
+      "text": "Here are our brand as"
+    },
+    {
+      "frame": 47,
+      "text": "Here are our brand ass"
+    },
+    {
+      "frame": 50,
+      "text": "Here are our brand asse"
+    },
+    {
+      "frame": 54,
+      "text": "Here are our brand asset"
+    },
+    {
+      "frame": 57,
+      "text": "Here are our brand assets"
+    }
+  ]
+}

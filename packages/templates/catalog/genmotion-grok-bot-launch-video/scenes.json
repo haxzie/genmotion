@@ -1,0 +1,149 @@
+{
+  "arc": "feature: a mascot bot gets a timeline and a prompt turns into ten rendered ads → workflow: the chat thread hands back finished videos and scales to a desktop batch → feature: brand assets are dragged into the composer so every ad comes back on brand → logo + cta (wordmark builds, resolves into \"Connect GenMotion to Grok Bot\")",
+  "scenes": [
+    {
+      "file": "scenes/01-intro.ts",
+      "title": "Mascot bot gets a timeline, then types a prompt into a phone chat and gets ten videos back",
+      "beat": "feature",
+      "alsoFits": [
+        "hook",
+        "workflow"
+      ],
+      "summary": "On a pale blue field a black smiley bot drops in and catches a green beret, blinking as it settles. The headline builds word by word to \"Give your bot a studio\", then swaps into \"Its own timeline\" where the gap between the words grows into a green pill holding a play triangle and a run of dots. A tall phone rises from the bottom with a Grok thread open on \"Ask Grok anything\", \"Make 10 sale ads\" is typed into the composer a character at a time, the bot hops over and lands on the send button, and the reply is a GenMotion tool-call card reading \"10 videos ready\" over a two row grid of ten coloured ad thumbnails. The phone slides left and the line resolves to \"Makes your videos\".",
+      "build": "Everything is Three.js meshes in a 1280x720 reference space (components/stage maps reference pixels to world units). The bot is a rig from components/bot with a setLook(pitch, yaw, roll) joint driven by a spring() through a look table, so every glance eases and settles instead of snapping; bump() adds impact squash on the landings. The phone, pill, bubbles and send button are all RRect, one rounded-rectangle mesh primitive, so the pill animates by lerping its dimensions. Headlines come from wordLine/animWord, which lay a line out as individually animatable word meshes. The typing is not guessed: a TYPED table of [frame, characters] is pasted straight out of assets/typing-prompt.timing.json, which the keysound typing generator wrote beside the WAV, so the caret and the key clicks are one plan. The ten ad thumbnails are a canvasPlane texture drawn by drawSaleAd in components/brandkit.",
+      "reuse": "Take this for any \"ask the agent, get work back\" feature beat where a prompt is typed into a real looking chat composer. Swap the three headline strings in the wordLine calls, the prompt string, the greens in components/brand.ts, and the thumbnail palette in drawSaleAd. If you change the prompt text, regenerate the typing sound and paste the new timing table, otherwise the clicks drift off the caret. The bot and the GenMotion mark in components/glyphs are this product's marks, so redraw them for your own brand rather than shipping these.",
+      "techniques": [
+        "character-rig",
+        "spring-physics",
+        "kinetic-type",
+        "device-mockup",
+        "typing-with-timing-file",
+        "rounded-rect-primitive"
+      ],
+      "mood": [
+        "playful",
+        "light",
+        "friendly"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.3,
+        0.55,
+        0.94
+      ]
+    },
+    {
+      "file": "scenes/02-texting.ts",
+      "title": "Chat thread delivering a finished video, then a push-in to a desktop batch",
+      "beat": "workflow",
+      "alsoFits": [
+        "conversation",
+        "feature"
+      ],
+      "summary": "\"Just ask in chat\" sits over a thread where the bot types \"All done! Here's your video:\" and a video card slides in under it, titled \"Spring sale is live\" with a scrubber, \"spring-sale-launch.mp4\" and \"0:20 1080p made with GenMotion\". The customer answers \"Thanks, that was fast!\". The headline then becomes \"Or ten at once\" over a desktop app with a conversation sidebar, and the camera pushes in 1.68x on a thread reading \"10 spring sale ads are rendered and in your GenMotion library.\", \"Want 9:16 cuts for Reels and TikTok?\", \"Yes, captions on all of them.\" and \"Done. 20 videos, captioned and ready to post.\"",
+      "build": "Messages reveal with revealWords/revealFrac from components/text, which walk a word or character count rather than fading a whole block, so the typing reads as composition not opacity. The video card, sidebar and header pill are canvasPlane textures drawn by drawVideoCard/drawSidebar/drawHeaderPill in components/ui, which keeps the flat interface work in canvas while the layout stays in Three.js. The scene's keys are written in film frames (g = scene frame + 292) so they line up with the soundtrack without mental arithmetic. The push-in is a single scale lerp to ZOOM on the thread group, and the scene background colour lerps from the pale blue to near white as the desktop takes over. It ends on makeDarkBg, a shader plane whose uCenter uniform places an iris where the next scene opens.",
+      "reuse": "Good for any beat that has to show one result and then the same thing at volume, which is the usual shape of an agent or batch feature. Swap the message strings, the card title and the file name; the sidebar rows in components/ui are the thing to retitle for your own product. The 1.68x push-in and the iris are generic and worth lifting on their own. Note that the phone thread and the desktop thread carry different copy, so read both before rewording.",
+      "techniques": [
+        "chat-thread",
+        "word-by-word-reveal",
+        "canvas-texture-ui",
+        "camera-push-in",
+        "iris-transition"
+      ],
+      "mood": [
+        "calm",
+        "light",
+        "product"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.42,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/03-brand-assets.ts",
+      "title": "A hand cursor drags a stack of brand files into the chat composer",
+      "beat": "feature",
+      "alsoFits": [
+        "benefit",
+        "brand"
+      ],
+      "summary": "Under \"Drop in your brand\" a hand cursor grabs a scattered stack of brand files, a logo, product photos and video thumbnails, and drags them into the composer, which lights green as they land in a row of attachment chips. \"Here are our brand assets\" is then typed into the box a character at a time and sent, and the bot answers \"10 ads in your brand, ready.\" with a row of ad cards drawn from the same palette and marks. The line resolves to \"Every video on brand\" before the frame irises into the closing dark field.",
+      "build": "The cursor is two Phosphor SVGs, assets/hand-duotone.svg and assets/hand-grabbing-duotone.svg, loaded by svgIconPlane in components/brandkit and swapped at the grab and drop frames, which is what sells the drag as a click rather than a slide. The file chips and the returned ads are canvasPlane textures from drawHalo in the same module, one fictional brand's palette drawn procedurally so there are no screenshots to go stale. The composer is RRect plus a green glow RRect behind it whose opacity ramps on the drop. Typing again reads its [frame, characters] table out of assets/typing-brand-assets.timing.json, and the mouse clicks in assets/brand-drop-clicks.wav are placed on the same GRAB, DROP and SEND frames the animation uses.",
+      "reuse": "This is the beat to borrow whenever a product takes a file as input: drag, drop, send, answer. Swap drawHalo for your own brand's marks and colours, change the PROMPT string and regenerate the typing audio and timing table with it, and retime GRAB, DROP and SEND together with the click track. The hand cursor pair is MIT licensed Phosphor and travels fine.",
+      "techniques": [
+        "cursor-drag-and-drop",
+        "svg-icon-plane",
+        "canvas-texture-ui",
+        "typing-with-timing-file",
+        "iris-transition"
+      ],
+      "mood": [
+        "light",
+        "tactile",
+        "product"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/04-outro.ts",
+      "title": "Wordmark builds letter by letter on a dark field, then hands over to the closing line",
+      "beat": "logo",
+      "alsoFits": [
+        "cta",
+        "brand"
+      ],
+      "summary": "On a dark green field the GenMotion mark pops in and the wordmark builds itself one letter at a time beside it. The lockup then shrinks on a fixed pivot and dissolves in place into the word \"GenMotion\" inside the closing line \"Connect GenMotion to Grok Bot\", where the bot's own face stands in for the product name's icon.",
+      "build": "The mark is a canvasPlane drawn by genmotionMark in components/glyphs from the real logo path data, so it stays crisp at any size instead of being an imported PNG. Each letter is its own text mesh, measured and laid out by hand, and the handover is the trick worth stealing: S_END is computed as the closing line's word width divided by the built wordmark's width, so the big lockup scales to land exactly on the small line's \"GenMotion\" and the two cross dissolve in place with no visible jump. The background is makeDarkBg, a shader plane rather than a flat colour, which is what keeps the dark green from banding.",
+      "reuse": "A good end card for any launch film that wants its wordmark to become part of a sentence rather than fade out. Swap the mark drawing in components/glyphs, the WORD constant and the closing line, and the pivot maths carries over unchanged as long as the line still contains the wordmark as one of its words. The bot glyph in the line is this product's character, so replace it with your own icon or drop it.",
+      "techniques": [
+        "logo-build",
+        "letter-by-letter",
+        "scale-match-handover",
+        "shader-background"
+      ],
+      "mood": [
+        "dark",
+        "confident",
+        "brand"
+      ],
+      "videoTypes": [
+        "brand-sting",
+        "launch-playbook",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.3,
+        0.6,
+        0.9
+      ]
+    }
+  ]
+}
