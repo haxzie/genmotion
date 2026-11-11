@@ -1,0 +1,78 @@
+{
+  "name": "Grok Bot launch video",
+  "engine": "three",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "file": "scenes/01-open.ts",
+      "durationInFrames": 120,
+      "name": "Open"
+    },
+    {
+      "file": "scenes/02-introducing.ts",
+      "durationInFrames": 102,
+      "name": "Introducing"
+    },
+    {
+      "file": "scenes/03-call.ts",
+      "durationInFrames": 188,
+      "name": "Call"
+    },
+    {
+      "file": "scenes/04-video-call.ts",
+      "durationInFrames": 171,
+      "name": "Video call"
+    },
+    {
+      "file": "scenes/05-learns.ts",
+      "durationInFrames": 47,
+      "name": "Learns"
+    },
+    {
+      "file": "scenes/06-research.ts",
+      "durationInFrames": 367,
+      "name": "Research"
+    },
+    {
+      "file": "scenes/07-other-bots.ts",
+      "durationInFrames": 215,
+      "name": "Works with other bots"
+    },
+    {
+      "file": "scenes/08-design.ts",
+      "durationInFrames": 305,
+      "name": "Design"
+    },
+    {
+      "file": "scenes/09-business.ts",
+      "durationInFrames": 349,
+      "name": "Knows your business"
+    },
+    {
+      "file": "scenes/10-launch.ts",
+      "durationInFrames": 180,
+      "name": "Campaign live"
+    },
+    {
+      "file": "scenes/11-outro.ts",
+      "durationInFrames": 329,
+      "name": "Say hi"
+    }
+  ],
+  "audio": [
+    {
+      "id": "reference-soundtrack",
+      "file": "assets/reference-audio.mp3",
+      "track": 0,
+      "startFrame": 0,
+      "durationInFrames": 2373,
+      "startFrom": 0,
+      "volume": 1,
+      "fadeInFrames": 0,
+      "fadeOutFrames": 0,
+      "muted": false
+    }
+  ]
+}

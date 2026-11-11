@@ -1,0 +1,389 @@
+{
+  "arc": "hook (title card, the bot turns toward you) → reveal (\"Introducing Grok Bot\" builds, beta flips to 1.0) → feature: it is invited into a call → feature: it joins the grid as a fourth tile → transition (\"Learns and makes recommendations\") → workflow: it researches tester feedback and offers to ping marketing → integrations: it hands work to the other bots → feature: it rewrites and lays out the campaign → feature: it reads the business numbers and catches a confidential slide → announcement: the campaign ships and the reactions climb → logo + cta (\"Say hi to your new teammates\", the bots collapse into the mark)",
+  "scenes": [
+    {
+      "file": "scenes/01-open.ts",
+      "title": "Title card, an extreme close-up of the bot turning, and a chat notification",
+      "beat": "hook",
+      "alsoFits": [
+        "reveal",
+        "brand"
+      ],
+      "summary": "\"Introducing Grok Bot 1.0\" sits on off white with six coloured bots scattered around it, the black one filling the bottom left corner. The frame cuts to an extreme close-up of the purple bot: its eyes rotate up into view, then the sphere turns away and shrinks. A hard cut to lavender collapses it into the avatar on a Launch Bot notification reading \"New headphones launching in 2 weeks. I created a channel to keep us on track.\", where new eyes rotate in.",
+      "build": "The close-up is the piece worth taking: components/sphere.ts paints two capsule eyes onto a shaded sphere in the fragment shader, in spherical coordinates, so the eyes foreshorten and slip behind the limb as it turns rather than sliding across a flat disc. The flat bots elsewhere are components/bots.ts, one canvas path per colour with a separate eye drawing, so the same character reads at notification size and at full frame. Layout is components/stage.ts: every scene is positioned in 1280x720 reference pixels with y pointing down, and an orthographic camera maps that onto the 1920x1080 composition, which is why coordinates can be read straight off a frame.",
+      "reuse": "Take the sphere for any mascot that has to turn toward or away from camera without a rig or a model. Swap the palette in components/brand.ts and the eye capsules in components/bots.ts. The title card is a plain centred line with a pill, easy to retype. Note the notification copy is the fictional Pendel headphone launch this film is built around, so it changes with your story.",
+      "techniques": [
+        "shader-painted-eyes",
+        "reference-pixel-stage",
+        "title-card",
+        "match-cut"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "friendly"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.06,
+        0.35,
+        0.8
+      ]
+    },
+    {
+      "file": "scenes/02-introducing.ts",
+      "title": "Wordmark lands word by word and a beta tag flips to 1.0",
+      "beat": "reveal",
+      "alsoFits": [
+        "announcement",
+        "brand"
+      ],
+      "summary": "\"Introducing\", then \"Grok\", then \"Bot\" land one word at a time with the line re-centring after each, so the type keeps settling rather than arriving whole. A grey \"beta\" tag flips to a black \"1.0\" pill and bursts five coloured bots out of itself. The words back out and the blue bot slides off toward the call that follows.",
+      "build": "Each word is its own text mesh and the line recomputes its own centre as words arrive, which is what makes the re-centring read as deliberate instead of a jump. The tag flip is a scale on one axis through zero with the label swapped at the crossing, the cheapest honest way to do a card flip in an orthographic scene. The bots are canvas textured planes from components/bots.ts fired along eased arcs.",
+      "reuse": "A good opening for any \"introducing X\" beat, and the version flip is reusable for any before and after label (beta to 1.0, old price to new). Swap the three words and the two tag strings. Keep the re-centring: a line that settles twice is most of the charm here.",
+      "techniques": [
+        "kinetic-type",
+        "word-by-word-landing",
+        "card-flip",
+        "particle-burst"
+      ],
+      "mood": [
+        "playful",
+        "bright",
+        "confident"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "brand-sting"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.25,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/03-call.ts",
+      "title": "A call pill, a giant typographic line, and the bot being admitted to a meeting",
+      "beat": "feature",
+      "alsoFits": [
+        "conversation",
+        "workflow"
+      ],
+      "summary": "A call pill builds, its buttons popping in around the bot's voice waveform. A hard cut throws \"Hey, can you join the call at 10?\" across the frame in giant blue type, sliding right to left. The call card then takes over: the request bubble rises in, the bot talks, \"Of course.\" arrives and the card grows to hold it, and the scene ends tight on the meeting prompt as a hand cursor clicks \"Admit\".",
+      "build": "components/ui.ts carries this one: panel() is a rounded rectangle with a soft drop shadow drawn as an SDF in a shader, so the card can be resized every frame to fit its new content with nothing redrawn, and clipTo/setClip give any subtree a rectangular mask built from THREE.Plane. The waveform is a row of waveDot meshes on a hashed noise, deterministic because hash1 takes the frame rather than Math.random. The hand cursor is Phosphor's hand-pointing, white fill under a black outline, which is what keeps it legible on both the light card and the blue.",
+      "reuse": "The growing card is the reusable part: any chat or call interface that has to accept a new message without a redraw. Swap the call copy and the button glyphs (drawGear, drawChat, drawMic, drawX are all plain canvas paths). The giant sliding line works on its own as a transition between two interface beats.",
+      "techniques": [
+        "sdf-shadow-panel",
+        "shader-clipping",
+        "voice-waveform",
+        "cursor-click",
+        "kinetic-type"
+      ],
+      "mood": [
+        "bright",
+        "product",
+        "friendly"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/04-video-call.ts",
+      "title": "Three video-call tiles reflow into a 2x2 grid as the bot takes the fourth seat",
+      "beat": "feature",
+      "alsoFits": [
+        "integrations",
+        "concept"
+      ],
+      "summary": "Three portrait call tiles labelled Alex, Maya and Kai sit beside a \"Someone wants to join this call\" prompt. The whole layout pulls back and reflows into a 2x2 grid, and the prompt becomes Research Bot's own tile. The bot then sits in the call, blinking and glancing around while the people keep talking.",
+      "build": "The reflow is components/tile.ts: a rounded rect that cover-fits up to two textures and crossfades them, animated through rectTrack, a monotone cubic spline over [frame, x, y, w, h] keyframes, so a tile changes aspect without the picture distorting and without the stop-and-restart a per-key ease gives. The faces are video, handled by components/footage.ts, which seeks the texture from the frame rather than playing it and registers each seek on ctx.manager so a headless capture waits for the decoded frame. That helper is the thing to copy if you ever need real footage inside a deterministic render.",
+      "reuse": "Borrow the reflow and the footage helper, not the footage. The three clips in assets/call are cropped out of the reference film this project was built from, so they are placeholders for your own people: swap the webm files and their poster stills, keep the tile tracks. The bot's idle blinking and glancing is a short eye table in components/bots.ts and carries over unchanged.",
+      "techniques": [
+        "layout-reflow",
+        "spline-rect-track",
+        "seeked-video-texture",
+        "cover-fit-tile"
+      ],
+      "mood": [
+        "warm",
+        "product",
+        "human"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.05,
+        0.3,
+        0.8
+      ]
+    },
+    {
+      "file": "scenes/05-learns.ts",
+      "title": "Interstitial title: Learns and makes recommendations",
+      "beat": "transition",
+      "alsoFits": [
+        "concept"
+      ],
+      "summary": "A single line, \"Learns and makes recommendations\", eases in from a few pixels right and holds for a second and a half before the next beat takes over.",
+      "build": "Sixteen lines in total. components/title.ts lays out one line of Inter 400, centred, with its width matched to a target so every interstitial in the film is set at the same optical size regardless of how many words it has.",
+      "reuse": "This is the spacer that makes a long film readable, and the cheapest thing here to lift: call interstitial() with your own line. Use it between feature beats whenever two interface sequences would otherwise collide.",
+      "techniques": [
+        "interstitial-title",
+        "width-matched-type"
+      ],
+      "mood": [
+        "calm",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "explainer",
+        "announce-feature"
+      ],
+      "quality": "solid",
+      "standalone": true,
+      "sampleAt": [
+        0.3,
+        0.6,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/06-research.ts",
+      "title": "The camera dives into a chat, the bot becomes a cursor and reads a feedback chart",
+      "beat": "workflow",
+      "alsoFits": [
+        "data",
+        "conversation"
+      ],
+      "summary": "The camera dives out of the call grid and into the meeting chat. Research Bot steps out of its own avatar as a cursor, pulls up a \"What testers mentioned\" panel and drags along its curve, with \"Testers love how light the headphones are.\" in the thread. Back in the chat the reactions land, it asks \"Want me to ping marketing?\", and the camera pushes in on that line while a thumbs up pops onto it.",
+      "build": "The longest scene at 367 frames, and the one with the most camera in it: smoothCam in components/stage.ts drives a single continuous move from the call grid down into the message list, so the dive and the later push-in are the same mechanism at different scales. components/chat.ts holds the furniture, botMessage laying out an avatar, a \"Research Bot 10:02 AM\" header and a grey bubble from one string, and reactionPill the emoji counters. botCursor is the nice touch: a blue arrow whose tip is the mesh origin, towing the little bot behind it, so the bot and the pointer are one object.",
+      "reuse": "The best beat here for borrowing is the agent-as-cursor: any product where software does something a person would have done with a mouse. Swap the message strings in the botMessage calls and the curve data in the panel. The dive is worth keeping as the way into any interface close-up.",
+      "techniques": [
+        "continuous-camera-dive",
+        "agent-cursor",
+        "chat-thread",
+        "data-panel",
+        "camera-push-in"
+      ],
+      "mood": [
+        "product",
+        "calm",
+        "focused"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/07-other-bots.ts",
+      "title": "One bot tags another in a channel and joins the team's avatar stack",
+      "beat": "integrations",
+      "alsoFits": [
+        "workflow",
+        "benefit"
+      ],
+      "summary": "Under \"Works with other bots\", Research Bot tags @marketing and copies in @Copy Bot in a channel thread. Copy Bot answers \"I'm on it.\" and picks up a thumbs up. The beat closes on the team's stacked avatars, \"You, Launch Bot and 43 others\", as Copy Bot slots into the row.",
+      "build": "The thread reuses components/chat.ts wholesale, which is what keeps two different chat beats in one film looking like the same product. The avatar stack is overlapping canvas discs with the photographs cover-fitted, and the join is one disc easing into the row while the others part, animated on x alone. Lato is loaded here rather than Inter, because the fictional product's chat surface is set in it.",
+      "reuse": "This is the ecosystem beat: borrow it whenever the story is that your thing talks to other things. Rename the bots in components/bots.ts (they are colour keyed, so a new teammate is a new entry in BOT_COLOR), and replace the two avatar photographs, which are frames of the reference film rather than your people.",
+      "techniques": [
+        "chat-thread",
+        "avatar-stack",
+        "mention-tags",
+        "interstitial-title"
+      ],
+      "mood": [
+        "product",
+        "friendly",
+        "collaborative"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-feature",
+        "demo-walkthrough"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/08-design.ts",
+      "title": "A design tool: the bot selects the headline, retypes it, and the layout rebuilds",
+      "beat": "feature",
+      "alsoFits": [
+        "workflow",
+        "benefit"
+      ],
+      "summary": "A design tool's inspector scrolls past team avatars, a Share button and a Design tab. In the Layers list \"Headline\" is selected with Copy Bot's cursor on it; on the canvas the headline \"Sound, reimagined.\" is circled, then retyped as \"A lighter fit for longer days\". The view pulls back, the line rides up, a headphone render turns underneath it, and the camera pans across the generated ad variants.",
+      "build": "The headphones are modelled in code (components/headphones.ts): a brushed silver ribbon headband with S shouldered arms, round pivots with a copper dot and grey knit cushions, built from Three.js primitives in reference pixels, so the hero product turns in real 3D with no model file to ship. Everything around it is flat canvas drawing on the same stage, which is the trick that makes one 3D object sit convincingly inside a 2D interface. The inspector, layers and tabs are canvas textures; the retype is a character count walked from the frame.",
+      "reuse": "The strongest beat to steal for any \"the agent edits your work\" story. The headphone model is specific, but the pattern of one procedural 3D hero inside a flat UI is general. Swap the headline strings, the ad images in assets/ads (currently stills from the reference film), and the inspector labels.",
+      "techniques": [
+        "procedural-3d-product",
+        "ui-inspector",
+        "retype-on-frame",
+        "camera-pan",
+        "cursor-selection"
+      ],
+      "mood": [
+        "product",
+        "crafted",
+        "focused"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.15,
+        0.5,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/09-business.ts",
+      "title": "A deck flies past to the revenue slide and the bot flags the confidential one",
+      "beat": "data",
+      "alsoFits": [
+        "benefit",
+        "proof"
+      ],
+      "summary": "Under \"Knows your business\", a call with the orange Deck Bot opens and you ask it to share the deck with the ad agency. The deck flies past to slide 6, \"Year one: $8M in revenue.\", with a cumulative revenue chart, gross margin and units, and the bot points at it. It then answers that slide 6 has sensitive financials and offers to send without it, and the beat closes on the agreement.",
+      "build": "The deck is a row of slide planes moved on one axis with the camera fixed, so the fly-past costs one position track rather than a transition per slide. The chart is drawn into a canvas texture and revealed by a clipping plane from components/ui.ts, which keeps the line crisp at any zoom because the texture is drawn once at a high resolution. The call pill and speech bubbles are the same components scene 3 built, reused rather than rebuilt.",
+      "reuse": "Two separate things to borrow: the deck fly-past for any \"jump to the slide that matters\" moment, and the judgement beat, where the agent declines to do the obvious thing for a good reason. The second is rarer in product films than it should be and costs nothing to retype. Swap the numbers, the chart data and the confidentiality line.",
+      "techniques": [
+        "deck-flypast",
+        "clip-plane-chart-reveal",
+        "speech-bubble",
+        "interstitial-title"
+      ],
+      "mood": [
+        "product",
+        "serious",
+        "clean"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "demo-walkthrough",
+        "explainer"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.85
+      ]
+    },
+    {
+      "file": "scenes/10-launch.ts",
+      "title": "The campaign ships and the reaction counts climb under a clicking cursor",
+      "beat": "announcement",
+      "alsoFits": [
+        "proof",
+        "recap"
+      ],
+      "summary": "Launch Bot posts \"The new headphones campaign is live\" and the camera flies past the campaign's finished ads and renders. The red ad lands, the reaction counts climb as a hand keeps clicking the heart, and the who-reacted tooltip grows until it reads \"You, Launch Bot, Research Bot, Copy Bot, Deck Bot and 49 others\". The beat pushes into the tooltip's heart, which turns away into the next scene.",
+      "build": "The fly-past is one camera track across a wall of ad planes laid out in reference pixels, with the ads sized to their real aspect ratios so the wall reads as a contact sheet rather than a grid of crops. The climbing counter is a number walked from the frame with a bump on each click, and the tooltip grows by remeasuring its own text each frame, the same resizable panel scene 3 used. The push into the heart hands over to scene 11 on a matched shape, so the cut is invisible.",
+      "reuse": "Take this as the payoff beat for any launch film: the work exists, people respond to it. The counter and the growing tooltip are generic. The ads themselves are the fictional Pendel campaign and come from the reference film, so they are the first thing to replace.",
+      "techniques": [
+        "camera-flypast",
+        "counter-on-frame",
+        "growing-tooltip",
+        "match-cut"
+      ],
+      "mood": [
+        "upbeat",
+        "bright",
+        "celebratory"
+      ],
+      "videoTypes": [
+        "launch-playbook",
+        "announce-milestone",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "file": "scenes/11-outro.ts",
+      "title": "Say hi to your new teammates, then five bots collapse into the mark",
+      "beat": "logo",
+      "alsoFits": [
+        "cta",
+        "brand"
+      ],
+      "summary": "The red heart bot turns in close-up on pink. \"Say hi to\" lands big and settles, \"your new teammates\" follows, and the five bots pop into a row and fidget. They collapse into the black Grok mark, which shrinks into the \"Grok Bot\" lockup and holds to the end.",
+      "build": "The collapse is five position and scale tracks converging on one point with the mark cross fading in underneath at the moment they meet, which is cheaper and reads better than morphing the shapes. The mark itself is grokMark in components/bots.ts, a black disc with a white slash drawn as a path so it stays sharp at every size in the shrink. The fidget keeping the row alive is a per-bot phase offset on a small eased wobble, each bot on its own offset so the row never pulses in unison.",
+      "reuse": "An end card for any film with a cast of characters or product surfaces to gather up. Swap grokMark for your own mark and the two lines of copy. The converge and cross fade pattern works for any set of elements that should become one logo.",
+      "techniques": [
+        "logo-build",
+        "converging-collapse",
+        "character-fidget",
+        "kinetic-type"
+      ],
+      "mood": [
+        "playful",
+        "warm",
+        "brand"
+      ],
+      "videoTypes": [
+        "brand-sting",
+        "launch-playbook",
+        "announce-feature"
+      ],
+      "quality": "hero",
+      "standalone": true,
+      "sampleAt": [
+        0.2,
+        0.55,
+        0.9
+      ]
+    }
+  ]
+}

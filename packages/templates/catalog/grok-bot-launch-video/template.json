@@ -1,0 +1,17 @@
+{
+  "id": "grok-bot-launch-video",
+  "title": "Grok Bot launch video",
+  "description": "A 79 second launch film for an AI agent: it is invited into a chat, joins a video call as a fourth tile, looks up tester feedback, hands work to other bots, lays out a headphone campaign, reads the year one numbers off a chart, and ships the launch.",
+  "metaTitle": "Grok Bot AI Agent Launch Video Template — GenMotion",
+  "category": "product",
+  "tags": [
+    "Launch Video",
+    "Promotional"
+  ],
+  "publishedAt": "2026-11-11",
+  "featured": true,
+  "order": 47,
+  "sampleAt": 0.06,
+  "video": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-bot-launch-video/video.mp4",
+  "preview": "https://dbc43b99850cce79e60068b29c489278.r2.cloudflarestorage.com/genmotion/templates/grok-bot-launch-video/preview.mp4"
+}
