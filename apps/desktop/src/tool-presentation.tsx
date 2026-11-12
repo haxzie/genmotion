@@ -766,13 +766,21 @@ registerToolPresentation({
     },
   },
 
-  // The card the user actually acts on is the Connect offer `chat-panel`
-  // renders; this is the transcript's record that it was made.
+  mcp__genmotion__search_plugins: {
+    labels: { active: "Looking for an integration", done: "Looked for an integration" },
+    icon: PlugGlyph,
+    subject: (part) => truncate(str(part, "query"), 60),
+    body: (part) => <Text value={outputText(part)} />,
+  },
+
+  // Like `pick_voice`, the thing the user acts on is not a tool line: the
+  // offer is a callout `chat-panel` renders in the transcript on its own, and
+  // it keeps the call out of the accordion entirely. A Connect button folded
+  // inside a collapsed row is a button nobody presses.
   mcp__genmotion__recommend_integration: {
     labels: { active: "Suggesting an integration", done: "Suggested an integration" },
     icon: PlugGlyph,
     subject: (part) => str(part, "serverId"),
-    body: (part) => <Text value={outputText(part)} />,
   },
 
   // Browsing. The screenshot goes to the model and is stripped before the

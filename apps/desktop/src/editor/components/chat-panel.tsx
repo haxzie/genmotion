@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -38,6 +40,11 @@ import {
   type MessageContextData,
 } from "./scene-chip";
 import { PluginMenu } from "./plugin-menu";
+// Lazy: behind it sit the Plugins tab's connect hook and its key form, which
+// most chats never open.
+const ConnectCallout = lazy(() =>
+  import("./connect-card").then((m) => ({ default: m.ConnectCallout })),
+);
 import { useShareFolder } from "../../folder-access";
 import { ToolRun, type RunItem, type ToolPartLike } from "./tool-card";
 import { AskQuestionPanel, questionsOf } from "./ask-question-panel";
@@ -510,10 +517,24 @@ function MessageBubble({
     return p.type.startsWith("tool-") || p.type === "dynamic-tool";
   });
   const isTool = (p: (typeof parts)[number]) => p.type.startsWith("tool-") || p.type === "dynamic-tool";
+  // An integration offer is not a record of a tool call, it is a thing to
+  // press — so it stands in the message like a paragraph does, instead of
+  // folding into the run's accordion where nobody would find the button.
+  const isConnectOffer = (p: (typeof parts)[number]) =>
+    p.type === "tool-mcp__genmotion__recommend_integration";
   for (let i = 0; i < parts.length; ) {
     const part = parts[i]!;
     if (part.type === "text") {
       elements.push(<ChatMarkdown key={i}>{part.text}</ChatMarkdown>);
+      i++;
+      continue;
+    }
+    if (isConnectOffer(part)) {
+      elements.push(
+        <Suspense key={i} fallback={null}>
+          <ConnectCallout part={part as { input?: { serverId?: unknown; reason?: string } }} />
+        </Suspense>,
+      );
       i++;
       continue;
     }
@@ -522,7 +543,7 @@ function MessageBubble({
     // whole folds what has finished into one line (see `ToolRun`).
     const items: RunItem[] = [];
     let j = i;
-    while (j < parts.length && parts[j]!.type !== "text") {
+    while (j < parts.length && parts[j]!.type !== "text" && !isConnectOffer(parts[j]!)) {
       const p = parts[j]!;
       if (p.type === "reasoning") {
         const isLast = j === parts.length - 1;

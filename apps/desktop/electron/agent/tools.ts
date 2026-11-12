@@ -961,7 +961,7 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
       });
 
       return text(
-        `${blocks.join("\n\n")}\n\nPick ONE workflow or style result as the owner, read it before you plan, and record it in VIDEO.md (see genmotion-skills). If a requirement says NOT connected and the skill genuinely needs it, call recommend_integration once with that server id, say what you will do without it, and carry on.`,
+        `${blocks.join("\n\n")}\n\nPick ONE workflow or style result as the owner, read it before you plan, and record it in VIDEO.md (see genmotion-skills). If a requirement says NOT connected and the skill genuinely needs it, find it with search_plugins and call recommend_integration once with that id, say what you will do without it, and carry on.`,
       );
     },
   },
@@ -1053,14 +1053,33 @@ export const GENMOTION_TOOLS: GenmotionTool[] = [
     },
   },
   {
+    name: "search_plugins",
+    description:
+      "Search the plugin catalog: the apps and services this app can connect to the chat as MCP servers — design tools, issue trackers, docs, analytics, and the image, video, music and voice model providers. Call it whenever the user names an app or asks for something an integration would do ('pull the frames from my Figma file', 'a video from this month's Linear cycle', 'use a better video model'), and whenever search_skills reports a connector missing. Each match says whether this machine already has it connected: if it does, its tools are already in your tool list — if it does not, recommend_integration puts a Connect card in the chat.",
+    shape: {
+      query: z
+        .string()
+        .min(2)
+        .max(200)
+        .describe("The app, service or capability, in a few words — 'figma', 'issue tracker', 'video model'. Not the whole brief."),
+      limit: z.number().int().min(1).max(10).optional().describe("How many to return. Default 5."),
+    },
+    readOnly: true,
+    async run(_session, args) {
+      const { query, limit } = args as unknown as { query: string; limit?: number };
+      const { searchPlugins } = await import("../mcp/catalog");
+      return text(await searchPlugins(query, limit));
+    },
+  },
+  {
     name: "recommend_integration",
     description:
-      "Show the user a card in the chat offering to connect an MCP server this video needs, with a one-click Connect button. Call it at most once per turn, and only when search_skills reported a requirement as not connected and the skill genuinely cannot do its job without it. This does not pause the turn and does not make the tools available now: say in your reply what you will do without the integration, and keep building.",
+      "Show the user a card in the chat offering to connect a plugin, with a Connect button that runs the same sign-in or key form the Plugins tab does. Call it when the user asks for something a plugin in the catalog does, or when a skill requires a connector they have not got — at most once per turn, and only for an id search_plugins returned as not connected. This does not pause the turn and does not make the tools available now: say in your reply what you will do without the integration, and keep building.",
     shape: {
       serverId: z
         .string()
         .min(1)
-        .describe('The plugin catalog id, e.g. "fal" or "elevenlabs". Not a display name.'),
+        .describe('The plugin catalog id from search_plugins, e.g. "figma" or "elevenlabs". Not a display name.'),
       reason: z
         .string()
         .min(1)

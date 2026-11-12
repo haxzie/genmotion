@@ -1,37 +1,27 @@
-import type { McpCatalog, McpCatalogEntry } from "@genmotion/shared";
-import { cloudFetch } from "../auth";
 import { listConfigs } from "../mcp/store";
+import { catalogEntries } from "../mcp/catalog";
 
 /**
  * The `recommend_integration` tool's body.
  *
  * All it does is validate the id and tell the model what it just showed: the
  * card itself is drawn in the renderer from the tool call's own input (see
- * `tool-presentation.tsx`), so the main process never has to hand the catalog
- * entry across.
+ * `tool-presentation.tsx` and `editor/components/connect-card.tsx`), which is
+ * also where Connect runs the same sequence the Plugins tab does.
  *
  * Deliberately non-blocking, unlike `pick_voice`. That one parks the turn on
  * a click that takes five seconds; this one may need an OAuth round trip
  * through the browser that takes minutes or never finishes. A build must
  * never stall on an offer.
  */
-
-let cached: Promise<McpCatalogEntry[]> | null = null;
-
-async function catalog(): Promise<McpCatalogEntry[]> {
-  cached ??= cloudFetch("/api/mcp/catalog", { signal: AbortSignal.timeout(15_000) })
-    .then((res) => (res.ok ? (res.json() as Promise<McpCatalog>) : null))
-    .then((body) => body?.entries ?? [])
-    .catch(() => []);
-  return cached;
-}
-
 export async function recommendIntegration(serverId: string): Promise<{ text: string; isError?: boolean }> {
-  const entries = await catalog();
+  const entries = await catalogEntries();
   const entry = entries.find((e) => e.id === serverId);
   if (entries.length > 0 && !entry) {
     return {
-      text: `No plugin catalog entry has id "${serverId}". Valid ids: ${entries.map((e) => e.id).join(", ")}.`,
+      text: `No plugin catalog entry has id "${serverId}". Find one with search_plugins; valid ids: ${entries
+        .map((e) => e.id)
+        .join(", ")}.`,
       isError: true,
     };
   }
